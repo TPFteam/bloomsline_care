@@ -438,6 +438,98 @@ function CreateWorksheetContent() {
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
   const [isRecurring, setIsRecurring] = useState(false)
 
+  // PDF import state
+  const [isImportingPdf, setIsImportingPdf] = useState(false)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
+
+  const handlePdfImport = async (file: File) => {
+    if (!file || !file.type.includes('pdf')) {
+      toast.error(locale === 'fr' ? 'Veuillez sélectionner un fichier PDF' : 'Please select a PDF file')
+      return
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error(locale === 'fr' ? 'Le fichier est trop volumineux (max 20 Mo)' : 'File is too large (max 20MB)')
+      return
+    }
+
+    setIsImportingPdf(true)
+    try {
+      // Convert PDF pages to images using canvas (via pdf.js)
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const numPages = Math.min(pdf.numPages, 20)
+      const pageImages: string[] = []
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i)
+        const viewport = page.getViewport({ scale: 1.5 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')!
+        await page.render({ canvasContext: ctx, viewport, canvas } as any).promise
+        const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '')
+        pageImages.push(base64)
+      }
+
+      // Send to conversion API
+      const res = await fetch('/api/resources/convert-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pages: pageImages, language: resourceLanguage }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Conversion failed')
+      }
+
+      const data = await res.json()
+
+      // Populate builder
+      if (data.title && !title) setTitle(data.title)
+      if (data.description && !description) setDescription(data.description)
+
+      if (data.blocks && Array.isArray(data.blocks)) {
+        const newBlocks: WorksheetBlock[] = data.blocks.map((b: any) => ({
+          id: b.id || `imported-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: b.type,
+          content: b.content || '',
+          options: b.options,
+          pairs: b.pairs,
+          cards: b.cards,
+          sentence: b.sentence,
+          blanks: b.blanks,
+          items: b.items,
+          correctOrder: b.correctOrder,
+          required: b.required,
+          min: b.min,
+          max: b.max,
+          author: b.author,
+        }))
+        setBlocks(prev => [...prev, ...newBlocks])
+        toast.success(
+          locale === 'fr'
+            ? `${newBlocks.length} blocs générés à partir du PDF`
+            : `${newBlocks.length} blocks generated from PDF`
+        )
+      }
+    } catch (err) {
+      console.error('[pdf-import] Error:', err)
+      toast.error(
+        locale === 'fr'
+          ? `Impossible de convertir le PDF : ${err instanceof Error ? err.message : 'erreur inconnue'}`
+          : `Failed to convert PDF: ${err instanceof Error ? err.message : 'unknown error'}`
+      )
+    } finally {
+      setIsImportingPdf(false)
+      if (pdfInputRef.current) pdfInputRef.current.value = ''
+    }
+  }
+
   // Scoring state (for assessments/scored worksheets)
   const [enableScoring, setEnableScoring] = useState(false)
   const [showScoreToMember, setShowScoreToMember] = useState(true)
@@ -4505,13 +4597,36 @@ function CreateWorksheetContent() {
                         animate={{ opacity: 1 }}
                         className="relative"
                       >
-                        <button
-                          onClick={() => setShowBlockPicker(!showBlockPicker)}
-                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-5 h-5" />
-                          {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowBlockPicker(!showBlockPicker)}
+                            className="flex-1 py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-gray-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-5 h-5" />
+                            {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
+                          </button>
+                          <button
+                            onClick={() => pdfInputRef.current?.click()}
+                            disabled={isImportingPdf}
+                            className="py-4 px-6 border-2 border-dashed border-teal-300 rounded-xl text-teal-600 hover:border-teal-400 hover:bg-teal-50/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isImportingPdf ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" />{locale === 'fr' ? 'Conversion...' : 'Converting...'}</>
+                            ) : (
+                              <><FileUp className="w-4 h-4" />{locale === 'fr' ? 'Importer PDF' : 'Import PDF'}</>
+                            )}
+                          </button>
+                          <input
+                            ref={pdfInputRef}
+                            type="file"
+                            accept=".pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handlePdfImport(file)
+                            }}
+                          />
+                        </div>
 
                         {/* Block Picker */}
                         <AnimatePresence>
