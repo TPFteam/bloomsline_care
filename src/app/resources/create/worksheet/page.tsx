@@ -1402,6 +1402,25 @@ function CreateWorksheetContent() {
           }
         }
 
+        // PDF document
+        if (block.type === 'pdf_document') {
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName } as ResourceBlock
+        }
+
+        // Interactive blocks — preserve all custom properties
+        if (block.type === 'matching_pairs') {
+          return { ...baseBlock, pairs: (block as any).pairs, required: block.required } as ResourceBlock
+        }
+        if (block.type === 'flashcard') {
+          return { ...baseBlock, cards: (block as any).cards } as ResourceBlock
+        }
+        if (block.type === 'fill_blank') {
+          return { ...baseBlock, sentence: (block as any).sentence, blanks: (block as any).blanks, required: block.required } as ResourceBlock
+        }
+        if (block.type === 'ordering') {
+          return { ...baseBlock, items: (block as any).items, correctOrder: (block as any).correctOrder, required: block.required } as ResourceBlock
+        }
+
         // Default: heading, paragraph, quote, tip, divider
         return baseBlock as ResourceBlock
       })
@@ -1561,6 +1580,21 @@ function CreateWorksheetContent() {
         }
         if (block.type === 'time_input') {
           return { ...baseBlock, type: 'time_input' as const, required: block.required }
+        }
+        if (block.type === 'pdf_document') {
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName } as ResourceBlock
+        }
+        if (block.type === 'matching_pairs') {
+          return { ...baseBlock, pairs: (block as any).pairs, required: block.required } as ResourceBlock
+        }
+        if (block.type === 'flashcard') {
+          return { ...baseBlock, cards: (block as any).cards } as ResourceBlock
+        }
+        if (block.type === 'fill_blank') {
+          return { ...baseBlock, sentence: (block as any).sentence, blanks: (block as any).blanks, required: block.required } as ResourceBlock
+        }
+        if (block.type === 'ordering') {
+          return { ...baseBlock, items: (block as any).items, correctOrder: (block as any).correctOrder, required: block.required } as ResourceBlock
         }
         return baseBlock as ResourceBlock
       })
