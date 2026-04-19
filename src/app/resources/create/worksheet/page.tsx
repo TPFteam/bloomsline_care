@@ -548,20 +548,21 @@ function CreateWorksheetContent() {
 
       const data = await res.json()
 
-      // Upload the full PDF to storage
-      let pdfUrl = ''
+      // Upload the full original PDF to storage
+      let originalPdfUrl = ''
       const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
       const sb = createBrowserClient()
       const { data: { user: authUser } } = await sb.auth.getUser()
+      const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
+      const timestamp = Date.now()
 
       if (authUser) {
         try {
-          const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
-          const path = `${authUser.id}/pdf-imports/${Date.now()}-${sanitizedName}`
+          const path = `${authUser.id}/pdf-imports/${timestamp}-original-${sanitizedName}`
           const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, file)
           if (!uploadErr) {
             const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
-            pdfUrl = urlData.publicUrl
+            originalPdfUrl = urlData.publicUrl
           }
         } catch (uploadErr) {
           console.warn('[pdf-import] Could not upload PDF to storage:', uploadErr)
@@ -571,15 +572,6 @@ function CreateWorksheetContent() {
       // Populate title/description
       if (data.title && !title) setTitle(data.title)
       if (data.description && !description) setDescription(data.description)
-
-      // Create PDF document block
-      const pdfBlock: WorksheetBlock = {
-        id: `pdf-doc-${Date.now()}`,
-        type: 'pdf_document' as any,
-        content: locale === 'fr' ? 'Document original' : 'Original document',
-        mediaFile: pdfUrl,
-        fileName: file.name,
-      } as any
 
       // Helper: convert API blocks to worksheet blocks
       const toWorksheetBlocks = (apiBlocks: any[]): WorksheetBlock[] =>
@@ -600,19 +592,44 @@ function CreateWorksheetContent() {
           author: b.author,
         }))
 
-      // Collect all question blocks from sections
-      const sections = data.sections || []
-      const allQuestionBlocks: WorksheetBlock[] = []
-      for (const section of sections) {
-        if (section.type === 'questions' && section.blocks?.length > 0) {
-          allQuestionBlocks.push(...toWorksheetBlocks(section.blocks))
+      // Helper: split PDF pages and upload a chunk
+      const splitAndUploadChunk = async (pageNums: number[]): Promise<string> => {
+        if (!authUser || !originalPdfUrl) return originalPdfUrl
+        try {
+          const { PDFDocument } = await import('pdf-lib')
+          const arrayBufferCopy = await file.arrayBuffer()
+          const sourcePdf = await PDFDocument.load(arrayBufferCopy)
+          const newPdf = await PDFDocument.create()
+          const copiedPages = await newPdf.copyPages(sourcePdf, pageNums.map(p => p - 1))
+          copiedPages.forEach(page => newPdf.addPage(page))
+          const pdfBytes = await newPdf.save()
+          const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' })
+
+          const rangeSuffix = pageNums.length === 1 ? `p${pageNums[0]}` : `p${pageNums[0]}-${pageNums[pageNums.length - 1]}`
+          const path = `${authUser.id}/pdf-imports/${timestamp}-${rangeSuffix}-${sanitizedName}`
+          const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, blob)
+          if (uploadErr) return originalPdfUrl
+          const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
+          return urlData.publicUrl
+        } catch {
+          return originalPdfUrl
         }
       }
 
-      if (allQuestionBlocks.length === 0) {
-        // No questions — add PDF as reading material
-        if (pdfUrl) {
-          setBlocks(prev => [...prev, pdfBlock])
+      const sections = data.sections || []
+      const hasQuestions = sections.some((s: any) => s.type === 'questions' && s.blocks?.length > 0)
+
+      if (!hasQuestions) {
+        // No questions — add full PDF as reading material
+        if (originalPdfUrl) {
+          setBlocks(prev => [...prev, {
+            id: `pdf-${timestamp}-full`,
+            type: 'pdf_document' as any,
+            content: locale === 'fr' ? 'Document complet' : 'Full document',
+            mediaFile: originalPdfUrl,
+            originalPdfUrl,
+            fileName: file.name,
+          } as any])
           setResourceMode('reading')
         }
         toast.info(
@@ -621,13 +638,83 @@ function CreateWorksheetContent() {
             : 'No fillable questions found — PDF added as a reading document'
         )
       } else {
-        // PDF first, then all extracted questions
-        setBlocks(prev => [...prev, ...(pdfUrl ? [pdfBlock] : []), ...allQuestionBlocks])
-        setResourceMode('interactive')
+        // Auto-split: reading chunks include up to the question page,
+        // then questions, then next reading chunk starts after
+        const interleavedBlocks: WorksheetBlock[] = []
+        let totalQuestions = 0
+
+        // Build page ranges: reading sections include their pages,
+        // question sections include their startPage in the PRECEDING reading chunk
+        for (let i = 0; i < sections.length; i++) {
+          const section = sections[i]
+
+          if (section.type === 'reading' && section.pages?.length > 0 && originalPdfUrl) {
+            // Check if next section is questions — if so, include that startPage in this reading chunk
+            const nextSection = sections[i + 1]
+            let pageNums = [...section.pages] as number[]
+            if (nextSection?.type === 'questions' && nextSection.startPage) {
+              const qPage = nextSection.startPage as number
+              if (!pageNums.includes(qPage)) {
+                pageNums.push(qPage)
+              }
+            }
+            pageNums.sort((a, b) => a - b)
+
+            const label = pageNums.length === 1
+              ? `Page ${pageNums[0]}`
+              : `Pages ${pageNums[0]}–${pageNums[pageNums.length - 1]}`
+
+            const chunkUrl = await splitAndUploadChunk(pageNums)
+            interleavedBlocks.push({
+              id: `pdf-${timestamp}-${pageNums[0]}`,
+              type: 'pdf_document' as any,
+              content: label,
+              mediaFile: chunkUrl,
+              originalPdfUrl,
+              fileName: file.name,
+              pageRange: pageNums,
+            } as any)
+          } else if (section.type === 'questions' && section.blocks?.length > 0) {
+            // If no preceding reading section, create a chunk up to this page
+            const prevSection = sections[i - 1]
+            if ((!prevSection || prevSection.type !== 'reading') && section.startPage && originalPdfUrl) {
+              const qPage = section.startPage as number
+              const chunkUrl = await splitAndUploadChunk([qPage])
+              interleavedBlocks.push({
+                id: `pdf-${timestamp}-q${qPage}`,
+                type: 'pdf_document' as any,
+                content: `Page ${qPage}`,
+                mediaFile: chunkUrl,
+                originalPdfUrl,
+                fileName: file.name,
+                pageRange: [qPage],
+              } as any)
+            }
+
+            const questionBlocks = toWorksheetBlocks(section.blocks)
+            totalQuestions += questionBlocks.length
+            interleavedBlocks.push(...questionBlocks)
+          }
+        }
+
+        // Add full original PDF at the end as reference
+        if (originalPdfUrl) {
+          interleavedBlocks.push({
+            id: `pdf-${timestamp}-complete`,
+            type: 'pdf_document' as any,
+            content: locale === 'fr' ? 'Document complet' : 'Full document',
+            mediaFile: originalPdfUrl,
+            originalPdfUrl,
+            fileName: file.name,
+          } as any)
+        }
+
+        setBlocks(prev => [...prev, ...interleavedBlocks])
+        setResourceMode(totalQuestions > 0 ? 'interactive' : 'reading')
         toast.success(
           locale === 'fr'
-            ? `${allQuestionBlocks.length} questions extraites du PDF`
-            : `${allQuestionBlocks.length} questions extracted from PDF`
+            ? `${totalQuestions} questions extraites du PDF`
+            : `${totalQuestions} questions extracted from PDF`
         )
       }
     } catch (err) {
@@ -649,10 +736,11 @@ function CreateWorksheetContent() {
     const block = blocks.find(b => b.id === splitBlockId) as any
     if (!block?.mediaFile) return
 
+    const sourceUrl = block.originalPdfUrl || block.mediaFile
     setIsSplitting(true)
     try {
-      // Fetch the PDF from the URL
-      const response = await fetch(block.mediaFile)
+      // Fetch the PDF (always use original if available)
+      const response = await fetch(sourceUrl)
       const arrayBuffer = await response.arrayBuffer()
 
       const { PDFDocument } = await import('pdf-lib')
@@ -699,7 +787,8 @@ function CreateWorksheetContent() {
           type: 'pdf_document' as any,
           content: label,
           mediaFile: urlData.publicUrl,
-          fileName: `${label} — ${block.fileName || 'document.pdf'}`,
+          originalPdfUrl: sourceUrl,
+          fileName: block.fileName || 'document.pdf',
           pageRange: Array.from({ length: range.to - range.from + 1 }, (_, j) => range.from + j),
         } as any)
       }
@@ -936,6 +1025,7 @@ function CreateWorksheetContent() {
               // PDF document fields
               fileName: block.fileName,
               pageRange: block.pageRange,
+              originalPdfUrl: block.originalPdfUrl,
               // Interactive block fields
               pairs: block.pairs,
               cards: block.cards,
@@ -1556,7 +1646,7 @@ function CreateWorksheetContent() {
 
         // PDF document
         if (block.type === 'pdf_document') {
-          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange } as ResourceBlock
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange, originalPdfUrl: (block as any).originalPdfUrl } as ResourceBlock
         }
 
         // Interactive blocks — preserve all custom properties
@@ -1734,7 +1824,7 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'time_input' as const, required: block.required }
         }
         if (block.type === 'pdf_document') {
-          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange } as ResourceBlock
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange, originalPdfUrl: (block as any).originalPdfUrl } as ResourceBlock
         }
         if (block.type === 'matching_pairs') {
           return { ...baseBlock, pairs: (block as any).pairs, required: block.required } as ResourceBlock
