@@ -475,12 +475,10 @@ function CreateWorksheetContent() {
     }
 
     setPdfFile(file)
-    setPdfLang(resourceLanguage || 'fr')
-    setPdfLength('medium')
-    setPdfPrompt('')
+    setPdfLang('fr')
     setShowPdfSetup(true)
 
-    // Try to detect language from first page text
+    // Detect language from first page text
     try {
       const pdfjsLib = await import('pdfjs-dist')
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
@@ -525,15 +523,13 @@ function CreateWorksheetContent() {
         pageImages.push(base64)
       }
 
-      // Send to conversion API with settings
+      // Send to conversion API
       const res = await fetch('/api/resources/convert-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pages: pageImages,
           language: pdfLang,
-          length: pdfLength,
-          customPrompt: pdfPrompt.trim() || undefined,
         }),
       })
 
@@ -567,16 +563,27 @@ function CreateWorksheetContent() {
       if (data.title && !title) setTitle(data.title)
       if (data.description && !description) setDescription(data.description)
 
-      if (data.blocks && Array.isArray(data.blocks)) {
-        // Create PDF document block as the first block
-        const pdfBlock: WorksheetBlock = {
-          id: `pdf-doc-${Date.now()}`,
-          type: 'pdf_document' as any,
-          content: locale === 'fr' ? 'Document original' : 'Original document',
-          mediaFile: pdfUrl,
-          fileName: file.name,
-        } as any
+      // Create PDF document block as the first block
+      const pdfBlock: WorksheetBlock = {
+        id: `pdf-doc-${Date.now()}`,
+        type: 'pdf_document' as any,
+        content: locale === 'fr' ? 'Document original' : 'Original document',
+        mediaFile: pdfUrl,
+        fileName: file.name,
+      } as any
 
+      if (data.noQuestions || !data.blocks || data.blocks.length === 0) {
+        // No questions found — upload as reading material only
+        if (pdfUrl) {
+          setBlocks(prev => [...prev, pdfBlock])
+          setResourceMode('reading')
+        }
+        toast.info(
+          locale === 'fr'
+            ? 'Aucune question trouvée — PDF ajouté en tant que document de lecture'
+            : 'No fillable questions found — PDF added as a reading document'
+        )
+      } else {
         const newBlocks: WorksheetBlock[] = data.blocks.map((b: any) => ({
           id: b.id || `imported-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: b.type,
@@ -594,12 +601,13 @@ function CreateWorksheetContent() {
           author: b.author,
         }))
 
-        // PDF document first, then generated blocks
+        // PDF document first, then extracted question blocks
         setBlocks(prev => [...prev, ...(pdfUrl ? [pdfBlock] : []), ...newBlocks])
+        setResourceMode('interactive')
         toast.success(
           locale === 'fr'
-            ? `${newBlocks.length} blocs générés à partir du PDF`
-            : `${newBlocks.length} blocks generated from PDF`
+            ? `${newBlocks.length} questions extraites du PDF`
+            : `${newBlocks.length} questions extracted from PDF`
         )
       }
     } catch (err) {
@@ -5979,96 +5987,31 @@ function CreateWorksheetContent() {
         </div>
       )}
 
-      {/* PDF Import Setup Dialog */}
+      {/* PDF Import Setup Dialog — simplified */}
       {showPdfSetup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
               {locale === 'fr' ? 'Importer un PDF' : 'Import PDF'}
             </h3>
-            <p className="text-sm text-gray-500 mb-5">
+            <p className="text-sm text-gray-500 mb-4">
               {pdfFile?.name}
             </p>
 
-            {/* Language */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale === 'fr' ? 'Langue de l\'exercice' : 'Exercise language'}
-                <span className="text-xs text-gray-400 ml-2">
-                  ({locale === 'fr' ? 'détecté' : 'detected'}: {pdfDetectedLang === 'fr' ? 'FR' : 'EN'})
-                </span>
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { code: 'fr', label: 'Français' },
-                  { code: 'en', label: 'English' },
-                ].map(lang => (
-                  <button
-                    key={lang.code}
-                    onClick={() => setPdfLang(lang.code)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      pdfLang === lang.code
-                        ? 'bg-teal-50 border-2 border-teal-500 text-teal-700'
-                        : 'bg-gray-50 border-2 border-gray-100 text-gray-600 hover:border-gray-200'
-                    }`}
-                  >
-                    {lang.label}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 mb-5">
+              <FileText className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600">
+                {locale === 'fr' ? 'Langue détectée :' : 'Language detected:'}{' '}
+                <span className="font-medium text-gray-900">{pdfDetectedLang === 'fr' ? 'Français' : 'English'}</span>
+              </span>
             </div>
 
-            {/* Length */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale === 'fr' ? 'Longueur de l\'exercice' : 'Exercise length'}
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { value: 'short' as const, label: locale === 'fr' ? 'Court' : 'Short', desc: '5-7' },
-                  { value: 'medium' as const, label: locale === 'fr' ? 'Moyen' : 'Medium', desc: '8-12' },
-                  { value: 'long' as const, label: locale === 'fr' ? 'Long' : 'Long', desc: '13-18' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setPdfLength(opt.value)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      pdfLength === opt.value
-                        ? 'bg-teal-50 border-2 border-teal-500 text-teal-700'
-                        : 'bg-gray-50 border-2 border-gray-100 text-gray-600 hover:border-gray-200'
-                    }`}
-                  >
-                    <span className="block">{opt.label}</span>
-                    <span className="block text-[10px] text-gray-400 mt-0.5">{opt.desc} {locale === 'fr' ? 'blocs' : 'blocks'}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="text-xs text-gray-400 mb-5 leading-relaxed">
+              {locale === 'fr'
+                ? 'Bloom va analyser votre document et extraire les questions telles qu\'elles apparaissent. Si aucune question n\'est trouvée, le PDF sera ajouté en tant que document de lecture.'
+                : 'Bloom will analyze your document and extract questions exactly as they appear. If no questions are found, the PDF will be added as a reading document.'}
+            </p>
 
-            {/* Custom prompt */}
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {locale === 'fr' ? 'Instructions pour Bloom' : 'Instructions for Bloom'}
-                <span className="text-xs text-gray-400 ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
-              </label>
-              <p className="text-xs text-gray-400 mb-2">
-                {locale === 'fr'
-                  ? 'Aidez Bloom à mieux comprendre ce que vous attendez de cet exercice. Par exemple, sur quels aspects se concentrer, quel ton adopter, ou quels objectifs viser.'
-                  : 'Help Bloom better understand what you expect from this exercise. For example, which aspects to focus on, what tone to use, or what goals to target.'}
-              </p>
-              <textarea
-                value={pdfPrompt}
-                onChange={e => setPdfPrompt(e.target.value.slice(0, 500))}
-                placeholder={locale === 'fr'
-                  ? 'Ex : Concentre-toi sur les techniques d\'ancrage pour l\'anxiété...'
-                  : 'e.g., Focus on grounding techniques for anxiety...'}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm resize-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
-                rows={3}
-              />
-              <p className="text-[10px] text-gray-400 text-right mt-1">{pdfPrompt.length}/500</p>
-            </div>
-
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}
@@ -6080,7 +6023,7 @@ function CreateWorksheetContent() {
                 onClick={handlePdfImport}
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-colors flex items-center justify-center gap-2"
               >
-                {locale === 'fr' ? 'Générer' : 'Generate'} →
+                {locale === 'fr' ? 'Convertir' : 'Convert'} →
               </button>
             </div>
           </div>

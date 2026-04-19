@@ -39,53 +39,34 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const systemPrompt = `You are converting a practitioner's PDF document into an interactive exercise for their patients. You must output ONLY valid JSON — no markdown, no explanation, no code fences.
+    const systemPrompt = `You are extracting fillable questions from a practitioner's PDF document. You must output ONLY valid JSON — no markdown, no explanation, no code fences.
+
+CRITICAL RULES:
+- DO NOT invent questions. Only extract questions that EXPLICITLY EXIST in the PDF.
+- Copy question text VERBATIM from the document — do not rephrase.
+- Keep the ORIGINAL language of the PDF. Do not translate.
+- If NO fillable questions are found, return: {"title": "...", "description": "...", "blocks": [], "noQuestions": true}
 
 Output format:
 {
-  "title": "Exercise title",
+  "title": "Document title (from the PDF)",
   "description": "Short description",
-  "blocks": [...]
+  "blocks": [...],
+  "noQuestions": false
 }
 
-Available block types:
+How to identify question types in the PDF:
+- Question text followed by blank/dotted lines → {"id": "b1", "type": "prompt", "content": "exact question text?", "required": true}
+- Numbered options with circles/bullets → {"id": "b2", "type": "multiple_choice", "content": "exact question?", "options": ["Option A", "Option B", "Option C"], "required": true}
+- Checkboxes with options → {"id": "b3", "type": "checklist", "content": "exact instruction text:", "options": ["Item 1", "Item 2"]}
+- Yes/No or True/False → {"id": "b4", "type": "yes_no", "content": "exact statement?"}
+- Rating scales (1-5, 1-10, etc.) → {"id": "b5", "type": "scale", "content": "exact question?", "min": 1, "max": 10}
+- "List X things" with blank spaces → {"id": "b6", "type": "list_input", "content": "exact instruction text"}
+- Section titles above questions → {"id": "b7", "type": "heading", "content": "exact section title"}
+- Instructional paragraphs above questions → {"id": "b8", "type": "paragraph", "content": "exact text"}
 
-CONTENT BLOCKS:
-- {"id": "unique", "type": "heading", "content": "Section Title"}
-- {"id": "unique", "type": "paragraph", "content": "Educational text..."}
-- {"id": "unique", "type": "tip", "content": "Helpful advice..."}
-- {"id": "unique", "type": "quote", "content": "Quote text", "author": "Author name"}
-
-QUESTION BLOCKS:
-- {"id": "unique", "type": "prompt", "content": "Open-ended question?", "required": true}
-- {"id": "unique", "type": "multiple_choice", "content": "Choose one:", "options": ["A", "B", "C"], "required": true}
-- {"id": "unique", "type": "checklist", "content": "Select all that apply:", "options": ["A", "B", "C"]}
-- {"id": "unique", "type": "yes_no", "content": "True or false statement?"}
-- {"id": "unique", "type": "scale", "content": "Rate 1-10:", "min": 1, "max": 10}
-- {"id": "unique", "type": "likert", "content": "How do you feel?", "options": [{"label": "Not at all", "value": 1}, {"label": "Somewhat", "value": 2}, {"label": "Very much", "value": 3}]}
-- {"id": "unique", "type": "list_input", "content": "List 3 things:"}
-
-INTERACTIVE BLOCKS:
-- {"id": "unique", "type": "matching_pairs", "content": "Match the items:", "pairs": [{"left": "Term", "right": "Definition"}, ...]}
-- {"id": "unique", "type": "flashcard", "content": "Review:", "cards": [{"front": "Question", "back": "Answer"}, ...]}
-- {"id": "unique", "type": "fill_blank", "content": "Complete:", "sentence": "Text with {0} blanks {1}", "blanks": [{"index": 0, "answer": "correct", "options": ["correct", "wrong1", "wrong2"]}, ...]}
-- {"id": "unique", "type": "ordering", "content": "Put in order:", "items": ["First", "Second", "Third"], "correctOrder": [0, 1, 2]}
-
-GUIDELINES:
-- Output language: ${language || 'auto-detect from the PDF'}
-- Generate ${blockRange} interactive blocks (this is a ${length || 'medium'} exercise)
-- Educational content → heading + paragraph + tip
-- Vocabulary/term pairs → matching_pairs
-- Key concepts to memorize → flashcard
-- Step-by-step processes → ordering
-- Reflection/open questions → prompt
-- Self-assessment → scale or likert
-- Selection exercises → multiple_choice or checklist
-- Fill-in exercises → fill_blank
-- Every block must have a unique "id" (use "b1", "b2", etc.)
-- Alternate between content blocks and interactive blocks
-- Make it engaging — not just a form, but an interactive experience
-${customPrompt ? `\nPRACTITIONER'S INSTRUCTIONS:\n${customPrompt.slice(0, 500)}` : ''}`
+Every block must have a unique "id" (use "b1", "b2", etc.).
+Extract questions IN ORDER as they appear in the document.`
 
     // Build the message with PDF page images
     const imageContent: Anthropic.Messages.ContentBlockParam[] = limitedPages.map((pageBase64, i) => ({
