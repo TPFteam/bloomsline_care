@@ -59,6 +59,9 @@ import {
   // Auto-save icons
   Cloud,
   CloudOff,
+  // Mode toggle
+  BookOpen,
+  PenLine,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -4727,6 +4730,35 @@ function CreateWorksheetContent() {
                   {viewMode === 'edit' && (
                     <>
                       {/* Title Input */}
+                      {/* Resource mode toggle */}
+                      <div className="flex bg-gray-100 rounded-xl p-1">
+                        <button
+                          onClick={() => setResourceMode('reading')}
+                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                            resourceMode === 'reading' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          {locale === 'fr' ? 'Lecture' : 'Reading'}
+                          <span className={`text-[10px] hidden sm:inline ${resourceMode === 'reading' ? 'text-gray-400' : 'text-gray-300'}`}>
+                            {locale === 'fr' ? '· Guides, fiches' : '· Guides, sheets'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => setResourceMode('interactive')}
+                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                            resourceMode === 'interactive' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          <PenLine className="w-4 h-4" />
+                          {locale === 'fr' ? 'Interactif' : 'Interactive'}
+                          <span className={`text-[10px] hidden sm:inline ${resourceMode === 'interactive' ? 'text-gray-400' : 'text-gray-300'}`}>
+                            {locale === 'fr' ? '· Questions, exercices' : '· Questions, exercises'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Title */}
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -4736,51 +4768,10 @@ function CreateWorksheetContent() {
                           type="text"
                           value={title}
                           onChange={(e) => { setTitle(e.target.value); markAsModified(); }}
-                          placeholder={locale === 'fr' ? 'Titre de l\'exercice...' : 'Worksheet title...'}
+                          placeholder={locale === 'fr' ? 'Titre du support...' : 'Resource title...'}
                           className="w-full text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none placeholder-gray-400"
                         />
                       </motion.div>
-
-                      {/* Resource mode toggle */}
-                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-4">
-                        <p className="text-sm font-medium text-gray-700 mb-3">
-                          {locale === 'fr' ? 'Quel type de support ?' : 'What kind of resource?'}
-                        </p>
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => setResourceMode('reading')}
-                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                              resourceMode === 'reading'
-                                ? 'border-teal-500 bg-teal-50/50 shadow-sm'
-                                : 'border-gray-100 hover:border-gray-200 bg-white'
-                            }`}
-                          >
-                            <span className="text-2xl">📖</span>
-                            <span className={`text-sm font-semibold ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Lecture' : 'Reading'}
-                            </span>
-                            <span className="text-[11px] text-gray-400 text-center leading-tight">
-                              {locale === 'fr' ? 'Guides, fiches, contenu éducatif' : 'Guides, fact sheets, educational content'}
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => setResourceMode('interactive')}
-                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                              resourceMode === 'interactive'
-                                ? 'border-teal-500 bg-teal-50/50 shadow-sm'
-                                : 'border-gray-100 hover:border-gray-200 bg-white'
-                            }`}
-                          >
-                            <span className="text-2xl">✏️</span>
-                            <span className={`text-sm font-semibold ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Interactif' : 'Interactive'}
-                            </span>
-                            <span className="text-[11px] text-gray-400 text-center leading-tight">
-                              {locale === 'fr' ? 'Questions, exercices, évaluations' : 'Questions, exercises, assessments'}
-                            </span>
-                          </button>
-                        </div>
-                      </div>
 
                       {/* Blocks */}
                       <div className="space-y-1">
