@@ -5865,7 +5865,6 @@ function CreateWorksheetContent() {
                 {[
                   { code: 'fr', label: '🇫🇷 Français' },
                   { code: 'en', label: '🇬🇧 English' },
-                  { code: 'es', label: '🇪🇸 Español' },
                 ].map(lang => (
                   <button
                     key={lang.code}
