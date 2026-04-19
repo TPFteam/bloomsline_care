@@ -5141,7 +5141,7 @@ function CreateWorksheetContent() {
                             <Plus className="w-5 h-5" />
                             {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
                           </button>
-                          {!blocks.some(b => b.type === 'pdf_document') && (
+                          {searchParams.get('import') === 'pdf' && !blocks.some(b => b.type === 'pdf_document') && (
                             <button
                               onClick={() => pdfInputRef.current?.click()}
                               disabled={isImportingPdf}
