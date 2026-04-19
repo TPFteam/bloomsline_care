@@ -217,6 +217,18 @@ const blockTypes: BlockTypeOption[] = [
     label: { en: 'Tip Box', fr: 'Encadré explicatif' },
     description: { en: 'Important tips or notes', fr: 'Conseils ou notes importantes' },
   },
+  {
+    type: 'video',
+    icon: Video,
+    label: { en: 'Video', fr: 'Vidéo' },
+    description: { en: 'YouTube, Vimeo or video link', fr: 'Lien YouTube, Vimeo ou vidéo' },
+  },
+  {
+    type: 'link',
+    icon: ExternalLink,
+    label: { en: 'Link', fr: 'Lien' },
+    description: { en: 'External link or article', fr: 'Lien externe ou article' },
+  },
   // === RESPONSE BLOCKS (Member provides answers) ===
   {
     type: 'prompt',
@@ -836,7 +848,7 @@ function CreateWorksheetContent() {
   const [resourceMode, setResourceMode] = useState<'reading' | 'interactive'>('interactive')
 
   // Reading-only block types (content that patients read, not fill)
-  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document'])
+  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link'])
   const isBlockAllowed = (blockType: string) => {
     if (resourceMode === 'interactive') return true
     return READING_BLOCKS.has(blockType)
@@ -1009,6 +1021,7 @@ function CreateWorksheetContent() {
               mediaAlt: block.mediaAlt,
               videoUrl: block.videoUrl,
               videoType: block.videoType,
+              linkUrl: block.linkUrl,
               choices: block.choices?.map((c: any) => typeof c === 'string' ? c : (c as Record<string, string>)?.[locale] || ''),
               allowMultiple: block.allowMultiple,
               moodOptions: block.moodOptions?.map((m: any) => ({
@@ -1519,6 +1532,10 @@ function CreateWorksheetContent() {
             videoUrl: block.videoUrl,
             videoType: block.videoType,
           }
+        }
+
+        if (block.type === 'link') {
+          return { ...baseBlock, type: 'link' as const, linkUrl: (block as any).linkUrl }
         }
 
         if (block.type === 'file') {
@@ -2682,6 +2699,8 @@ function CreateWorksheetContent() {
       quote: { bg: 'bg-purple-100', text: 'text-purple-600', accent: 'bg-purple-400' },
       tip: { bg: 'bg-sky-100', text: 'text-sky-600', accent: 'bg-sky-400' },
       image: { bg: 'bg-emerald-100', text: 'text-emerald-600', accent: 'bg-emerald-400' },
+      video: { bg: 'bg-rose-100', text: 'text-rose-600', accent: 'bg-rose-400' },
+      link: { bg: 'bg-cyan-100', text: 'text-cyan-600', accent: 'bg-cyan-400' },
       // Question blocks - blue
       prompt: { bg: 'bg-blue-100', text: 'text-blue-600', accent: 'bg-blue-400' },
       multiple_choice: { bg: 'bg-indigo-100', text: 'text-indigo-600', accent: 'bg-indigo-400' },
@@ -2698,7 +2717,6 @@ function CreateWorksheetContent() {
       audio_response: { bg: 'bg-orange-100', text: 'text-orange-600', accent: 'bg-orange-400' },
       file_response: { bg: 'bg-green-100', text: 'text-green-600', accent: 'bg-green-400' },
       // Legacy
-      video: { bg: 'bg-purple-100', text: 'text-purple-600', accent: 'bg-purple-400' },
       file: { bg: 'bg-amber-100', text: 'text-amber-600', accent: 'bg-amber-400' },
     }
     return colors[type] || { bg: 'bg-gray-100', text: 'text-gray-600', accent: 'bg-gray-400' }
@@ -3731,6 +3749,66 @@ function CreateWorksheetContent() {
                       <p className="text-gray-700 italic">
                         {block.content || (locale === 'fr' ? 'Votre citation ici...' : 'Your quote here...')}
                       </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Video Block */}
+                {block.type === 'video' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Titre de la vidéo' : 'Video title'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Introduction à la pleine conscience' : 'e.g., Introduction to mindfulness'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'URL de la vidéo' : 'Video URL'}
+                      </label>
+                      <input
+                        type="url"
+                        value={(block as any).videoUrl || ''}
+                        onChange={(e) => updateBlock(block.id, { videoUrl: e.target.value })}
+                        placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Link Block */}
+                {block.type === 'link' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Titre du lien' : 'Link title'}
+                      </label>
+                      <input
+                        type="text"
+                        value={block.content}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Ex: Article sur la gestion du stress' : 'e.g., Article on stress management'}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        URL
+                      </label>
+                      <input
+                        type="url"
+                        value={(block as any).linkUrl || ''}
+                        onChange={(e) => updateBlock(block.id, { linkUrl: e.target.value } as any)}
+                        placeholder="https://..."
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      />
                     </div>
                   </>
                 )}
@@ -5190,7 +5268,7 @@ function CreateWorksheetContent() {
                                     {locale === 'fr' ? 'Contenu' : 'Content'}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'image', 'tip'].includes(bt.type)).map((bt) => {
+                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'image', 'tip', 'video', 'link'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button
