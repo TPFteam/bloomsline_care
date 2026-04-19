@@ -92,6 +92,8 @@ type BlockType =
   | 'likert' | 'numeric' | 'slider' | 'matrix_rating'
   | 'video_response' | 'audio_response' | 'file_response'
   | 'pdf_document' | 'matching_pairs' | 'flashcard' | 'fill_blank' | 'ordering'
+  | 'table_exercise' | 'breathing' | 'visualization' | 'body_scan' | 'timed_action'
+  | 'key_points' | 'callout' | 'audio' | 'link'
   | 'video' | 'file' // Legacy types
 
 interface MediaFile {
@@ -623,6 +625,22 @@ function CreateWorksheetContent() {
 
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
+  const [resourceMode, setResourceMode] = useState<'reading' | 'interactive'>('interactive')
+
+  // Reading-only block types (content that patients read, not fill)
+  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document'])
+  const isBlockAllowed = (blockType: string) => {
+    if (resourceMode === 'interactive') return true
+    return READING_BLOCKS.has(blockType)
+  }
+
+  // Auto-detect resource type from blocks
+  const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response'])
+  const detectedResourceType = (() => {
+    if (blocks.some(b => b.type === 'table_exercise')) return 'table'
+    if (blocks.some(b => INTERACTIVE_TYPES.has(b.type))) return 'worksheet'
+    return 'psychoeducation'
+  })()
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null)
   const [showMoreContentBlocks, setShowMoreContentBlocks] = useState(false)
   const [showMoreMediaBlocks, setShowMoreMediaBlocks] = useState(false)
@@ -1483,7 +1501,7 @@ function CreateWorksheetContent() {
       } else {
         // Create new resource
         await createResource({
-          type: 'worksheet',
+          type: detectedResourceType as any,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1651,7 +1669,7 @@ function CreateWorksheetContent() {
       } else {
         // Create new draft for auto-save
         const newResource = await createResource({
-          type: 'worksheet',
+          type: detectedResourceType as any,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -4723,6 +4741,30 @@ function CreateWorksheetContent() {
                         />
                       </motion.div>
 
+                      {/* Resource mode toggle */}
+                      <div className="flex items-center gap-2 px-1">
+                        <span className="text-xs text-gray-400">{locale === 'fr' ? 'Type :' : 'Type:'}</span>
+                        <div className="flex bg-gray-100 rounded-lg p-0.5">
+                          <button
+                            onClick={() => setResourceMode('reading')}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${resourceMode === 'reading' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                          >
+                            {locale === 'fr' ? '📖 Lecture' : '📖 Reading'}
+                          </button>
+                          <button
+                            onClick={() => setResourceMode('interactive')}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${resourceMode === 'interactive' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                          >
+                            {locale === 'fr' ? '✏️ Interactif' : '✏️ Interactive'}
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-gray-300 ml-2">
+                          {locale === 'fr'
+                            ? (resourceMode === 'reading' ? 'Contenu en lecture seule' : 'Questions + exercices interactifs')
+                            : (resourceMode === 'reading' ? 'Read-only content' : 'Questions + interactive exercises')}
+                        </span>
+                      </div>
+
                       {/* Blocks */}
                       <div className="space-y-1">
                         <Reorder.Group axis="y" values={blocks} onReorder={(newBlocks) => { setBlocks(newBlocks); markAsModified(); }} className="space-y-1">
@@ -4824,6 +4866,8 @@ function CreateWorksheetContent() {
                                 </div>
                               </div>
 
+                              {/* Questions Row — hidden in reading mode */}
+                              {resourceMode === 'interactive' && (<>
                               {/* Questions Row */}
                               <div className="flex items-start gap-6 py-3 border-b border-gray-100">
                                 <div className="flex-1">
@@ -4935,6 +4979,7 @@ function CreateWorksheetContent() {
                                   </div>
                                 </div>
                               </div>
+                              </>)}
                             </motion.div>
                           )}
                         </AnimatePresence>

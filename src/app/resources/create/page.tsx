@@ -1,20 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
   ArrowRight,
   FileText,
   BookOpen,
-  Lightbulb,
-  Check,
-  Table2,
   ChevronRight,
-  Sparkles,
   Plus,
-  Puzzle,
+  FileUp,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
@@ -23,209 +20,82 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
 
-// Simplified resource types for practitioners
-type PractitionerResourceType = 'worksheet' | 'psychoeducation' | 'table' | 'exercise'
-
-interface ResourceTypeOption {
-  id: PractitionerResourceType
-  comingSoon?: boolean
-}
-
 interface Template {
   id: string
   name: Record<string, string>
   description: Record<string, string>
   blocks: number
-  isBlank?: boolean
+  type: string // what builder type to open
 }
 
-// 4 main resource types
-const resourceTypes: ResourceTypeOption[] = [
-  { id: 'psychoeducation' },
-  { id: 'worksheet' },
-  { id: 'table' },
-  { id: 'exercise', comingSoon: true },
+// All templates from all resource types — unified
+const templates: Template[] = [
+  {
+    id: 'gratitude',
+    name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
+    description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
+    blocks: 12,
+    type: 'worksheet',
+  },
+  {
+    id: 'self-esteem',
+    name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
+    description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour développer une estime de soi saine' },
+    blocks: 12,
+    type: 'worksheet',
+  },
+  {
+    id: 'cbt-introduction',
+    name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
+    description: { en: 'Simple introduction to Cognitive Behavioral Therapy', fr: 'Introduction simple à la TCC' },
+    blocks: 12,
+    type: 'worksheet',
+  },
+  {
+    id: 'cognitive-restructuring',
+    name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
+    description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
+    blocks: 7,
+    type: 'table',
+  },
+  {
+    id: 'emotion-tracker',
+    name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
+    description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
+    blocks: 5,
+    type: 'table',
+  },
 ]
-
-const typeLabels: Record<PractitionerResourceType, Record<string, string>> = {
-  worksheet: { en: 'Worksheet', fr: 'Exercice' },
-  table: { en: 'Table', fr: 'Tableau' },
-  psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-  exercise: { en: 'Activity', fr: 'Activité' },
-}
-
-const typeDescriptions: Record<PractitionerResourceType, Record<string, string>> = {
-  worksheet: {
-    en: 'Engage through active exploration',
-    fr: 'Faire travailler par une exploration active',
-  },
-  table: {
-    en: 'Help observe, structure and gain perspective',
-    fr: 'Aider à observer, structurer et à prendre du recul',
-  },
-  psychoeducation: {
-    en: 'Explain, share and establish a common framework',
-    fr: 'Expliquer, transmettre et poser un cadre commun',
-  },
-  exercise: {
-    en: 'Offer a concrete practice to do independently',
-    fr: 'Proposer une pratique concrète à faire en autonomie',
-  },
-}
-
-const typeExamples: Record<PractitionerResourceType, Record<string, string[]>> = {
-  worksheet: {
-    en: ['Self-esteem', 'Relationships'],
-    fr: ['Estime de soi', 'Relations'],
-  },
-  table: {
-    en: ['Automatic thoughts'],
-    fr: ['Pensées automatiques'],
-  },
-  psychoeducation: {
-    en: ['Fact sheets', 'Guides'],
-    fr: ['Fiches explicatives', 'Guides'],
-  },
-  exercise: {
-    en: ['Mindfulness'],
-    fr: ['Pleine conscience'],
-  },
-}
-
-// Templates for each resource type (IDs must match the actual templates in each editor page)
-const templates: Record<PractitionerResourceType, Template[]> = {
-  worksheet: [
-    {
-      id: 'gratitude',
-      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
-      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
-      blocks: 12,
-    },
-  ],
-  table: [
-    {
-      id: 'cognitive-restructuring',
-      name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
-      description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
-      blocks: 7,
-    },
-    {
-      id: 'emotion-tracker',
-      name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
-      description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
-      blocks: 5,
-    },
-  ],
-  psychoeducation: [
-    {
-      id: 'self-esteem',
-      name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
-      description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour développer une estime de soi saine' },
-      blocks: 12,
-    },
-    {
-      id: 'cbt-introduction',
-      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
-      description: { en: 'Simple introduction to Cognitive Behavioral Therapy', fr: 'Introduction simple à la TCC' },
-      blocks: 12,
-    },
-  ],
-  exercise: [],
-}
 
 export default function CreateResourcePage() {
   const { locale } = useLanguage()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
-  const [selectedResourceType, setSelectedResourceType] = useState<PractitionerResourceType | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const templatesRef = useRef<HTMLDivElement>(null)
-
-  // Auto-select type from URL query parameter (e.g., ?type=worksheet)
-  useEffect(() => {
-    const typeFromUrl = searchParams.get('type')
-    if (typeFromUrl && ['worksheet', 'table', 'psychoeducation', 'exercise'].includes(typeFromUrl)) {
-      const validType = typeFromUrl as PractitionerResourceType
-      // Only auto-select if not already selected and not coming soon
-      const resourceType = resourceTypes.find(r => r.id === validType)
-      if (resourceType && !resourceType.comingSoon) {
-        setSelectedResourceType(validType)
-      }
-    }
-  }, [searchParams])
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single()
-        if (userProfile) {
-          setUser(userProfile)
-        } else {
-          setUser({
-            id: authUser.id,
-            email: authUser.email!,
-            full_name: authUser.user_metadata?.full_name || null,
-            avatar_url: authUser.user_metadata?.avatar_url || null,
-            user_type: authUser.user_metadata?.user_type || 'mentor',
-            preferred_language: 'en',
-            created_at: authUser.created_at,
-            updated_at: authUser.updated_at || authUser.created_at,
-          })
-        }
+        const { data: userProfile } = await supabase.from('users').select('*').eq('id', authUser.id).single()
+        if (userProfile) setUser(userProfile)
+        else setUser({ id: authUser.id, email: authUser.email!, full_name: authUser.user_metadata?.full_name || null, avatar_url: authUser.user_metadata?.avatar_url || null, user_type: authUser.user_metadata?.user_type || 'mentor', preferred_language: 'en', created_at: authUser.created_at, updated_at: authUser.updated_at || authUser.created_at })
       }
     }
     fetchUser()
   }, [supabase])
 
-  const handleTypeSelect = (type: PractitionerResourceType) => {
-    setSelectedResourceType(type)
-    setSelectedTemplate(null)
-  }
-
-  // Scroll to templates when type is selected
-  useEffect(() => {
-    if (selectedResourceType && templatesRef.current) {
-      setTimeout(() => {
-        templatesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    }
-  }, [selectedResourceType])
-
-  const handleTemplateSelect = (templateId: string) => {
-    setSelectedTemplate(templateId)
-  }
-
   const handleContinue = () => {
-    if (selectedResourceType && selectedTemplate) {
-      // Always pass template param, including for blank
-      router.push(`/resources/create/${selectedResourceType}?template=${selectedTemplate}`)
+    if (selectedTemplate) {
+      const template = templates.find(t => t.id === selectedTemplate)
+      router.push(`/resources/create/worksheet?template=${selectedTemplate}${template?.type === 'table' ? '&type=table' : ''}`)
     }
   }
-
-  const currentTemplates = selectedResourceType ? templates[selectedResourceType] : []
-
-  // Color theme based on selected resource type
-  const typeColors: Record<PractitionerResourceType, { bg: string; text: string }> = {
-    psychoeducation: { bg: 'bg-purple-50', text: 'text-purple-600' },
-    worksheet: { bg: 'bg-blue-50', text: 'text-blue-600' },
-    table: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
-    exercise: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  }
-
-  const currentColors = selectedResourceType ? typeColors[selectedResourceType] : typeColors.worksheet
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar activeItem="library" />
-
-      {/* Main Content */}
       <main className="flex-1 ml-14">
         <AppHeader
           user={user}
@@ -235,22 +105,15 @@ export default function CreateResourcePage() {
                 <BookOpen className="w-4 h-4" />
               </Link>
               <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="font-medium text-gray-900">
-                {locale === 'fr' ? 'Créer' : 'Create'}
-              </span>
+              <span className="font-medium text-gray-900">{locale === 'fr' ? 'Créer' : 'Create'}</span>
             </div>
           }
         />
 
-        {/* Content */}
-        <div className="p-8 max-w-6xl mx-auto">
-          {/* Title Section */}
+        <div className="p-8 max-w-5xl mx-auto">
+          {/* Title */}
           <div className="mb-8">
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-semibold text-gray-900 mb-2"
-            >
+            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-semibold text-gray-900 mb-2">
               <span className="flex items-center justify-between">
                 {locale === 'fr' ? 'Créer un support' : 'Create a Resource'}
                 <TutorialVideo
@@ -259,344 +122,100 @@ export default function CreateResourcePage() {
                 />
               </span>
             </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-gray-500"
-            >
-              {locale === 'fr'
-                ? 'Choisissez le format du support que vous souhaitez créer'
-                : 'Choose the type of resource you want to create'}
+            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-gray-500">
+              {locale === 'fr' ? 'Commencez avec un modèle, partez de zéro, ou importez un PDF' : 'Start with a template, from scratch, or import a PDF'}
             </motion.p>
           </div>
 
-          {/* Resource Type Selection - Large Cards with Illustrations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-            {resourceTypes.map((type, index) => {
-              const isSelected = selectedResourceType === type.id
-              const isDisabled = type.comingSoon
+          {/* Quick actions: Start from scratch + Import PDF */}
+          <div className="flex gap-4 mb-10">
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => router.push('/resources/create/worksheet?template=blank')}
+              className="flex-1 flex items-center gap-4 p-5 bg-white border-2 border-gray-100 rounded-2xl hover:border-teal-300 hover:shadow-lg transition-all text-left group"
+              whileHover={{ y: -2 }}
+            >
+              <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center group-hover:bg-teal-100 transition-colors">
+                <Plus className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{locale === 'fr' ? 'Partir de zéro' : 'Start from scratch'}</h3>
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Créez votre propre support' : 'Build your own resource'}</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-teal-500 ml-auto transition-colors" />
+            </motion.button>
 
-              return (
-                <motion.button
-                  key={type.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  onClick={() => !isDisabled && handleTypeSelect(type.id)}
-                  disabled={isDisabled}
-                  className={`relative text-center p-6 rounded-2xl border-2 transition-all group ${
-                    isDisabled
-                      ? 'cursor-not-allowed opacity-50 bg-gray-50 border-gray-100'
-                      : isSelected
-                      ? 'bg-white border-gray-900 shadow-xl ring-4 ring-gray-900/5'
-                      : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-lg'
-                  }`}
-                  whileHover={isDisabled ? {} : { y: -4 }}
-                  whileTap={isDisabled ? {} : { scale: 0.98 }}
-                >
-                  {/* Selection indicator */}
-                  {isSelected && !isDisabled && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute top-3 right-3 z-10 w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center"
-                    >
-                      <Check className="w-3.5 h-3.5 text-white" />
-                    </motion.span>
-                  )}
-
-                  {/* Illustrated Icon Area */}
-                  <div className="w-full aspect-square bg-gray-100 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4">
-                    {/* Coming Soon badge - inside illustration area */}
-                    {isDisabled && (
-                      <span className="absolute top-3 right-3 z-10 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-semibold rounded-full whitespace-nowrap">
-                        {locale === 'fr' ? 'Bientôt' : 'Coming Soon'}
-                      </span>
-                    )}
-                    {type.id === 'worksheet' && (
-                      <div className="relative">
-                        {/* Document */}
-                        <motion.div
-                          className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col p-2 gap-1.5"
-                          animate={{ y: [0, -2, 0] }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <div className="w-full h-1.5 bg-blue-200 rounded-full" />
-                          <div className="w-3/4 h-1.5 bg-blue-100 rounded-full" />
-                          <div className="w-full h-1.5 bg-blue-200 rounded-full" />
-                          <div className="w-1/2 h-1.5 bg-blue-100 rounded-full" />
-                        </motion.div>
-                        {/* Floating badge */}
-                        <motion.div
-                          className="absolute -right-3 -top-2 w-7 h-7 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg"
-                          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <FileText className="w-3.5 h-3.5 text-white" />
-                        </motion.div>
-                      </div>
-                    )}
-
-                    {type.id === 'table' && (
-                      <div className="relative">
-                        {/* Table grid */}
-                        <motion.div
-                          className="grid grid-cols-3 gap-1 p-2 bg-white rounded-lg shadow-md"
-                          animate={{ y: [0, -2, 0] }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                        >
-                          {[...Array(9)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              className={`w-4 h-4 rounded ${i < 3 ? 'bg-emerald-300' : 'bg-emerald-100'}`}
-                              animate={{ opacity: [0.7, 1, 0.7] }}
-                              transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
-                            />
-                          ))}
-                        </motion.div>
-                        {/* Floating badge */}
-                        <motion.div
-                          className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg"
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        >
-                          <Table2 className="w-3.5 h-3.5 text-white" />
-                        </motion.div>
-                      </div>
-                    )}
-
-                    {type.id === 'psychoeducation' && (
-                      <div className="relative">
-                        {/* Book */}
-                        <motion.div
-                          className="w-14 h-18 bg-gradient-to-br from-purple-500 to-purple-600 rounded-r-lg rounded-l shadow-md flex flex-col justify-center items-center"
-                          animate={{ rotateY: [0, 5, 0] }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <div className="w-10 h-1 bg-white/30 rounded mb-1" />
-                          <div className="w-8 h-1 bg-white/20 rounded mb-1" />
-                          <div className="w-10 h-1 bg-white/30 rounded" />
-                        </motion.div>
-                        {/* Floating elements */}
-                        <motion.div
-                          className="absolute -left-3 -top-2 w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center"
-                          animate={{ y: [0, -4, 0], rotate: [-5, 5, -5] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <Lightbulb className="w-3 h-3 text-purple-600" />
-                        </motion.div>
-                        <motion.div
-                          className="absolute -right-2 top-0 w-5 h-5 bg-purple-300 rounded-full"
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                        />
-                      </div>
-                    )}
-
-                    {type.id === 'exercise' && (
-                      <div className="relative">
-                        {/* Meditation/breathing visualization */}
-                        <motion.div
-                          className="relative w-16 h-16 flex items-center justify-center"
-                          animate={{ scale: [1, 1.05, 1] }}
-                          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          {/* Outer ring - breathing circle */}
-                          <motion.div
-                            className="absolute w-16 h-16 rounded-full border-4 border-amber-200"
-                            animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                          />
-                          {/* Middle ring */}
-                          <motion.div
-                            className="absolute w-12 h-12 rounded-full bg-amber-100"
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                          />
-                          {/* Inner circle - person silhouette */}
-                          <motion.div
-                            className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-3 h-3 bg-white rounded-full" />
-                          </motion.div>
-                        </motion.div>
-                        {/* Floating sparkles */}
-                        <motion.div
-                          className="absolute -right-2 -top-1 w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center"
-                          animate={{ y: [0, -3, 0], opacity: [0.6, 1, 0.6] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <Sparkles className="w-2.5 h-2.5 text-amber-600" />
-                        </motion.div>
-                        <motion.div
-                          className="absolute -left-2 bottom-0 w-4 h-4 bg-amber-300 rounded-full"
-                          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                        />
-                        {/* Activity badge */}
-                        <motion.div
-                          className="absolute -right-3 -bottom-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg"
-                          animate={{ rotate: [0, 10, 0] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          <Puzzle className="w-3.5 h-3.5 text-white" />
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Type Label */}
-                  <h3 className="font-semibold text-gray-900 mb-2 text-lg">
-                    {lt(typeLabels[type.id], locale)}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-                    {lt(typeDescriptions[type.id], locale)}
-                  </p>
-
-                  {/* Examples */}
-                  <div className="flex flex-wrap justify-center gap-1.5">
-                    {(typeExamples[type.id][locale] ?? typeExamples[type.id]['en']).map((example, i) => (
-                      <span
-                        key={i}
-                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full"
-                      >
-                        {example}
-                      </span>
-                    ))}
-                  </div>
-                </motion.button>
-              )
-            })}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              onClick={() => router.push('/resources/create/worksheet?importPdf=true')}
+              className="flex-1 flex items-center gap-4 p-5 bg-white border-2 border-gray-100 rounded-2xl hover:border-teal-300 hover:shadow-lg transition-all text-left group"
+              whileHover={{ y: -2 }}
+            >
+              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                <FileUp className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{locale === 'fr' ? 'Importer un PDF' : 'Import a PDF'}</h3>
+                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Bloom convertit votre document' : 'Bloom converts your document'}</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 ml-auto transition-colors" />
+            </motion.button>
           </div>
 
-          {/* Templates Section - Shows when type is selected */}
-          <AnimatePresence>
-            {selectedResourceType && (
-              <motion.div
-                ref={templatesRef}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="pt-8 border-t border-gray-200"
-              >
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                    {locale === 'fr' ? 'Choisir un modèle' : 'Choose a template'}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {locale === 'fr'
-                      ? 'Commencez avec un modèle ou créez à partir de zéro'
-                      : 'Start with a template or create from scratch'}
-                  </p>
-                </div>
+          {/* Templates */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Ou commencez avec un modèle' : 'Or start with a template'}
+            </h2>
+            <p className="text-sm text-gray-500 mb-5">
+              {locale === 'fr' ? 'Des modèles prêts à l\'emploi pour des cas courants' : 'Ready-to-use templates for common use cases'}
+            </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                  {/* Template Cards */}
-                  {currentTemplates.map((template, index) => {
-                    const isSelected = selectedTemplate === template.id
-                    return (
-                      <motion.button
-                        key={template.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        onClick={() => handleTemplateSelect(template.id)}
-                        className={`relative text-left p-5 rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? 'bg-white border-gray-900 shadow-lg'
-                            : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
-                        }`}
-                      >
-                        {isSelected && (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center"
-                          >
-                            <Check className="w-3 h-3 text-white" />
-                          </motion.span>
-                        )}
-                        <div className={`w-10 h-10 ${currentColors.bg} rounded-lg flex items-center justify-center mb-3`}>
-                          <FileText className={`w-5 h-5 ${currentColors.text}`} />
-                        </div>
-                        <h3 className="font-medium text-gray-900 mb-1">
-                          {lt(template.name, locale)}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-2">
-                          {lt(template.description, locale)}
-                        </p>
-                        <span className={`text-xs ${currentColors.text} font-medium`}>
-                          {template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}
-                        </span>
-                      </motion.button>
-                    )
-                  })}
-
-                  {/* Blank Option - Always last */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {templates.map((template, index) => {
+                const isSelected = selectedTemplate === template.id
+                return (
                   <motion.button
+                    key={template.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: currentTemplates.length * 0.05 }}
-                    onClick={() => handleTemplateSelect('blank')}
-                    className={`relative text-left p-5 rounded-xl border-2 border-dashed transition-all ${
-                      selectedTemplate === 'blank'
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                    onClick={() => setSelectedTemplate(isSelected ? null : template.id)}
+                    className={`relative text-left p-5 rounded-xl border-2 transition-all ${
+                      isSelected
                         ? 'bg-white border-gray-900 shadow-lg'
-                        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-md'
+                        : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
                     }`}
                   >
-                    {selectedTemplate === 'blank' && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center"
-                      >
+                    {isSelected && (
+                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center">
                         <Check className="w-3 h-3 text-white" />
                       </motion.span>
                     )}
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3">
-                      <Plus className="w-5 h-5 text-gray-500" />
+                      <FileText className="w-5 h-5 text-gray-500" />
                     </div>
-                    <h3 className="font-medium text-gray-900 mb-1">
-                      {locale === 'fr'
-                        ? (selectedResourceType === 'worksheet' ? 'Nouvel exercice' : selectedResourceType === 'table' ? 'Nouveau tableau' : 'Nouvelle fiche')
-                        : (selectedResourceType === 'worksheet' ? 'New Worksheet' : selectedResourceType === 'table' ? 'New Table' : 'New Psychoeducation')
-                      }
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Créez sans modèle' : 'Start from scratch'}
-                    </p>
+                    <h3 className="font-medium text-gray-900 mb-1">{lt(template.name, locale)}</h3>
+                    <p className="text-sm text-gray-500 mb-2">{lt(template.description, locale)}</p>
+                    <span className="text-xs text-gray-400">{template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}</span>
                   </motion.button>
-                </div>
+                )
+              })}
+            </div>
 
-                {/* Continue Button */}
-                <motion.div
-                  className="flex justify-start"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Button
-                    onClick={handleContinue}
-                    disabled={!selectedTemplate}
-                    className={`px-8 py-3 h-auto rounded-xl text-sm font-medium transition-all ${
-                      selectedTemplate
-                        ? 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {locale === 'fr' ? 'Continuer' : 'Continue'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </motion.div>
+            {/* Continue with template */}
+            {selectedTemplate && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Button onClick={handleContinue} className="px-8 py-3 h-auto rounded-xl bg-gray-900 hover:bg-gray-800 text-white shadow-lg">
+                  {locale === 'fr' ? 'Continuer avec ce modèle' : 'Continue with template'}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </motion.div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>
