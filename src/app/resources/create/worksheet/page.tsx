@@ -463,6 +463,7 @@ function CreateWorksheetContent() {
   const [splitTotalPages, setSplitTotalPages] = useState(1)
   const [splitThumbnails, setSplitThumbnails] = useState<string[]>([])
   const [splitThumbsLoading, setSplitThumbsLoading] = useState(false)
+  const splitThumbsRef = useRef<HTMLDivElement>(null)
 
   // Detect language from PDF text
   const detectLanguage = (text: string): string => {
@@ -3661,6 +3662,15 @@ function CreateWorksheetContent() {
                                 thumbs.push(canvas.toDataURL('image/jpeg', 0.6))
                               }
                               setSplitThumbnails(thumbs)
+                              // Scroll to the selected page range
+                              setTimeout(() => {
+                                const fromPage = existingRange?.[0] || 1
+                                const row = Math.floor((fromPage - 1) / 4) // 4 columns
+                                if (splitThumbsRef.current && row > 0) {
+                                  const thumbHeight = splitThumbsRef.current.scrollHeight / Math.ceil(thumbs.length / 4)
+                                  splitThumbsRef.current.scrollTo({ top: Math.max(0, row * thumbHeight - 20), behavior: 'smooth' })
+                                }
+                              }, 50)
                             } catch {
                               setSplitTotalPages(40)
                               setSplitRanges([{ from: 1, to: 3 }])
@@ -6433,7 +6443,7 @@ function CreateWorksheetContent() {
               </div>
 
               {/* Page thumbnails */}
-              <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-2">
+              <div ref={splitThumbsRef} className="max-h-64 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-2">
                 {splitThumbsLoading ? (
                   <div className="flex items-center justify-center py-8 gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
