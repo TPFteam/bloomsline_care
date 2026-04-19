@@ -4742,27 +4742,44 @@ function CreateWorksheetContent() {
                       </motion.div>
 
                       {/* Resource mode toggle */}
-                      <div className="flex items-center gap-2 px-1">
-                        <span className="text-xs text-gray-400">{locale === 'fr' ? 'Type :' : 'Type:'}</span>
-                        <div className="flex bg-gray-100 rounded-lg p-0.5">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-4">
+                        <p className="text-sm font-medium text-gray-700 mb-3">
+                          {locale === 'fr' ? 'Quel type de support ?' : 'What kind of resource?'}
+                        </p>
+                        <div className="flex gap-3">
                           <button
                             onClick={() => setResourceMode('reading')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${resourceMode === 'reading' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                              resourceMode === 'reading'
+                                ? 'border-teal-500 bg-teal-50/50 shadow-sm'
+                                : 'border-gray-100 hover:border-gray-200 bg-white'
+                            }`}
                           >
-                            {locale === 'fr' ? '📖 Lecture' : '📖 Reading'}
+                            <span className="text-2xl">📖</span>
+                            <span className={`text-sm font-semibold ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Lecture' : 'Reading'}
+                            </span>
+                            <span className="text-[11px] text-gray-400 text-center leading-tight">
+                              {locale === 'fr' ? 'Guides, fiches, contenu éducatif' : 'Guides, fact sheets, educational content'}
+                            </span>
                           </button>
                           <button
                             onClick={() => setResourceMode('interactive')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${resourceMode === 'interactive' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                              resourceMode === 'interactive'
+                                ? 'border-teal-500 bg-teal-50/50 shadow-sm'
+                                : 'border-gray-100 hover:border-gray-200 bg-white'
+                            }`}
                           >
-                            {locale === 'fr' ? '✏️ Interactif' : '✏️ Interactive'}
+                            <span className="text-2xl">✏️</span>
+                            <span className={`text-sm font-semibold ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Interactif' : 'Interactive'}
+                            </span>
+                            <span className="text-[11px] text-gray-400 text-center leading-tight">
+                              {locale === 'fr' ? 'Questions, exercices, évaluations' : 'Questions, exercises, assessments'}
+                            </span>
                           </button>
                         </div>
-                        <span className="text-[10px] text-gray-300 ml-2">
-                          {locale === 'fr'
-                            ? (resourceMode === 'reading' ? 'Contenu en lecture seule' : 'Questions + exercices interactifs')
-                            : (resourceMode === 'reading' ? 'Read-only content' : 'Questions + interactive exercises')}
-                        </span>
                       </div>
 
                       {/* Blocks */}
