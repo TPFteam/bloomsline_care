@@ -5858,13 +5858,13 @@ function CreateWorksheetContent() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {locale === 'fr' ? 'Langue de l\'exercice' : 'Exercise language'}
                 <span className="text-xs text-gray-400 ml-2">
-                  ({locale === 'fr' ? 'détecté' : 'detected'}: {pdfDetectedLang === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'})
+                  ({locale === 'fr' ? 'détecté' : 'detected'}: {pdfDetectedLang === 'fr' ? 'FR' : 'EN'})
                 </span>
               </label>
               <div className="flex gap-2">
                 {[
-                  { code: 'fr', label: '🇫🇷 Français' },
-                  { code: 'en', label: '🇬🇧 English' },
+                  { code: 'fr', label: 'Français' },
+                  { code: 'en', label: 'English' },
                 ].map(lang => (
                   <button
                     key={lang.code}
@@ -5910,10 +5910,15 @@ function CreateWorksheetContent() {
 
             {/* Custom prompt */}
             <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {locale === 'fr' ? 'Instructions pour l\'IA' : 'Instructions for AI'}
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {locale === 'fr' ? 'Instructions pour Bloom' : 'Instructions for Bloom'}
                 <span className="text-xs text-gray-400 ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
               </label>
+              <p className="text-xs text-gray-400 mb-2">
+                {locale === 'fr'
+                  ? 'Aidez Bloom à mieux comprendre ce que vous attendez de cet exercice. Par exemple, sur quels aspects se concentrer, quel ton adopter, ou quels objectifs viser.'
+                  : 'Help Bloom better understand what you expect from this exercise. For example, which aspects to focus on, what tone to use, or what goals to target.'}
+              </p>
               <textarea
                 value={pdfPrompt}
                 onChange={e => setPdfPrompt(e.target.value.slice(0, 500))}
