@@ -100,12 +100,32 @@ IMPORTANT:
       .map(block => block.text)
       .join('')
 
-    // Parse JSON — handle potential markdown code fences
+    // Parse JSON — handle potential markdown code fences and truncation
     let parsed
     try {
-      const jsonStr = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      parsed = JSON.parse(jsonStr)
-    } catch {
+      let jsonStr = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+
+      // Try direct parse first
+      try {
+        parsed = JSON.parse(jsonStr)
+      } catch {
+        // If truncated mid-JSON, try to recover by closing open structures
+        // Find last complete block entry (ends with "}")
+        const lastCompleteBlock = jsonStr.lastIndexOf('}')
+        if (lastCompleteBlock > 0) {
+          let recovered = jsonStr.slice(0, lastCompleteBlock + 1)
+          // Close the blocks array and root object if needed
+          if (!recovered.endsWith(']}')) {
+            if (!recovered.endsWith(']')) recovered += ']'
+            if (!recovered.endsWith('}')) recovered += '}'
+          }
+          parsed = JSON.parse(recovered)
+          console.log('[convert-pdf] Recovered truncated JSON — some questions may be missing')
+        } else {
+          throw new Error('Cannot recover truncated JSON')
+        }
+      }
+    } catch (parseErr) {
       console.error('[convert-pdf] Failed to parse Claude response:', responseText.slice(0, 500))
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
     }
