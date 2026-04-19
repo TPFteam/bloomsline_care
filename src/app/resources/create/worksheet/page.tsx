@@ -5074,29 +5074,37 @@ function CreateWorksheetContent() {
                     <>
                       {/* Title Input */}
                       {/* Resource mode toggle */}
-                      <div className="flex bg-gray-100 rounded-xl p-1">
+                      <div className="grid grid-cols-2 gap-3">
                         <button
                           onClick={() => setResourceMode('reading')}
-                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                            resourceMode === 'reading' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          className={`flex flex-col items-center gap-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                            resourceMode === 'reading'
+                              ? 'border-teal-500 bg-teal-50'
+                              : 'border-gray-150 bg-white hover:border-gray-200'
                           }`}
                         >
-                          <BookOpen className="w-4 h-4" />
-                          {locale === 'fr' ? 'Lecture' : 'Reading'}
-                          <span className={`text-[10px] hidden sm:inline ${resourceMode === 'reading' ? 'text-gray-400' : 'text-gray-300'}`}>
-                            {locale === 'fr' ? '· Guides, fiches' : '· Guides, sheets'}
+                          <BookOpen className={`w-5 h-5 ${resourceMode === 'reading' ? 'text-teal-600' : 'text-gray-400'}`} />
+                          <span className={`text-sm font-semibold ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
+                            {locale === 'fr' ? 'Lecture' : 'Reading'}
+                          </span>
+                          <span className={`text-[11px] ${resourceMode === 'reading' ? 'text-teal-500' : 'text-gray-400'}`}>
+                            {locale === 'fr' ? 'Guides, fiches, théorie' : 'Guides, sheets, theory'}
                           </span>
                         </button>
                         <button
                           onClick={() => setResourceMode('interactive')}
-                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                            resourceMode === 'interactive' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          className={`flex flex-col items-center gap-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                            resourceMode === 'interactive'
+                              ? 'border-teal-500 bg-teal-50'
+                              : 'border-gray-150 bg-white hover:border-gray-200'
                           }`}
                         >
-                          <PenLine className="w-4 h-4" />
-                          {locale === 'fr' ? 'Interactif' : 'Interactive'}
-                          <span className={`text-[10px] hidden sm:inline ${resourceMode === 'interactive' ? 'text-gray-400' : 'text-gray-300'}`}>
-                            {locale === 'fr' ? '· Questions, exercices' : '· Questions, exercises'}
+                          <PenLine className={`w-5 h-5 ${resourceMode === 'interactive' ? 'text-teal-600' : 'text-gray-400'}`} />
+                          <span className={`text-sm font-semibold ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
+                            {locale === 'fr' ? 'Interactif' : 'Interactive'}
+                          </span>
+                          <span className={`text-[11px] ${resourceMode === 'interactive' ? 'text-teal-500' : 'text-gray-400'}`}>
+                            {locale === 'fr' ? 'Questions, exercices' : 'Questions, exercises'}
                           </span>
                         </button>
                       </div>
