@@ -489,11 +489,39 @@ function CreateWorksheetContent() {
 
       const data = await res.json()
 
+      // Upload the original PDF to storage so patients can view it
+      let pdfUrl = ''
+      try {
+        const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
+        const sb = createBrowserClient()
+        const { data: { user: authUser } } = await sb.auth.getUser()
+        if (authUser) {
+          const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
+          const path = `${authUser.id}/pdf-imports/${Date.now()}-${sanitizedName}`
+          const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, file)
+          if (!uploadErr) {
+            const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
+            pdfUrl = urlData.publicUrl
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('[pdf-import] Could not upload PDF to storage:', uploadErr)
+      }
+
       // Populate builder
       if (data.title && !title) setTitle(data.title)
       if (data.description && !description) setDescription(data.description)
 
       if (data.blocks && Array.isArray(data.blocks)) {
+        // Create PDF document block as the first block
+        const pdfBlock: WorksheetBlock = {
+          id: `pdf-doc-${Date.now()}`,
+          type: 'pdf_document' as any,
+          content: locale === 'fr' ? 'Document original' : 'Original document',
+          mediaFile: pdfUrl,
+          fileName: file.name,
+        } as any
+
         const newBlocks: WorksheetBlock[] = data.blocks.map((b: any) => ({
           id: b.id || `imported-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: b.type,
@@ -510,7 +538,9 @@ function CreateWorksheetContent() {
           max: b.max,
           author: b.author,
         }))
-        setBlocks(prev => [...prev, ...newBlocks])
+
+        // PDF document first, then generated blocks
+        setBlocks(prev => [...prev, ...(pdfUrl ? [pdfBlock] : []), ...newBlocks])
         toast.success(
           locale === 'fr'
             ? `${newBlocks.length} blocs générés à partir du PDF`
