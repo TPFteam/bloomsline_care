@@ -62,6 +62,7 @@ import {
   // Mode toggle
   BookOpen,
   PenLine,
+  Scissors,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -454,6 +455,13 @@ function CreateWorksheetContent() {
   const [pdfPrompt, setPdfPrompt] = useState('')
   const pdfInputRef = useRef<HTMLInputElement>(null)
 
+  // PDF split state
+  const [showPdfSplit, setShowPdfSplit] = useState(false)
+  const [splitBlockId, setSplitBlockId] = useState<string | null>(null)
+  const [splitRanges, setSplitRanges] = useState<{ from: number; to: number }[]>([{ from: 1, to: 1 }])
+  const [isSplitting, setIsSplitting] = useState(false)
+  const [splitTotalPages, setSplitTotalPages] = useState(1)
+
   // Detect language from PDF text
   const detectLanguage = (text: string): string => {
     const frWords = ['le', 'la', 'les', 'des', 'une', 'est', 'dans', 'pour', 'qui', 'que', 'pas', 'sur', 'avec', 'son', 'ses', 'par', 'vous', 'nous', 'ce', 'cette']
@@ -632,6 +640,91 @@ function CreateWorksheetContent() {
     } finally {
       setIsImportingPdf(false)
       if (pdfInputRef.current) pdfInputRef.current.value = ''
+    }
+  }
+
+  // Handle PDF split into sections
+  const handlePdfSplit = async () => {
+    if (!splitBlockId) return
+    const block = blocks.find(b => b.id === splitBlockId) as any
+    if (!block?.mediaFile) return
+
+    setIsSplitting(true)
+    try {
+      // Fetch the PDF from the URL
+      const response = await fetch(block.mediaFile)
+      const arrayBuffer = await response.arrayBuffer()
+
+      const { PDFDocument } = await import('pdf-lib')
+      const sourcePdf = await PDFDocument.load(arrayBuffer)
+
+      const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
+      const sb = createBrowserClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const timestamp = Date.now()
+      const sanitizedName = (block.fileName || 'document.pdf').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
+
+      // Create a PDF chunk for each range
+      const newBlocks: WorksheetBlock[] = []
+      for (let i = 0; i < splitRanges.length; i++) {
+        const range = splitRanges[i]
+        const pageIndices = Array.from(
+          { length: range.to - range.from + 1 },
+          (_, j) => range.from - 1 + j // 0-based
+        )
+
+        const newPdf = await PDFDocument.create()
+        const copiedPages = await newPdf.copyPages(sourcePdf, pageIndices)
+        copiedPages.forEach(page => newPdf.addPage(page))
+        const pdfBytes = await newPdf.save()
+        const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' })
+
+        const rangeSuffix = range.from === range.to ? `p${range.from}` : `p${range.from}-${range.to}`
+        const path = `${authUser.id}/pdf-imports/${timestamp}-${rangeSuffix}-${sanitizedName}`
+        const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, blob)
+        if (uploadErr) {
+          console.warn('[pdf-split] Upload failed:', uploadErr)
+          continue
+        }
+        const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
+
+        const label = range.from === range.to
+          ? `Page ${range.from}`
+          : `Pages ${range.from}–${range.to}`
+
+        newBlocks.push({
+          id: `pdf-${timestamp}-${range.from}`,
+          type: 'pdf_document' as any,
+          content: label,
+          mediaFile: urlData.publicUrl,
+          fileName: `${label} — ${block.fileName || 'document.pdf'}`,
+          pageRange: Array.from({ length: range.to - range.from + 1 }, (_, j) => range.from + j),
+        } as any)
+      }
+
+      // Replace the original PDF block with the split chunks at the same position
+      setBlocks(prev => {
+        const idx = prev.findIndex(b => b.id === splitBlockId)
+        if (idx === -1) return prev
+        const updated = [...prev]
+        updated.splice(idx, 1, ...newBlocks)
+        return updated
+      })
+
+      setShowPdfSplit(false)
+      setSplitBlockId(null)
+      toast.success(
+        locale === 'fr'
+          ? `PDF découpé en ${newBlocks.length} sections`
+          : `PDF split into ${newBlocks.length} sections`
+      )
+    } catch (err) {
+      console.error('[pdf-split] Error:', err)
+      toast.error(locale === 'fr' ? 'Erreur lors du découpage' : 'Failed to split PDF')
+    } finally {
+      setIsSplitting(false)
     }
   }
 
@@ -3437,6 +3530,31 @@ function CreateWorksheetContent() {
                           <p className="text-sm text-gray-400">{locale === 'fr' ? 'PDF non disponible' : 'PDF not available'}</p>
                         </div>
                       )}
+                      {/* Split button */}
+                      {(block as any).mediaFile && (
+                        <button
+                          onClick={async () => {
+                            // Detect total pages
+                            try {
+                              const res = await fetch((block as any).mediaFile)
+                              const buf = await res.arrayBuffer()
+                              const { PDFDocument } = await import('pdf-lib')
+                              const pdf = await PDFDocument.load(buf)
+                              setSplitTotalPages(pdf.getPageCount())
+                              setSplitRanges([{ from: 1, to: Math.min(3, pdf.getPageCount()) }])
+                            } catch {
+                              setSplitTotalPages(40)
+                              setSplitRanges([{ from: 1, to: 3 }])
+                            }
+                            setSplitBlockId(block.id)
+                            setShowPdfSplit(true)
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <Scissors className="w-3.5 h-3.5" />
+                          {locale === 'fr' ? 'Découper en sections' : 'Split into sections'}
+                        </button>
+                      )}
                     </div>
                   )
                 })()}
@@ -6136,6 +6254,105 @@ function CreateWorksheetContent() {
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
               >
                 {locale === 'fr' ? 'Convertir' : 'Convert'} &rarr;
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* PDF Split Modal */}
+      {showPdfSplit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setShowPdfSplit(false); setSplitBlockId(null) }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-6 pb-0">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                  <Scissors className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Découper le PDF' : 'Split PDF'}
+                  </h3>
+                  <p className="text-xs text-gray-400">{splitTotalPages} pages</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-3">
+              {splitRanges.map((range, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-400 w-5">{i + 1}.</span>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <input
+                      type="number"
+                      min={1}
+                      max={splitTotalPages}
+                      value={range.from}
+                      onChange={e => {
+                        const val = Math.max(1, Math.min(splitTotalPages, parseInt(e.target.value) || 1))
+                        setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, from: val, to: Math.max(val, r.to) } : r))
+                      }}
+                      className="w-16 h-9 px-2 text-center text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                    <span className="text-xs text-gray-400">{locale === 'fr' ? 'à' : 'to'}</span>
+                    <input
+                      type="number"
+                      min={range.from}
+                      max={splitTotalPages}
+                      value={range.to}
+                      onChange={e => {
+                        const val = Math.max(range.from, Math.min(splitTotalPages, parseInt(e.target.value) || range.from))
+                        setSplitRanges(prev => prev.map((r, j) => j === i ? { ...r, to: val } : r))
+                      }}
+                      className="w-16 h-9 px-2 text-center text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+                  {splitRanges.length > 1 && (
+                    <button
+                      onClick={() => setSplitRanges(prev => prev.filter((_, j) => j !== i))}
+                      className="p-1.5 text-gray-300 hover:text-red-400 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                onClick={() => {
+                  const lastTo = splitRanges[splitRanges.length - 1]?.to || 0
+                  const nextFrom = Math.min(lastTo + 1, splitTotalPages)
+                  setSplitRanges(prev => [...prev, { from: nextFrom, to: splitTotalPages }])
+                }}
+                className="w-full py-2 text-xs font-medium text-gray-500 hover:text-gray-700 border border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+              >
+                + {locale === 'fr' ? 'Ajouter une section' : 'Add section'}
+              </button>
+            </div>
+
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => { setShowPdfSplit(false); setSplitBlockId(null) }}
+                disabled={isSplitting}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={handlePdfSplit}
+                disabled={isSplitting}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSplitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {locale === 'fr' ? 'Découpage...' : 'Splitting...'}</>
+                ) : (
+                  <><Scissors className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Découper' : 'Split'}</>
+                )}
               </button>
             </div>
           </motion.div>
