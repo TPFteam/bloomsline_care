@@ -540,7 +540,7 @@ function CreateWorksheetContent() {
 
       const data = await res.json()
 
-      // Upload the original PDF to storage so patients can view it
+      // Upload the full PDF to storage
       let pdfUrl = ''
       const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
       const sb = createBrowserClient()
@@ -564,15 +564,14 @@ function CreateWorksheetContent() {
       if (data.title && !title) setTitle(data.title)
       if (data.description && !description) setDescription(data.description)
 
-      // Helper: create a PDF document block for a page range
-      const makePdfBlock = (pageNums: number[], label: string): any => ({
-        id: `pdf-${Date.now()}-${pageNums[0]}`,
+      // Create PDF document block
+      const pdfBlock: WorksheetBlock = {
+        id: `pdf-doc-${Date.now()}`,
         type: 'pdf_document' as any,
-        content: label,
+        content: locale === 'fr' ? 'Document original' : 'Original document',
         mediaFile: pdfUrl,
         fileName: file.name,
-        pageRange: pageNums, // stored for display: "Pages 1-3"
-      })
+      } as any
 
       // Helper: convert API blocks to worksheet blocks
       const toWorksheetBlocks = (apiBlocks: any[]): WorksheetBlock[] =>
@@ -593,16 +592,19 @@ function CreateWorksheetContent() {
           author: b.author,
         }))
 
+      // Collect all question blocks from sections
       const sections = data.sections || []
+      const allQuestionBlocks: WorksheetBlock[] = []
+      for (const section of sections) {
+        if (section.type === 'questions' && section.blocks?.length > 0) {
+          allQuestionBlocks.push(...toWorksheetBlocks(section.blocks))
+        }
+      }
 
-      if (data.noQuestions || sections.length === 0) {
-        // No questions found — add full PDF as reading material
+      if (allQuestionBlocks.length === 0) {
+        // No questions — add PDF as reading material
         if (pdfUrl) {
-          const fullPdfBlock = makePdfBlock(
-            Array.from({ length: numPages }, (_, i) => i + 1),
-            locale === 'fr' ? 'Document original' : 'Original document'
-          )
-          setBlocks(prev => [...prev, fullPdfBlock])
+          setBlocks(prev => [...prev, pdfBlock])
           setResourceMode('reading')
         }
         toast.info(
@@ -611,32 +613,13 @@ function CreateWorksheetContent() {
             : 'No fillable questions found — PDF added as a reading document'
         )
       } else {
-        // Build interleaved blocks from sections
-        const interleavedBlocks: WorksheetBlock[] = []
-        let totalQuestions = 0
-
-        for (const section of sections) {
-          if (section.type === 'reading' && section.pages?.length > 0 && pdfUrl) {
-            const pageNums = section.pages as number[]
-            const label = section.label || (
-              pageNums.length === 1
-                ? `Page ${pageNums[0]}`
-                : `Pages ${pageNums[0]}-${pageNums[pageNums.length - 1]}`
-            )
-            interleavedBlocks.push(makePdfBlock(pageNums, label) as any)
-          } else if (section.type === 'questions' && section.blocks?.length > 0) {
-            const questionBlocks = toWorksheetBlocks(section.blocks)
-            totalQuestions += questionBlocks.length
-            interleavedBlocks.push(...questionBlocks)
-          }
-        }
-
-        setBlocks(prev => [...prev, ...interleavedBlocks])
-        setResourceMode(totalQuestions > 0 ? 'interactive' : 'reading')
+        // PDF first, then all extracted questions
+        setBlocks(prev => [...prev, ...(pdfUrl ? [pdfBlock] : []), ...allQuestionBlocks])
+        setResourceMode('interactive')
         toast.success(
           locale === 'fr'
-            ? `${totalQuestions} questions extraites du PDF`
-            : `${totalQuestions} questions extracted from PDF`
+            ? `${allQuestionBlocks.length} questions extraites du PDF`
+            : `${allQuestionBlocks.length} questions extracted from PDF`
         )
       }
     } catch (err) {
@@ -2479,11 +2462,7 @@ function CreateWorksheetContent() {
             </label>
             {(block as any).mediaFile ? (
               <button
-                onClick={() => {
-                          const url = (block as any).mediaFile
-                          const pr = (block as any).pageRange as number[] | undefined
-                          setPdfViewerUrl(url && pr?.length ? `${url}#page=${pr[0]}` : url)
-                        }}
+                onClick={() => setPdfViewerUrl((block as any).mediaFile)}
                 className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
               >
                 <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -3438,11 +3417,7 @@ function CreateWorksheetContent() {
                     <div className="space-y-3">
                       {(block as any).mediaFile ? (
                         <button
-                          onClick={() => {
-                          const url = (block as any).mediaFile
-                          const pr = (block as any).pageRange as number[] | undefined
-                          setPdfViewerUrl(url && pr?.length ? `${url}#page=${pr[0]}` : url)
-                        }}
+                          onClick={() => setPdfViewerUrl((block as any).mediaFile)}
                           className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
                         >
                           <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -4664,132 +4639,24 @@ function CreateWorksheetContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* PDF Converting overlay — fun animated loading */}
+              {/* PDF Converting — minimal loading */}
               {isImportingPdf && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center py-24 relative overflow-hidden"
+                  className="flex flex-col items-center justify-center py-40"
                 >
-                  {/* Floating background shapes */}
-                  {[
-                    { size: 'w-64 h-64', color: 'bg-teal-100/40', x: [-120, 120], y: [0, -30], duration: 8, left: '-5%', top: '10%' },
-                    { size: 'w-48 h-48', color: 'bg-rose-100/30', x: [80, -80], y: [-20, 20], duration: 10, left: '70%', top: '5%' },
-                    { size: 'w-32 h-32', color: 'bg-amber-100/40', x: [-60, 60], y: [10, -10], duration: 7, left: '20%', top: '60%' },
-                    { size: 'w-40 h-40', color: 'bg-violet-100/30', x: [50, -50], y: [-15, 15], duration: 9, left: '80%', top: '50%' },
-                    { size: 'w-24 h-24', color: 'bg-sky-100/40', x: [-40, 40], y: [5, -5], duration: 6, left: '45%', top: '70%' },
-                  ].map((shape, i) => (
+                  <p className="text-sm font-medium text-gray-400 mb-6 tracking-wide">
+                    {locale === 'fr' ? 'Analyse en cours' : 'Analyzing'}
+                  </p>
+
+                  {/* Simple flowing bar */}
+                  <div className="w-56 h-1 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div
-                      key={i}
-                      animate={{ x: shape.x, y: shape.y }}
-                      transition={{ duration: shape.duration, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                      className={`absolute ${shape.size} ${shape.color} rounded-full blur-2xl`}
-                      style={{ left: shape.left, top: shape.top }}
+                      animate={{ x: ['-100%', '200%'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }}
+                      className="w-1/3 h-full bg-gradient-to-r from-transparent via-teal-400 to-transparent rounded-full"
                     />
-                  ))}
-
-                  {/* Center content */}
-                  <div className="relative z-10 flex flex-col items-center">
-                    {/* Animated icon cluster */}
-                    <div className="relative w-32 h-32 mb-8">
-                      {/* Orbiting elements */}
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-                        className="absolute inset-0"
-                      >
-                        <motion.div
-                          animate={{ scale: [0.8, 1.1, 0.8] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center"
-                        >
-                          <span className="text-sm">📄</span>
-                        </motion.div>
-                      </motion.div>
-
-                      <motion.div
-                        animate={{ rotate: -360 }}
-                        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-                        className="absolute inset-2"
-                      >
-                        <motion.div
-                          animate={{ scale: [1, 0.8, 1] }}
-                          transition={{ duration: 2.5, repeat: Infinity }}
-                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 bg-white rounded-xl shadow-md flex items-center justify-center"
-                        >
-                          <span className="text-xs">✨</span>
-                        </motion.div>
-                      </motion.div>
-
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-                        className="absolute inset-1"
-                      >
-                        <motion.div
-                          animate={{ scale: [0.9, 1.2, 0.9] }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                          className="absolute top-1/2 -right-2 -translate-y-1/2 w-7 h-7 bg-white rounded-xl shadow-md flex items-center justify-center"
-                        >
-                          <span className="text-xs">🔍</span>
-                        </motion.div>
-                      </motion.div>
-
-                      {/* Center icon */}
-                      <motion.div
-                        animate={{ scale: [1, 1.08, 1], rotate: [0, 3, -3, 0] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                        className="absolute inset-0 m-auto w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/50"
-                      >
-                        <FileText className="w-8 h-8 text-white" />
-                      </motion.div>
-                    </div>
-
-                    {/* Text */}
-                    <motion.h3
-                      animate={{ opacity: [0.7, 1, 0.7] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="text-xl font-bold text-gray-900 mb-2"
-                    >
-                      {locale === 'fr' ? 'Bloom lit votre PDF...' : 'Bloom is reading your PDF...'}
-                    </motion.h3>
-
-                    {/* Rotating fun messages */}
-                    <div className="h-10 flex items-center">
-                      {[
-                        locale === 'fr' ? 'Recherche des questions...' : 'Looking for questions...',
-                        locale === 'fr' ? 'Lecture des pages...' : 'Scanning the pages...',
-                        locale === 'fr' ? 'Structuration du contenu...' : 'Structuring the content...',
-                        locale === 'fr' ? 'Presque terminé...' : 'Almost there...',
-                      ].map((msg, i) => (
-                        <motion.p
-                          key={i}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{
-                            opacity: [0, 0, 1, 1, 0, 0],
-                            y: [10, 10, 0, 0, -10, -10],
-                          }}
-                          transition={{
-                            duration: 8,
-                            repeat: Infinity,
-                            delay: i * 2,
-                            times: [0, 0.05, 0.1, 0.85, 0.95, 1],
-                          }}
-                          className="absolute text-sm text-gray-400"
-                        >
-                          {msg}
-                        </motion.p>
-                      ))}
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="w-48 h-1.5 bg-gray-100 rounded-full mt-6 overflow-hidden">
-                      <motion.div
-                        animate={{ x: ['-100%', '100%'] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                        className="w-1/2 h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
-                      />
-                    </div>
                   </div>
                 </motion.div>
               )}

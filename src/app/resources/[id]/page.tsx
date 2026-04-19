@@ -1391,10 +1391,7 @@ export default function ResourceDetailPage() {
                         <div key={blockId}>
                           {blockContent && <p className="text-gray-900 font-medium mb-2">{blockContent}</p>}
                           <button
-                            onClick={() => {
-                              const viewUrl = pdfUrl && pageRange?.length ? `${pdfUrl}#page=${pageRange[0]}` : pdfUrl
-                              viewUrl && setPdfViewer({ url: viewUrl, fileName: pdfFileName })
-                            }}
+                            onClick={() => pdfUrl && setPdfViewer({ url: pdfUrl, fileName: pdfFileName })}
                             className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
                           >
                             <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -1984,10 +1981,7 @@ export default function ResourceDetailPage() {
                           <div key={blockId}>
                             {blockContent && <p className="text-[15px] font-semibold text-[#1A1A1A] mb-2">{blockContent}</p>}
                             <button
-                              onClick={() => {
-                              const viewUrl = pdfUrl && pageRange?.length ? `${pdfUrl}#page=${pageRange[0]}` : pdfUrl
-                              viewUrl && setPdfViewer({ url: viewUrl, fileName: pdfFileName })
-                            }}
+                              onClick={() => pdfUrl && setPdfViewer({ url: pdfUrl, fileName: pdfFileName })}
                               className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
                             >
                               <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">

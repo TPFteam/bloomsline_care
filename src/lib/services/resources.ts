@@ -223,6 +223,19 @@ export async function updateResource(id: string, updates: UpdateResourceDTO): Pr
 export async function deleteResource(id: string): Promise<void> {
   const supabase = createClient()
 
+  // Delete dependent rows: responses → shared resources → resource
+  // First find all shared resource IDs for this resource
+  const { data: sharedRows } = await supabase
+    .from('member_shared_resources')
+    .select('id')
+    .eq('resource_id', id)
+
+  if (sharedRows && sharedRows.length > 0) {
+    const sharedIds = sharedRows.map(r => r.id)
+    await supabase.from('resource_responses').delete().in('shared_resource_id', sharedIds)
+  }
+  await supabase.from('member_shared_resources').delete().eq('resource_id', id)
+
   const { error } = await supabase
     .from('resources')
     .delete()
