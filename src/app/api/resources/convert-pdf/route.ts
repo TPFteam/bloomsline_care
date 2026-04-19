@@ -77,10 +77,9 @@ How to identify question types:
 - Yes/No or True/False → {"id": "b4", "type": "yes_no", "content": "exact statement?"}
 - Rating scales (1-5, 1-10, etc.) → {"id": "b5", "type": "scale", "content": "exact question?", "min": 1, "max": 10}
 - "List X things" with blank spaces → {"id": "b6", "type": "list_input", "content": "exact instruction text"}
-- Section titles above questions → {"id": "b7", "type": "heading", "content": "exact section title"}
-- Instructional paragraphs directly above questions → {"id": "b8", "type": "paragraph", "content": "exact text"}
 
 Every block must have a unique "id" (use "b1", "b2", etc.).
+DO NOT extract section titles, headings, instructional paragraphs, or explanatory text as blocks. ONLY extract fillable questions that require a response.
 
 IMPORTANT:
 - Scan the ENTIRE document from first page to last.
