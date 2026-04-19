@@ -91,6 +91,7 @@ type BlockType =
   | 'prompt' | 'checklist' | 'scale' | 'multiple_choice' | 'yes_no' | 'mood' | 'date_picker' | 'time_input' | 'list_input'
   | 'likert' | 'numeric' | 'slider' | 'matrix_rating'
   | 'video_response' | 'audio_response' | 'file_response'
+  | 'pdf_document' | 'matching_pairs' | 'flashcard' | 'fill_blank' | 'ordering'
   | 'video' | 'file' // Legacy types
 
 interface MediaFile {
@@ -2357,6 +2358,36 @@ function CreateWorksheetContent() {
               <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">{locale === 'fr' ? 'Télécharger un fichier' : 'Upload a file'}</p>
             </div>
+          </div>
+        )}
+
+        {/* PDF Document */}
+        {block.type === 'pdf_document' && (
+          <div className="space-y-3">
+            <label className="block text-gray-900 font-medium">
+              {block.content || (locale === 'fr' ? 'Document original' : 'Original document')}
+            </label>
+            {(block as any).mediaFile ? (
+              <a
+                href={(block as any).mediaFile}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{(block as any).fileName || 'document.pdf'}</p>
+                  <p className="text-xs text-gray-500">{locale === 'fr' ? 'Cliquer pour ouvrir le PDF' : 'Click to open PDF'}</p>
+                </div>
+                <ExternalLink className="w-4 h-4 text-gray-400" />
+              </a>
+            ) : (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                <p className="text-sm text-gray-400">{locale === 'fr' ? 'PDF non disponible' : 'PDF not available'}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
