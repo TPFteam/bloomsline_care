@@ -542,11 +542,12 @@ function CreateWorksheetContent() {
 
       // Upload the original PDF to storage so patients can view it
       let pdfUrl = ''
-      try {
-        const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
-        const sb = createBrowserClient()
-        const { data: { user: authUser } } = await sb.auth.getUser()
-        if (authUser) {
+      const { createClient: createBrowserClient } = await import('@/lib/supabase/browser-client')
+      const sb = createBrowserClient()
+      const { data: { user: authUser } } = await sb.auth.getUser()
+
+      if (authUser) {
+        try {
           const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '-')
           const path = `${authUser.id}/pdf-imports/${Date.now()}-${sanitizedName}`
           const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, file)
@@ -554,37 +555,28 @@ function CreateWorksheetContent() {
             const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
             pdfUrl = urlData.publicUrl
           }
+        } catch (uploadErr) {
+          console.warn('[pdf-import] Could not upload PDF to storage:', uploadErr)
         }
-      } catch (uploadErr) {
-        console.warn('[pdf-import] Could not upload PDF to storage:', uploadErr)
       }
 
-      // Populate builder
+      // Populate title/description
       if (data.title && !title) setTitle(data.title)
       if (data.description && !description) setDescription(data.description)
 
-      // Create PDF document block as the first block
-      const pdfBlock: WorksheetBlock = {
-        id: `pdf-doc-${Date.now()}`,
+      // Helper: create a PDF document block for a page range
+      const makePdfBlock = (pageNums: number[], label: string): any => ({
+        id: `pdf-${Date.now()}-${pageNums[0]}`,
         type: 'pdf_document' as any,
-        content: locale === 'fr' ? 'Document original' : 'Original document',
+        content: label,
         mediaFile: pdfUrl,
         fileName: file.name,
-      } as any
+        pageRange: pageNums, // stored for display: "Pages 1-3"
+      })
 
-      if (data.noQuestions || !data.blocks || data.blocks.length === 0) {
-        // No questions found — upload as reading material only
-        if (pdfUrl) {
-          setBlocks(prev => [...prev, pdfBlock])
-          setResourceMode('reading')
-        }
-        toast.info(
-          locale === 'fr'
-            ? 'Aucune question trouvée — PDF ajouté en tant que document de lecture'
-            : 'No fillable questions found — PDF added as a reading document'
-        )
-      } else {
-        const newBlocks: WorksheetBlock[] = data.blocks.map((b: any) => ({
+      // Helper: convert API blocks to worksheet blocks
+      const toWorksheetBlocks = (apiBlocks: any[]): WorksheetBlock[] =>
+        apiBlocks.map((b: any) => ({
           id: b.id || `imported-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: b.type,
           content: b.content || '',
@@ -601,13 +593,50 @@ function CreateWorksheetContent() {
           author: b.author,
         }))
 
-        // PDF document first, then extracted question blocks
-        setBlocks(prev => [...prev, ...(pdfUrl ? [pdfBlock] : []), ...newBlocks])
-        setResourceMode('interactive')
+      const sections = data.sections || []
+
+      if (data.noQuestions || sections.length === 0) {
+        // No questions found — add full PDF as reading material
+        if (pdfUrl) {
+          const fullPdfBlock = makePdfBlock(
+            Array.from({ length: numPages }, (_, i) => i + 1),
+            locale === 'fr' ? 'Document original' : 'Original document'
+          )
+          setBlocks(prev => [...prev, fullPdfBlock])
+          setResourceMode('reading')
+        }
+        toast.info(
+          locale === 'fr'
+            ? 'Aucune question trouvée — PDF ajouté en tant que document de lecture'
+            : 'No fillable questions found — PDF added as a reading document'
+        )
+      } else {
+        // Build interleaved blocks from sections
+        const interleavedBlocks: WorksheetBlock[] = []
+        let totalQuestions = 0
+
+        for (const section of sections) {
+          if (section.type === 'reading' && section.pages?.length > 0 && pdfUrl) {
+            const pageNums = section.pages as number[]
+            const label = section.label || (
+              pageNums.length === 1
+                ? `Page ${pageNums[0]}`
+                : `Pages ${pageNums[0]}-${pageNums[pageNums.length - 1]}`
+            )
+            interleavedBlocks.push(makePdfBlock(pageNums, label) as any)
+          } else if (section.type === 'questions' && section.blocks?.length > 0) {
+            const questionBlocks = toWorksheetBlocks(section.blocks)
+            totalQuestions += questionBlocks.length
+            interleavedBlocks.push(...questionBlocks)
+          }
+        }
+
+        setBlocks(prev => [...prev, ...interleavedBlocks])
+        setResourceMode(totalQuestions > 0 ? 'interactive' : 'reading')
         toast.success(
           locale === 'fr'
-            ? `${newBlocks.length} questions extraites du PDF`
-            : `${newBlocks.length} questions extracted from PDF`
+            ? `${totalQuestions} questions extraites du PDF`
+            : `${totalQuestions} questions extracted from PDF`
         )
       }
     } catch (err) {
@@ -737,6 +766,15 @@ function CreateWorksheetContent() {
     }
   }, [editId, templateParam])
 
+  // Auto-trigger PDF import if import=pdf param (once only)
+  const pdfImportTriggered = useRef(false)
+  useEffect(() => {
+    if (searchParams.get('import') === 'pdf' && pdfInputRef.current && !pdfImportTriggered.current) {
+      pdfImportTriggered.current = true
+      setTimeout(() => pdfInputRef.current?.click(), 300)
+    }
+  }, [searchParams])
+
   // Load existing resource for edit mode
   useEffect(() => {
     async function loadResource() {
@@ -819,6 +857,14 @@ function CreateWorksheetContent() {
               responseMaxDuration: block.responseMaxDuration,
               responseAcceptedTypes: block.responseAcceptedTypes,
               responseHint: block.responseHint,
+              // PDF document fields
+              fileName: block.fileName,
+              pageRange: block.pageRange,
+              // Interactive block fields
+              pairs: block.pairs,
+              cards: block.cards,
+              sentence: block.sentence,
+              blanks: block.blanks,
               // Scoring fields
               scaleLabels: block.scaleLabels,
               scaleRange: block.scaleRange,
@@ -902,7 +948,7 @@ function CreateWorksheetContent() {
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
     // Navigate back to resource creation page
-    router.push(templateParam ? '/dashboard' : '/resources/create')
+    router.push('/resources/create')
   }
 
   // Default mood options - nature/wellness themed
@@ -1434,7 +1480,7 @@ function CreateWorksheetContent() {
 
         // PDF document
         if (block.type === 'pdf_document') {
-          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName } as ResourceBlock
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange } as ResourceBlock
         }
 
         // Interactive blocks — preserve all custom properties
@@ -1612,7 +1658,7 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'time_input' as const, required: block.required }
         }
         if (block.type === 'pdf_document') {
-          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName } as ResourceBlock
+          return { ...baseBlock, mediaFile: (block as any).mediaFile, fileName: (block as any).fileName, pageRange: (block as any).pageRange } as ResourceBlock
         }
         if (block.type === 'matching_pairs') {
           return { ...baseBlock, pairs: (block as any).pairs, required: block.required } as ResourceBlock
@@ -2433,7 +2479,11 @@ function CreateWorksheetContent() {
             </label>
             {(block as any).mediaFile ? (
               <button
-                onClick={() => setPdfViewerUrl((block as any).mediaFile)}
+                onClick={() => {
+                          const url = (block as any).mediaFile
+                          const pr = (block as any).pageRange as number[] | undefined
+                          setPdfViewerUrl(url && pr?.length ? `${url}#page=${pr[0]}` : url)
+                        }}
                 className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
               >
                 <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -3375,6 +3425,46 @@ function CreateWorksheetContent() {
                     </div>
                   </>
                 )}
+
+                {/* PDF Document Block */}
+                {block.type === 'pdf_document' && (() => {
+                  const pageRange = (block as any).pageRange as number[] | undefined
+                  const pageLabel = pageRange && pageRange.length > 0
+                    ? (pageRange.length === 1
+                        ? `Page ${pageRange[0]}`
+                        : `Pages ${pageRange[0]}–${pageRange[pageRange.length - 1]}`)
+                    : null
+                  return (
+                    <div className="space-y-3">
+                      {(block as any).mediaFile ? (
+                        <button
+                          onClick={() => {
+                          const url = (block as any).mediaFile
+                          const pr = (block as any).pageRange as number[] | undefined
+                          setPdfViewerUrl(url && pr?.length ? `${url}#page=${pr[0]}` : url)
+                        }}
+                          className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-red-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{(block as any).fileName || 'document.pdf'}</p>
+                            <p className="text-xs text-gray-500">
+                              {pageLabel && <span className="font-medium">{pageLabel} · </span>}
+                              {locale === 'fr' ? 'Cliquer pour ouvrir' : 'Click to open'}
+                            </p>
+                          </div>
+                          <Eye className="w-4 h-4 text-gray-400" />
+                        </button>
+                      ) : (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                          <p className="text-sm text-gray-400">{locale === 'fr' ? 'PDF non disponible' : 'PDF not available'}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Divider Block */}
                 {block.type === 'divider' && (
@@ -4574,24 +4664,155 @@ function CreateWorksheetContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              {/* PDF Converting overlay — fun animated loading */}
+              {isImportingPdf && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-24 relative overflow-hidden"
+                >
+                  {/* Floating background shapes */}
+                  {[
+                    { size: 'w-64 h-64', color: 'bg-teal-100/40', x: [-120, 120], y: [0, -30], duration: 8, left: '-5%', top: '10%' },
+                    { size: 'w-48 h-48', color: 'bg-rose-100/30', x: [80, -80], y: [-20, 20], duration: 10, left: '70%', top: '5%' },
+                    { size: 'w-32 h-32', color: 'bg-amber-100/40', x: [-60, 60], y: [10, -10], duration: 7, left: '20%', top: '60%' },
+                    { size: 'w-40 h-40', color: 'bg-violet-100/30', x: [50, -50], y: [-15, 15], duration: 9, left: '80%', top: '50%' },
+                    { size: 'w-24 h-24', color: 'bg-sky-100/40', x: [-40, 40], y: [5, -5], duration: 6, left: '45%', top: '70%' },
+                  ].map((shape, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ x: shape.x, y: shape.y }}
+                      transition={{ duration: shape.duration, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                      className={`absolute ${shape.size} ${shape.color} rounded-full blur-2xl`}
+                      style={{ left: shape.left, top: shape.top }}
+                    />
+                  ))}
+
+                  {/* Center content */}
+                  <div className="relative z-10 flex flex-col items-center">
+                    {/* Animated icon cluster */}
+                    <div className="relative w-32 h-32 mb-8">
+                      {/* Orbiting elements */}
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-0"
+                      >
+                        <motion.div
+                          animate={{ scale: [0.8, 1.1, 0.8] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center"
+                        >
+                          <span className="text-sm">📄</span>
+                        </motion.div>
+                      </motion.div>
+
+                      <motion.div
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-2"
+                      >
+                        <motion.div
+                          animate={{ scale: [1, 0.8, 1] }}
+                          transition={{ duration: 2.5, repeat: Infinity }}
+                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-7 h-7 bg-white rounded-xl shadow-md flex items-center justify-center"
+                        >
+                          <span className="text-xs">✨</span>
+                        </motion.div>
+                      </motion.div>
+
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-1"
+                      >
+                        <motion.div
+                          animate={{ scale: [0.9, 1.2, 0.9] }}
+                          transition={{ duration: 3, repeat: Infinity }}
+                          className="absolute top-1/2 -right-2 -translate-y-1/2 w-7 h-7 bg-white rounded-xl shadow-md flex items-center justify-center"
+                        >
+                          <span className="text-xs">🔍</span>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Center icon */}
+                      <motion.div
+                        animate={{ scale: [1, 1.08, 1], rotate: [0, 3, -3, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                        className="absolute inset-0 m-auto w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/50"
+                      >
+                        <FileText className="w-8 h-8 text-white" />
+                      </motion.div>
+                    </div>
+
+                    {/* Text */}
+                    <motion.h3
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-xl font-bold text-gray-900 mb-2"
+                    >
+                      {locale === 'fr' ? 'Bloom lit votre PDF...' : 'Bloom is reading your PDF...'}
+                    </motion.h3>
+
+                    {/* Rotating fun messages */}
+                    <div className="h-10 flex items-center">
+                      {[
+                        locale === 'fr' ? 'Recherche des questions...' : 'Looking for questions...',
+                        locale === 'fr' ? 'Lecture des pages...' : 'Scanning the pages...',
+                        locale === 'fr' ? 'Structuration du contenu...' : 'Structuring the content...',
+                        locale === 'fr' ? 'Presque terminé...' : 'Almost there...',
+                      ].map((msg, i) => (
+                        <motion.p
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{
+                            opacity: [0, 0, 1, 1, 0, 0],
+                            y: [10, 10, 0, 0, -10, -10],
+                          }}
+                          transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            delay: i * 2,
+                            times: [0, 0.05, 0.1, 0.85, 0.95, 1],
+                          }}
+                          className="absolute text-sm text-gray-400"
+                        >
+                          {msg}
+                        </motion.p>
+                      ))}
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-48 h-1.5 bg-gray-100 rounded-full mt-6 overflow-hidden">
+                      <motion.div
+                        animate={{ x: ['-100%', '100%'] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                        className="w-1/2 h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Regular builder content — hidden during import */}
+              {!isImportingPdf && <>
               {/* Header */}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-6"
               >
-                <Link href={templateParam ? '/dashboard' : '/resources/create'}>
-                  <motion.div whileHover={{ x: -4 }} className="inline-block">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-xl hover:bg-white/80"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      {locale === 'fr' ? 'Retour' : 'Back'}
-                    </Button>
-                  </motion.div>
-                </Link>
+                <motion.div whileHover={{ x: -4 }} className="inline-block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-xl hover:bg-white/80"
+                    onClick={() => router.push('/resources/create')}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    {locale === 'fr' ? 'Retour' : 'Back'}
+                  </Button>
+                </motion.div>
                 <div className="flex items-center gap-2">
                   {/* Auto-save Status Indicator */}
                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
@@ -4806,17 +5027,19 @@ function CreateWorksheetContent() {
                             <Plus className="w-5 h-5" />
                             {locale === 'fr' ? 'Ajouter une étape' : 'Add a block'}
                           </button>
-                          <button
-                            onClick={() => pdfInputRef.current?.click()}
-                            disabled={isImportingPdf}
-                            className="py-4 px-6 border-2 border-dashed border-teal-300 rounded-xl text-teal-600 hover:border-teal-400 hover:bg-teal-50/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {isImportingPdf ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" />{locale === 'fr' ? 'Conversion...' : 'Converting...'}</>
-                            ) : (
-                              <><FileUp className="w-4 h-4" />{locale === 'fr' ? 'Importer PDF' : 'Import PDF'}</>
-                            )}
-                          </button>
+                          {!blocks.some(b => b.type === 'pdf_document') && (
+                            <button
+                              onClick={() => pdfInputRef.current?.click()}
+                              disabled={isImportingPdf}
+                              className="py-4 px-6 border-2 border-dashed border-teal-300 rounded-xl text-teal-600 hover:border-teal-400 hover:bg-teal-50/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              {isImportingPdf ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" />{locale === 'fr' ? 'Conversion...' : 'Converting...'}</>
+                              ) : (
+                                <><FileUp className="w-4 h-4" />{locale === 'fr' ? 'Importer PDF' : 'Import PDF'}</>
+                              )}
+                            </button>
+                          )}
                           <input
                             ref={pdfInputRef}
                             type="file"
@@ -5236,6 +5459,7 @@ function CreateWorksheetContent() {
                   </motion.div>
                 </div>
               </div>
+              </>}
             </motion.div>
           )}
 
@@ -5989,30 +6213,51 @@ function CreateWorksheetContent() {
 
       {/* PDF Import Setup Dialog — simplified */}
       {showPdfSetup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {locale === 'fr' ? 'Importer un PDF' : 'Import PDF'}
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {pdfFile?.name}
-            </p>
-
-            <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 mb-5">
-              <FileText className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
-                {locale === 'fr' ? 'Langue détectée :' : 'Language detected:'}{' '}
-                <span className="font-medium text-gray-900">{pdfDetectedLang === 'fr' ? 'Français' : 'English'}</span>
-              </span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header with PDF icon */}
+            <div className="p-6 pb-0">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-6 h-6 text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Importer un PDF' : 'Import PDF'}
+                  </h3>
+                  <p className="text-sm text-gray-500 truncate mt-0.5" title={pdfFile?.name}>
+                    {pdfFile?.name}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <p className="text-xs text-gray-400 mb-5 leading-relaxed">
-              {locale === 'fr'
-                ? 'Bloom va analyser votre document et extraire les questions telles qu\'elles apparaissent. Si aucune question n\'est trouvée, le PDF sera ajouté en tant que document de lecture.'
-                : 'Bloom will analyze your document and extract questions exactly as they appear. If no questions are found, the PDF will be added as a reading document.'}
-            </p>
+            <div className="p-6 space-y-4">
+              {/* Language detected */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                <span className="text-sm text-gray-600">
+                  {locale === 'fr' ? 'Langue détectée' : 'Language detected'}
+                </span>
+                <span className="text-sm font-semibold text-gray-900 bg-white px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                  {pdfDetectedLang === 'fr' ? 'Français' : 'English'}
+                </span>
+              </div>
 
-            <div className="flex gap-3">
+              {/* Info text */}
+              <p className="text-xs text-gray-400 leading-relaxed">
+                {locale === 'fr'
+                  ? 'Bloom va analyser votre document et extraire les questions telles qu\'elles apparaissent. Si aucune question n\'est trouvée, le PDF sera ajouté en tant que document de lecture.'
+                  : 'Bloom will analyze your document and extract questions exactly as they appear. If no questions are found, the PDF will be added as a reading document.'}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 pb-6">
               <button
                 onClick={() => { setShowPdfSetup(false); setPdfFile(null) }}
                 className="flex-1 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
@@ -6021,12 +6266,12 @@ function CreateWorksheetContent() {
               </button>
               <button
                 onClick={handlePdfImport}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
               >
-                {locale === 'fr' ? 'Convertir' : 'Convert'} →
+                {locale === 'fr' ? 'Convertir' : 'Convert'} &rarr;
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

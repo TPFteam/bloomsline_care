@@ -327,6 +327,7 @@ export default function ResourceDetailPage() {
   const [savingNotes, setSavingNotes] = useState(false)
   const [copied, setCopied] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [pdfViewer, setPdfViewer] = useState<{ url: string; fileName?: string } | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [members, setMembers] = useState<SimpleMember[]>([])
   const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string; member_ids: string[] }[]>([])
@@ -1248,7 +1249,7 @@ export default function ResourceDetailPage() {
                     let questionNumber = 0
                     let infoNumber = 0
                     const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response']
-                    const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider']
+                    const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider', 'pdf_document']
 
                     // Question type labels for display
                     const typeLabels: Record<string, Record<string, string>> = {
@@ -1279,6 +1280,7 @@ export default function ResourceDetailPage() {
                       affirmation: { en: 'Affirm', fr: 'Affirm.' },
                       image: { en: 'Image', fr: 'Image' },
                       divider: { en: 'Line', fr: 'Ligne' },
+                      pdf_document: { en: 'PDF', fr: 'PDF' },
                     }
 
                     return resource.blocks.map((block, index) => {
@@ -1374,6 +1376,39 @@ export default function ResourceDetailPage() {
                               <p className="text-sm text-gray-600 mt-3 max-w-md">{(block as any).mediaCaption}</p>
                             )}
                           </div>
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'pdf_document') {
+                      const pdfUrl = (block as any).mediaFile || (block as any).pdfUrl || (block as any).url || ''
+                      const pdfFileName = (block as any).fileName || (block as any).pdfFileName || ''
+                      const pageRange = (block as any).pageRange as number[] | undefined
+                      const pageLabel = pageRange && pageRange.length > 0
+                        ? (pageRange.length === 1 ? `Page ${pageRange[0]}` : `Pages ${pageRange[0]}–${pageRange[pageRange.length - 1]}`)
+                        : null
+                      return (
+                        <div key={blockId}>
+                          {blockContent && <p className="text-gray-900 font-medium mb-2">{blockContent}</p>}
+                          <button
+                            onClick={() => {
+                              const viewUrl = pdfUrl && pageRange?.length ? `${pdfUrl}#page=${pageRange[0]}` : pdfUrl
+                              viewUrl && setPdfViewer({ url: viewUrl, fileName: pdfFileName })
+                            }}
+                            className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                              <FileText className="w-5 h-5 text-red-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{pdfFileName || 'document.pdf'}</p>
+                              <p className="text-xs text-gray-500">
+                                {pageLabel && <span className="font-medium">{pageLabel} · </span>}
+                                {locale === 'fr' ? 'Cliquer pour ouvrir' : 'Click to open'}
+                              </p>
+                            </div>
+                            <Eye className="w-4 h-4 text-gray-400" />
+                          </button>
                         </div>
                       )
                     }
@@ -1933,6 +1968,40 @@ export default function ResourceDetailPage() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+                        )
+                      }
+
+                      // PDF Document
+                      if (blockType === 'pdf_document') {
+                        const pdfUrl = (block as any).mediaFile || (block as any).pdfUrl || (block as any).url || ''
+                        const pdfFileName = (block as any).fileName || (block as any).pdfFileName || ''
+                        const pageRange = (block as any).pageRange as number[] | undefined
+                        const pageLabel = pageRange && pageRange.length > 0
+                          ? (pageRange.length === 1 ? `Page ${pageRange[0]}` : `Pages ${pageRange[0]}–${pageRange[pageRange.length - 1]}`)
+                          : null
+                        return (
+                          <div key={blockId}>
+                            {blockContent && <p className="text-[15px] font-semibold text-[#1A1A1A] mb-2">{blockContent}</p>}
+                            <button
+                              onClick={() => {
+                              const viewUrl = pdfUrl && pageRange?.length ? `${pdfUrl}#page=${pageRange[0]}` : pdfUrl
+                              viewUrl && setPdfViewer({ url: viewUrl, fileName: pdfFileName })
+                            }}
+                              className="w-full flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors text-left"
+                            >
+                              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-5 h-5 text-red-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{pdfFileName || 'document.pdf'}</p>
+                                <p className="text-xs text-gray-500">
+                                  {pageLabel && <span className="font-medium">{pageLabel} · </span>}
+                                  {locale === 'fr' ? 'Cliquer pour ouvrir' : 'Click to open'}
+                                </p>
+                              </div>
+                              <Eye className="w-4 h-4 text-gray-400" />
+                            </button>
                           </div>
                         )
                       }
@@ -3157,6 +3226,34 @@ export default function ResourceDetailPage() {
           />
         )}
       </main>
+
+      {/* PDF viewer overlay */}
+      {pdfViewer && (
+        <div className="fixed inset-0 z-[9999] bg-black/85 flex flex-col items-center justify-center">
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-3 bg-black/60 z-10">
+            <p className="text-sm font-medium text-white truncate">{pdfViewer.fileName || 'PDF Document'}</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.open(pdfViewer.url, '_blank')}
+                className="p-2 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={() => setPdfViewer(null)}
+                className="p-2 rounded-lg bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+          <iframe
+            src={pdfViewer.url}
+            className="w-[90%] h-[85%] border-0 rounded-xl mt-12 bg-white"
+            title={pdfViewer.fileName || 'PDF Document'}
+          />
+        </div>
+      )}
 
       {/* Lightbox modal */}
       {lightbox && (
