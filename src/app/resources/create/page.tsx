@@ -123,17 +123,17 @@ export default function CreateResourcePage() {
               </span>
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="text-gray-500">
-              {locale === 'fr' ? 'Commencez avec un modèle, partez de zéro, ou importez un PDF' : 'Start with a template, from scratch, or import a PDF'}
+              {locale === 'fr' ? 'Commencez avec un modèle ou partez de zéro' : 'Start with a template or from scratch'}
             </motion.p>
           </div>
 
-          {/* Quick actions: Start from scratch + Import PDF */}
-          <div className="flex gap-4 mb-10">
+          {/* Quick action: Start from scratch */}
+          <div className="mb-10">
             <motion.button
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={() => router.push('/resources/create/worksheet?template=blank')}
-              className="flex-1 flex items-center gap-4 p-5 bg-white border-2 border-gray-100 rounded-2xl hover:border-teal-300 hover:shadow-lg transition-all text-left group"
+              className="w-full flex items-center gap-4 p-5 bg-white border-2 border-gray-100 rounded-2xl hover:border-teal-300 hover:shadow-lg transition-all text-left group"
               whileHover={{ y: -2 }}
             >
               <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center group-hover:bg-teal-100 transition-colors">
@@ -144,24 +144,6 @@ export default function CreateResourcePage() {
                 <p className="text-sm text-gray-500">{locale === 'fr' ? 'Créez votre propre support' : 'Build your own resource'}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-teal-500 ml-auto transition-colors" />
-            </motion.button>
-
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              onClick={() => router.push('/resources/create/worksheet?importPdf=true')}
-              className="flex-1 flex items-center gap-4 p-5 bg-white border-2 border-gray-100 rounded-2xl hover:border-teal-300 hover:shadow-lg transition-all text-left group"
-              whileHover={{ y: -2 }}
-            >
-              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                <FileUp className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{locale === 'fr' ? 'Importer un PDF' : 'Import a PDF'}</h3>
-                <p className="text-sm text-gray-500">{locale === 'fr' ? 'Bloom convertit votre document' : 'Bloom converts your document'}</p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-amber-500 ml-auto transition-colors" />
             </motion.button>
           </div>
 
