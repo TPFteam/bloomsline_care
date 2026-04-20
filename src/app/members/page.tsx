@@ -586,6 +586,7 @@ export default function MembersPage() {
   // Bulk invite with progress
   const [bulkInviteProgress, setBulkInviteProgress] = useState<{ total: number; sent: number; skipped: number } | null>(null)
   const [bulkInviteConfirm, setBulkInviteConfirm] = useState<{ toInvite: number; alreadyInvited: number } | null>(null)
+  const [bulkResendInvites, setBulkResendInvites] = useState(false)
 
   const handleBulkInvite = () => {
     if (selectedIds.size === 0) return
@@ -598,18 +599,16 @@ export default function MembersPage() {
     const toInvite = selectedMembers.filter(m => !(m as any).invitation_sent)
     const alreadyInvited = selectedMembers.length - toInvite.length
 
-    if (toInvite.length === 0) {
-      toast.info(locale === 'fr' ? 'Tous les membres sélectionnés ont déjà été invités' : 'All selected members have already been invited')
-      return
-    }
-
+    setBulkResendInvites(false)
     setBulkInviteConfirm({ toInvite: toInvite.length, alreadyInvited })
   }
 
   const executeBulkInvite = async () => {
     setBulkInviteConfirm(null)
-    const selectedMembers = members.filter(m => selectedIds.has(m.id) && m.email && !(m as any).invitation_sent)
-    const alreadyInvited = members.filter(m => selectedIds.has(m.id) && (m as any).invitation_sent).length
+    const selectedMembers = bulkResendInvites
+      ? members.filter(m => selectedIds.has(m.id) && m.email)
+      : members.filter(m => selectedIds.has(m.id) && m.email && !(m as any).invitation_sent)
+    const alreadyInvited = bulkResendInvites ? 0 : members.filter(m => selectedIds.has(m.id) && (m as any).invitation_sent).length
 
     setBulkInviteProgress({ total: selectedMembers.length, sent: 0, skipped: alreadyInvited })
 
@@ -1592,12 +1591,6 @@ export default function MembersPage() {
                   <Upload className="w-4 h-4" />
                 </Button> */}
 
-                <TutorialVideo
-                  url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Inviter%20un%20patient%20a%20une%20seance%20(google%20calendar%20synchronise).mov"
-                  title={locale === 'fr' ? 'Inviter un patient à une séance (Google Calendar synchronisé)' : 'Invite a patient to a session (Google Calendar synced)'}
-                  size="md"
-                />
-
                 {/* Add Member / Group Button */}
                 <Button
                   onClick={() => showGroupsView ? openGroupModal() : setShowAddModal(true)}
@@ -1608,6 +1601,12 @@ export default function MembersPage() {
                     ? (locale === 'fr' ? 'Nouveau groupe' : locale === 'es' ? 'Nuevo grupo' : 'New Group')
                     : t.members.actions.addMember}
                 </Button>
+
+                <TutorialVideo
+                  url="https://sfzlbjdjqbzxruwzebjc.supabase.co/storage/v1/object/public/tutorials/short-video-demo-practitioners-app/Inviter%20un%20patient%20a%20une%20seance%20(google%20calendar%20synchronise).mov"
+                  title={locale === 'fr' ? 'Inviter un patient à une séance (Google Calendar synchronisé)' : 'Invite a patient to a session (Google Calendar synced)'}
+                  size="md"
+                />
               </div>
             </div>
           </motion.div>
@@ -1977,38 +1976,6 @@ export default function MembersPage() {
               })}
             </div>
           ) : (<>
-            {/* Select all row */}
-            {selectionMode && (
-              <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-xl bg-gray-50 border border-gray-200">
-                <button
-                  onClick={() => {
-                    const allOnPage = paginatedMembers.map(m => m.id)
-                    const allSelected = allOnPage.every(id => selectedIds.has(id))
-                    if (allSelected) {
-                      deselectAll()
-                    } else {
-                      setSelectedIds(new Set([...selectedIds, ...allOnPage]))
-                    }
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  {paginatedMembers.every(m => selectedIds.has(m.id)) ? (
-                    <CheckSquare className="w-5 h-5 text-gray-900" />
-                  ) : (
-                    <Square className="w-5 h-5 text-gray-400" />
-                  )}
-                  <span className="text-sm font-medium text-gray-700">
-                    {locale === 'fr' ? 'Tout sélectionner' : 'Select all'}
-                  </span>
-                </button>
-                {selectedIds.size > 0 && (
-                  <span className="text-xs text-gray-400 ml-auto">
-                    {selectedIds.size} {locale === 'fr' ? 'sélectionné(s)' : 'selected'}
-                  </span>
-                )}
-              </div>
-            )}
-
             <div className={
               viewMode === 'grid'
                 ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5'
@@ -2134,15 +2101,28 @@ export default function MembersPage() {
 
             <p className="text-sm text-gray-600 mb-1">
               {locale === 'fr'
-                ? `${bulkInviteConfirm.toInvite} invitation(s) seront envoyée(s).`
-                : `${bulkInviteConfirm.toInvite} invitation(s) will be sent.`}
+                ? `${bulkResendInvites ? bulkInviteConfirm.toInvite + bulkInviteConfirm.alreadyInvited : bulkInviteConfirm.toInvite} invitation(s) seront envoyée(s).`
+                : `${bulkResendInvites ? bulkInviteConfirm.toInvite + bulkInviteConfirm.alreadyInvited : bulkInviteConfirm.toInvite} invitation(s) will be sent.`}
             </p>
             {bulkInviteConfirm.alreadyInvited > 0 && (
-              <p className="text-xs text-gray-400 mb-4">
-                {locale === 'fr'
-                  ? `${bulkInviteConfirm.alreadyInvited} déjà invité(s), ignoré(s)`
-                  : `${bulkInviteConfirm.alreadyInvited} already invited, will be skipped`}
-              </p>
+              <div className="flex items-center justify-between mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <div>
+                  <p className="text-sm font-medium text-amber-800">
+                    {locale === 'fr'
+                      ? `${bulkInviteConfirm.alreadyInvited} déjà invité(s)`
+                      : `${bulkInviteConfirm.alreadyInvited} already invited`}
+                  </p>
+                  <p className="text-xs text-amber-600">
+                    {locale === 'fr' ? 'Renvoyer l\'invitation ?' : 'Resend invitation?'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setBulkResendInvites(!bulkResendInvites)}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${bulkResendInvites ? 'bg-teal-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${bulkResendInvites ? 'left-5' : 'left-1'}`} />
+                </button>
+              </div>
             )}
 
             <div className="flex gap-3 mt-5">
@@ -2189,7 +2169,7 @@ export default function MembersPage() {
 
       {/* Floating bulk action bar */}
       <AnimatePresence>
-        {selectionMode && selectedIds.size > 0 && (
+        {selectionMode && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2223,18 +2203,6 @@ export default function MembersPage() {
               >
                 <Send className="w-3.5 h-3.5" />
                 {locale === 'fr' ? 'Inviter' : 'Invite'}
-              </button>
-              <button
-                onClick={() => handleBulkStatusChange('active')}
-                className="px-3 py-1.5 text-xs font-medium bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              >
-                {locale === 'fr' ? 'Activer' : 'Activate'}
-              </button>
-              <button
-                onClick={() => handleBulkStatusChange('inactive')}
-                className="px-3 py-1.5 text-xs font-medium bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              >
-                {locale === 'fr' ? 'Désactiver' : 'Deactivate'}
               </button>
               <button
                 onClick={handleBulkDelete}
@@ -3330,8 +3298,8 @@ function MemberCard({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
       onClick={() => selectionMode ? onToggleSelect?.(member.id) : router.push(`/members/${member.id}`)}
-      className={`group bg-white rounded-2xl p-5 cursor-pointer transition-all border-2 ${
-        isSelected ? 'border-gray-900 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
+      className={`group bg-white rounded-2xl p-5 cursor-pointer transition-all border ${
+        isSelected ? 'border-teal-400 bg-teal-50/40' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
       }`}
     >
       {/* Header with Avatar & Name */}
@@ -3340,7 +3308,7 @@ function MemberCard({
         {selectionMode && (
           <div className="flex-shrink-0">
             {isSelected ? (
-              <CheckSquare className="w-5 h-5 text-gray-900" />
+              <CheckSquare className="w-5 h-5 text-teal-500" />
             ) : (
               <Square className="w-5 h-5 text-gray-300" />
             )}
@@ -3523,15 +3491,15 @@ function MemberListItem({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
       onClick={() => selectionMode ? onToggleSelect?.(member.id) : router.push(`/members/${member.id}`)}
-      className={`group bg-white rounded-xl p-4 cursor-pointer transition-all border-2 flex items-center gap-4 ${
-        isSelected ? 'border-gray-900 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+      className={`group bg-white rounded-xl p-4 cursor-pointer transition-all border flex items-center gap-4 ${
+        isSelected ? 'border-teal-400 bg-teal-50/40' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
       }`}
     >
       {/* Selection checkbox */}
       {selectionMode && (
         <div className="flex-shrink-0">
           {isSelected ? (
-            <CheckSquare className="w-5 h-5 text-gray-900" />
+            <CheckSquare className="w-5 h-5 text-teal-500" />
           ) : (
             <Square className="w-5 h-5 text-gray-300" />
           )}
