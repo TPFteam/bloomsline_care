@@ -585,8 +585,9 @@ export default function MembersPage() {
 
   // Bulk invite with progress
   const [bulkInviteProgress, setBulkInviteProgress] = useState<{ total: number; sent: number; skipped: number } | null>(null)
+  const [bulkInviteConfirm, setBulkInviteConfirm] = useState<{ toInvite: number; alreadyInvited: number } | null>(null)
 
-  const handleBulkInvite = async () => {
+  const handleBulkInvite = () => {
     if (selectedIds.size === 0) return
     const selectedMembers = members.filter(m => selectedIds.has(m.id) && m.email)
     if (selectedMembers.length === 0) {
@@ -594,7 +595,6 @@ export default function MembersPage() {
       return
     }
 
-    // Skip already invited
     const toInvite = selectedMembers.filter(m => !(m as any).invitation_sent)
     const alreadyInvited = selectedMembers.length - toInvite.length
 
@@ -603,18 +603,21 @@ export default function MembersPage() {
       return
     }
 
-    const confirmMsg = locale === 'fr'
-      ? `Envoyer ${toInvite.length} invitation(s) ?${alreadyInvited > 0 ? ` (${alreadyInvited} déjà invité(s), ignoré(s))` : ''}`
-      : `Send ${toInvite.length} invitation(s)?${alreadyInvited > 0 ? ` (${alreadyInvited} already invited, skipped)` : ''}`
-    if (!confirm(confirmMsg)) return
+    setBulkInviteConfirm({ toInvite: toInvite.length, alreadyInvited })
+  }
 
-    setBulkInviteProgress({ total: toInvite.length, sent: 0, skipped: alreadyInvited })
+  const executeBulkInvite = async () => {
+    setBulkInviteConfirm(null)
+    const selectedMembers = members.filter(m => selectedIds.has(m.id) && m.email && !(m as any).invitation_sent)
+    const alreadyInvited = members.filter(m => selectedIds.has(m.id) && (m as any).invitation_sent).length
+
+    setBulkInviteProgress({ total: selectedMembers.length, sent: 0, skipped: alreadyInvited })
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       let sent = 0
-      for (let i = 0; i < toInvite.length; i++) {
-        const member = toInvite[i]
+      for (let i = 0; i < selectedMembers.length; i++) {
+        const member = selectedMembers[i]
         try {
           const res = await fetch('/api/members/invite', {
             method: 'POST',
@@ -623,11 +626,10 @@ export default function MembersPage() {
           })
           if (res.ok) {
             sent++
-            // Update local state
             setMembers(prev => prev.map(m => m.id === member.id ? { ...m, invitation_sent: true } as any : m))
           }
         } catch { /* continue */ }
-        setBulkInviteProgress({ total: toInvite.length, sent: i + 1, skipped: alreadyInvited })
+        setBulkInviteProgress({ total: selectedMembers.length, sent: i + 1, skipped: alreadyInvited })
       }
       setBulkInviteProgress(null)
       exitSelectionMode()
@@ -2109,6 +2111,58 @@ export default function MembersPage() {
           )}
         </div>
       </main>
+
+      {/* Bulk invite confirmation modal */}
+      {bulkInviteConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center" onClick={() => setBulkInviteConfirm(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl p-6 w-96 mx-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
+                <Send className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Envoyer les invitations' : 'Send invitations'}
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-1">
+              {locale === 'fr'
+                ? `${bulkInviteConfirm.toInvite} invitation(s) seront envoyée(s).`
+                : `${bulkInviteConfirm.toInvite} invitation(s) will be sent.`}
+            </p>
+            {bulkInviteConfirm.alreadyInvited > 0 && (
+              <p className="text-xs text-gray-400 mb-4">
+                {locale === 'fr'
+                  ? `${bulkInviteConfirm.alreadyInvited} déjà invité(s), ignoré(s)`
+                  : `${bulkInviteConfirm.alreadyInvited} already invited, will be skipped`}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setBulkInviteConfirm(null)}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={executeBulkInvite}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {locale === 'fr' ? 'Envoyer' : 'Send'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Bulk invite progress overlay */}
       {bulkInviteProgress && (
