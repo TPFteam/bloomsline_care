@@ -31,6 +31,8 @@ import {
   Lock,
   ChevronDown,
   Heart,
+  CheckSquare,
+  Square,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -165,6 +167,8 @@ export default function MembersPage() {
   const [filter, setFilter] = useState<MemberFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<MemberHubStats>({
     total_members: 0,
@@ -512,6 +516,97 @@ export default function MembersPage() {
     } catch (error) {
       console.error('Error deleting member:', error)
       toast.error(t.members.errors.deleteFailed)
+    }
+  }
+
+  // Bulk selection helpers
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAll = () => {
+    setSelectedIds(new Set(paginatedMembers.map(m => m.id)))
+  }
+
+  const deselectAll = () => {
+    setSelectedIds(new Set())
+  }
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+  }
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    const count = selectedIds.size
+    if (!confirm(locale === 'fr' ? `Supprimer ${count} membre(s) ?` : `Delete ${count} member(s)?`)) return
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      for (const id of selectedIds) {
+        await fetch(`/api/members/${id}/delete-prospect`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+      }
+      const updated = members.filter(m => !selectedIds.has(m.id))
+      setMembers(updated)
+      calculateStats(updated)
+      exitSelectionMode()
+      toast.success(locale === 'fr' ? `${count} membre(s) supprimé(s)` : `${count} member(s) deleted`)
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Failed to delete')
+    }
+  }
+
+  // Bulk invite
+  const handleBulkInvite = async () => {
+    if (selectedIds.size === 0) return
+    const selectedMembers = members.filter(m => selectedIds.has(m.id) && m.email)
+    if (selectedMembers.length === 0) {
+      toast.error(locale === 'fr' ? 'Aucun membre avec email' : 'No members with email')
+      return
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      let sent = 0
+      for (const member of selectedMembers) {
+        const res = await fetch('/api/members/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ memberId: member.id, email: member.email }),
+        })
+        if (res.ok) sent++
+      }
+      exitSelectionMode()
+      toast.success(locale === 'fr' ? `${sent} invitation(s) envoyée(s)` : `${sent} invitation(s) sent`)
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de l\'envoi' : 'Failed to send invitations')
+    }
+  }
+
+  // Bulk status change
+  const handleBulkStatusChange = async (newStatus: 'active' | 'inactive') => {
+    if (selectedIds.size === 0) return
+    try {
+      for (const id of selectedIds) {
+        await supabase.from('members').update({ status: newStatus }).eq('id', id)
+      }
+      const updated = members.map(m => selectedIds.has(m.id) ? { ...m, status: newStatus } : m)
+      setMembers(updated)
+      calculateStats(updated)
+      exitSelectionMode()
+      toast.success(locale === 'fr' ? `Statut mis à jour` : `Status updated`)
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur' : 'Failed')
     }
   }
 
@@ -1215,55 +1310,34 @@ export default function MembersPage() {
           >
             {/* Top Row: Filter Pills and Actions */}
             <div className="flex items-center justify-between gap-4">
-              {/* Filter Pills */}
+              {/* Filter Dropdown + Groups */}
               <div className="flex items-center gap-2">
-                {filterOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => { setFilter(option.value); setShowGroupsView(false) }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                      filter === option.value && !showGroupsView
-                        ? (option.accent ? 'bg-teal-600 text-white' : 'bg-gray-900 text-white')
-                        : (option.accent ? 'bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200')
-                    }`}
+                <div className="relative">
+                  <select
+                    value={showGroupsView ? '__groups__' : filter}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '__groups__') {
+                        setShowGroupsView(true)
+                      } else {
+                        setShowGroupsView(false)
+                        setFilter(val as MemberFilter)
+                      }
+                    }}
+                    className="appearance-none pl-4 pr-10 py-2 rounded-xl text-sm font-medium bg-gray-900 text-white border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400"
                   >
-                    {option.label}
-                    <span className={`px-1.5 py-0.5 rounded-md text-xs ${
-                      filter === option.value && !showGroupsView
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {option.count}
-                    </span>
-                  </button>
-                ))}
+                    {filterOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} ({option.count})
+                      </option>
+                    ))}
+                    <option value="__groups__">
+                      {locale === 'fr' ? 'Groupes' : locale === 'es' ? 'Grupos' : 'Groups'} ({memberGroups.length})
+                    </option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
+                </div>
 
-                {/* Divider */}
-                <div className="w-px h-6 bg-gray-200 mx-1" />
-
-                {/* Groups Pill */}
-                <button
-                  onClick={() => setShowGroupsView(true)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                    showGroupsView
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  {locale === 'fr' ? 'Groupes' : locale === 'es' ? 'Grupos' : 'Groups'}
-                  <span className={`px-1.5 py-0.5 rounded-md text-xs ${
-                    showGroupsView
-                      ? 'bg-white/20 text-white'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {memberGroups.length}
-                  </span>
-                </button>
-              </div>
-
-              {/* Right Side Actions */}
-              <div className="flex items-center gap-3">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1275,6 +1349,23 @@ export default function MembersPage() {
                     className="w-64 pl-10 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
                   />
                 </div>
+              </div>
+
+              {/* Right Side Actions */}
+              <div className="flex items-center gap-3">
+                {/* Select Mode Toggle */}
+                <button
+                  onClick={() => selectionMode ? exitSelectionMode() : setSelectionMode(true)}
+                  className={`px-3 py-2 text-sm font-medium rounded-xl border transition-colors ${
+                    selectionMode
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {selectionMode
+                    ? (locale === 'fr' ? 'Annuler' : 'Cancel')
+                    : (locale === 'fr' ? 'Sélectionner' : 'Select')}
+                </button>
 
                 {/* View Mode */}
                 <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1">
@@ -1718,6 +1809,9 @@ export default function MembersPage() {
                       nextSession={nextSessions[member.id] || null}
                       lastSharedResource={lastSharedResources[member.id] || null}
                       pendingWorksheet={pendingWorksheets[member.id] || null}
+                      selectionMode={selectionMode}
+                      isSelected={selectedIds.has(member.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ) : (
                     <MemberListItem
@@ -1793,6 +1887,67 @@ export default function MembersPage() {
           )}
         </div>
       </main>
+
+      {/* Floating bulk action bar */}
+      <AnimatePresence>
+        {selectionMode && selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4"
+          >
+            <div className="flex items-center gap-2 pr-4 border-r border-gray-700">
+              <span className="text-sm font-semibold">{selectedIds.size}</span>
+              <span className="text-sm text-gray-400">{locale === 'fr' ? 'sélectionné(s)' : 'selected'}</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={selectAll}
+                className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                {locale === 'fr' ? 'Tout sélectionner' : 'Select all'}
+              </button>
+              <button
+                onClick={deselectAll}
+                className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                {locale === 'fr' ? 'Désélectionner' : 'Deselect'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1 pl-2 border-l border-gray-700">
+              <button
+                onClick={handleBulkInvite}
+                className="px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-500 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {locale === 'fr' ? 'Inviter' : 'Invite'}
+              </button>
+              <button
+                onClick={() => handleBulkStatusChange('active')}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                {locale === 'fr' ? 'Activer' : 'Activate'}
+              </button>
+              <button
+                onClick={() => handleBulkStatusChange('inactive')}
+                className="px-3 py-1.5 text-xs font-medium bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              >
+                {locale === 'fr' ? 'Désactiver' : 'Deactivate'}
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-500 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Group Modal */}
       <AnimatePresence>
@@ -2840,6 +2995,9 @@ function MemberCard({
   nextSession,
   lastSharedResource,
   pendingWorksheet,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   member: Member
   index: number
@@ -2852,6 +3010,9 @@ function MemberCard({
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
   pendingWorksheet?: { title: string; daysPending: number } | null
+  selectionMode?: boolean
+  isSelected?: boolean
+  onToggleSelect?: (id: string) => void
 }) {
   const router = useRouter()
 
@@ -2870,11 +3031,23 @@ function MemberCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2, delay: index * 0.03 }}
-      onClick={() => router.push(`/members/${member.id}`)}
-      className="group bg-white rounded-2xl p-5 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-lg"
+      onClick={() => selectionMode ? onToggleSelect?.(member.id) : router.push(`/members/${member.id}`)}
+      className={`group bg-white rounded-2xl p-5 cursor-pointer transition-all border-2 ${
+        isSelected ? 'border-gray-900 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
+      }`}
     >
       {/* Header with Avatar & Name */}
       <div className="flex items-center gap-3 mb-4">
+        {/* Selection checkbox */}
+        {selectionMode && (
+          <div className="flex-shrink-0">
+            {isSelected ? (
+              <CheckSquare className="w-5 h-5 text-gray-900" />
+            ) : (
+              <Square className="w-5 h-5 text-gray-300" />
+            )}
+          </div>
+        )}
         <div className="relative">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-semibold text-lg">
             {member.avatar_url ? (
