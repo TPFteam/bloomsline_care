@@ -1153,6 +1153,20 @@ export default function MembersPage() {
     return true
   })
 
+  // Pagination
+  const MEMBERS_PER_PAGE = 20
+  const [currentPage, setCurrentPage] = useState(1)
+  const totalPages = Math.ceil(filteredMembers.length / MEMBERS_PER_PAGE)
+  const paginatedMembers = filteredMembers.slice(
+    (currentPage - 1) * MEMBERS_PER_PAGE,
+    currentPage * MEMBERS_PER_PAGE
+  )
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, searchQuery])
+
   const prospectMembers = members.filter(m => m.status === 'prospect')
   const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
     { value: 'all', label: t.members.filters.all, count: stats.total_members },
@@ -1495,7 +1509,7 @@ export default function MembersPage() {
             /* Prospect cards — prospect-status members + legacy booking prospects */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {/* Prospect members (have member records) */}
-              {filteredMembers.map((member) => {
+              {paginatedMembers.map((member) => {
                 const initials = `${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`.toUpperCase()
                 const nextSession = nextSessions[member.id]
                 // Check bookings for session info if no session record
@@ -1689,7 +1703,7 @@ export default function MembersPage() {
                 : 'flex flex-col gap-3'
             }>
               <AnimatePresence mode="popLayout">
-                {filteredMembers.map((member, index) => (
+                {paginatedMembers.map((member, index) => (
                   viewMode === 'grid' ? (
                     <MemberCard
                       key={member.id}
@@ -1722,6 +1736,57 @@ export default function MembersPage() {
                   )
                 ))}
               </AnimatePresence>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && filter !== 'new' && (
+            <div className="flex items-center justify-center gap-2 mt-8 mb-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {locale === 'fr' ? 'Précédent' : 'Previous'}
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => {
+                  // Show first, last, and pages near current
+                  if (page === 1 || page === totalPages) return true
+                  if (Math.abs(page - currentPage) <= 1) return true
+                  return false
+                })
+                .reduce((acc: (number | 'dots')[], page, i, arr) => {
+                  if (i > 0 && page - (arr[i - 1] as number) > 1) acc.push('dots')
+                  acc.push(page)
+                  return acc
+                }, [])
+                .map((item, i) =>
+                  item === 'dots' ? (
+                    <span key={`dots-${i}`} className="px-1 text-gray-400">...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setCurrentPage(item as number)}
+                      className={`w-9 h-9 text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === item
+                          ? 'bg-gray-900 text-white'
+                          : 'text-gray-600 bg-white border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {locale === 'fr' ? 'Suivant' : 'Next'}
+              </button>
             </div>
           )}
           </>
