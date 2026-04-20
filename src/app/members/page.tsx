@@ -33,6 +33,7 @@ import {
   Heart,
   CheckSquare,
   Square,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -171,6 +172,10 @@ export default function MembersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterAppStatus, setFilterAppStatus] = useState<'all' | 'joined' | 'not_joined'>('all')
+  const [filterSessions, setFilterSessions] = useState<'all' | 'upcoming' | 'had' | 'never'>('all')
+  const [filterPending, setFilterPending] = useState<'all' | 'pending' | 'none'>('all')
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<MemberHubStats>({
     total_members: 0,
@@ -539,9 +544,18 @@ export default function MembersPage() {
     setSelectedIds(new Set())
   }
 
+  const viewModeBeforeSelect = useRef<'grid' | 'list'>('grid')
+
+  const enterSelectionMode = () => {
+    viewModeBeforeSelect.current = viewMode
+    setSelectionMode(true)
+    setViewMode('list')
+  }
+
   const exitSelectionMode = () => {
     setSelectionMode(false)
     setSelectedIds(new Set())
+    setViewMode(viewModeBeforeSelect.current)
   }
 
   // Bulk delete
@@ -1247,6 +1261,19 @@ export default function MembersPage() {
       }
     }
 
+    // App status filter
+    if (filterAppStatus === 'joined' && !member.user_id) return false
+    if (filterAppStatus === 'not_joined' && member.user_id) return false
+
+    // Sessions filter
+    if (filterSessions === 'upcoming' && !nextSessions[member.id]) return false
+    if (filterSessions === 'had' && !member.last_session_at) return false
+    if (filterSessions === 'never' && member.last_session_at) return false
+
+    // Pending worksheet filter
+    if (filterPending === 'pending' && !pendingWorksheets[member.id]) return false
+    if (filterPending === 'none' && pendingWorksheets[member.id]) return false
+
     return true
   })
 
@@ -1259,10 +1286,10 @@ export default function MembersPage() {
     currentPage * MEMBERS_PER_PAGE
   )
 
-  // Reset to page 1 when filter or search changes
+  // Reset to page 1 when any filter changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [filter, searchQuery])
+  }, [filter, searchQuery, filterAppStatus, filterSessions, filterPending])
 
   const prospectMembers = members.filter(m => m.status === 'prospect')
   const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
@@ -1376,24 +1403,109 @@ export default function MembersPage() {
                     </button>
                   )}
                 </div>
+
+                {/* Select Mode Toggle — icon */}
+                <button
+                  onClick={() => selectionMode ? exitSelectionMode() : enterSelectionMode()}
+                  className={`p-2 rounded-xl border transition-colors ${
+                    selectionMode
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title={selectionMode ? (locale === 'fr' ? 'Annuler' : 'Cancel') : (locale === 'fr' ? 'Sélectionner' : 'Select')}
+                >
+                  <CheckSquare className="w-4 h-4" />
+                </button>
+
+                {/* Filter icon + popover */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`p-2 rounded-xl border transition-colors relative ${
+                      filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all'
+                        ? 'bg-teal-50 text-teal-600 border-teal-200'
+                        : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                    title={locale === 'fr' ? 'Filtres' : 'Filters'}
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {(filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" />
+                    )}
+                  </button>
+
+                  {showFilters && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setShowFilters(false)} />
+                      <div className="absolute top-full left-0 mt-2 z-40 bg-white rounded-xl border border-gray-200 shadow-xl p-4 w-64 space-y-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-semibold text-gray-900 uppercase tracking-wider">{locale === 'fr' ? 'Filtres' : 'Filters'}</p>
+                          {(filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
+                            <button
+                              onClick={() => { setFilterAppStatus('all'); setFilterSessions('all'); setFilterPending('all') }}
+                              className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                            >
+                              {locale === 'fr' ? 'Réinitialiser' : 'Reset'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* App status */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                            {locale === 'fr' ? 'Statut app' : 'App status'}
+                          </label>
+                          <select
+                            value={filterAppStatus}
+                            onChange={(e) => setFilterAppStatus(e.target.value as any)}
+                            className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            <option value="all">{locale === 'fr' ? 'Tous' : 'All'}</option>
+                            <option value="joined">{locale === 'fr' ? 'Sur l\'app' : 'Joined'}</option>
+                            <option value="not_joined">{locale === 'fr' ? 'Pas sur l\'app' : 'Not joined'}</option>
+                          </select>
+                        </div>
+
+                        {/* Sessions */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                            {locale === 'fr' ? 'Séances' : 'Sessions'}
+                          </label>
+                          <select
+                            value={filterSessions}
+                            onChange={(e) => setFilterSessions(e.target.value as any)}
+                            className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            <option value="all">{locale === 'fr' ? 'Tous' : 'All'}</option>
+                            <option value="upcoming">{locale === 'fr' ? 'Séance à venir' : 'Upcoming session'}</option>
+                            <option value="had">{locale === 'fr' ? 'A eu des séances' : 'Had sessions'}</option>
+                            <option value="never">{locale === 'fr' ? 'Aucune séance' : 'Never'}</option>
+                          </select>
+                        </div>
+
+                        {/* Pending worksheet */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                            {locale === 'fr' ? 'Exercices en attente' : 'Pending worksheets'}
+                          </label>
+                          <select
+                            value={filterPending}
+                            onChange={(e) => setFilterPending(e.target.value as any)}
+                            className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            <option value="all">{locale === 'fr' ? 'Tous' : 'All'}</option>
+                            <option value="pending">{locale === 'fr' ? 'En attente' : 'Has pending'}</option>
+                            <option value="none">{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-3">
-                {/* Select Mode Toggle */}
-                <button
-                  onClick={() => selectionMode ? exitSelectionMode() : setSelectionMode(true)}
-                  className={`px-3 py-2 text-sm font-medium rounded-xl border transition-colors ${
-                    selectionMode
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {selectionMode
-                    ? (locale === 'fr' ? 'Annuler' : 'Cancel')
-                    : (locale === 'fr' ? 'Sélectionner' : 'Select')}
-                </button>
-
                 {/* View Mode */}
                 <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1">
                   <button
@@ -1497,11 +1609,10 @@ export default function MembersPage() {
                       return (
                         <motion.div
                           key={group.id}
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ duration: 0.2, delay: index * 0.03 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
                           className="group bg-white rounded-2xl p-5 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all"
                         >
                           {/* Header */}
@@ -1853,6 +1964,9 @@ export default function MembersPage() {
                       nextSession={nextSessions[member.id] || null}
                       lastSharedResource={lastSharedResources[member.id] || null}
                       pendingWorksheet={pendingWorksheets[member.id] || null}
+                      selectionMode={selectionMode}
+                      isSelected={selectedIds.has(member.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   )
                 ))}
@@ -3053,11 +3167,10 @@ function MemberCard({
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2, delay: index * 0.03 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
       onClick={() => selectionMode ? onToggleSelect?.(member.id) : router.push(`/members/${member.id}`)}
       className={`group bg-white rounded-2xl p-5 cursor-pointer transition-all border-2 ${
         isSelected ? 'border-gray-900 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
@@ -3217,6 +3330,9 @@ function MemberListItem({
   locale,
   nextSession,
   lastSharedResource,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   member: Member
   index: number
@@ -3228,6 +3344,9 @@ function MemberListItem({
   nextSession: Session | null
   lastSharedResource: { title: string; type: string; sharedAt: string } | null
   pendingWorksheet?: { title: string; daysPending: number } | null
+  selectionMode?: boolean
+  isSelected?: boolean
+  onToggleSelect?: (id: string) => void
 }) {
   const router = useRouter()
 
@@ -3241,14 +3360,26 @@ function MemberListItem({
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15, delay: index * 0.02 }}
-      onClick={() => router.push(`/members/${member.id}`)}
-      className="group bg-white rounded-xl p-4 cursor-pointer transition-all border border-gray-200 hover:border-gray-300 hover:shadow-sm flex items-center gap-4"
+      transition={{ duration: 0.15 }}
+      onClick={() => selectionMode ? onToggleSelect?.(member.id) : router.push(`/members/${member.id}`)}
+      className={`group bg-white rounded-xl p-4 cursor-pointer transition-all border-2 flex items-center gap-4 ${
+        isSelected ? 'border-gray-900 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+      }`}
     >
+      {/* Selection checkbox */}
+      {selectionMode && (
+        <div className="flex-shrink-0">
+          {isSelected ? (
+            <CheckSquare className="w-5 h-5 text-gray-900" />
+          ) : (
+            <Square className="w-5 h-5 text-gray-300" />
+          )}
+        </div>
+      )}
+
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm">
