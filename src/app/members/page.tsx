@@ -173,6 +173,7 @@ export default function MembersPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [filterInvited, setFilterInvited] = useState<'all' | 'invited' | 'not_invited'>('all')
   const [filterAppStatus, setFilterAppStatus] = useState<'all' | 'joined' | 'not_joined'>('all')
   const [filterSessions, setFilterSessions] = useState<'all' | 'upcoming' | 'had' | 'never'>('all')
   const [filterPending, setFilterPending] = useState<'all' | 'pending' | 'none'>('all')
@@ -582,7 +583,9 @@ export default function MembersPage() {
     }
   }
 
-  // Bulk invite
+  // Bulk invite with progress
+  const [bulkInviteProgress, setBulkInviteProgress] = useState<{ total: number; sent: number; skipped: number } | null>(null)
+
   const handleBulkInvite = async () => {
     if (selectedIds.size === 0) return
     const selectedMembers = members.filter(m => selectedIds.has(m.id) && m.email)
@@ -591,20 +594,46 @@ export default function MembersPage() {
       return
     }
 
+    // Skip already invited
+    const toInvite = selectedMembers.filter(m => !(m as any).invitation_sent)
+    const alreadyInvited = selectedMembers.length - toInvite.length
+
+    if (toInvite.length === 0) {
+      toast.info(locale === 'fr' ? 'Tous les membres sélectionnés ont déjà été invités' : 'All selected members have already been invited')
+      return
+    }
+
+    const confirmMsg = locale === 'fr'
+      ? `Envoyer ${toInvite.length} invitation(s) ?${alreadyInvited > 0 ? ` (${alreadyInvited} déjà invité(s), ignoré(s))` : ''}`
+      : `Send ${toInvite.length} invitation(s)?${alreadyInvited > 0 ? ` (${alreadyInvited} already invited, skipped)` : ''}`
+    if (!confirm(confirmMsg)) return
+
+    setBulkInviteProgress({ total: toInvite.length, sent: 0, skipped: alreadyInvited })
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       let sent = 0
-      for (const member of selectedMembers) {
-        const res = await fetch('/api/members/invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ memberId: member.id, email: member.email }),
-        })
-        if (res.ok) sent++
+      for (let i = 0; i < toInvite.length; i++) {
+        const member = toInvite[i]
+        try {
+          const res = await fetch('/api/members/invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ memberId: member.id, email: member.email }),
+          })
+          if (res.ok) {
+            sent++
+            // Update local state
+            setMembers(prev => prev.map(m => m.id === member.id ? { ...m, invitation_sent: true } as any : m))
+          }
+        } catch { /* continue */ }
+        setBulkInviteProgress({ total: toInvite.length, sent: i + 1, skipped: alreadyInvited })
       }
+      setBulkInviteProgress(null)
       exitSelectionMode()
       toast.success(locale === 'fr' ? `${sent} invitation(s) envoyée(s)` : `${sent} invitation(s) sent`)
     } catch {
+      setBulkInviteProgress(null)
       toast.error(locale === 'fr' ? 'Erreur lors de l\'envoi' : 'Failed to send invitations')
     }
   }
@@ -1261,6 +1290,10 @@ export default function MembersPage() {
       }
     }
 
+    // Invitation filter
+    if (filterInvited === 'invited' && !(member as any).invitation_sent) return false
+    if (filterInvited === 'not_invited' && (member as any).invitation_sent) return false
+
     // App status filter
     if (filterAppStatus === 'joined' && !member.user_id) return false
     if (filterAppStatus === 'not_joined' && member.user_id) return false
@@ -1289,7 +1322,7 @@ export default function MembersPage() {
   // Reset to page 1 when any filter changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [filter, searchQuery, filterAppStatus, filterSessions, filterPending])
+  }, [filter, searchQuery, filterInvited, filterAppStatus, filterSessions, filterPending])
 
   const prospectMembers = members.filter(m => m.status === 'prospect')
   const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
@@ -1422,14 +1455,14 @@ export default function MembersPage() {
                   <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`p-2 rounded-xl border transition-colors relative ${
-                      filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all'
+                      filterInvited !== 'all' || filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all'
                         ? 'bg-teal-50 text-teal-600 border-teal-200'
                         : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-50'
                     }`}
                     title={locale === 'fr' ? 'Filtres' : 'Filters'}
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    {(filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
+                    {(filterInvited !== 'all' || filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" />
                     )}
                   </button>
@@ -1440,14 +1473,30 @@ export default function MembersPage() {
                       <div className="absolute top-full left-0 mt-2 z-40 bg-white rounded-xl border border-gray-200 shadow-xl p-4 w-64 space-y-4">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-xs font-semibold text-gray-900 uppercase tracking-wider">{locale === 'fr' ? 'Filtres' : 'Filters'}</p>
-                          {(filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
+                          {(filterInvited !== 'all' || filterAppStatus !== 'all' || filterSessions !== 'all' || filterPending !== 'all') && (
                             <button
-                              onClick={() => { setFilterAppStatus('all'); setFilterSessions('all'); setFilterPending('all') }}
+                              onClick={() => { setFilterInvited('all'); setFilterAppStatus('all'); setFilterSessions('all'); setFilterPending('all') }}
                               className="text-xs text-teal-600 hover:text-teal-700 font-medium"
                             >
                               {locale === 'fr' ? 'Réinitialiser' : 'Reset'}
                             </button>
                           )}
+                        </div>
+
+                        {/* Invitation */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                            {locale === 'fr' ? 'Invitation' : 'Invitation'}
+                          </label>
+                          <select
+                            value={filterInvited}
+                            onChange={(e) => setFilterInvited(e.target.value as any)}
+                            className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            <option value="all">{locale === 'fr' ? 'Tous' : 'All'}</option>
+                            <option value="invited">{locale === 'fr' ? 'Invité' : 'Invited'}</option>
+                            <option value="not_invited">{locale === 'fr' ? 'Non invité' : 'Not invited'}</option>
+                          </select>
                         </div>
 
                         {/* App status */}
@@ -1925,7 +1974,39 @@ export default function MembersPage() {
                 )
               })}
             </div>
-          ) : (
+          ) : (<>
+            {/* Select all row */}
+            {selectionMode && (
+              <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-xl bg-gray-50 border border-gray-200">
+                <button
+                  onClick={() => {
+                    const allOnPage = paginatedMembers.map(m => m.id)
+                    const allSelected = allOnPage.every(id => selectedIds.has(id))
+                    if (allSelected) {
+                      deselectAll()
+                    } else {
+                      setSelectedIds(new Set([...selectedIds, ...allOnPage]))
+                    }
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  {paginatedMembers.every(m => selectedIds.has(m.id)) ? (
+                    <CheckSquare className="w-5 h-5 text-gray-900" />
+                  ) : (
+                    <Square className="w-5 h-5 text-gray-400" />
+                  )}
+                  <span className="text-sm font-medium text-gray-700">
+                    {locale === 'fr' ? 'Tout sélectionner' : 'Select all'}
+                  </span>
+                </button>
+                {selectedIds.size > 0 && (
+                  <span className="text-xs text-gray-400 ml-auto">
+                    {selectedIds.size} {locale === 'fr' ? 'sélectionné(s)' : 'selected'}
+                  </span>
+                )}
+              </div>
+            )}
+
             <div className={
               viewMode === 'grid'
                 ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5'
@@ -1972,7 +2053,7 @@ export default function MembersPage() {
                 ))}
               </AnimatePresence>
             </div>
-          )}
+          </>)}
 
           {/* Pagination */}
           {totalPages > 1 && filter !== 'new' && (
@@ -2028,6 +2109,29 @@ export default function MembersPage() {
           )}
         </div>
       </main>
+
+      {/* Bulk invite progress overlay */}
+      {bulkInviteProgress && (
+        <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-80">
+            <p className="text-sm font-semibold text-gray-900 mb-3">
+              {locale === 'fr' ? 'Envoi des invitations...' : 'Sending invitations...'}
+            </p>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                style={{ width: `${(bulkInviteProgress.sent / bulkInviteProgress.total) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              {bulkInviteProgress.sent} / {bulkInviteProgress.total}
+              {bulkInviteProgress.skipped > 0 && (
+                <span className="text-gray-400"> · {bulkInviteProgress.skipped} {locale === 'fr' ? 'ignoré(s)' : 'skipped'}</span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Floating bulk action bar */}
       <AnimatePresence>
@@ -3407,6 +3511,15 @@ function MemberListItem({
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.bg} ${status.text}`}>
               {member.status === 'prospect' ? (locale === 'fr' ? 'Nouveau' : 'New') : (t.members.status[member.status as 'active' | 'inactive' | 'pending'] || t.members.status.active)}
             </span>
+            {member.user_id ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                {locale === 'fr' ? 'Rejoint' : 'Joined'}
+              </span>
+            ) : (member as any).invitation_sent ? (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-100">
+                {locale === 'fr' ? 'Invité' : 'Invited'}
+              </span>
+            ) : null}
             <button
               onClick={(e) => {
                 e.stopPropagation()
