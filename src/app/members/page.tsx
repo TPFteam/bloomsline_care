@@ -169,6 +169,8 @@ export default function MembersPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<MemberHubStats>({
     total_members: 0,
@@ -1338,16 +1340,41 @@ export default function MembersPage() {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
                 </div>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={t.members.filters.searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-64 pl-10 pr-4 py-2 rounded-xl bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                  />
+                {/* Search — icon that expands */}
+                <div className="flex items-center">
+                  {searchOpen ? (
+                    <motion.div
+                      initial={{ width: 40, opacity: 0.5 }}
+                      animate={{ width: 280, opacity: 1 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                      className="relative"
+                    >
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10 pointer-events-none" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder={t.members.filters.searchPlaceholder}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onBlur={() => { if (!searchQuery) setSearchOpen(false) }}
+                        autoFocus
+                        className="w-full pl-10 pr-9 py-2 rounded-xl bg-white border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                      />
+                      <button
+                        onClick={() => { setSearchQuery(''); setSearchOpen(false) }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <button
+                      onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 100) }}
+                      className="p-2 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
