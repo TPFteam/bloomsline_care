@@ -1589,7 +1589,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden min-h-0" style={notesZoom !== 100 ? { zoom: notesZoom / 100 } : undefined}>
+      <div className="flex flex-1 overflow-hidden min-h-0">
       {/* ================================ */}
       {/* LEFT PANEL                       */}
       {/* ================================ */}
@@ -1943,7 +1943,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     </div>
                   </div>
 
-                  <div>
+                  <div style={notesZoom !== 100 ? { zoom: notesZoom / 100 } : undefined}>
                     <RichTextEditor
                       value={snSummaryDraft}
                       onChange={setSnSummaryDraft}
@@ -2027,7 +2027,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col">
+                <div className="flex flex-col" style={notesZoom !== 100 ? { zoom: notesZoom / 100 } : undefined}>
                   <RichTextEditor
                     value={snSummaryDraft}
                     onChange={setSnSummaryDraft}

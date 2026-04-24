@@ -2017,7 +2017,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
         <div className="relative flex flex-1 gap-0">
           {/* Side rail — tag toggle (hidden in compact mode) */}
           {!compact && hasAnnotations && (
-            <div ref={sideMenuRef} data-side-menu className="sticky top-[38px] z-20 flex flex-col pt-2 bg-white self-start">
+            <div ref={sideMenuRef} data-side-menu className="sticky top-[42px] z-20 flex flex-col pt-2 bg-white self-start relative">
               {hasTags && (
                 activeTag ? (
                   <button
@@ -2107,12 +2107,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
               )}
 
 
-            </div>
-          )}
-
-          {/* Goal dropdown — portaled to body so it escapes overflow containers */}
-          {sideMenu === 'goals' && !activeGoal && milestones?.length && sideMenuPos && createPortal(
-            <div data-side-menu className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[360px] overflow-y-auto" style={{ top: sideMenuPos.top, left: sideMenuPos.left }}>
+              {/* Goal dropdown — inline absolute */}
+              {sideMenu === 'goals' && !activeGoal && milestones?.length && (
+                <div data-side-menu className="absolute left-full top-0 ml-1 z-[100] bg-white border border-gray-200 rounded-xl shadow-xl py-1 min-w-[200px] max-h-[360px] overflow-y-auto">
               <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                 {fr ? 'Objectifs' : 'Goals'}
               </div>
@@ -2131,12 +2128,11 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                   </button>
                 )
               })}
-            </div>,
-            document.body
-          )}
-          {/* Tag dropdown — portaled to body */}
-          {sideMenu === 'tags' && !activeTag && noteTypes?.length && sideMenuPos && createPortal(
-            <div data-side-menu className="fixed z-[100] bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] max-h-[360px] overflow-y-auto" style={{ top: sideMenuPos.top, left: sideMenuPos.left }}>
+                </div>
+              )}
+              {/* Tag dropdown — inline absolute */}
+              {sideMenu === 'tags' && !activeTag && noteTypes?.length && (
+                <div data-side-menu className="absolute left-full top-0 ml-1 z-[100] bg-white border border-gray-200 rounded-xl shadow-xl py-1 min-w-[180px] max-h-[360px] overflow-y-auto">
               <div className="px-3 py-1.5 flex items-center justify-between">
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                   {fr ? 'Étiquettes' : 'Tags'}
@@ -2311,8 +2307,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                   </form>
                 </div>
               )}
-            </div>,
-            document.body
+                </div>
+              )}
+            </div>
           )}
 
           {/* Editor */}
