@@ -80,8 +80,8 @@ How to identify question types:
 - Tables with headers and empty rows to fill → {"id": "b7", "type": "table_exercise", "content": "table title", "columns": [{"id": "col1", "header": "Column Header 1"}, {"id": "col2", "header": "Column Header 2"}], "exampleRow": {"col1": "example or instruction text for column 1", "col2": "example text for column 2"}}
 
 Every block must have a unique "id" (use "b1", "b2", etc.).
-DO NOT extract section titles, headings, instructional paragraphs, or explanatory text as blocks. ONLY extract fillable questions that require a response.
-IMPORTANT: If a PDF contains a table with headers and blank rows, extract it as ONE "table_exercise" block — NOT as separate "prompt" blocks per column.
+DO NOT extract standalone section titles, headings, or paragraphs that are NOT part of a question or table.
+IMPORTANT: Tables with headers and blank/empty rows ARE fillable exercises — always extract them as "table_exercise" blocks. The column headers and any instruction text in the first row are part of the table, not "explanatory text". A table with empty cells IS a question that requires a response.
 
 IMPORTANT:
 - Scan the ENTIRE document from first page to last.
