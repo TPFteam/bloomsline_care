@@ -70,11 +70,18 @@ export default function MemberPage() {
         {/* Go to app button */}
         <a
           href="https://app.bloomsline.com"
-          className="w-full px-8 py-4 bg-gray-900 text-white rounded-2xl font-medium inline-flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors mb-8"
+          className="w-full px-8 py-4 bg-gray-900 text-white rounded-2xl font-medium inline-flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
         >
           {fr ? 'Accéder à mon espace' : 'Go to my space'}
           <ExternalLink className="w-4 h-4" />
         </a>
+
+        {/* Coming soon note */}
+        <p className="text-sm text-gray-400 mt-4 mb-8 leading-relaxed">
+          {fr
+            ? '📱 L\'application iOS et Android arrive bientôt !'
+            : '📱 iOS and Android apps coming soon!'}
+        </p>
 
         {/* Sign out */}
         <button
