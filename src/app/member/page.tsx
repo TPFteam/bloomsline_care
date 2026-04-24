@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ExternalLink, LogOut, Loader2 } from 'lucide-react'
+import { ExternalLink, LogOut, Loader2, Smartphone } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
 export default function MemberPage() {
@@ -52,7 +52,7 @@ export default function MemberPage() {
       >
         {/* Icon */}
         <div className="w-20 h-20 rounded-3xl bg-teal-50 flex items-center justify-center mx-auto mb-8">
-          <span className="text-3xl">🌿</span>
+          <Smartphone className="h-10 w-10 text-teal-500" />
         </div>
 
         {/* Heading */}
@@ -77,11 +77,10 @@ export default function MemberPage() {
         </a>
 
         {/* Coming soon note */}
-        <p className="text-sm text-gray-400 mt-4 mb-8 leading-relaxed">
-          {fr
-            ? '📱 L\'application iOS et Android arrive bientôt !'
-            : '📱 iOS and Android apps coming soon!'}
-        </p>
+        <div className="flex items-center justify-center gap-1.5 text-sm text-gray-400 mt-4 mb-8">
+          <Smartphone className="w-3.5 h-3.5" />
+          <span>{fr ? 'L\'application iOS et Android arrive bientôt !' : 'iOS and Android apps coming soon!'}</span>
+        </div>
 
         {/* Sign out */}
         <button
