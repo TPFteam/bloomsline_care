@@ -891,74 +891,7 @@ export default function ResourceDetailPage() {
   // Shared content blocks for both public and owner views
   const contentBlocks = (
     <>
-            {/* Table Exercise Preview */}
-            {resource.type === 'table' && resource.blocks && resource.blocks.length > 0 && (() => {
-              const tableBlock = resource.blocks.find((b: ResourceBlock) => b.type === 'table_exercise')
-              if (!tableBlock) return null
-              const columns = ('columns' in tableBlock && Array.isArray(tableBlock.columns)) ? tableBlock.columns : []
-              const tableInstructions = ('instructions' in tableBlock && typeof tableBlock.instructions === 'string') ? tableBlock.instructions : null
-
-              return (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
-                >
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                      <Table2 className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Structure du tableau' : 'Table Structure'}
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        {columns.length} {locale === 'fr' ? 'colonne(s)' : 'column(s)'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Instructions */}
-                  {tableInstructions && (
-                    <div className="mb-5 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <p className="text-sm text-emerald-700">{tableInstructions}</p>
-                    </div>
-                  )}
-
-                  {/* Table Preview */}
-                  <div className="overflow-x-auto rounded-xl border border-gray-200">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-800 text-white">
-                          {columns.map((col: { id: string; header: string; description?: string }) => (
-                            <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {columns.some((col: { description?: string }) => col.description) && (
-                          <tr className="bg-gray-50">
-                            {columns.map((col: { id: string; description?: string }) => (
-                              <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{col.description || ''}</td>
-                            ))}
-                          </tr>
-                        )}
-                        <tr>
-                          {columns.map((col: { id: string }) => (
-                            <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
-                              <div className="min-h-[60px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
-                                {locale === 'fr' ? 'Réponse du membre...' : "Member's response..."}
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </motion.div>
-              )
-            })()}
+            {/* Table type resources now use the unified "Content - As seen by members" section below, same as worksheets */}
 
             {/* Assessment/Scored Worksheet Questions Preview */}
             {hasScoring && worksheetSettings?.questions && worksheetSettings.questions.length > 0 && (
@@ -1197,7 +1130,7 @@ export default function ResourceDetailPage() {
             )}
 
             {/* Worksheet Blocks Preview */}
-            {resource.type === 'worksheet' && resource.blocks && resource.blocks.length > 0 && (
+            {(resource.type === 'worksheet' || resource.type === 'table') && resource.blocks && resource.blocks.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
