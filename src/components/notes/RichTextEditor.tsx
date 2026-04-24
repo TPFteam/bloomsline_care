@@ -273,6 +273,10 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
   const [hoverTooltip, setHoverTooltip] = useState<{ top: number; left: number; label: string; kind: 'goal' | 'tag' | 'verbatim' } | null>(null)
   const savedRange = useRef<Range | null>(null)
 
+  // Floating selection toolbar
+  const [selectionToolbar, setSelectionToolbar] = useState<{ top: number; left: number } | null>(null)
+  const selectionToolbarRef = useRef<HTMLDivElement>(null)
+
   // Autosave state
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1700,19 +1704,42 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
   // Popover content based on mode
   const renderPopoverContent = () => {
-    if (popoverMode === 'choices') {
+    // Show tags directly as horizontal pills — no intermediate "choices" step
+    if ((popoverMode === 'choices' || popoverMode === 'tags') && noteTypes?.length) {
       return (
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
-          {hasTags && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setPopoverMode('tags')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
-            >
-              <Tag className="w-3.5 h-3.5 text-violet-600" />
-              {fr ? 'Étiquette' : 'Tag'}
-            </button>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-xl p-1.5 flex items-center gap-1 flex-wrap max-w-[360px]">
+          {noteTypes.map((nt) => {
+            const colors = getTagColor(nt.type, allTagTypes)
+            return (
+              <button
+                key={nt.type}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => wrapSelectionWithTag(nt)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium hover:opacity-80 transition-all whitespace-nowrap"
+                style={{ backgroundColor: colors.bg, color: colors.border }}
+              >
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                {nt.label}
+              </button>
+            )
+          })}
+          {memberName && (
+            <>
+              <div className="w-px h-5 bg-gray-200 mx-0.5" />
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setPopoverPos(null)
+                  wrapSelectionWithVerbatim()
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 transition-colors whitespace-nowrap"
+              >
+                <Quote className="w-3 h-3" />
+                {fr ? 'Citation' : 'Quote'}
+              </button>
+            </>
           )}
         </div>
       )
@@ -1720,7 +1747,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
 
     if (popoverMode === 'goals' && milestones?.length) {
       return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[220px] max-h-[200px] overflow-y-auto">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-xl py-1 min-w-[220px] max-h-[200px] overflow-y-auto">
           <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
             {fr ? 'Objectifs' : 'Goals'}
           </div>
@@ -1737,41 +1764,10 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                   savedRange.current = null
                   startGoalAnnotation(m)
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: colors.border }}
-                />
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border }} />
                 <span className="text-xs text-gray-700 truncate">{m.title}</span>
-              </button>
-            )
-          })}
-        </div>
-      )
-    }
-
-    if (popoverMode === 'tags' && noteTypes?.length) {
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] max-h-[200px] overflow-y-auto">
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-            {fr ? 'Étiquettes' : 'Tags'}
-          </div>
-          {noteTypes.map((nt) => {
-            const colors = getTagColor(nt.type, allTagTypes)
-            return (
-              <button
-                key={nt.type}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => wrapSelectionWithTag(nt)}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: colors.border }}
-                />
-                <span className="text-xs text-gray-700 truncate">{nt.label}</span>
               </button>
             )
           })}
