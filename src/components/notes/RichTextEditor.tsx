@@ -1691,7 +1691,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
       type="button"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+      className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
     >
       {icon}
       <span>{label}</span>
@@ -1848,22 +1848,22 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           </div>
         </div>
       ) : (
-      <div className="sticky top-0 z-30 flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-white">
-        {btn(<Undo2 className="w-3.5 h-3.5" />, fr ? 'Annuler' : 'Undo', () => exec('undo'))}
-        {btn(<Redo2 className="w-3.5 h-3.5" />, fr ? 'Rétablir' : 'Redo', () => exec('redo'))}
-        <div className="w-px h-4 bg-gray-200 mx-0.5" />
-        {btn(<Bold className="w-3.5 h-3.5" />, fr ? 'Gras' : 'Bold', () => exec('bold'))}
+      <div className="sticky top-0 z-30 flex items-center flex-wrap gap-0.5 px-2 py-1 border-b border-gray-200 bg-white">
+        {btn(<Undo2 className="w-4 h-4" />, fr ? 'Annuler' : 'Undo', () => exec('undo'))}
+        {btn(<Redo2 className="w-4 h-4" />, fr ? 'Rétablir' : 'Redo', () => exec('redo'))}
+        <div className="w-px h-5 bg-gray-200 mx-0.5" />
+        {btn(<Bold className="w-4 h-4" />, fr ? 'Gras' : 'Bold', () => exec('bold'))}
         {/* Heading dropdown */}
         <div className="relative">
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setHeadingOpen(!headingOpen)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
           >
-            <Type className="w-3.5 h-3.5" />
+            <Type className="w-4 h-4" />
             <span>{fr ? 'Titre' : 'Heading'}</span>
-            <ChevronDown className="w-3 h-3" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
           {headingOpen && (
             <>
@@ -1892,19 +1892,19 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             </>
           )}
         </div>
-        <div className="w-px h-4 bg-gray-200 mx-0.5" />
-        {btn(<ListOrdered className="w-3.5 h-3.5" />, fr ? 'Numéros' : 'Numbers', () => exec('insertOrderedList'))}
-        <div className="w-px h-4 bg-gray-200 mx-0.5" />
-        {btn(<Minus className="w-3.5 h-3.5" />, fr ? 'Séparateur' : 'Divider', () => exec('insertHorizontalRule'))}
+        <div className="w-px h-5 bg-gray-200 mx-0.5" />
+        {btn(<ListOrdered className="w-4 h-4" />, fr ? 'Numéros' : 'Numbers', () => exec('insertOrderedList'))}
+        <div className="w-px h-5 bg-gray-200 mx-0.5" />
+        {btn(<Minus className="w-4 h-4" />, fr ? 'Séparateur' : 'Divider', () => exec('insertHorizontalRule'))}
 
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
           disabled={extracting}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
-          {extracting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ScanLine className="w-3.5 h-3.5" />}
+          {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
           <span>{extracting ? (fr ? 'Extraction...' : 'Scanning...') : (fr ? 'Scanner image' : 'Scan image')}</span>
         </button>
         <input
@@ -1923,9 +1923,9 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => textFileInputRef.current?.click()}
           disabled={importing}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
-          {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
+          {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
           <span>{importing ? (fr ? 'Import...' : 'Importing...') : (fr ? 'Importer fichier' : 'Import file')}</span>
         </button>
         <input
@@ -2024,20 +2024,20 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={endTagAnnotation}
-                    className="p-1.5 transition-colors text-violet-600 bg-violet-100 animate-pulse"
+                    className="p-2.5 transition-colors text-violet-600 bg-violet-100 animate-pulse rounded-lg"
                     title={fr ? `Fin: ${activeTag.label}` : `End: ${activeTag.label}`}
                   >
-                    <Tag className="w-3.5 h-3.5" />
+                    <Tag className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => openSideMenu('tags')}
-                    className={`p-1.5 transition-colors ${sideMenu === 'tags' ? 'text-violet-600 bg-violet-50' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50/50'}`}
+                    className={`p-2.5 rounded-lg transition-colors ${sideMenu === 'tags' ? 'text-violet-600 bg-violet-50' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50/50'}`}
                     title={fr ? 'Étiquettes' : 'Tags'}
                   >
-                    <Tag className="w-3.5 h-3.5" />
+                    <Tag className="w-4 h-4" />
                   </button>
                 )
               )}
@@ -2059,10 +2059,10 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       setActiveVerbatim(false)
                       setTimeout(() => handleInput(), 0)
                     }}
-                    className="p-1.5 transition-colors text-sky-600 bg-sky-100 animate-pulse"
+                    className="p-2.5 rounded-lg transition-colors text-sky-600 bg-sky-100 animate-pulse"
                     title={fr ? `Fin: ${memberName} said` : `End: ${memberName} said`}
                   >
-                    <Quote className="w-3.5 h-3.5" />
+                    <Quote className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
@@ -2098,10 +2098,10 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                       setActiveVerbatim(true)
                       handleInput()
                     }}
-                    className="p-1.5 transition-colors text-sky-500 hover:text-sky-600 hover:bg-sky-50/50"
+                    className="p-2.5 rounded-lg transition-colors text-sky-500 hover:text-sky-600 hover:bg-sky-50/50"
                     title={fr ? `${memberName} a dit` : `${memberName} said`}
                   >
-                    <Quote className="w-3.5 h-3.5" />
+                    <Quote className="w-4 h-4" />
                   </button>
                 )
               )}

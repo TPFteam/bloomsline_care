@@ -1522,7 +1522,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}>
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px', maxHeight: 'calc(100vh - 200px)' }}>
       {/* Category tabs + zoom — always full width at top */}
       <div className="flex items-center border-b border-gray-100 bg-white flex-shrink-0">
         {([
@@ -1593,7 +1593,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       {/* ================================ */}
       {/* LEFT PANEL                       */}
       {/* ================================ */}
-      <div className={`${activeCategory === 'browse' || activeCategory === 'observations' ? 'w-0 overflow-hidden border-0' : 'w-80 border-r border-gray-100'} flex flex-col flex-shrink-0 transition-all`}>
+      <div className={`${activeCategory === 'browse' || activeCategory === 'observations' ? 'w-0 overflow-hidden border-0' : 'w-60 lg:w-80 border-r border-gray-100'} flex flex-col flex-shrink-0 transition-all`}>
 
         {/* Items list */}
         <div className="flex-1 overflow-y-auto">
@@ -2066,7 +2066,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
         {activeCategory === 'observations' && !selectedItemId && (
           <div className="flex-1 flex min-h-0">
             {/* Left: pill filters */}
-            <div className="w-72 border-r border-gray-100 p-3 space-y-3 flex flex-col overflow-y-auto flex-shrink-0">
+            <div className="w-56 lg:w-72 border-r border-gray-100 p-3 space-y-3 flex flex-col overflow-y-auto flex-shrink-0">
               <div className="relative flex-shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <input
