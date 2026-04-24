@@ -930,51 +930,32 @@ export default function ResourceDetailPage() {
                   <div className="overflow-x-auto rounded-xl border border-gray-200">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-emerald-100">
+                        <tr className="bg-gray-800 text-white">
                           {columns.map((col: { id: string; header: string; description?: string }) => (
-                            <th
-                              key={col.id}
-                              className="px-4 py-3 text-left font-semibold text-emerald-900 border-b border-emerald-200"
-                            >
-                              {col.header}
-                            </th>
+                            <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Description row */}
                         {columns.some((col: { description?: string }) => col.description) && (
-                          <tr className="bg-emerald-50/50">
+                          <tr className="bg-gray-50">
                             {columns.map((col: { id: string; description?: string }) => (
-                              <td
-                                key={col.id}
-                                className="px-4 py-2 text-xs text-emerald-700 italic border-b border-emerald-100"
-                              >
-                                {col.description || '-'}
-                              </td>
+                              <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{col.description || ''}</td>
                             ))}
                           </tr>
                         )}
-                        {/* Sample entry row */}
                         <tr>
                           {columns.map((col: { id: string }) => (
-                            <td
-                              key={col.id}
-                              className="px-4 py-3 text-gray-400 border-b border-gray-100"
-                            >
-                              {locale === 'fr' ? 'Entrée...' : 'Entry...'}
+                            <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
+                              <div className="min-h-[60px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
+                                {locale === 'fr' ? 'Réponse du membre...' : "Member's response..."}
+                              </div>
                             </td>
                           ))}
                         </tr>
                       </tbody>
                     </table>
                   </div>
-
-                  <p className="text-xs text-gray-400 mt-3 text-center">
-                    {locale === 'fr'
-                      ? 'Les membres pourront ajouter plusieurs lignes'
-                      : 'Members will be able to add multiple rows'}
-                  </p>
                 </motion.div>
               )
             })()}
@@ -1676,14 +1657,16 @@ export default function ResourceDetailPage() {
                                   {Object.values((block as any).exampleRow || {}).some((v: any) => v) && (
                                     <tr className="bg-gray-50">
                                       {((block as any).columns || []).map((col: any) => (
-                                        <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100">{(block as any).exampleRow?.[col.id] || ''}</td>
+                                        <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{(block as any).exampleRow?.[col.id] || ''}</td>
                                       ))}
                                     </tr>
                                   )}
                                   <tr>
                                     {((block as any).columns || []).map((col: any) => (
-                                      <td key={col.id} className="px-4 py-2.5 text-xs text-gray-300 border-t border-gray-100">
-                                        {locale === 'fr' ? 'Réponse du membre...' : 'Member response...'}
+                                      <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
+                                        <div className="min-h-[60px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
+                                          {locale === 'fr' ? 'Réponse du membre...' : "Member's response..."}
+                                        </div>
                                       </td>
                                     ))}
                                   </tr>

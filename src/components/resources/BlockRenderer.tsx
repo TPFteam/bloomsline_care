@@ -1546,56 +1546,45 @@ function TableExerciseBlock({
       {/* Desktop Table View */}
       <div className="hidden md:block">
         <div className="overflow-x-auto border border-gray-200 rounded-xl">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-emerald-100">
+              <tr className="bg-gray-800 text-white">
                 {columns.map((col) => (
-                  <th
-                    key={col.id}
-                    className="px-4 py-3 text-left font-semibold text-emerald-900 border-b border-emerald-200"
-                  >
-                    {col.header}
-                  </th>
+                  <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
                 ))}
-                {!disabled && <th className="w-12 border-b border-emerald-200"></th>}
+                {!disabled && <th className="w-12"></th>}
               </tr>
-              {/* Description row */}
               {columns.some(col => col.description) && (
-                <tr className="bg-emerald-50/50">
+                <tr className="bg-gray-50">
                   {columns.map((col) => (
-                    <td
-                      key={col.id}
-                      className="px-4 py-2 text-xs text-emerald-700 italic border-b border-emerald-100"
-                    >
-                      {col.description || ''}
-                    </td>
+                    <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{col.description || ''}</td>
                   ))}
-                  {!disabled && <td className="border-b border-emerald-100"></td>}
+                  {!disabled && <td className="border-t border-gray-100"></td>}
                 </tr>
               )}
             </thead>
             <tbody>
               {rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
+                <tr key={rowIndex}>
                   {columns.map((col) => (
-                    <td key={col.id} className="px-2 py-2 border-b border-gray-100">
+                    <td key={col.id} className="px-3 py-2 border-t border-gray-100 align-top">
                       <textarea
                         value={row[col.id] || ''}
                         onChange={(e) => updateCell(rowIndex, col.id, e.target.value)}
                         disabled={disabled}
-                        placeholder={locale === 'fr' ? 'Tapez ici...' : locale === 'es' ? 'Escriba aquí...' : 'Type here...'}
+                        placeholder={locale === 'fr' ? 'Réponse...' : locale === 'es' ? 'Respuesta...' : "Member's response..."}
                         rows={2}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none resize-none text-sm disabled:bg-gray-50 disabled:text-gray-500"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none resize-none text-sm disabled:bg-gray-50 disabled:text-gray-400 disabled:italic min-h-[60px]"
                       />
                     </td>
                   ))}
                   {!disabled && (
-                    <td className="px-2 py-2 border-b border-gray-100 text-center">
+                    <td className="px-2 py-2 border-t border-gray-100 text-center align-top">
                       {canRemoveRow && (
                         <button
                           type="button"
                           onClick={() => removeRow(rowIndex)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-2"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1608,21 +1597,18 @@ function TableExerciseBlock({
           </table>
         </div>
 
-        {/* Add Row Button - Desktop */}
         {!disabled && canAddRow && (
-          <motion.button
+          <button
             type="button"
             onClick={addRow}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="mt-4 flex items-center gap-2 px-4 py-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl text-sm font-medium transition-colors"
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-dashed border-gray-200 rounded-xl text-xs font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             {locale === 'fr' ? 'Ajouter une ligne' : locale === 'es' ? 'Agregar fila' : 'Add Row'}
             {settings?.rowMode === 'limited' && (
-              <span className="text-emerald-500">({rows.length}/{maxRows})</span>
+              <span className="text-gray-400">({rows.length}/{maxRows})</span>
             )}
-          </motion.button>
+          </button>
         )}
 
         {/* Max reached message - Desktop */}
