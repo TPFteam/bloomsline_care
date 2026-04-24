@@ -222,10 +222,11 @@ function CreateTableExerciseContent() {
           if (data.blocks && Array.isArray(data.blocks) && data.blocks.length > 0) {
             const tableBlock = data.blocks.find((b: { type: string }) => b.type === 'table_exercise')
             if (tableBlock && 'columns' in tableBlock && Array.isArray(tableBlock.columns)) {
+              const exRow = ('exampleRow' in tableBlock && typeof tableBlock.exampleRow === 'object') ? (tableBlock.exampleRow as Record<string, string>) : {}
               setColumns(tableBlock.columns.map((col: { id?: string; header?: string; description?: string }) => ({
                 id: col.id || generateId(),
                 header: col.header || '',
-                description: col.description || '',
+                description: col.description || exRow[col.id || ''] || '',
               })))
             }
             // Prefer resource-level instructions, fall back to block-level
