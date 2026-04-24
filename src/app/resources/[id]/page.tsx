@@ -1248,7 +1248,7 @@ export default function ResourceDetailPage() {
                     // Track question and info numbers separately
                     let questionNumber = 0
                     let infoNumber = 0
-                    const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response']
+                    const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response', 'table_exercise']
                     const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider', 'pdf_document']
 
                     // Question type labels for display
@@ -1269,6 +1269,7 @@ export default function ResourceDetailPage() {
                       audio_response: { en: 'Audio', fr: 'Audio' },
                       file_response: { en: 'File', fr: 'Fichier' },
                       video_response: { en: 'Video', fr: 'Vidéo' },
+                      table_exercise: { en: 'Table', fr: 'Tableau' },
                     }
 
                     // Info type labels for display
@@ -1656,6 +1657,39 @@ export default function ResourceDetailPage() {
                             <p className="text-xs text-gray-400 mt-3">
                               {locale === 'fr' ? `${(block as any).listMinItems || 1} à ${(block as any).listMaxItems || 10} éléments` : `${(block as any).listMinItems || 1} to ${(block as any).listMaxItems || 10} items`}
                             </p>
+                          </>
+                        )}
+
+                        {blockType === 'table_exercise' && (
+                          <>
+                            {blockContent && <p className="text-gray-800 font-medium mb-3">{blockContent}</p>}
+                            <div className="overflow-x-auto rounded-xl border border-gray-200">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-gray-800 text-white">
+                                    {((block as any).columns || []).map((col: any) => (
+                                      <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Object.values((block as any).exampleRow || {}).some((v: any) => v) && (
+                                    <tr className="bg-gray-50">
+                                      {((block as any).columns || []).map((col: any) => (
+                                        <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100">{(block as any).exampleRow?.[col.id] || ''}</td>
+                                      ))}
+                                    </tr>
+                                  )}
+                                  <tr>
+                                    {((block as any).columns || []).map((col: any) => (
+                                      <td key={col.id} className="px-4 py-2.5 text-xs text-gray-300 border-t border-gray-100">
+                                        {locale === 'fr' ? 'Réponse du membre...' : 'Member response...'}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
                           </>
                         )}
 

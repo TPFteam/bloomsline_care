@@ -63,6 +63,7 @@ import {
   BookOpen,
   PenLine,
   Scissors,
+  Table2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -326,6 +327,13 @@ const blockTypes: BlockTypeOption[] = [
     icon: VideoIcon,
     label: { en: 'Video Response', fr: 'Réponse vidéo' },
     description: { en: 'Ask member to record/upload a video', fr: 'Demander au membre d\'enregistrer/télécharger une vidéo' },
+  },
+  // === TABLE EXERCISE ===
+  {
+    type: 'table_exercise',
+    icon: Table2,
+    label: { en: 'Table Exercise', fr: 'Exercice tableau' },
+    description: { en: 'Interactive table with headers and fillable rows', fr: 'Tableau interactif avec en-têtes et lignes à remplir' },
   },
 ]
 
@@ -855,7 +863,7 @@ function CreateWorksheetContent() {
   }
 
   // Auto-detect resource type from blocks
-  const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response'])
+  const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise'])
   const detectedResourceType = (() => {
     if (blocks.some(b => b.type === 'table_exercise')) return 'table'
     if (blocks.some(b => INTERACTIVE_TYPES.has(b.type))) return 'worksheet'
@@ -1042,6 +1050,9 @@ function CreateWorksheetContent() {
               fileName: block.fileName,
               pageRange: block.pageRange,
               originalPdfUrl: block.originalPdfUrl,
+              // Table exercise fields
+              columns: block.columns,
+              exampleRow: block.exampleRow,
               // Interactive block fields
               pairs: block.pairs,
               cards: block.cards,
@@ -1200,6 +1211,14 @@ function CreateWorksheetContent() {
       ...(type === 'video_response' && { responseRequired: true, responseMaxDuration: 300, responseHint: '' }),
       ...(type === 'audio_response' && { responseRequired: true, responseMaxDuration: 180, responseHint: '' }),
       ...(type === 'file_response' && { responseRequired: true, responseAcceptedTypes: [], responseHint: '' }),
+      ...(type === 'table_exercise' && {
+        columns: [
+          { id: 'col1', header: locale === 'fr' ? 'Colonne 1' : 'Column 1' },
+          { id: 'col2', header: locale === 'fr' ? 'Colonne 2' : 'Column 2' },
+          { id: 'col3', header: locale === 'fr' ? 'Colonne 3' : 'Column 3' },
+        ],
+        exampleRow: {},
+      }),
     }
     setBlocks([...blocks, newBlock])
     setExpandedBlock(newBlock.id)
@@ -1536,6 +1555,10 @@ function CreateWorksheetContent() {
 
         if (block.type === 'link') {
           return { ...baseBlock, type: 'link' as const, linkUrl: (block as any).linkUrl }
+        }
+
+        if (block.type === 'table_exercise') {
+          return { ...baseBlock, type: 'table_exercise' as const, columns: (block as any).columns, exampleRow: (block as any).exampleRow }
         }
 
         if (block.type === 'file') {
@@ -2700,6 +2723,7 @@ function CreateWorksheetContent() {
       tip: { bg: 'bg-sky-100', text: 'text-sky-600', accent: 'bg-sky-400' },
       image: { bg: 'bg-emerald-100', text: 'text-emerald-600', accent: 'bg-emerald-400' },
       video: { bg: 'bg-rose-100', text: 'text-rose-600', accent: 'bg-rose-400' },
+      table_exercise: { bg: 'bg-cyan-100', text: 'text-cyan-600', accent: 'bg-cyan-400' },
       link: { bg: 'bg-cyan-100', text: 'text-cyan-600', accent: 'bg-cyan-400' },
       // Question blocks - blue
       prompt: { bg: 'bg-blue-100', text: 'text-blue-600', accent: 'bg-blue-400' },
@@ -3719,6 +3743,130 @@ function CreateWorksheetContent() {
                     </p>
                   </div>
                 )}
+
+                {/* Table Exercise Block */}
+                {block.type === 'table_exercise' && (() => {
+                  const columns = (block as any).columns || []
+                  const exampleRow = (block as any).exampleRow || {}
+                  return (
+                    <div className="space-y-4">
+                      {/* Title */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          {locale === 'fr' ? 'Titre du tableau' : 'Table title'}
+                        </label>
+                        <input
+                          type="text"
+                          value={block.content}
+                          onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                          placeholder={locale === 'fr' ? 'Ex: Tableau de restructuration cognitive' : 'e.g., Cognitive Restructuring Table'}
+                          className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Columns */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {locale === 'fr' ? 'Colonnes' : 'Columns'}
+                        </label>
+                        <div className="space-y-2">
+                          {columns.map((col: any, i: number) => (
+                            <div key={col.id} className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-3 w-5">{i + 1}.</span>
+                              <div className="flex-1 space-y-1.5">
+                                <input
+                                  type="text"
+                                  value={col.header}
+                                  onChange={(e) => {
+                                    const updated = columns.map((c: any, j: number) => j === i ? { ...c, header: e.target.value } : c)
+                                    updateBlock(block.id, { columns: updated } as any)
+                                  }}
+                                  placeholder={locale === 'fr' ? 'En-tête de colonne' : 'Column header'}
+                                  className="w-full px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm font-medium"
+                                />
+                                <textarea
+                                  value={exampleRow[col.id] || ''}
+                                  onChange={(e) => {
+                                    const updated = { ...exampleRow, [col.id]: e.target.value }
+                                    updateBlock(block.id, { exampleRow: updated } as any)
+                                  }}
+                                  placeholder={locale === 'fr' ? 'Instructions / exemple (optionnel)' : 'Instructions / example (optional)'}
+                                  rows={2}
+                                  className="w-full px-3 py-2 bg-white border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-xs text-gray-500 resize-none"
+                                />
+                              </div>
+                              {columns.length > 2 && (
+                                <button
+                                  onClick={() => {
+                                    const updated = columns.filter((_: any, j: number) => j !== i)
+                                    const updatedExample = { ...exampleRow }
+                                    delete updatedExample[col.id]
+                                    updateBlock(block.id, { columns: updated, exampleRow: updatedExample } as any)
+                                  }}
+                                  className="p-1.5 text-gray-300 hover:text-red-400 mt-2 transition-colors"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {columns.length < 6 && (
+                          <button
+                            onClick={() => {
+                              const newId = `col${Date.now()}`
+                              const updated = [...columns, { id: newId, header: '' }]
+                              updateBlock(block.id, { columns: updated } as any)
+                            }}
+                            className="mt-2 w-full py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 border border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                          >
+                            + {locale === 'fr' ? 'Ajouter une colonne' : 'Add column'}
+                          </button>
+                        )}
+                        {columns.length >= 6 && (
+                          <p className="text-xs text-gray-400 mt-2">{locale === 'fr' ? 'Maximum 6 colonnes' : 'Maximum 6 columns'}</p>
+                        )}
+                      </div>
+
+                      {/* Preview */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-2">{locale === 'fr' ? 'Aperçu' : 'Preview'}</p>
+                        <div className="overflow-x-auto rounded-xl border border-gray-200">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="bg-gray-800 text-white">
+                                {columns.map((col: any) => (
+                                  <th key={col.id} className="px-3 py-2 text-left font-semibold">
+                                    {col.header || '...'}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.values(exampleRow).some((v: any) => v) && (
+                                <tr className="bg-gray-50">
+                                  {columns.map((col: any) => (
+                                    <td key={col.id} className="px-3 py-2 text-gray-500 italic border-t border-gray-100">
+                                      {exampleRow[col.id] || ''}
+                                    </td>
+                                  ))}
+                                </tr>
+                              )}
+                              <tr>
+                                {columns.map((col: any) => (
+                                  <td key={col.id} className="px-3 py-2 text-gray-300 border-t border-gray-100">
+                                    {locale === 'fr' ? 'Réponse...' : 'Answer...'}
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Quote/Affirmation Block */}
                 {block.type === 'quote' && (
@@ -5314,7 +5462,7 @@ function CreateWorksheetContent() {
                                     {locale === 'fr' ? 'Questions avec score' : 'Questions'}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'list_input'].includes(bt.type)).map((bt) => {
+                                    {blockTypes.filter(bt => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'list_input', 'table_exercise'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button
