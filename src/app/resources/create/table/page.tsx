@@ -1104,50 +1104,35 @@ function CreateTableExerciseContent() {
                 {locale === 'fr' ? 'Aperçu du tableau' : 'Table Preview'}
               </h2>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-gray-800 text-white">
                       {columns.map((col, i) => (
-                        <th
-                          key={col.id}
-                          className="px-3 py-2 text-left font-semibold text-gray-800 border border-gray-200"
-                        >
-                          {col.header || `Col ${i + 1}`}
-                        </th>
+                        <th key={col.id} className="px-3 py-2 text-left text-xs font-semibold">{col.header || `Col ${i + 1}`}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-gray-50/50">
-                      {columns.map((col) => (
-                        <td
-                          key={col.id}
-                          className="px-3 py-2 text-xs text-gray-700 italic border border-gray-200"
-                        >
-                          {col.description || '-'}
-                        </td>
-                      ))}
-                    </tr>
+                    {columns.some(col => col.description) && (
+                      <tr className="bg-gray-50">
+                        {columns.map((col) => (
+                          <td key={col.id} className="px-3 py-2 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{col.description || ''}</td>
+                        ))}
+                      </tr>
+                    )}
                     <tr>
                       {columns.map((col) => (
-                        <td
-                          key={col.id}
-                          className="px-3 py-3 text-gray-400 border border-gray-200"
-                        >
-                          {locale === 'fr' ? 'Entrée...' : 'Entry...'}
+                        <td key={col.id} className="px-3 py-2.5 border-t border-gray-100 align-top">
+                          <div className="min-h-[40px] bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-400 italic">
+                            {locale === 'fr' ? 'Réponse...' : "Response..."}
+                          </div>
                         </td>
                       ))}
                     </tr>
                   </tbody>
                 </table>
               </div>
-
-              <p className="text-xs text-gray-400 mt-3 text-center">
-                {locale === 'fr'
-                  ? 'Les membres pourront ajouter plusieurs lignes'
-                  : 'Members will be able to add multiple rows'}
-              </p>
             </motion.div>
 
             {/* Tips */}
@@ -1821,56 +1806,34 @@ function CreateTableExerciseContent() {
                     <p className="text-sm text-gray-800">{instructions}</p>
                   </div>
                 )}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-gray-100">
+                      <tr className="bg-gray-800 text-white">
                         {columns.map((col) => (
-                          <th
-                            key={col.id}
-                            className="px-4 py-3 text-left font-semibold text-gray-900 border border-gray-200"
-                          >
-                            {col.header}
-                          </th>
+                          <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="bg-gray-50/50">
+                      {columns.some(col => col.description) && (
+                        <tr className="bg-gray-50">
+                          {columns.map((col) => (
+                            <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{col.description || ''}</td>
+                          ))}
+                        </tr>
+                      )}
+                      <tr>
                         {columns.map((col) => (
-                          <td
-                            key={col.id}
-                            className="px-4 py-2 text-sm text-gray-800 italic border border-gray-200"
-                          >
-                            {col.description || '-'}
+                          <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
+                            <div className="min-h-[60px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
+                              {locale === 'fr' ? 'Réponse du membre...' : "Member's response..."}
+                            </div>
                           </td>
                         ))}
                       </tr>
-                      {[1, 2, 3].map((row) => (
-                        <tr key={row}>
-                          {columns.map((col) => (
-                            <td
-                              key={col.id}
-                              className="px-4 py-3 border border-gray-200"
-                            >
-                              <input
-                                type="text"
-                                placeholder={locale === 'fr' ? 'Tapez ici...' : 'Type here...'}
-                                className="w-full px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
-                                disabled
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
                     </tbody>
                   </table>
-                </div>
-                <div className="mt-4 flex justify-center">
-                  <Button variant="outline" size="sm" disabled className="rounded-xl">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {locale === 'fr' ? 'Ajouter une ligne' : 'Add Row'}
-                  </Button>
                 </div>
               </div>
             </motion.div>
