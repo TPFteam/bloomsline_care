@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Smartphone, LogOut, Loader2, ArrowRight } from 'lucide-react'
+import { ExternalLink, LogOut, Loader2 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
 export default function MemberPage() {
@@ -52,7 +52,7 @@ export default function MemberPage() {
       >
         {/* Icon */}
         <div className="w-20 h-20 rounded-3xl bg-teal-50 flex items-center justify-center mx-auto mb-8">
-          <Smartphone className="h-10 w-10 text-teal-500" />
+          <span className="text-3xl">🌿</span>
         </div>
 
         {/* Heading */}
@@ -63,36 +63,23 @@ export default function MemberPage() {
         </h1>
         <p className="text-gray-500 text-lg mb-10 leading-relaxed">
           {fr
-            ? 'Votre espace est sur l\u2019application mobile. Téléchargez Bloomsline pour accéder à vos moments, vos séances et votre parcours.'
-            : 'Your space lives in the mobile app. Download Bloomsline to access your moments, sessions, and journey.'}
+            ? 'Votre espace bien-être vous attend. Accédez à vos moments, vos séances et votre parcours.'
+            : 'Your wellbeing space is ready. Access your moments, sessions, and journey.'}
         </p>
 
-        {/* App store buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-          <a
-            href="https://apps.apple.com/app/bloomsline"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-medium inline-flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-          >
-            App Store
-            <ArrowRight className="w-4 h-4" />
-          </a>
-          <a
-            href="https://play.google.com/store/apps/details?id=com.bloomsline"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-8 py-4 bg-gray-100 text-gray-900 rounded-2xl font-medium inline-flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
-          >
-            Google Play
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
+        {/* Go to app button */}
+        <a
+          href="https://app.bloomsline.com"
+          className="w-full px-8 py-4 bg-gray-900 text-white rounded-2xl font-medium inline-flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors mb-8"
+        >
+          {fr ? 'Accéder à mon espace' : 'Go to my space'}
+          <ExternalLink className="w-4 h-4" />
+        </a>
 
         {/* Sign out */}
         <button
           onClick={handleSignOut}
-          className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1.5"
+          className="text-gray-400 hover:text-gray-600 transition-colors text-sm inline-flex items-center gap-1.5"
         >
           <LogOut className="w-3.5 h-3.5" />
           {fr ? 'Se déconnecter' : 'Sign out'}
