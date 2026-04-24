@@ -197,7 +197,7 @@ export default function BookingsPage() {
   const [calendarConnection, setCalendarConnection] = useState<CalendarConnection | null>(null)
   const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([])
   const [bookingSettings, setBookingSettings] = useState<BookingSettings | null>(null)
-  const [timezone, setTimezone] = useState('America/New_York')
+  const [timezone, setTimezone] = useState('Europe/Paris')
   const [linkCopied, setLinkCopied] = useState(false)
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
   const [isConnecting, setIsConnecting] = useState(false)
