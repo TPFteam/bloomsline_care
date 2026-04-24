@@ -77,9 +77,11 @@ How to identify question types:
 - Yes/No or True/False → {"id": "b4", "type": "yes_no", "content": "exact statement?"}
 - Rating scales (1-5, 1-10, etc.) → {"id": "b5", "type": "scale", "content": "exact question?", "min": 1, "max": 10}
 - "List X things" with blank spaces → {"id": "b6", "type": "list_input", "content": "exact instruction text"}
+- Tables with headers and empty rows to fill → {"id": "b7", "type": "table_exercise", "content": "table title", "columns": [{"id": "col1", "header": "Column Header 1"}, {"id": "col2", "header": "Column Header 2"}], "exampleRow": {"col1": "example or instruction text for column 1", "col2": "example text for column 2"}}
 
 Every block must have a unique "id" (use "b1", "b2", etc.).
 DO NOT extract section titles, headings, instructional paragraphs, or explanatory text as blocks. ONLY extract fillable questions that require a response.
+IMPORTANT: If a PDF contains a table with headers and blank rows, extract it as ONE "table_exercise" block — NOT as separate "prompt" blocks per column.
 
 IMPORTANT:
 - Scan the ENTIRE document from first page to last.

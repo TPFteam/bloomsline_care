@@ -613,6 +613,8 @@ function CreateWorksheetContent() {
           min: b.min,
           max: b.max,
           author: b.author,
+          columns: b.columns,
+          exampleRow: b.exampleRow,
         }))
 
       // Helper: split PDF pages and upload a chunk
@@ -2681,6 +2683,46 @@ function CreateWorksheetContent() {
         )}
 
         {/* PDF Document */}
+        {/* Table Exercise */}
+        {block.type === 'table_exercise' && (() => {
+          const columns = (block as any).columns || []
+          const exampleRow = (block as any).exampleRow || {}
+          return (
+            <div className="space-y-2">
+              {block.content && <label className="block text-gray-900 font-medium">{block.content}</label>}
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-800 text-white">
+                      {columns.map((col: any) => (
+                        <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.values(exampleRow).some((v: any) => v) && (
+                      <tr className="bg-gray-50">
+                        {columns.map((col: any) => (
+                          <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{exampleRow[col.id] || ''}</td>
+                        ))}
+                      </tr>
+                    )}
+                    <tr>
+                      {columns.map((col: any) => (
+                        <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
+                          <div className="min-h-[60px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
+                            {locale === 'fr' ? 'Réponse du membre...' : 'Member\'s response...'}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })()}
+
         {block.type === 'pdf_document' && (
           <div className="space-y-3">
             <label className="block text-gray-900 font-medium">
