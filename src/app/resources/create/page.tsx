@@ -196,75 +196,7 @@ export default function CreateResourcePage() {
             </motion.button>
           </div>
 
-          {/* Templates */}
-          <div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="flex items-center gap-3 mb-6"
-            >
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                {locale === 'fr' ? 'ou choisissez un modèle' : 'or pick a template'}
-              </span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </motion.div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {templates.map((template, index) => {
-                const isSelected = selectedTemplate === template.id
-                const Icon = template.icon
-                return (
-                  <motion.button
-                    key={template.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.12 + index * 0.04 }}
-                    onClick={() => setSelectedTemplate(isSelected ? null : template.id)}
-                    whileHover={{ y: -3 }}
-                    className={`relative text-left p-5 rounded-2xl border-2 transition-all group ${
-                      isSelected
-                        ? 'bg-white border-gray-900 shadow-lg ring-1 ring-gray-900/5'
-                        : 'bg-white border-transparent shadow-sm hover:shadow-md'
-                    }`}
-                  >
-                    {isSelected && (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute top-3 right-3 w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center shadow-sm">
-                        <Check className="w-3.5 h-3.5 text-white" />
-                      </motion.span>
-                    )}
-
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${template.color} flex items-center justify-center mb-4 shadow-sm`}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-
-                    <h3 className="font-semibold text-gray-900 mb-1 leading-snug">{lt(template.name, locale)}</h3>
-                    <p className="text-sm text-gray-500 mb-3 leading-relaxed">{lt(template.description, locale)}</p>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {template.blocks} {locale === 'fr' ? 'blocs' : 'blocks'}
-                      </span>
-                      <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full capitalize">
-                        {template.type === 'table' ? (locale === 'fr' ? 'Tableau' : 'Table') : (locale === 'fr' ? 'Exercice' : 'Worksheet')}
-                      </span>
-                    </div>
-                  </motion.button>
-                )
-              })}
-            </div>
-
-            {/* Continue with template */}
-            {selectedTemplate && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center">
-                <Button onClick={handleContinue} className="px-8 py-3 h-auto rounded-xl bg-gray-900 hover:bg-gray-800 text-white shadow-lg">
-                  {locale === 'fr' ? 'Continuer avec ce modèle' : 'Continue with template'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </motion.div>
-            )}
-          </div>
+          {/* Templates — hidden for now */}
         </div>
       </main>
     </div>
