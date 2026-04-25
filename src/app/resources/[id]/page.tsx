@@ -2416,7 +2416,7 @@ export default function ResourceDetailPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       className="flex-1 h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white"
-                      onClick={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
+                      onClick={() => router.push(`/resources/create/worksheet?edit=${resource.id}`)}
                     >
                       <Edit className="w-5 h-5 mr-2" />
                       {locale === 'fr' ? 'Éditer' : 'Edit'}

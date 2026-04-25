@@ -862,7 +862,7 @@ export default function MyResourcesPage() {
                         variant="owned"
                         index={index}
                         viewMode={viewMode}
-                        onEdit={() => router.push(`/resources/create/${resource.type}?edit=${resource.id}`)}
+                        onEdit={() => router.push(`/resources/create/worksheet?edit=${resource.id}`)}
                         onPreview={() => router.push(`/resources/${resource.id}`)}
                         onDelete={() => handleDelete(resource.id)}
                         onDuplicate={() => handleDuplicate(resource)}
