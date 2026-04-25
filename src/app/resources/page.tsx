@@ -621,20 +621,7 @@ export default function MyResourcesPage() {
             </div>
           </div>
 
-          {/* Sub-tabs for My Resources */}
-          <div className="flex items-center gap-2 mb-6">
-            <button
-              onClick={() => setActiveSubTab('created')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSubTab === 'created'
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {locale === 'fr' ? 'Créées' : 'Created'} ({createdResources.length})
-            </button>
-            {/* Saved tab — hidden for now (Explore is hidden) */}
-          </div>
+          {/* Sub-tabs — hidden for now (only Created remains, no need for tab) */}
 
           {/* Search and Filters */}
           <div className="flex items-center gap-3 mb-8">
