@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Interview demos - private, not for GitHub
+Interview demos/
+demo-stories.sql
+demo-stories-v2.sql
+demo-moments.sql
+file_ex/
