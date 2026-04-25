@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { analytics } from '@/lib/analytics/events'
 import { motion } from 'framer-motion'
@@ -311,9 +311,12 @@ function renderResponseValue(block: ResourceBlock, value: unknown, locale: strin
 export default function ResourceDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isTemplateView = searchParams.get('template') === 'true'
   const { locale, t } = useLanguage()
   const supabase = createClient()
   const [resource, setResource] = useState<Resource | null>(null)
+  const [duplicatingTemplate, setDuplicatingTemplate] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [removing, setRemoving] = useState(false)
@@ -2410,8 +2413,55 @@ export default function ResourceDetailPage() {
               animate={{ opacity: 1, x: 0 }}
               className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-8"
             >
+              {/* Template mode: show Duplicate button */}
+              {isTemplateView && (
+                <div className="space-y-3 mb-6 pb-6 border-b border-gray-100">
+                  <Button
+                    className="w-full h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white"
+                    disabled={duplicatingTemplate}
+                    onClick={async () => {
+                      setDuplicatingTemplate(true)
+                      try {
+                        const { data: { user: authUser } } = await supabase.auth.getUser()
+                        if (!authUser || !resource) return
+                        const title = typeof resource.title === 'string' ? resource.title : ((resource.title as any)?.[locale] || (resource.title as any)?.en || 'Untitled')
+                        const description = typeof resource.description === 'string' ? resource.description : ((resource.description as any)?.[locale] || (resource.description as any)?.en || '')
+                        const { data: newResource, error } = await supabase
+                          .from('resources')
+                          .insert({
+                            practitioner_id: authUser.id,
+                            title,
+                            description,
+                            type: resource.type || 'worksheet',
+                            category: resource.category || null,
+                            blocks: resource.blocks || [],
+                            status: 'draft',
+                            visibility: 'private',
+                            language: resource.language || locale,
+                          })
+                          .select()
+                          .single()
+                        if (error) throw error
+                        toast.success(locale === 'fr' ? 'Modèle dupliqué !' : 'Template duplicated!')
+                        router.push(`/resources/create/worksheet?edit=${newResource.id}`)
+                      } catch {
+                        toast.error(locale === 'fr' ? 'Erreur lors de la duplication' : 'Failed to duplicate')
+                      }
+                      setDuplicatingTemplate(false)
+                    }}
+                  >
+                    {duplicatingTemplate ? (
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    ) : (
+                      <Copy className="w-5 h-5 mr-2" />
+                    )}
+                    {locale === 'fr' ? 'Dupliquer ce modèle' : 'Duplicate this template'}
+                  </Button>
+                </div>
+              )}
+
               {/* Only show edit/delete buttons if the user is the owner */}
-              {isOwner && (
+              {isOwner && !isTemplateView && (
                 <div className="space-y-3 mb-6 pb-6 border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <Button

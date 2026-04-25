@@ -10,85 +10,41 @@ import {
   BookOpen,
   ChevronRight,
   Sparkles,
-  Check,
-  Brain,
-  Heart,
-  Smile,
-  Table2,
-  BarChart2,
   FileUp,
+  Loader2,
+  Copy,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
+import { toast } from 'sonner'
 
-interface Template {
-  id: string
-  name: Record<string, string>
-  description: Record<string, string>
-  blocks: number
-  type: string
-  icon: typeof FileText
-  color: string
+const BLOOMSLINE_EMAIL = 'hi@bloomsline.com'
+
+// Category colors for visual variety
+const CATEGORY_COLORS: Record<string, string> = {
+  anxiety: 'from-amber-500 to-orange-500',
+  depression: 'from-blue-500 to-indigo-500',
+  stress: 'from-rose-500 to-pink-500',
+  self_esteem: 'from-violet-500 to-purple-500',
+  relationships: 'from-teal-500 to-emerald-500',
+  mindfulness: 'from-cyan-500 to-sky-500',
+  emotional_regulation: 'from-emerald-500 to-teal-500',
+  grief_loss: 'from-slate-500 to-gray-600',
+  default: 'from-gray-600 to-gray-700',
 }
-
-const templates: Template[] = [
-  {
-    id: 'gratitude',
-    name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
-    description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
-    blocks: 12,
-    type: 'worksheet',
-    icon: Heart,
-    color: 'from-rose-500 to-pink-500',
-  },
-  {
-    id: 'self-esteem',
-    name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
-    description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour développer une estime de soi saine' },
-    blocks: 12,
-    type: 'worksheet',
-    icon: Smile,
-    color: 'from-amber-500 to-orange-500',
-  },
-  {
-    id: 'cbt-introduction',
-    name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
-    description: { en: 'Simple introduction to Cognitive Behavioral Therapy', fr: 'Introduction simple à la TCC' },
-    blocks: 12,
-    type: 'worksheet',
-    icon: Brain,
-    color: 'from-violet-500 to-purple-500',
-  },
-  {
-    id: 'cognitive-restructuring',
-    name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
-    description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
-    blocks: 7,
-    type: 'table',
-    icon: Table2,
-    color: 'from-teal-500 to-emerald-500',
-  },
-  {
-    id: 'emotion-tracker',
-    name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
-    description: { en: 'Monitor emotions and coping strategies', fr: 'Surveiller les émotions et stratégies d\'adaptation' },
-    blocks: 5,
-    type: 'table',
-    icon: BarChart2,
-    color: 'from-blue-500 to-cyan-500',
-  },
-]
 
 export default function CreateResourcePage() {
   const { locale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [templates, setTemplates] = useState<any[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(true)
+  const [duplicating, setDuplicating] = useState<string | null>(null)
+  const [previewTemplate, setPreviewTemplate] = useState<any | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -102,12 +58,79 @@ export default function CreateResourcePage() {
     fetchUser()
   }, [supabase])
 
-  const handleContinue = () => {
-    if (selectedTemplate) {
-      const template = templates.find(t => t.id === selectedTemplate)
-      router.push(`/resources/create/worksheet?template=${selectedTemplate}${template?.type === 'table' ? '&type=table' : ''}`)
+  // Fetch templates from Bloomsline account
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        // Find the Bloomsline user
+        const { data: bloomUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', BLOOMSLINE_EMAIL)
+          .single()
+
+        if (!bloomUser) {
+          setLoadingTemplates(false)
+          return
+        }
+
+        // Fetch published resources from that user
+        const { data: resources } = await supabase
+          .from('resources')
+          .select('id, title, description, type, category, blocks, status, language')
+          .eq('practitioner_id', bloomUser.id)
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+
+        setTemplates(resources || [])
+      } catch {
+        // Silent fail
+      }
+      setLoadingTemplates(false)
     }
+    fetchTemplates()
+  }, [supabase])
+
+  // Duplicate a template into the practitioner's account
+  const handleDuplicate = async (template: any) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    setDuplicating(template.id)
+    try {
+      const title = typeof template.title === 'string' ? template.title : (template.title?.[locale] || template.title?.en || 'Untitled')
+      const description = typeof template.description === 'string' ? template.description : (template.description?.[locale] || template.description?.en || '')
+
+      const { data: newResource, error } = await supabase
+        .from('resources')
+        .insert({
+          practitioner_id: authUser.id,
+          title,
+          description,
+          type: template.type || 'worksheet',
+          category: template.category || null,
+          blocks: template.blocks || [],
+          status: 'draft',
+          visibility: 'private',
+          language: template.language || locale,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      toast.success(locale === 'fr' ? 'Modèle dupliqué !' : 'Template duplicated!')
+      router.push(`/resources/create/worksheet?edit=${newResource.id}`)
+    } catch (err) {
+      console.error('Duplicate failed:', err)
+      toast.error(locale === 'fr' ? 'Erreur lors de la duplication' : 'Failed to duplicate')
+    }
+    setDuplicating(null)
   }
+
+  const getTemplateTitle = (t: any) => typeof t.title === 'string' ? t.title : (t.title?.[locale] || t.title?.en || 'Untitled')
+  const getTemplateDesc = (t: any) => typeof t.description === 'string' ? t.description : (t.description?.[locale] || t.description?.en || '')
+  const getColor = (category: string) => CATEGORY_COLORS[category] || CATEGORY_COLORS.default
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -196,9 +219,72 @@ export default function CreateResourcePage() {
             </motion.button>
           </div>
 
-          {/* Templates — hidden for now */}
+          {/* Templates from Bloomsline */}
+          {loadingTemplates ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
+            </div>
+          ) : templates.length > 0 && (
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex items-center gap-3 mb-6"
+              >
+                <div className="h-px flex-1 bg-gray-200" />
+                <span className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  {locale === 'fr' ? 'ou utilisez un modèle' : 'or use a template'}
+                </span>
+                <div className="h-px flex-1 bg-gray-200" />
+              </motion.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {templates.map((template, index) => {
+                  const title = getTemplateTitle(template)
+                  const desc = getTemplateDesc(template)
+                  const color = getColor(template.category || '')
+                  const blockCount = Array.isArray(template.blocks) ? template.blocks.length : 0
+                  const isDuplicating = duplicating === template.id
+
+                  return (
+                    <motion.button
+                      key={template.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.12 + index * 0.04 }}
+                      onClick={() => router.push(`/resources/${template.id}?template=true`)}
+                      whileHover={{ y: -3 }}
+                      className="relative text-left p-5 rounded-2xl bg-white border-transparent shadow-sm hover:shadow-md transition-all group"
+                    >
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-sm`}>
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+
+                      <h3 className="font-semibold text-gray-900 mb-1 leading-snug">{title}</h3>
+                      {desc && <p className="text-sm text-gray-500 mb-3 leading-relaxed line-clamp-2">{desc}</p>}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {blockCount > 0 && (
+                            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                              {blockCount} {locale === 'fr' ? 'blocs' : 'blocks'}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-gray-400 group-hover:text-teal-600 transition-colors">
+                          {locale === 'fr' ? 'Aperçu' : 'Preview'} →
+                        </span>
+                      </div>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
     </div>
   )
 }
