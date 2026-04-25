@@ -62,24 +62,12 @@ export default function CreateResourcePage() {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        // Find the Bloomsline user
-        const { data: bloomUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', BLOOMSLINE_EMAIL)
-          .single()
-
-        if (!bloomUser) {
-          setLoadingTemplates(false)
-          return
-        }
-
-        // Fetch published resources from that user
+        // Fetch published public resources (templates from Bloomsline)
         const { data: resources } = await supabase
           .from('resources')
           .select('id, title, description, type, category, blocks, status, language')
-          .eq('practitioner_id', bloomUser.id)
           .eq('status', 'published')
+          .eq('visibility', 'public')
           .order('created_at', { ascending: false })
 
         setTemplates(resources || [])
