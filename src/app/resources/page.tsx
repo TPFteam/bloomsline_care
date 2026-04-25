@@ -633,16 +633,7 @@ export default function MyResourcesPage() {
             >
               {locale === 'fr' ? 'Créées' : 'Created'} ({createdResources.length})
             </button>
-            <button
-              onClick={() => setActiveSubTab('saved')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSubTab === 'saved'
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {locale === 'fr' ? 'Enregistrées' : 'Saved'} ({savedResources.length})
-            </button>
+            {/* Saved tab — hidden for now (Explore is hidden) */}
           </div>
 
           {/* Search and Filters */}
