@@ -241,7 +241,7 @@ export default function CreateResourcePage() {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.12 + index * 0.04 }}
-                      onClick={() => router.push(`/resources/${template.id}?template=true`)}
+                      onClick={() => setPreviewTemplate(template)}
                       whileHover={{ y: -3 }}
                       className="relative text-left p-5 rounded-2xl bg-white border-transparent shadow-sm hover:shadow-md transition-all group"
                     >
@@ -273,6 +273,174 @@ export default function CreateResourcePage() {
         </div>
       </main>
 
+      {/* Template Preview Modal */}
+      {previewTemplate && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPreviewTemplate(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex-shrink-0">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getColor(previewTemplate.category || '')} flex items-center justify-center flex-shrink-0`}>
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{getTemplateTitle(previewTemplate)}</h3>
+                    {getTemplateDesc(previewTemplate) && (
+                      <p className="text-sm text-gray-500 mt-1 leading-relaxed">{getTemplateDesc(previewTemplate)}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-3">
+                      {previewTemplate.category && (
+                        <span className="text-xs font-medium text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full capitalize">
+                          {previewTemplate.category.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                      {previewTemplate.type && (
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full capitalize">
+                          {previewTemplate.type}
+                        </span>
+                      )}
+                      {Array.isArray(previewTemplate.blocks) && (
+                        <span className="text-xs text-gray-400">
+                          {previewTemplate.blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setPreviewTemplate(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <span className="text-lg">✕</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{locale === 'fr' ? 'Contenu' : 'Content'}</p>
+                    <p className="text-xs text-gray-400">{locale === 'fr' ? 'Ce que les patients verront' : 'As seen by members'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {Array.isArray(previewTemplate.blocks) && previewTemplate.blocks.length > 0 ? (
+                <div className="space-y-4">
+                  {previewTemplate.blocks.map((block: any, i: number) => {
+                    const blockContent = typeof block.content === 'string' ? block.content : (block.content?.[locale] || block.content?.en || '')
+                    const blockType = block.type as string
+
+                    if (blockType === 'heading') return (
+                      <h3 key={block.id || i} className="text-lg font-semibold text-gray-900">{blockContent}</h3>
+                    )
+                    if (blockType === 'paragraph') return (
+                      <p key={block.id || i} className="text-gray-600 leading-relaxed">{blockContent}</p>
+                    )
+                    if (blockType === 'divider') return (
+                      <hr key={block.id || i} className="border-gray-200" />
+                    )
+                    if (blockType === 'prompt') return (
+                      <div key={block.id || i} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+                        <p className="text-gray-800 font-medium mb-2">{blockContent}</p>
+                        <div className="min-h-[60px] bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center">
+                          <span className="text-sm text-gray-400">{locale === 'fr' ? 'Zone de réponse' : 'Response area'}</span>
+                        </div>
+                      </div>
+                    )
+                    if (blockType === 'table_exercise') {
+                      const columns = block.columns || []
+                      const exampleRow = block.exampleRow || {}
+                      return (
+                        <div key={block.id || i}>
+                          {blockContent && <p className="text-gray-800 font-medium mb-2">{blockContent}</p>}
+                          <div className="overflow-x-auto rounded-xl border border-gray-200">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-gray-800 text-white">
+                                  {columns.map((col: any) => (
+                                    <th key={col.id} className="px-4 py-2.5 text-left text-xs font-semibold">{col.header}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.values(exampleRow).some((v: any) => v) && (
+                                  <tr className="bg-gray-50">
+                                    {columns.map((col: any) => (
+                                      <td key={col.id} className="px-4 py-2.5 text-xs text-gray-500 italic border-t border-gray-100 align-top whitespace-pre-wrap">{exampleRow[col.id] || ''}</td>
+                                    ))}
+                                  </tr>
+                                )}
+                                <tr>
+                                  {columns.map((col: any) => (
+                                    <td key={col.id} className="px-4 py-3 border-t border-gray-100 align-top">
+                                      <div className="min-h-[50px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-400 italic">
+                                        {locale === 'fr' ? 'Réponse...' : "Response..."}
+                                      </div>
+                                    </td>
+                                  ))}
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )
+                    }
+                    if (blockType === 'quote') return (
+                      <blockquote key={block.id || i} className="border-l-4 border-gray-300 pl-4 py-2 italic text-gray-600 bg-gray-50/30 rounded-r-lg">
+                        {blockContent}
+                      </blockquote>
+                    )
+                    if (blockType === 'tip') return (
+                      <div key={block.id || i} className="p-4 rounded-xl border bg-blue-50 border-blue-200 text-blue-800 text-sm">
+                        {blockContent}
+                      </div>
+                    )
+                    if (blockContent) return (
+                      <p key={block.id || i} className="text-gray-600">{blockContent}</p>
+                    )
+                    return null
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-8">{locale === 'fr' ? 'Aucun contenu' : 'No content'}</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-100 flex-shrink-0 flex gap-3">
+              <button
+                onClick={() => setPreviewTemplate(null)}
+                className="flex-1 py-3 text-sm font-medium text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Fermer' : 'Close'}
+              </button>
+              <button
+                onClick={() => { setPreviewTemplate(null); handleDuplicate(previewTemplate) }}
+                disabled={!!duplicating}
+                className="flex-1 py-3 text-sm font-medium text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {duplicating === previewTemplate.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    {locale === 'fr' ? 'Dupliquer ce modèle' : 'Duplicate template'}
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
