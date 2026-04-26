@@ -155,7 +155,7 @@ interface RichTextEditorProps {
   activeTagType?: string
 }
 
-export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 10, onTagInsert, activeTagType, attachments = [], onAttachmentsChange, attachmentStoragePath }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, memberId, locale, autoFocus, milestones, noteTypes, memberName, onAutoSave, autoSaveDelay = 2000, toolbarActions, compact, onSubmit, lockedTypes, onAddType, onRenameType, onDeleteType, getTagNoteCount, maxTypes = 7, onTagInsert, activeTagType, attachments = [], onAttachmentsChange, attachmentStoragePath }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textFileInputRef = useRef<HTMLInputElement>(null)
