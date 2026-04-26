@@ -1958,7 +1958,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       onRenameType={handleEditorRenameType}
                       onDeleteType={handleEditorDeleteType}
                       getTagNoteCount={getTagNoteCount}
-                      maxTypes={10}
+                      maxTypes={7}
                       memberName={member?.first_name}
                       attachments={snAttachments}
                       onAttachmentsChange={setSnAttachments}
