@@ -2115,30 +2115,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   </button>
                 </div>
               </div>
-              {milestones.length > 0 && (
-                <div className="flex-shrink-0">
-                  <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
-                    {locale === 'fr' ? 'Axes de travail' : 'Goals'}
-                  </label>
-                  <div className="flex flex-wrap gap-1">
-                    <button
-                      onClick={() => setBrowseMilestoneFilters([])}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${browseMilestoneFilters.length === 0 ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                    >
-                      {locale === 'fr' ? 'Tous' : 'All'}
-                    </button>
-                    {milestones.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => setBrowseMilestoneFilters(prev => prev.includes(m.id) ? prev.filter(g => g !== m.id) : [...prev, m.id])}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all flex items-center gap-0.5 ${browseMilestoneFilters.includes(m.id) ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                      >
-                        <Target className="w-2.5 h-2.5" />{m.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Goals filter — hidden for now */}
               {sessions.length > 0 && (
                 <div className="flex-1 flex flex-col min-h-0">
                   <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider flex-shrink-0">
