@@ -2077,16 +2077,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 bg-gray-50"
                 />
               </div>
-              {/* AND/OR toggle */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="text-[10px] text-gray-400">{locale === 'fr' ? 'Combiner les filtres avec' : 'Combine filters with'}</span>
-                <button
-                  onClick={() => setObsConjunction(prev => prev === 'and' ? 'or' : 'and')}
-                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${obsConjunction === 'and' ? 'bg-gray-900 text-white' : 'bg-amber-100 text-amber-700'}`}
-                >
-                  {obsConjunction === 'and' ? (locale === 'fr' ? 'ET' : 'AND') : (locale === 'fr' ? 'OU' : 'OR')}
-                </button>
-              </div>
+              {/* AND/OR toggle — hidden for now */}
               <div className="flex-shrink-0">
                 <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
                   {locale === 'fr' ? 'Types' : 'Tags'}
