@@ -827,8 +827,8 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 exit={{ opacity: 0 }}
                 className="space-y-4"
               >
-                {/* Communication Style */}
-                <div>
+                {/* Communication Style — hidden */}
+                {false && <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {t.members.form.communicationStyle}
                   </label>
@@ -875,7 +875,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                       ))}
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Key Strengths */}
                 <div>
@@ -1023,23 +1023,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
-                {localizedCommStyles.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                      {t.members.overview.communicationStyle}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {localizedCommStyles.map((style) => (
-                        <span
-                          key={style}
-                          className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-sm"
-                        >
-                          {style}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Communication Style — hidden */}
 
                 {localizedStrengths.length > 0 && (
                   <div>
