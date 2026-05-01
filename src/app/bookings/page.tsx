@@ -1367,14 +1367,27 @@ export default function BookingsPage() {
                       onChange={(e) => setTimezone(e.target.value)}
                       className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                     >
-                      <option value="America/New_York">Eastern Time (ET)</option>
-                      <option value="America/Chicago">Central Time (CT)</option>
-                      <option value="America/Denver">Mountain Time (MT)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="Europe/London">London (GMT)</option>
-                      <option value="Europe/Paris">Paris (CET)</option>
-                      <option value="Asia/Tokyo">Tokyo (JST)</option>
-                      <option value="Asia/Kolkata">India (IST)</option>
+                      <option value="Pacific/Midway">GMT-11 — Midway</option>
+                      <option value="Pacific/Honolulu">GMT-10 — Honolulu</option>
+                      <option value="America/Anchorage">GMT-9 — Alaska</option>
+                      <option value="America/Los_Angeles">GMT-8 — Los Angeles</option>
+                      <option value="America/Denver">GMT-7 — Denver</option>
+                      <option value="America/Chicago">GMT-6 — Chicago</option>
+                      <option value="America/New_York">GMT-5 — New York</option>
+                      <option value="America/Sao_Paulo">GMT-3 — São Paulo</option>
+                      <option value="Atlantic/Cape_Verde">GMT-1 — Cap-Vert</option>
+                      <option value="Europe/London">GMT+0 — London</option>
+                      <option value="Europe/Paris">GMT+1 — Paris</option>
+                      <option value="Europe/Berlin">GMT+1 — Berlin</option>
+                      <option value="Europe/Bucharest">GMT+2 — Bucharest</option>
+                      <option value="Africa/Nairobi">GMT+3 — Nairobi</option>
+                      <option value="Asia/Dubai">GMT+4 — Dubai</option>
+                      <option value="Asia/Kolkata">GMT+5:30 — India</option>
+                      <option value="Asia/Bangkok">GMT+7 — Bangkok</option>
+                      <option value="Asia/Shanghai">GMT+8 — Shanghai</option>
+                      <option value="Asia/Tokyo">GMT+9 — Tokyo</option>
+                      <option value="Australia/Sydney">GMT+10 — Sydney</option>
+                      <option value="Pacific/Auckland">GMT+12 — Auckland</option>
                     </select>
                   </div>
 
