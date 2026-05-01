@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { TimeSelect } from '@/components/ui/time-select'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
+import { useSearchParams } from 'next/navigation'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
@@ -112,8 +113,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
+  const searchParams = useSearchParams()
   const [showAddSession, setShowAddSession] = useState(false)
-  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true')
   const [sessionType, setSessionType] = useState<SessionType>('follow_up')
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [scheduledAt, setScheduledAt] = useState('')

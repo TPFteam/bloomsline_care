@@ -35,6 +35,7 @@ import {
   Square,
   SlidersHorizontal,
   ArrowUpDown,
+  CalendarPlus,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -3503,6 +3504,13 @@ function MemberCard({
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={`/members/${member.id}?tab=sessions&book=true`}
+            className="p-2 rounded-full text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+            title={locale === 'fr' ? 'Réserver une séance' : 'Book session'}
+          >
+            <CalendarPlus className="w-4 h-4" />
+          </Link>
           <button
             onClick={(e) => { e.stopPropagation(); onEdit?.(member.id) }}
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
