@@ -172,7 +172,7 @@ export default function MembersPage() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchOpen, setSearchOpen] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'newest' | 'upcoming' | 'last_session'>('name')
+  const [sortBy, setSortBy] = useState<'name' | 'newest' | 'upcoming' | 'last_session' | 'status'>('name')
   const [showSortMenu, setShowSortMenu] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -1356,6 +1356,10 @@ export default function MembersPage() {
       if (!bLast) return -1
       return new Date(bLast).getTime() - new Date(aLast).getTime()
     }
+    if (sortBy === 'status') {
+      const order: Record<string, number> = { active: 0, pending: 1, inactive: 2, prospect: 3 }
+      return (order[a.status] ?? 9) - (order[b.status] ?? 9)
+    }
     return 0
   })
 
@@ -1624,6 +1628,7 @@ export default function MembersPage() {
                           { value: 'newest' as const, label: locale === 'fr' ? 'Plus récent' : 'Newest first' },
                           { value: 'upcoming' as const, label: locale === 'fr' ? 'Prochaine séance' : 'Upcoming session' },
                           { value: 'last_session' as const, label: locale === 'fr' ? 'Dernière séance' : 'Last session' },
+                          { value: 'status' as const, label: locale === 'fr' ? 'Actifs en premier' : 'Active first' },
                         ]).map(option => (
                           <button
                             key={option.value}
