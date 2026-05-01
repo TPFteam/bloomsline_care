@@ -39,6 +39,7 @@ interface WeekCalendarViewProps {
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
   processingId?: string | null
+  onSlotClick?: (day: Date, time: string) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -46,7 +47,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -283,7 +284,25 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
           const laid = layoutEvents(dayEvents)
 
           return (
-            <div key={day.toISOString()} className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''}`}>
+            <div
+              key={day.toISOString()}
+              className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick ? 'cursor-pointer' : ''}`}
+              onClick={(e) => {
+                if (!onSlotClick) return
+                // Only handle clicks on the grid background, not on events
+                if ((e.target as HTMLElement).closest('[data-event]')) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const y = e.clientY - rect.top
+                const rawHour = START_HOUR + y / HOUR_HEIGHT
+                // Round to nearest 15 min
+                const hour = Math.floor(rawHour)
+                const minutes = Math.round((rawHour - hour) * 60 / 15) * 15
+                const adjustedMinutes = minutes === 60 ? 0 : minutes
+                const adjustedHour = minutes === 60 ? hour + 1 : hour
+                const time = `${String(adjustedHour).padStart(2, '0')}:${String(adjustedMinutes).padStart(2, '0')}`
+                onSlotClick(day, time)
+              }}
+            >
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                 <div key={i} className="border-b border-gray-50" style={{ height: HOUR_HEIGHT }} />
               ))}
@@ -314,7 +333,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
                 const width = `${colWidth - 2}%`
 
                 return (
-                  <div key={event.id}>
+                  <div key={event.id} data-event>
                     <div
                       onClick={() => setSelectedEvent(isSelected ? null : event.id)}
                       className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${

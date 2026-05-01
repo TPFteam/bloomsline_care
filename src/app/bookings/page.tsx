@@ -490,6 +490,7 @@ export default function BookingsPage() {
 
   // Reschedule
   const [rescheduleBooking, setRescheduleBooking] = useState<any | null>(null)
+  const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string } | null>(null)
   const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
@@ -956,7 +957,13 @@ export default function BookingsPage() {
 
               {/* Calendar View */}
               {bookingView === 'calendar' ? (
-                <WeekCalendarView bookings={bookings} onApprove={handleApprove} onReject={handleReject} processingId={processingId} />
+                <WeekCalendarView
+                  bookings={bookings}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  processingId={processingId}
+                  onSlotClick={(day, time) => setCalendarSlotBooking({ date: day, time })}
+                />
               ) : (
               <>
               {/* Bookings List */}
@@ -2009,6 +2016,21 @@ export default function BookingsPage() {
           start_time: rescheduleBooking.start_time,
           end_time: rescheduleBooking.end_time,
         } : null}
+      />
+
+      {/* Calendar Slot Booking Modal */}
+      <ScheduleSessionModal
+        isOpen={!!calendarSlotBooking}
+        onClose={() => setCalendarSlotBooking(null)}
+        onSuccess={() => {
+          setCalendarSlotBooking(null)
+          const sb = createClient()
+          sb.from('bookings').select('*').eq('practitioner_id', userId).order('start_time', { ascending: true }).then(({ data }: { data: any }) => {
+            if (data) setBookings(data)
+          })
+        }}
+        preselectedDate={calendarSlotBooking?.date}
+        preselectedTime={calendarSlotBooking?.time}
       />
 
       {/* Settings Saved Confirmation Modal */}

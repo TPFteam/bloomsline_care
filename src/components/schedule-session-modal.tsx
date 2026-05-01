@@ -47,12 +47,14 @@ interface ScheduleSessionModalProps {
   onSuccess?: () => void
   preselectedMember?: Member | null
   rescheduleBooking?: RescheduleBooking | null
+  preselectedDate?: Date
+  preselectedTime?: string
 }
 
 type Step = 'member' | 'session' | 'format' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
-export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData }: ScheduleSessionModalProps) {
+export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime }: ScheduleSessionModalProps) {
   const { locale } = useLanguage()
   const router = useRouter()
   const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
@@ -191,13 +193,13 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setSelectedMember(preselectedMember || null)
         setSelectedSessionType(null)
         setSelectedSessionFormat(null)
-        setSelectedDate(startOfDay(new Date()))
-        setSelectedTime(null)
+        setSelectedDate(preselectedDate ? startOfDay(preselectedDate) : startOfDay(new Date()))
+        setSelectedTime(preselectedTime || null)
         setNotes('')
         setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
         setManualSessionType('')
         setManualDuration(60)
-        setManualTime('10:00')
+        setManualTime(preselectedTime || '10:00')
       }
       setSearchQuery('')
       setAvailableSlots([])
