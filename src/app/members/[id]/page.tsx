@@ -19,6 +19,7 @@ import {
   Loader2,
   Copy,
   UserPlus,
+  CalendarPlus,
 } from 'lucide-react'
 import { EditMemberModal } from '@/components/members/EditMemberModal'
 import { MaskedContact } from '@/components/ui/masked-contact'
@@ -59,6 +60,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [showConvertConfirm, setShowConvertConfirm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [bookSessionTrigger, setBookSessionTrigger] = useState(false)
   const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
@@ -293,10 +295,26 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6"
+            className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 relative"
           >
             <div className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
+                {/* Book Session - top right */}
+                <div className="absolute top-6 right-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setActiveTab('sessions')
+                      updateTabInUrl('sessions')
+                      setBookSessionTrigger(true)
+                    }}
+                    className="text-teal-600 border-teal-200 hover:bg-teal-50 hover:text-teal-700"
+                  >
+                    <CalendarPlus className="w-4 h-4 mr-1.5" />
+                    {locale === 'fr' ? 'Réserver une séance' : 'Book session'}
+                  </Button>
+                </div>
                 {/* Avatar */}
                 <div className="flex-shrink-0 flex justify-center md:justify-start">
                   <div className="relative">
@@ -473,6 +491,8 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   sessions={sessions}
                   onSessionsUpdate={fetchRelatedData}
                   highlightSessionId={highlightId}
+                  openBookModal={bookSessionTrigger}
+                  onBookModalOpened={() => setBookSessionTrigger(false)}
                 />
               )}
               {activeTab === 'notes' && (

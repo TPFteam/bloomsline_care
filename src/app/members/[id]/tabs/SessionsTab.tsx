@@ -50,9 +50,11 @@ interface SessionsTabProps {
   sessions: Session[]
   onSessionsUpdate: () => void
   highlightSessionId?: string
+  openBookModal?: boolean
+  onBookModalOpened?: () => void
 }
 
-export default function SessionsTab({ memberId, member, sessions, onSessionsUpdate, highlightSessionId }: SessionsTabProps) {
+export default function SessionsTab({ memberId, member, sessions, onSessionsUpdate, highlightSessionId, openBookModal, onBookModalOpened }: SessionsTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
 
@@ -115,7 +117,15 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   const searchParams = useSearchParams()
   const [showAddSession, setShowAddSession] = useState(false)
-  const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true')
+  const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true' || openBookModal === true)
+
+  // Open modal when triggered from parent (e.g. header Book Session button)
+  useEffect(() => {
+    if (openBookModal) {
+      setShowScheduleModal(true)
+      onBookModalOpened?.()
+    }
+  }, [openBookModal])
   const [sessionType, setSessionType] = useState<SessionType>('follow_up')
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [scheduledAt, setScheduledAt] = useState('')
