@@ -147,11 +147,16 @@ function formatSessionType(type: string, locale: string): string {
   return map[type]?.[lang] || map.other[lang]
 }
 
-function buildMonthlyChart(sessions: SessionRow[], members: MemberRow[], locale: string, refDate: Date): MonthlyData[] {
+function buildMonthlyChart(sessions: SessionRow[], members: MemberRow[], locale: string, refDate: Date, mode: 'month' | 'year' | 'custom' = 'month'): MonthlyData[] {
   const data: MonthlyData[] = []
   const lid = locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US'
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1)
+  const months: Date[] = []
+  if (mode === 'year') {
+    for (let m = 0; m < 12; m++) months.push(new Date(refDate.getFullYear(), m, 1))
+  } else {
+    for (let i = 5; i >= 0; i--) months.push(new Date(refDate.getFullYear(), refDate.getMonth() - i, 1))
+  }
+  for (const d of months) {
     const monthStart = new Date(d.getFullYear(), d.getMonth(), 1)
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59)
     const monthSessions = sessions.filter((s) => {
@@ -163,9 +168,9 @@ function buildMonthlyChart(sessions: SessionRow[], members: MemberRow[], locale:
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
       .slice(0, 8)
       .map(s => {
-        const m = members.find(mem => mem.id === s.member_id)
+        const mem = members.find(m => m.id === s.member_id)
         return {
-          memberName: m ? `${m.first_name} ${m.last_name[0]}.` : '—',
+          memberName: mem ? `${mem.first_name} ${mem.last_name[0]}.` : '—',
           type: s.session_type,
           status: s.status,
           date: new Date(s.scheduled_at).toLocaleDateString(lid, { day: 'numeric', weekday: 'short' }),
@@ -454,7 +459,7 @@ export default function AnalyticsPage() {
   }).length
 
   const nextSession = upcomingSessions[0] || null
-  const chartData = buildMonthlyChart(sessions, members, locale, selectedMonth)
+  const chartData = buildMonthlyChart(sessions, members, locale, selectedMonth, viewMode)
 
   // Only show milestones that existed by the end of the selected month
   const milestonesInRange = milestones.filter(
