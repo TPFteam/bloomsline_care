@@ -290,7 +290,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       const extUrl = (settings as Record<string, unknown>)?.external_booking_url
       const isExternal = extUrl !== null && extUrl !== undefined
       setHasExternalBooking(isExternal)
-      setScheduleMode(isExternal ? 'manual' : 'calendar')
+      // Only set default schedule mode if user hasn't already advanced past the session step
+      setScheduleMode(prev => {
+        // If user already toggled to manual, keep it
+        if (prev === 'manual') return 'manual'
+        return isExternal ? 'manual' : 'calendar'
+      })
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
