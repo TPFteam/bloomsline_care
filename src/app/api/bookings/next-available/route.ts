@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'practitionerId is required' }, { status: 400 });
   }
 
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(practitionerId)) {
+    return NextResponse.json({ error: 'Invalid practitioner ID format' }, { status: 400 });
+  }
+
   const supabase = createAdminClient();
 
   // Get active schedule days to know which days to scan

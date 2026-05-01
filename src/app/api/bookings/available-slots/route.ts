@@ -40,6 +40,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Validate practitionerId is a valid UUID
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(practitionerId)) {
+    return NextResponse.json(
+      { error: 'Invalid practitioner ID format' },
+      { status: 400 }
+    );
+  }
+
   // Validate date format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json(
