@@ -31,6 +31,7 @@ import {
   Search,
   RefreshCw,
   CalendarPlus,
+  Video,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -108,7 +109,7 @@ function DashboardContent() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
-  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string }[]>([])
+  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string; meet_link?: string | null }[]>([])
 
   // Member picker for quick actions
   const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
@@ -497,7 +498,7 @@ function DashboardContent() {
       const [bookingsRes, sessionsRes] = await Promise.all([
         supabase
           .from('bookings')
-          .select('id, client_name, session_type, start_time, member_id, status')
+          .select('id, client_name, session_type, start_time, member_id, status, meet_link')
           .eq('practitioner_id', authUser.id)
           .in('status', ['confirmed', 'pending'])
           .gte('start_time', now)
@@ -1043,6 +1044,18 @@ function DashboardContent() {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
                             {locale === 'fr' ? 'En attente' : 'Pending'}
                           </span>
+                        )}
+                        {session.meet_link && session.status !== 'pending' && (
+                          <a
+                            href={session.meet_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                          </a>
                         )}
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                       </div>

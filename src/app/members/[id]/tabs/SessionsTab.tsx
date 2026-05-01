@@ -72,6 +72,13 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     fetchBookings()
   }, [memberId])
 
+  // Build meet_link lookup: match booking start_time to session scheduled_at (within 1 min)
+  const getMeetLinkForSession = (scheduledAt: string): string | null => {
+    const sessionTime = Math.floor(new Date(scheduledAt).getTime() / 60000)
+    const booking = pendingBookings.find(b => b.meet_link && Math.floor(new Date(b.start_time).getTime() / 60000) === sessionTime)
+    return booking?.meet_link || null
+  }
+
   const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'cancelled') => {
     const booking = pendingBookings.find(b => b.id === bookingId)
     const { error } = await supabase
@@ -1074,6 +1081,20 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {(() => {
+                        const meetLink = getMeetLinkForSession(session.scheduled_at)
+                        return meetLink ? (
+                          <a
+                            href={meetLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors mr-1"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                          </a>
+                        ) : null
+                      })()}
                       <Button
                         variant="ghost"
                         size="sm"
