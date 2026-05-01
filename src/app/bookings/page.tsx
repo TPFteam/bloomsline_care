@@ -1228,7 +1228,7 @@ export default function BookingsPage() {
                       className="p-3 rounded-xl border border-gray-200 bg-gray-50/50"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div className="flex-1 grid grid-cols-3 gap-3">
                           <div>
                             <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</label>
                             <input
@@ -1262,6 +1262,23 @@ export default function BookingsPage() {
                                 <option key={d} value={d}>{d} min</option>
                               ))}
                             </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Prix (€)' : 'Price (€)'}</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={type.price ?? ''}
+                              onChange={(e) => {
+                                const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                                updated[index] = { ...updated[index], price: e.target.value ? parseFloat(e.target.value) : null }
+                                setSessionTypes(updated)
+                                setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                              }}
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400"
+                              placeholder="0"
+                            />
                           </div>
                         </div>
                         {!isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1 && (
