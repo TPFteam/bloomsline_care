@@ -961,19 +961,69 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  />
+                  <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                    <select
+                      value={customStart ? new Date(customStart).getMonth() : new Date().getMonth()}
+                      onChange={(e) => {
+                        const m = parseInt(e.target.value)
+                        const y = customStart ? new Date(customStart).getFullYear() : new Date().getFullYear()
+                        setCustomStart(`${y}-${String(m + 1).padStart(2, '0')}-01`)
+                      }}
+                      className="text-xs bg-transparent border-0 focus:outline-none text-gray-700 font-medium cursor-pointer"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {new Date(2026, i).toLocaleDateString(localeId(locale), { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={customStart ? new Date(customStart).getFullYear() : new Date().getFullYear()}
+                      onChange={(e) => {
+                        const y = parseInt(e.target.value)
+                        const m = customStart ? new Date(customStart).getMonth() : 0
+                        setCustomStart(`${y}-${String(m + 1).padStart(2, '0')}-01`)
+                      }}
+                      className="text-xs bg-transparent border-0 focus:outline-none text-gray-700 font-medium cursor-pointer"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
                   <span className="text-xs text-gray-400">→</span>
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  />
+                  <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                    <select
+                      value={customEnd ? new Date(customEnd).getMonth() : new Date().getMonth()}
+                      onChange={(e) => {
+                        const m = parseInt(e.target.value)
+                        const y = customEnd ? new Date(customEnd).getFullYear() : new Date().getFullYear()
+                        const lastDay = new Date(y, m + 1, 0).getDate()
+                        setCustomEnd(`${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`)
+                      }}
+                      className="text-xs bg-transparent border-0 focus:outline-none text-gray-700 font-medium cursor-pointer"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {new Date(2026, i).toLocaleDateString(localeId(locale), { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={customEnd ? new Date(customEnd).getFullYear() : new Date().getFullYear()}
+                      onChange={(e) => {
+                        const y = parseInt(e.target.value)
+                        const m = customEnd ? new Date(customEnd).getMonth() : 11
+                        const lastDay = new Date(y, m + 1, 0).getDate()
+                        setCustomEnd(`${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`)
+                      }}
+                      className="text-xs bg-transparent border-0 focus:outline-none text-gray-700 font-medium cursor-pointer"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
             </div>
