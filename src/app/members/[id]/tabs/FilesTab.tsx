@@ -29,6 +29,8 @@ import {
   ChevronRight,
   FolderPlus,
   Loader2,
+  Check,
+  AlertCircle,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -84,9 +86,14 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   // Upload modal state
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadingFolderName, setUploadingFolderName] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, 'pending' | 'uploading' | 'done' | 'error'>>({})
   const [fileTitle, setFileTitle] = useState('')
   const [fileDescription, setFileDescription] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<FileCategory>('general')
+  const [isDragging, setIsDragging] = useState(false)
+  const folderInputRef = useRef<HTMLInputElement>(null)
 
   // New folder modal state
   const [showNewFolderModal, setShowNewFolderModal] = useState(false)
@@ -222,65 +229,213 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
     if (!file) return
 
     setSelectedFile(file)
-    setFileTitle(file.name.replace(/\.[^/.]+$/, '')) // Remove extension for default title
+    setSelectedFiles([file])
+    setUploadingFolderName(null)
+    setFileTitle(file.name.replace(/\.[^/.]+$/, ''))
     setFileDescription('')
     setSelectedCategory('general')
     setShowUploadModal(true)
 
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const addFilesToUpload = (newFiles: File[]) => {
+    setSelectedFiles(prev => {
+      const combined = [...prev, ...newFiles].slice(0, 15)
+      if (combined.length === 1) {
+        setSelectedFile(combined[0])
+        setFileTitle(combined[0].name.replace(/\.[^/.]+$/, ''))
+      } else {
+        setSelectedFile(null)
+        setFileTitle('')
+      }
+      return combined
+    })
+  }
+
+  const removeFileFromUpload = (index: number) => {
+    setSelectedFiles(prev => {
+      const updated = prev.filter((_, i) => i !== index)
+      if (updated.length === 1) {
+        setSelectedFile(updated[0])
+        setFileTitle(updated[0].name.replace(/\.[^/.]+$/, ''))
+      } else if (updated.length === 0) {
+        setSelectedFile(null)
+        setFileTitle('')
+      }
+      return updated
+    })
+  }
+
+  const handleMultiFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
+    const newFiles = Array.from(fileList).slice(0, 15)
+    setSelectedFiles(newFiles)
+    setUploadingFolderName(null)
+    if (newFiles.length === 1) {
+      setSelectedFile(newFiles[0])
+      setFileTitle(newFiles[0].name.replace(/\.[^/.]+$/, ''))
+    } else {
+      setSelectedFile(null)
+      setFileTitle('')
     }
+    setFileDescription('')
+    setSelectedCategory('general')
+    setShowUploadModal(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList || fileList.length === 0) return
+    const newFiles = Array.from(fileList).filter(f => !f.name.startsWith('.')).slice(0, 15)
+    if (newFiles.length === 0) return
+    // Extract folder name from webkitRelativePath
+    const folderName = newFiles[0]?.webkitRelativePath?.split('/')[0] || 'Folder'
+    setSelectedFiles(newFiles)
+    setUploadingFolderName(folderName)
+    setSelectedFile(null)
+    setFileTitle('')
+    setFileDescription('')
+    setSelectedCategory('general')
+    setShowUploadModal(true)
+    if (folderInputRef.current) folderInputRef.current.value = ''
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const items = e.dataTransfer.items
+    const droppedFiles: File[] = []
+    let folderName: string | null = null
+
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.()
+        if (entry?.isDirectory) {
+          folderName = entry.name
+          const dirReader = (entry as any).createReader()
+          const entries: any[] = await new Promise(resolve => {
+            dirReader.readEntries((results: any[]) => resolve(results))
+          })
+          for (const fileEntry of entries) {
+            if (fileEntry.isFile) {
+              const file: File = await new Promise(resolve => fileEntry.file(resolve))
+              if (!file.name.startsWith('.')) droppedFiles.push(file)
+            }
+          }
+        } else if (entry?.isFile) {
+          const file = items[i].getAsFile()
+          if (file) droppedFiles.push(file)
+        }
+      }
+    } else {
+      droppedFiles.push(...Array.from(e.dataTransfer.files))
+    }
+
+    if (droppedFiles.length === 0) return
+    const limited = droppedFiles.slice(0, 15)
+    setSelectedFiles(limited)
+    setUploadingFolderName(folderName)
+    if (limited.length === 1 && !folderName) {
+      setSelectedFile(limited[0])
+      setFileTitle(limited[0].name.replace(/\.[^/.]+$/, ''))
+    } else {
+      setSelectedFile(null)
+      setFileTitle('')
+    }
+    setFileDescription('')
+    setSelectedCategory('general')
+    setShowUploadModal(true)
   }
 
   // Handle actual upload after modal confirmation
   const handleFileUpload = async () => {
-    if (!selectedFile) return
+    if (selectedFiles.length === 0) return
 
     setUploading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Upload to storage
-      const fileExt = selectedFile.name.split('.').pop()
-      const fileName = `${memberId}/${Date.now()}.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('member-files')
-        .upload(fileName, selectedFile)
-
-      if (uploadError) throw uploadError
-
-      // Save file metadata with title and description
-      // Build insert object - only include folder fields if we're in a folder
-      const insertData: Record<string, unknown> = {
-        member_id: memberId,
-        practitioner_id: user.id,
-        file_name: fileTitle.trim() || selectedFile.name,
-        file_type: selectedFile.type,
-        file_size: selectedFile.size,
-        storage_path: fileName,
-        category: selectedCategory,
-        description: fileDescription.trim() || null,
+      // If folder upload, create the folder first
+      let targetFolderId = currentFolderId
+      if (uploadingFolderName) {
+        const { data: folderData, error: folderErr } = await supabase
+          .from('member_files')
+          .insert({
+            member_id: memberId,
+            practitioner_id: user.id,
+            file_name: uploadingFolderName,
+            is_folder: true,
+            parent_folder_id: currentFolderId,
+            file_type: '',
+            storage_path: '',
+            category: 'general',
+          })
+          .select('id')
+          .single()
+        if (folderErr) throw folderErr
+        targetFolderId = folderData.id
       }
 
-      // Only add folder-related fields if migration has been applied
-      // We detect this by checking if we're in a subfolder or if folders exist
-      if (currentFolderId !== null || files.some(f => f.is_folder)) {
-        insertData.is_folder = false
-        insertData.parent_folder_id = currentFolderId
+      const progress: Record<string, 'pending' | 'uploading' | 'done' | 'error'> = {}
+      selectedFiles.forEach(f => { progress[f.name] = 'pending' })
+      setUploadProgress({ ...progress })
+
+      for (const file of selectedFiles) {
+        progress[file.name] = 'uploading'
+        setUploadProgress({ ...progress })
+
+        try {
+          const fileExt = file.name.split('.').pop()
+          const storagePath = `${memberId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${fileExt}`
+
+          const { error: uploadError } = await supabase.storage
+            .from('member-files')
+            .upload(storagePath, file)
+          if (uploadError) throw uploadError
+
+          const insertData: Record<string, unknown> = {
+            member_id: memberId,
+            practitioner_id: user.id,
+            file_name: selectedFiles.length === 1 && fileTitle.trim() ? fileTitle.trim() : file.name.replace(/\.[^/.]+$/, ''),
+            file_type: file.type,
+            file_size: file.size,
+            storage_path: storagePath,
+            category: selectedCategory,
+            description: selectedFiles.length === 1 ? (fileDescription.trim() || null) : null,
+          }
+          if (targetFolderId !== null || files.some(f => f.is_folder)) {
+            insertData.is_folder = false
+            insertData.parent_folder_id = targetFolderId
+          }
+
+          const { error: dbError } = await supabase.from('member_files').insert(insertData)
+          if (dbError) throw dbError
+
+          progress[file.name] = 'done'
+        } catch {
+          progress[file.name] = 'error'
+        }
+        setUploadProgress({ ...progress })
       }
 
-      const { error: dbError } = await supabase
-        .from('member_files')
-        .insert(insertData)
+      const doneCount = Object.values(progress).filter(s => s === 'done').length
+      if (doneCount > 0) {
+        toast.success(locale === 'fr' ? `${doneCount} fichier(s) importé(s)` : `${doneCount} file(s) uploaded`)
+      }
+      const errorCount = Object.values(progress).filter(s => s === 'error').length
+      if (errorCount > 0) {
+        toast.error(locale === 'fr' ? `${errorCount} fichier(s) en erreur` : `${errorCount} file(s) failed`)
+      }
 
-      if (dbError) throw dbError
-
-      toast.success(t.members.success.fileUploaded)
       setShowUploadModal(false)
       setSelectedFile(null)
+      setSelectedFiles([])
+      setUploadingFolderName(null)
+      setUploadProgress({})
       setFileTitle('')
       setFileDescription('')
       fetchFolderContents(currentFolderId)
@@ -295,6 +450,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const handleCloseModal = () => {
     setShowUploadModal(false)
     setSelectedFile(null)
+    setSelectedFiles([])
+    setUploadingFolderName(null)
+    setUploadProgress({})
     setFileTitle('')
     setFileDescription('')
   }
@@ -522,11 +680,20 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
   return (
     <div className="space-y-6">
-      {/* Hidden file input */}
+      {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
-        onChange={handleFileSelect}
+        multiple
+        onChange={handleMultiFileSelect}
+        className="hidden"
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        {...{ webkitdirectory: '', directory: '' } as any}
+        multiple
+        onChange={handleFolderSelect}
         className="hidden"
       />
 
@@ -687,7 +854,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             {t.members.files.newFolder}
           </Button>
           <Button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { setSelectedFiles([]); setUploadingFolderName(null); setUploadProgress({}); setShowUploadModal(true) }}
             className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
           >
             <Upload className="w-4 h-4 mr-2" />
@@ -698,12 +865,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
       {/* Upload Modal */}
       <AnimatePresence>
-        {showUploadModal && selectedFile && (
+        {showUploadModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40  z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
             onClick={handleCloseModal}
           >
             <motion.div
@@ -717,7 +884,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-lavender-500" />
-                  Upload File
+                  {locale === 'fr' ? 'Importer des fichiers' : 'Upload Files'}
                 </h3>
                 <button
                   onClick={handleCloseModal}
@@ -728,105 +895,181 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 space-y-5">
-                {/* Selected File Preview */}
-                <div className="flex items-center gap-4 p-4 bg-gradient-to-br from-lavender-50 to-gray-50 rounded-xl">
-                  <div className="w-12 h-12 rounded-xl bg-white  flex items-center justify-center">
-                    {selectedFile.type.includes('image') ? (
-                      <FileImage className="w-6 h-6 text-lavender-500" />
-                    ) : selectedFile.type.includes('pdf') ? (
-                      <FileType className="w-6 h-6 text-red-500" />
-                    ) : (
-                      <File className="w-6 h-6 text-gray-500" />
-                    )}
+              <div className="p-6 space-y-4">
+                {/* Drag & Drop Zone */}
+                {selectedFiles.length === 0 && (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                      isDragging ? 'border-teal-400 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <Upload className={`w-8 h-8 mx-auto mb-3 ${isDragging ? 'text-teal-500' : 'text-gray-300'}`} />
+                    <p className="text-sm text-gray-600 mb-1">
+                      {locale === 'fr' ? 'Glissez-déposez des fichiers ou un dossier ici' : 'Drag & drop files or a folder here'}
+                    </p>
+                    <p className="text-xs text-gray-400 mb-4">
+                      {locale === 'fr' ? 'Maximum 15 fichiers' : 'Up to 15 files'}
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        {locale === 'fr' ? 'Parcourir les fichiers' : 'Browse Files'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => folderInputRef.current?.click()}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <FolderPlus className="w-3.5 h-3.5 inline mr-1.5" />
+                        {locale === 'fr' ? 'Importer un dossier' : 'Upload Folder'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{selectedFile.name}</p>
-                    <p className="text-sm text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                )}
+
+                {/* Folder name indicator */}
+                {uploadingFolderName && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                    <Folder className="w-4 h-4" />
+                    {locale === 'fr' ? `Dossier : ${uploadingFolderName}` : `Folder: ${uploadingFolderName}`}
                   </div>
-                </div>
+                )}
+
+                {/* Selected files list */}
+                {selectedFiles.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        {selectedFiles.length} {locale === 'fr' ? 'fichier(s) sélectionné(s)' : 'file(s) selected'}
+                      </p>
+                      {!uploading && (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                        >
+                          + {locale === 'fr' ? 'Ajouter' : 'Add more'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {selectedFiles.map((file, i) => {
+                        const status = uploadProgress[file.name]
+                        return (
+                          <div key={`${file.name}-${i}`} className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0">
+                              {file.type.includes('image') ? <FileImage className="w-4 h-4 text-lavender-500" /> :
+                               file.type.includes('pdf') ? <FileType className="w-4 h-4 text-red-500" /> :
+                               <File className="w-4 h-4 text-gray-400" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
+                            </div>
+                            {status === 'uploading' && <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />}
+                            {status === 'done' && <Check className="w-4 h-4 text-emerald-500" />}
+                            {status === 'error' && <AlertCircle className="w-4 h-4 text-red-500" />}
+                            {!status && !uploading && (
+                              <button type="button" onClick={() => removeFileFromUpload(i)} className="p-1 rounded hover:bg-gray-200 transition-colors">
+                                <X className="w-3.5 h-3.5 text-gray-400" />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Current folder info */}
-                {currentFolderId && folderPath.length > 0 && (
+                {currentFolderId && folderPath.length > 0 && !uploadingFolderName && (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Folder className="w-4 h-4" />
                     <span>{locale === 'fr' ? 'Dans :' : 'In:'} {folderPath[folderPath.length - 1].name}</span>
                   </div>
                 )}
 
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Title <span className="text-gray-400">(display name)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={fileTitle}
-                    onChange={(e) => setFileTitle(e.target.value)}
-                    placeholder="Enter a title for this file..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <Info className="w-4 h-4 text-lavender-500" />
-                    Description <span className="text-gray-400">(optional)</span>
-                  </label>
-                  <textarea
-                    value={fileDescription}
-                    onChange={(e) => setFileDescription(e.target.value)}
-                    placeholder="Add a description or notes about this file..."
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white"
-                  />
-                </div>
+                {/* Title + Description (only for single file) */}
+                {selectedFiles.length === 1 && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Titre' : 'Title'} <span className="text-gray-400">({locale === 'fr' ? 'nom affiché' : 'display name'})</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={fileTitle}
+                        onChange={(e) => setFileTitle(e.target.value)}
+                        placeholder={locale === 'fr' ? 'Entrez un titre...' : 'Enter a title...'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <Info className="w-4 h-4 text-lavender-500" />
+                        Description <span className="text-gray-400">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                      </label>
+                      <textarea
+                        value={fileDescription}
+                        onChange={(e) => setFileDescription(e.target.value)}
+                        placeholder={locale === 'fr' ? 'Ajouter une description...' : 'Add a description...'}
+                        rows={2}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none bg-white"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value as FileCategory)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                  >
-                    <option value="general">{t.members.fileCategories.general}</option>
-                    <option value="intake">{t.members.fileCategories.intake}</option>
-                    <option value="assessment">{t.members.fileCategories.assessment}</option>
-                    <option value="consent">{t.members.fileCategories.consent}</option>
-                    <option value="insurance">{t.members.fileCategories.insurance}</option>
-                    <option value="correspondence">{t.members.fileCategories.correspondence}</option>
-                    <option value="other">{t.members.fileCategories.other}</option>
-                  </select>
-                </div>
+                {selectedFiles.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Catégorie' : 'Category'}
+                    </label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value as FileCategory)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                    >
+                      <option value="general">{t.members.fileCategories.general}</option>
+                      <option value="intake">{t.members.fileCategories.intake}</option>
+                      <option value="assessment">{t.members.fileCategories.assessment}</option>
+                      <option value="consent">{t.members.fileCategories.consent}</option>
+                      <option value="insurance">{t.members.fileCategories.insurance}</option>
+                      <option value="correspondence">{t.members.fileCategories.correspondence}</option>
+                      <option value="other">{t.members.fileCategories.other}</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={handleCloseModal}
-                  className="rounded-xl"
-                >
-                  Cancel
+                <Button variant="ghost" onClick={handleCloseModal} className="rounded-xl">
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
                 </Button>
                 <Button
                   onClick={handleFileUpload}
-                  disabled={uploading || !fileTitle.trim()}
+                  disabled={uploading || selectedFiles.length === 0 || (selectedFiles.length === 1 && !fileTitle.trim())}
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50"
                 >
                   {uploading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Uploading...
+                      {locale === 'fr' ? 'Import en cours...' : 'Uploading...'}
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mr-2" />
-                      Upload File
+                      {selectedFiles.length > 1
+                        ? (locale === 'fr' ? `Importer ${selectedFiles.length} fichiers` : `Upload ${selectedFiles.length} files`)
+                        : (locale === 'fr' ? 'Importer' : 'Upload')}
                     </>
                   )}
                 </Button>
