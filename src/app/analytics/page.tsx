@@ -20,6 +20,7 @@ import {
   Sun,
   BarChart3,
   Grid3X3,
+  CreditCard,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
@@ -98,6 +99,15 @@ interface DeletedProspect {
   deleted_at: string
 }
 
+interface BookingRow {
+  id: string
+  start_time: string
+  status: string
+  payment_status: string | null
+  price: number | null
+  member_id: string | null
+}
+
 interface AnalyticsState {
   members: MemberRow[]
   sessions: SessionRow[]
@@ -106,6 +116,8 @@ interface AnalyticsState {
   sharedResources: number
   upcomingSessions: UpcomingSession[]
   resources: ResourceRow[]
+  bookings: BookingRow[]
+  currency: string
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -322,7 +334,7 @@ export default function AnalyticsPage() {
 
       const now = new Date()
 
-      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes, resourcesRes] =
+      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes, resourcesRes, bookingsRes, bookingSettingsRes] =
         await Promise.all([
           supabase
             .from('members')
@@ -356,6 +368,16 @@ export default function AnalyticsPage() {
             .from('shared_resources')
             .select('id, member_id, status')
             .eq('practitioner_id', user.id),
+          supabase
+            .from('bookings')
+            .select('id, start_time, status, payment_status, price, member_id')
+            .eq('practitioner_id', user.id)
+            .in('status', ['confirmed', 'completed']),
+          supabase
+            .from('booking_settings')
+            .select('currency')
+            .eq('user_id', user.id)
+            .maybeSingle(),
         ])
 
       const allMembers = (membersRes.data || []) as (MemberRow & { is_demo?: boolean })[]
@@ -385,6 +407,8 @@ export default function AnalyticsPage() {
         sharedResources: sharedRes.data?.length || 0,
         upcomingSessions: enrichedUpcoming,
         resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
+        bookings: ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id)),
+        currency: (bookingSettingsRes.data as any)?.currency || 'EUR',
       })
 
       // Fetch deleted/unconverted prospects
@@ -436,7 +460,7 @@ export default function AnalyticsPage() {
 
   // ── Derived data ─────────────────────────────────────────────────────
 
-  const { members, sessions, milestones, notes, upcomingSessions, resources } = data
+  const { members, sessions, milestones, notes, upcomingSessions, resources, bookings, currency } = data
 
   const activeMembers = members.filter((m) => m.status === 'active').length
   const now = new Date()
@@ -607,6 +631,20 @@ export default function AnalyticsPage() {
     ? Math.round((pastSessions.filter((s) => s.status === 'completed').length / pastSessions.length) * 100)
     : 0
 
+  // ── Payment stats ─────────────────────────────────────────────────
+  const bookingsInPeriod = bookings.filter(b => {
+    const d = new Date(b.start_time)
+    return d >= selMonthStart && d <= selMonthEnd
+  })
+  const paidBookings = bookingsInPeriod.filter(b => b.payment_status === 'paid')
+  const unpaidBookings = bookingsInPeriod.filter(b => b.payment_status !== 'paid')
+  const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
+  const pendingRevenue = unpaidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
+  const formatCurrency = (amount: number) => {
+    try {
+      return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
+    } catch { return `${amount} ${currency}` }
+  }
 
   // ── Journey Velocity ───────────────────────────────────────────────
   const stageOrder = ['discovery', 'planned', 'building', 'in_progress', 'thriving', 'independent', 'achieved']
@@ -1715,6 +1753,66 @@ export default function AnalyticsPage() {
                   {locale === 'fr' ? 'Pas encore de séances' : locale === 'es' ? 'Aún no hay sesiones' : 'No sessions yet'}
                 </p>
               )}
+            </div>
+          </motion.div>
+
+          {/* ─── Payments ──────────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-white border border-gray-100 rounded-xl p-5 mb-6"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-4 h-4 text-emerald-500" />
+              <span className="text-sm font-medium text-gray-700">
+                {locale === 'fr' ? 'Paiements' : 'Payments'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Revenue collected */}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Encaissé' : 'Collected'}</p>
+                <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalRevenue)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {paidBookings.length} {locale === 'fr' ? 'séance(s) payée(s)' : 'paid session(s)'}
+                </p>
+              </div>
+
+              {/* Pending */}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'En attente' : 'Outstanding'}</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(pendingRevenue)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {unpaidBookings.length} {locale === 'fr' ? 'impayée(s)' : 'unpaid'}
+                </p>
+              </div>
+
+              {/* Payment rate */}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Taux de paiement' : 'Payment rate'}</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {bookingsInPeriod.length > 0 ? Math.round((paidBookings.length / bookingsInPeriod.length) * 100) : 0}%
+                </p>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
+                  <motion.div
+                    className="h-full bg-emerald-400 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${bookingsInPeriod.length > 0 ? (paidBookings.length / bookingsInPeriod.length) * 100 : 0}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+
+              {/* Total for period */}
+              <div>
+                <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Total période' : 'Period total'}</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(totalRevenue + pendingRevenue)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {bookingsInPeriod.length} {locale === 'fr' ? 'séance(s)' : 'session(s)'}
+                </p>
+              </div>
             </div>
           </motion.div>
 
