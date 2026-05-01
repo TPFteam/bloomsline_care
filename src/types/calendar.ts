@@ -64,6 +64,7 @@ export interface BookingSettings {
   booking_instructions: string | null;
   email_notifications: boolean;
   external_booking_url: string | null;
+  currency?: string;
   hour_aligned_slots?: boolean;
   allow_patient_cancel?: boolean;
   allow_patient_reschedule?: boolean;

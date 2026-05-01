@@ -645,6 +645,7 @@ export default function BookingsPage() {
       allow_patient_reschedule: (bookingSettings as any)?.allow_patient_reschedule ?? false,
       modification_notice_hours: (bookingSettings as any)?.modification_notice_hours ?? 48,
       hour_aligned_slots: (bookingSettings as any)?.hour_aligned_slots ?? false,
+      currency: bookingSettings?.currency ?? 'EUR',
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -1219,6 +1220,62 @@ export default function BookingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/* Currency selector */}
+                  <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                    <label className="text-sm text-gray-600 font-medium">{locale === 'fr' ? 'Devise' : 'Currency'}</label>
+                    {(() => {
+                      const CURRENCIES = [
+                        { code: 'EUR', label: 'EUR (€)' },
+                        { code: 'USD', label: 'USD ($)' },
+                        { code: 'GBP', label: 'GBP (£)' },
+                        { code: 'CHF', label: 'CHF' },
+                        { code: 'CAD', label: 'CAD (C$)' },
+                        { code: 'AUD', label: 'AUD (A$)' },
+                        { code: 'MAD', label: 'MAD' },
+                        { code: 'XOF', label: 'XOF (CFA)' },
+                        { code: 'XAF', label: 'XAF (CFA)' },
+                        { code: 'TND', label: 'TND' },
+                        { code: 'DZD', label: 'DZD' },
+                        { code: 'BRL', label: 'BRL (R$)' },
+                        { code: 'INR', label: 'INR (₹)' },
+                        { code: 'JPY', label: 'JPY (¥)' },
+                        { code: 'CUSTOM', label: locale === 'fr' ? 'Autre...' : 'Other...' },
+                      ]
+                      const currentCurrency = bookingSettings?.currency || 'EUR'
+                      const isCustom = !CURRENCIES.some(c => c.code === currentCurrency && c.code !== 'CUSTOM')
+                      return (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={isCustom ? 'CUSTOM' : currentCurrency}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              if (val === 'CUSTOM') {
+                                setBookingSettings(prev => prev ? { ...prev, currency: '' } : prev)
+                              } else {
+                                setBookingSettings(prev => prev ? { ...prev, currency: val } : prev)
+                              }
+                            }}
+                            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-white"
+                          >
+                            {CURRENCIES.map(c => (
+                              <option key={c.code} value={c.code}>{c.label}</option>
+                            ))}
+                          </select>
+                          {(isCustom || currentCurrency === '') && (
+                            <input
+                              type="text"
+                              maxLength={5}
+                              value={currentCurrency}
+                              onChange={(e) => setBookingSettings(prev => prev ? { ...prev, currency: e.target.value.toUpperCase() } : prev)}
+                              className="w-20 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400"
+                              placeholder="e.g. SEK"
+                            />
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+
                   {(sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).map((type, index) => {
                     const isLocked = type.id === 'initial' || type.id === 'follow_up'
                     const lockedNameFr: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi' }
@@ -1264,7 +1321,7 @@ export default function BookingsPage() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Prix (€)' : 'Price (€)'}</label>
+                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? `Prix (${bookingSettings?.currency || 'EUR'})` : `Price (${bookingSettings?.currency || 'EUR'})`}</label>
                             <input
                               type="number"
                               min="0"
