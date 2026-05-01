@@ -120,6 +120,7 @@ interface AnalyticsState {
   resources: ResourceRow[]
   bookings: BookingRow[]
   currency: string
+  sessionTypePrices: Record<string, number>
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -377,7 +378,7 @@ export default function AnalyticsPage() {
             .in('status', ['confirmed', 'completed']),
           supabase
             .from('booking_settings')
-            .select('currency')
+            .select('currency, session_types')
             .eq('user_id', user.id)
             .maybeSingle(),
         ])
@@ -411,6 +412,18 @@ export default function AnalyticsPage() {
         resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
         bookings: ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id)),
         currency: (bookingSettingsRes.data as any)?.currency || 'EUR',
+        sessionTypePrices: (() => {
+          const types = (bookingSettingsRes.data as any)?.session_types || []
+          const map: Record<string, number> = {}
+          for (const t of types) {
+            if (t.price) {
+              map[t.id] = t.price
+              if (t.name) map[t.name] = t.price
+              if (t.name_fr) map[t.name_fr] = t.price
+            }
+          }
+          return map
+        })(),
       })
 
       // Fetch deleted/unconverted prospects
@@ -462,7 +475,7 @@ export default function AnalyticsPage() {
 
   // ── Derived data ─────────────────────────────────────────────────────
 
-  const { members, sessions, milestones, notes, upcomingSessions, resources, bookings, currency } = data
+  const { members, sessions, milestones, notes, upcomingSessions, resources, bookings, currency, sessionTypePrices } = data
 
   const activeMembers = members.filter((m) => m.status === 'active').length
   const now = new Date()
@@ -640,8 +653,9 @@ export default function AnalyticsPage() {
   })
   const paidSessions = sessionsForPayment.filter(s => s.payment_status === 'paid')
   const unpaidSessions = sessionsForPayment.filter(s => s.payment_status !== 'paid')
-  const totalRevenue = paidSessions.reduce((sum, s) => sum + (s.price || 0), 0)
-  const pendingRevenue = unpaidSessions.reduce((sum, s) => sum + (s.price || 0), 0)
+  const getSessionPrice = (s: SessionRow) => s.price || sessionTypePrices[s.session_type] || 0
+  const totalRevenue = paidSessions.reduce((sum, s) => sum + getSessionPrice(s), 0)
+  const pendingRevenue = unpaidSessions.reduce((sum, s) => sum + getSessionPrice(s), 0)
   const formatCurrency = (amount: number) => {
     try {
       return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
