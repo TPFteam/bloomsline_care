@@ -1046,11 +1046,6 @@ function DashboardContent() {
                             {locale === 'fr' ? 'En attente' : 'Pending'}
                           </span>
                         )}
-                        <PaymentBadge
-                          status={(session.payment_status as 'paid' | 'unpaid') || 'unpaid'}
-                          table="bookings"
-                          recordId={session.id}
-                        />
                         {session.meet_link && session.status !== 'pending' && (
                           <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(session.meet_link!, '_blank', 'noopener,noreferrer') }}
