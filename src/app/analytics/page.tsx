@@ -1177,7 +1177,11 @@ export default function AnalyticsPage() {
                   </h3>
                   <p className="text-xs text-gray-400">
                     {sessionView === 'chart'
-                      ? (locale === 'fr' ? 'Complétées par mois' : locale === 'es' ? 'Completadas por mes' : 'Completed per month')
+                      ? viewMode === 'year'
+                        ? (locale === 'fr' ? 'Complétées par mois cette année' : 'Completed per month this year')
+                        : viewMode === 'custom'
+                          ? (locale === 'fr' ? 'Complétées sur la période' : 'Completed in period')
+                          : (locale === 'fr' ? 'Complétées par mois' : locale === 'es' ? 'Completadas por mes' : 'Completed per month')
                       : (locale === 'fr' ? 'Activité par jour' : locale === 'es' ? 'Actividad por día' : 'Activity by day')}
                   </p>
                 </div>
