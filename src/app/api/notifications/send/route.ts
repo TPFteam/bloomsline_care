@@ -73,43 +73,20 @@ export async function POST(request: NextRequest) {
     }
 
     // SECURITY: Validate the caller has permission to send notifications
-    // Users can only send notifications triggered by their own actions
-    // (e.g., practitioner sharing a resource creates notification for member)
     const supabaseAdmin = createAdminClient()
 
-    // Check if caller is a practitioner with a relationship to the target user
+    // Step 1: Sending to yourself is always allowed
+    // Step 2: Otherwise, caller must be a practitioner with a direct member relationship
     if (userId !== user.id) {
-      // Verify target user is a member linked to this practitioner (using auth user id)
       const { data: memberLink } = await supabaseAdmin
         .from('members')
         .select('id')
         .eq('user_id', userId)
         .eq('practitioner_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (!memberLink) {
-        // Also check if user is in the users table as a practitioner
-        const { data: callerProfile } = await supabaseAdmin
-          .from('users')
-          .select('user_type')
-          .eq('id', user.id)
-          .single()
-
-        if (!callerProfile || (callerProfile.user_type !== 'mentor' && callerProfile.user_type !== 'practitioner')) {
-          return NextResponse.json({ error: 'Unauthorized: Cannot send notifications to other users' }, { status: 403 })
-        }
-
-        // Final check - maybe member doesn't have user_id linked yet
-        const { data: memberByPractitioner } = await supabaseAdmin
-          .from('members')
-          .select('id')
-          .eq('practitioner_id', user.id)
-          .limit(1)
-          .single()
-
-        if (!memberByPractitioner) {
-          return NextResponse.json({ error: 'Unauthorized: No relationship with target user' }, { status: 403 })
-        }
+        return NextResponse.json({ error: 'Unauthorized: No relationship with target user' }, { status: 403 })
       }
     }
 
