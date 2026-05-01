@@ -794,9 +794,6 @@ export default function BookingPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        {service.price && (
-                          <p className="font-semibold text-gray-900">${service.price}</p>
-                        )}
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                           selectedService?.id === service.id
                             ? 'border-teal-500 bg-teal-500'
