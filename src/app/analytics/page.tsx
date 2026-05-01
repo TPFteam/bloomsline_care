@@ -1235,7 +1235,7 @@ export default function AnalyticsPage() {
                             <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} interval={0} />
                         <Tooltip content={<ChartTooltip locale={locale} />} cursor={false} />
                         <Area
                           type="monotone"
