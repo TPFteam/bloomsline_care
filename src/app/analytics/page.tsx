@@ -230,6 +230,10 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsState | null>(null)
   const [userProfile, setUserProfile] = useState<User | null>(null)
   const [selectedMonth, setSelectedMonth] = useState(() => new Date())
+  const [viewMode, setViewMode] = useState<'month' | 'year' | 'custom'>('month')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [showViewPicker, setShowViewPicker] = useState(false)
   const [hoveredMember, setHoveredMember] = useState<string | null>(null)
   const [bloomOpen, setBloomOpen] = useState(false)
   const [bloomPrompt, setBloomPrompt] = useState<string | undefined>(undefined)
@@ -254,17 +258,30 @@ export default function AnalyticsPage() {
     selectedMonth.getMonth() === new Date().getMonth() &&
     selectedMonth.getFullYear() === new Date().getFullYear()
 
-  const goToPrev = () =>
-    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
+  const isCurrentYear = selectedMonth.getFullYear() === new Date().getFullYear()
 
-  const goToNext = () => {
-    if (!isCurrentMonth) {
-      setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+  const goToPrev = () => {
+    if (viewMode === 'year') {
+      setSelectedMonth((prev) => new Date(prev.getFullYear() - 1, 0, 1))
+    } else {
+      setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
     }
   }
 
-  const formatMonthLabel = (date: Date) =>
-    date.toLocaleDateString(localeId(locale), { month: 'long', year: 'numeric' })
+  const goToNext = () => {
+    if (viewMode === 'year') {
+      if (!isCurrentYear) setSelectedMonth((prev) => new Date(prev.getFullYear() + 1, 0, 1))
+    } else {
+      if (!isCurrentMonth) setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
+    }
+  }
+
+  const canGoNext = viewMode === 'year' ? !isCurrentYear : viewMode === 'month' ? !isCurrentMonth : false
+
+  const formatMonthLabel = (date: Date) => {
+    if (viewMode === 'year') return date.getFullYear().toString()
+    return date.toLocaleDateString(localeId(locale), { month: 'long', year: 'numeric' })
+  }
 
   useEffect(() => {
     fetchAnalytics()
@@ -419,9 +436,17 @@ export default function AnalyticsPage() {
   const activeMembers = members.filter((m) => m.status === 'active').length
   const now = new Date()
 
-  // Month boundaries for the selected month
-  const selMonthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1)
-  const selMonthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59)
+  // Date boundaries based on view mode
+  const selMonthStart = viewMode === 'year'
+    ? new Date(selectedMonth.getFullYear(), 0, 1)
+    : viewMode === 'custom' && customStart
+      ? new Date(customStart)
+      : new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1)
+  const selMonthEnd = viewMode === 'year'
+    ? new Date(selectedMonth.getFullYear(), 11, 31, 23, 59, 59)
+    : viewMode === 'custom' && customEnd
+      ? new Date(customEnd + 'T23:59:59')
+      : new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59)
 
   const sessionsInMonth = sessions.filter((s) => {
     const d = new Date(s.scheduled_at)
@@ -876,28 +901,81 @@ export default function AnalyticsPage() {
               </p>
             </div>
 
-            {/* Month picker */}
-            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-1 py-0.5 shrink-0">
-              <button
-                onClick={goToPrev}
-                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-xs font-medium text-gray-700 min-w-[100px] text-center capitalize select-none">
-                {formatMonthLabel(selectedMonth)}
-              </span>
-              <button
-                onClick={goToNext}
-                disabled={isCurrentMonth}
-                className={`p-1.5 rounded-md transition-colors ${
-                  isCurrentMonth
-                    ? 'text-gray-200 cursor-not-allowed'
-                    : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+            {/* Date range picker */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* View mode toggle */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowViewPicker(!showViewPicker)}
+                  className="text-xs font-medium text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {viewMode === 'month' ? (locale === 'fr' ? 'Mois' : 'Month')
+                    : viewMode === 'year' ? (locale === 'fr' ? 'Année' : 'Year')
+                    : (locale === 'fr' ? 'Période' : 'Custom')}
+                </button>
+                {showViewPicker && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowViewPicker(false)} />
+                    <div className="absolute top-full right-0 mt-1 z-40 bg-white rounded-xl border border-gray-200 shadow-xl py-1 w-36">
+                      {([
+                        { value: 'month' as const, label: locale === 'fr' ? 'Par mois' : 'By month' },
+                        { value: 'year' as const, label: locale === 'fr' ? 'Par année' : 'By year' },
+                        { value: 'custom' as const, label: locale === 'fr' ? 'Période' : 'Custom range' },
+                      ]).map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setViewMode(opt.value); setShowViewPicker(false) }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${viewMode === opt.value ? 'bg-gray-50 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          {viewMode === opt.value && '✓ '}{opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Month/Year navigator */}
+              {viewMode !== 'custom' ? (
+                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-1 py-0.5">
+                  <button
+                    onClick={goToPrev}
+                    className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-xs font-medium text-gray-700 min-w-[100px] text-center capitalize select-none">
+                    {formatMonthLabel(selectedMonth)}
+                  </span>
+                  <button
+                    onClick={goToNext}
+                    disabled={!canGoNext}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      !canGoNext
+                        ? 'text-gray-200 cursor-not-allowed'
+                        : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                  <span className="text-xs text-gray-400">→</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+              )}
             </div>
           </motion.div>
 
