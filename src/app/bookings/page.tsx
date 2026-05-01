@@ -642,6 +642,7 @@ export default function BookingsPage() {
       booking_instructions: bookingSettings?.booking_instructions ?? null,
       email_notifications: bookingSettings?.email_notifications ?? true,
       external_booking_url: bookingSettings?.external_booking_url ?? null,
+      allow_patient_book: (bookingSettings as any)?.allow_patient_book ?? true,
       allow_patient_cancel: (bookingSettings as any)?.allow_patient_cancel ?? false,
       allow_patient_reschedule: (bookingSettings as any)?.allow_patient_reschedule ?? false,
       modification_notice_hours: (bookingSettings as any)?.modification_notice_hours ?? 48,
@@ -1867,6 +1868,27 @@ export default function BookingsPage() {
                       {locale === 'fr' ? 'Autorisez vos patients à gérer leurs rendez-vous eux-mêmes' : 'Let your patients manage their own appointments'}
                     </p>
                     <div className="space-y-4">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <div
+                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_book !== false ? 'bg-teal-600' : 'bg-gray-300'}`}
+                          onClick={() =>
+                            setBookingSettings((prev: any) => ({
+                              ...prev!,
+                              allow_patient_book: prev?.allow_patient_book === false ? true : false,
+                            }))
+                          }
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_book !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-700">
+                            {locale === 'fr' ? 'Autoriser le patient à réserver' : 'Allow patient to book'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {locale === 'fr' ? 'Le patient peut réserver une séance depuis son application' : 'Patient can book a session from their app'}
+                          </p>
+                        </div>
+                      </label>
                       <label className="flex items-start gap-3 cursor-pointer">
                         <div
                           className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}
