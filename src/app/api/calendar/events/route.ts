@@ -49,25 +49,27 @@ export async function GET(request: NextRequest) {
     }));
 
     // Backfill meet_link for existing bookings that have a google_event_id but no meet_link
-    const meetLinks = items
-      .filter((e: any) => e.hangoutLink)
-      .map((e: any) => ({ id: e.id, link: e.hangoutLink }));
-    if (meetLinks.length > 0) {
-      const googleIds = meetLinks.map((m: any) => m.id);
-      const { data: bookingsToUpdate } = await supabase
-        .from('bookings')
-        .select('id, google_event_id')
-        .in('google_event_id', googleIds)
-        .is('meet_link', null);
-      if (bookingsToUpdate?.length) {
-        const linkMap = Object.fromEntries(meetLinks.map((m: any) => [m.id, m.link]));
-        await Promise.all(
-          bookingsToUpdate.map((b: any) =>
-            supabase.from('bookings').update({ meet_link: linkMap[b.google_event_id] }).eq('id', b.id)
-          )
-        );
+    try {
+      const meetLinks = items
+        .filter((e: any) => e.hangoutLink)
+        .map((e: any) => ({ id: e.id, link: e.hangoutLink }));
+      if (meetLinks.length > 0) {
+        const googleIds = meetLinks.map((m: any) => m.id);
+        const { data: bookingsToUpdate } = await supabase
+          .from('bookings')
+          .select('id, google_event_id')
+          .in('google_event_id', googleIds)
+          .is('meet_link', null);
+        if (bookingsToUpdate?.length) {
+          const linkMap = Object.fromEntries(meetLinks.map((m: any) => [m.id, m.link]));
+          await Promise.all(
+            bookingsToUpdate.map((b: any) =>
+              supabase.from('bookings').update({ meet_link: linkMap[b.google_event_id] }).eq('id', b.id)
+            )
+          );
+        }
       }
-    }
+    } catch { /* meet_link column may not exist yet */ }
 
     return NextResponse.json({ events, connected: true });
   } catch (err) {

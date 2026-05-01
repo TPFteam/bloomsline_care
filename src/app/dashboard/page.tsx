@@ -498,7 +498,7 @@ function DashboardContent() {
       const [bookingsRes, sessionsRes] = await Promise.all([
         supabase
           .from('bookings')
-          .select('id, client_name, session_type, start_time, member_id, status, meet_link')
+          .select('*')
           .eq('practitioner_id', authUser.id)
           .in('status', ['confirmed', 'pending'])
           .gte('start_time', now)
