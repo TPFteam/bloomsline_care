@@ -366,9 +366,13 @@ export default function BookingsPage() {
         return true
     }
   }).sort((a, b) => {
-    // Pending bookings first, then by start_time ascending
+    // Pending bookings first, then by start_time
     if (a.status === 'pending' && b.status !== 'pending') return -1
     if (a.status !== 'pending' && b.status === 'pending') return 1
+    // Past: most recent first. Upcoming/All: nearest first.
+    if (appointmentFilter === 'past') {
+      return new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    }
     return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   })
 
