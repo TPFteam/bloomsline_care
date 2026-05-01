@@ -1228,7 +1228,7 @@ export default function BookingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Currency selector */}
-                  <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                  <div className="flex items-center justify-end gap-3 pb-3 border-b border-gray-100">
                     <label className="text-sm text-gray-600 font-medium">{locale === 'fr' ? 'Devise' : 'Currency'}</label>
                     {(() => {
                       const CURRENCIES = [
