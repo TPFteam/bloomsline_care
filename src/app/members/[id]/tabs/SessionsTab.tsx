@@ -371,9 +371,44 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
-  const upcomingSessions = sessions.filter(s =>
-    s.status === 'scheduled' && new Date(s.scheduled_at) >= new Date()
+  // Merge confirmed bookings that have no matching session record into upcoming
+  const sessionScheduledTimes = new Set(
+    sessions.map(s => Math.floor(new Date(s.scheduled_at).getTime() / 60000))
   )
+  const bookingsAsSessions: Session[] = pendingBookings
+    .filter(b => b.status === 'confirmed' && !sessionScheduledTimes.has(Math.floor(new Date(b.start_time).getTime() / 60000)))
+    .map(b => ({
+      id: `booking-${b.id}`,
+      practitioner_id: b.practitioner_id,
+      member_id: b.member_id,
+      session_type: 'follow_up' as SessionType,
+      session_format: (b.session_format === 'in_person' ? 'in_person' : 'virtual') as SessionFormat,
+      scheduled_at: b.start_time,
+      duration_minutes: Math.round((new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / 60000),
+      status: 'scheduled' as SessionStatus,
+      notes: b.notes || b.session_type,
+      summary: null,
+      cancellation_reason: null,
+      mood_rating: null,
+      goals: [],
+      outcomes: [],
+      homework: [],
+      member_confirmed: false,
+      reschedule_requested: false,
+      reschedule_reason: null,
+      member_suggested_date: null,
+      practitioner_proposed_date: null,
+      reschedule_status: null,
+      preparation: null,
+      created_at: b.created_at,
+      updated_at: b.created_at,
+    } as Session))
+
+  const upcomingSessions = [
+    ...sessions.filter(s => s.status === 'scheduled' && new Date(s.scheduled_at) >= new Date()),
+    ...bookingsAsSessions,
+  ].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+
   const pastSessions = sessions.filter(s =>
     s.status !== 'scheduled' || new Date(s.scheduled_at) < new Date()
   )
