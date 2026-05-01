@@ -48,6 +48,8 @@ interface SessionRow {
   session_type: string
   mood_rating: number | null
   session_format: string | null
+  payment_status: string | null
+  price: number | null
 }
 
 interface MilestoneRow {
@@ -342,7 +344,7 @@ export default function AnalyticsPage() {
             .eq('practitioner_id', user.id),
           supabase
             .from('sessions')
-            .select('id, member_id, status, scheduled_at, session_type, mood_rating, session_format')
+            .select('id, member_id, status, scheduled_at, session_type, mood_rating, session_format, payment_status, price')
             .eq('practitioner_id', user.id),
           supabase
             .from('milestones')
@@ -407,11 +409,7 @@ export default function AnalyticsPage() {
         sharedResources: sharedRes.data?.length || 0,
         upcomingSessions: enrichedUpcoming,
         resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
-        bookings: (() => {
-          const b = ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id))
-          console.log('[signals] bookings loaded:', b.length, 'error:', (bookingsRes as any).error, 'sample:', b.slice(0, 2))
-          return b
-        })(),
+        bookings: ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id)),
         currency: (bookingSettingsRes.data as any)?.currency || 'EUR',
       })
 
@@ -635,16 +633,15 @@ export default function AnalyticsPage() {
     ? Math.round((pastSessions.filter((s) => s.status === 'completed').length / pastSessions.length) * 100)
     : 0
 
-  // ── Payment stats ─────────────────────────────────────────────────
-  const bookingsInPeriod = bookings.filter(b => {
-    const d = new Date(b.start_time)
+  // ── Payment stats (uses sessions — that's where practitioners toggle paid/unpaid) ──
+  const sessionsForPayment = sessions.filter(s => {
+    const d = new Date(s.scheduled_at)
     return d >= selMonthStart && d <= selMonthEnd
   })
-  const paidBookings = bookingsInPeriod.filter(b => b.payment_status === 'paid')
-  const unpaidBookings = bookingsInPeriod.filter(b => b.payment_status !== 'paid')
-  console.log('[signals] payment debug:', { total: bookings.length, inPeriod: bookingsInPeriod.length, paid: paidBookings.length, unpaid: unpaidBookings.length, selMonthStart: selMonthStart.toISOString(), selMonthEnd: selMonthEnd.toISOString() })
-  const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
-  const pendingRevenue = unpaidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
+  const paidSessions = sessionsForPayment.filter(s => s.payment_status === 'paid')
+  const unpaidSessions = sessionsForPayment.filter(s => s.payment_status !== 'paid')
+  const totalRevenue = paidSessions.reduce((sum, s) => sum + (s.price || 0), 0)
+  const pendingRevenue = unpaidSessions.reduce((sum, s) => sum + (s.price || 0), 0)
   const formatCurrency = (amount: number) => {
     try {
       return new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
@@ -1781,7 +1778,7 @@ export default function AnalyticsPage() {
                 <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Encaissé' : 'Collected'}</p>
                 <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalRevenue)}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {paidBookings.length} {locale === 'fr' ? 'séance(s) payée(s)' : 'paid session(s)'}
+                  {paidSessions.length} {locale === 'fr' ? 'séance(s) payée(s)' : 'paid session(s)'}
                 </p>
               </div>
 
@@ -1790,7 +1787,7 @@ export default function AnalyticsPage() {
                 <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'En attente' : 'Outstanding'}</p>
                 <p className="text-xl font-bold text-gray-900">{formatCurrency(pendingRevenue)}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {unpaidBookings.length} {locale === 'fr' ? 'impayée(s)' : 'unpaid'}
+                  {unpaidSessions.length} {locale === 'fr' ? 'impayée(s)' : 'unpaid'}
                 </p>
               </div>
 
@@ -1798,13 +1795,13 @@ export default function AnalyticsPage() {
               <div>
                 <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Taux de paiement' : 'Payment rate'}</p>
                 <p className="text-xl font-bold text-gray-900">
-                  {bookingsInPeriod.length > 0 ? Math.round((paidBookings.length / bookingsInPeriod.length) * 100) : 0}%
+                  {sessionsForPayment.length > 0 ? Math.round((paidSessions.length / sessionsForPayment.length) * 100) : 0}%
                 </p>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
                   <motion.div
                     className="h-full bg-emerald-400 rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: `${bookingsInPeriod.length > 0 ? (paidBookings.length / bookingsInPeriod.length) * 100 : 0}%` }}
+                    animate={{ width: `${sessionsForPayment.length > 0 ? (paidSessions.length / sessionsForPayment.length) * 100 : 0}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>
@@ -1815,7 +1812,7 @@ export default function AnalyticsPage() {
                 <p className="text-xs text-gray-500 mb-1">{locale === 'fr' ? 'Total période' : 'Period total'}</p>
                 <p className="text-xl font-bold text-gray-900">{formatCurrency(totalRevenue + pendingRevenue)}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {bookingsInPeriod.length} {locale === 'fr' ? 'séance(s)' : 'session(s)'}
+                  {sessionsForPayment.length} {locale === 'fr' ? 'séance(s)' : 'session(s)'}
                 </p>
               </div>
             </div>
