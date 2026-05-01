@@ -34,6 +34,7 @@ import {
   CheckSquare,
   Square,
   SlidersHorizontal,
+  ArrowUpDown,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -171,6 +172,8 @@ export default function MembersPage() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchOpen, setSearchOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<'name' | 'newest' | 'upcoming' | 'last_session'>('name')
+  const [showSortMenu, setShowSortMenu] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [filterInvited, setFilterInvited] = useState<'all' | 'invited' | 'not_invited'>('all')
@@ -245,6 +248,9 @@ export default function MembersPage() {
 
       if (userProfile) {
         setUser(userProfile)
+        // Load sort preference
+        const savedSort = (userProfile as any).ui_preferences?.members_sort
+        if (savedSort) setSortBy(savedSort)
       } else {
         setUser({
           id: authUser.id,
@@ -525,6 +531,19 @@ export default function MembersPage() {
       console.error('Error deleting member:', error)
       toast.error(t.members.errors.deleteFailed)
     }
+  }
+
+  // Save sort preference to database
+  const handleSortChange = async (newSort: typeof sortBy) => {
+    setSortBy(newSort)
+    setShowSortMenu(false)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: current } = await supabase.from('users').select('ui_preferences').eq('id', authUser.id).single()
+      const prefs = (current?.ui_preferences as any) || {}
+      await supabase.from('users').update({ ui_preferences: { ...prefs, members_sort: newSort } }).eq('id', authUser.id)
+    } catch { /* silent */ }
   }
 
   // Bulk selection helpers
@@ -1314,6 +1333,30 @@ export default function MembersPage() {
     if (filterPending === 'none' && pendingWorksheets[member.id]) return false
 
     return true
+  }).sort((a, b) => {
+    if (sortBy === 'name') {
+      return getMemberFullName(a).localeCompare(getMemberFullName(b))
+    }
+    if (sortBy === 'newest') {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    }
+    if (sortBy === 'upcoming') {
+      const aNext = nextSessions[a.id]?.scheduled_at
+      const bNext = nextSessions[b.id]?.scheduled_at
+      if (!aNext && !bNext) return 0
+      if (!aNext) return 1
+      if (!bNext) return -1
+      return new Date(aNext).getTime() - new Date(bNext).getTime()
+    }
+    if (sortBy === 'last_session') {
+      const aLast = a.last_session_at
+      const bLast = b.last_session_at
+      if (!aLast && !bLast) return 0
+      if (!aLast) return 1
+      if (!bLast) return -1
+      return new Date(bLast).getTime() - new Date(aLast).getTime()
+    }
+    return 0
   })
 
   // Pagination
@@ -1553,6 +1596,48 @@ export default function MembersPage() {
                             <option value="none">{locale === 'fr' ? 'Aucun' : 'None'}</option>
                           </select>
                         </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Sort button + dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSortMenu(!showSortMenu)}
+                    className={`p-2 rounded-xl border transition-colors ${
+                      sortBy !== 'name'
+                        ? 'bg-teal-50 text-teal-600 border-teal-200'
+                        : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                    title={locale === 'fr' ? 'Trier' : 'Sort'}
+                  >
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+
+                  {showSortMenu && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
+                      <div className="absolute top-full left-0 mt-2 z-40 bg-white rounded-xl border border-gray-200 shadow-xl py-1 w-52">
+                        {([
+                          { value: 'name' as const, label: locale === 'fr' ? 'Nom (A-Z)' : 'Name (A-Z)' },
+                          { value: 'newest' as const, label: locale === 'fr' ? 'Plus récent' : 'Newest first' },
+                          { value: 'upcoming' as const, label: locale === 'fr' ? 'Prochaine séance' : 'Upcoming session' },
+                          { value: 'last_session' as const, label: locale === 'fr' ? 'Dernière séance' : 'Last session' },
+                        ]).map(option => (
+                          <button
+                            key={option.value}
+                            onClick={() => handleSortChange(option.value)}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                              sortBy === option.value
+                                ? 'bg-gray-50 text-gray-900 font-medium'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            {sortBy === option.value && <span className="mr-2">✓</span>}
+                            {option.label}
+                          </button>
+                        ))}
                       </div>
                     </>
                   )}
