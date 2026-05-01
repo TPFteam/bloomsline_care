@@ -360,20 +360,20 @@ export default function BookingsPage() {
       case 'upcoming':
         return (booking.status === 'confirmed' || booking.status === 'pending') && startTime > now
       case 'past':
-        return startTime < now || booking.status === 'completed' || booking.status === 'cancelled' || booking.status === 'no_show'
+        return (startTime < now && booking.status !== 'pending') || booking.status === 'completed' || booking.status === 'cancelled' || booking.status === 'no_show'
       case 'all':
       default:
         return true
     }
   }).sort((a, b) => {
-    // Pending bookings first, then by start_time
-    if (a.status === 'pending' && b.status !== 'pending') return -1
-    if (a.status !== 'pending' && b.status === 'pending') return 1
-    // Past: most recent first. Upcoming/All: nearest first.
-    if (appointmentFilter === 'past') {
-      return new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    // Upcoming: nearest first
+    if (appointmentFilter === 'upcoming') {
+      if (a.status === 'pending' && b.status !== 'pending') return -1
+      if (a.status !== 'pending' && b.status === 'pending') return 1
+      return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     }
-    return new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    // Past & All: most recent first
+    return new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
   })
 
   // Count pending bookings
