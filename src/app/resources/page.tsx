@@ -569,7 +569,7 @@ export default function MyResourcesPage() {
     return sortResources(filtered)
   }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter, sortBy])
 
-  const hasActiveFilters = searchQuery || typeFilter !== 'all' || languageFilter !== 'all' || statusFilter !== 'all'
+  const hasActiveFilters = searchQuery || statusFilter !== 'all'
 
   if (loading) {
     return (
@@ -713,54 +713,6 @@ export default function MyResourcesPage() {
                     className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 p-4 z-50"
                   >
                     <div className="mb-4">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Type</label>
-                      <div className="space-y-1">
-                        {[
-                          { value: 'all', label: locale === 'fr' ? 'Tous' : 'All' },
-                          { value: 'worksheet', label: locale === 'fr' ? 'Exercices' : 'Worksheets' },
-                          { value: 'table', label: locale === 'fr' ? 'Tableaux' : 'Tables' },
-                          { value: 'psychoeducation', label: locale === 'fr' ? 'Éducation' : 'Education' },
-                        ].map((item) => (
-                          <button
-                            key={item.value}
-                            onClick={() => setTypeFilter(item.value as any)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                              typeFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex-1 text-left">{item.label}</span>
-                            {typeFilter === item.value && <Check className="w-4 h-4" />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Langue' : 'Language'}</label>
-                      <div className="space-y-1">
-                        {[
-                          { value: 'all', label: locale === 'fr' ? 'Toutes' : 'All' },
-                          { value: 'en', label: 'English' },
-                          { value: 'fr', label: 'Français' },
-                          { value: 'es', label: 'Español' },
-                          { value: 'de', label: 'Deutsch' },
-                          { value: 'it', label: 'Italiano' },
-                          { value: 'pt', label: 'Português' },
-                          { value: 'nl', label: 'Nederlands' },
-                        ].map((item) => (
-                          <button
-                            key={item.value}
-                            onClick={() => setLanguageFilter(item.value as any)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
-                              languageFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex-1 text-left">{item.label}</span>
-                            {languageFilter === item.value && <Check className="w-4 h-4" />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mb-4">
                       <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Statut' : 'Status'}</label>
                       <div className="space-y-1">
                         {[
@@ -783,7 +735,7 @@ export default function MyResourcesPage() {
                     </div>
                     {hasActiveFilters && (
                       <button
-                        onClick={() => { setTypeFilter('all'); setLanguageFilter('all'); setStatusFilter('all') }}
+                        onClick={() => { setStatusFilter('all') }}
                         className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
                       >
                         {locale === 'fr' ? 'Effacer' : 'Clear'}
