@@ -64,7 +64,7 @@ interface Booking {
   end_time: string
   timezone: string
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
-  payment_status: 'paid' | 'unpaid' | 'partial'
+  payment_status: 'paid' | 'unpaid'
   notes: string | null
   practitioner_notes: string | null
   google_event_id: string | null

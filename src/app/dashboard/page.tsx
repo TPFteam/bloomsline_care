@@ -1047,7 +1047,7 @@ function DashboardContent() {
                           </span>
                         )}
                         <PaymentBadge
-                          status={(session.payment_status as 'paid' | 'unpaid' | 'partial') || 'unpaid'}
+                          status={(session.payment_status as 'paid' | 'unpaid') || 'unpaid'}
                           table="bookings"
                           recordId={session.id}
                         />

@@ -5,14 +5,13 @@ import { CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
 
-type PaymentStatus = 'paid' | 'unpaid' | 'partial'
+type PaymentStatus = 'paid' | 'unpaid'
 
-const CYCLE: PaymentStatus[] = ['unpaid', 'paid', 'partial']
+const CYCLE: PaymentStatus[] = ['unpaid', 'paid']
 
 const CONFIG: Record<PaymentStatus, { bg: string; text: string; label: { en: string; fr: string } }> = {
   paid: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: { en: 'Paid', fr: 'Payé' } },
   unpaid: { bg: 'bg-red-100', text: 'text-red-600', label: { en: 'Unpaid', fr: 'Impayé' } },
-  partial: { bg: 'bg-amber-100', text: 'text-amber-700', label: { en: 'Partial', fr: 'Partiel' } },
 }
 
 interface PaymentBadgeProps {
