@@ -84,6 +84,7 @@ export interface Booking {
   end_time: string;
   timezone: string;
   status: BookingStatus;
+  payment_status: 'paid' | 'unpaid' | 'partial';
   notes: string | null;
   practitioner_notes: string | null;
   google_event_id: string | null;

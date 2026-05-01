@@ -14,6 +14,8 @@ export type SessionFormat = 'in_person' | 'virtual' | 'phone'
 
 export type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
+export type PaymentStatus = 'paid' | 'unpaid' | 'partial'
+
 export const FIXED_NOTE_TYPES = ['recurrence', 'hypothese'] as const
 export const DELETABLE_DEFAULT_NOTE_TYPES = ['general', 'symptome', 'transfert', 'contre_transfert', 'ajustement_envisage'] as const
 export const DEFAULT_NOTE_TYPES = [...FIXED_NOTE_TYPES, ...DELETABLE_DEFAULT_NOTE_TYPES] as const
@@ -108,6 +110,7 @@ export interface Session {
 
   // Status
   status: SessionStatus
+  payment_status: PaymentStatus
 
   // Content
   notes: string | null

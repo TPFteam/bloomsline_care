@@ -41,7 +41,8 @@ import { toast } from 'sonner'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { EditSessionModal } from '@/components/EditSessionModal'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
-import type { Session, SessionType, SessionFormat, SessionStatus, Member } from '@/types/member'
+import { PaymentBadge } from '@/components/ui/payment-badge'
+import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
 import { DEFAULT_NOTE_TYPES } from '@/types/member'
 
 interface SessionsTabProps {
@@ -398,6 +399,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       scheduled_at: b.start_time,
       duration_minutes: Math.round((new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / 60000),
       status: 'scheduled' as SessionStatus,
+      payment_status: (b.payment_status || 'unpaid') as PaymentStatus,
       notes: b.notes || b.session_type,
       summary: null,
       cancellation_reason: null,
@@ -1110,6 +1112,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
                             {t.members.sessionFormats[session.session_format]}
                           </span>
+                          <PaymentBadge
+                            status={session.payment_status || 'unpaid'}
+                            table={session.id.startsWith('booking-') ? 'bookings' : 'sessions'}
+                            recordId={session.id.startsWith('booking-') ? session.id.replace('booking-', '') : session.id}
+                          />
                         </div>
 
                         {session.summary && (
@@ -1357,6 +1364,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           <span>{session.duration_minutes} {t.members.sessions.minutes}</span>
                           <span>·</span>
                           <span>{t.members.sessionFormats[session.session_format]}</span>
+                          <span>·</span>
+                          <PaymentBadge
+                            status={session.payment_status || 'unpaid'}
+                            table="sessions"
+                            recordId={session.id}
+                          />
                         </div>
                       </div>
                     </div>

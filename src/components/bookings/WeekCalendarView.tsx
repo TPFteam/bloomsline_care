@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
+import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
 
 interface CalendarEvent {
@@ -17,6 +18,8 @@ interface CalendarEvent {
   sessionType?: string
   notes?: string
   meetLink?: string | null
+  paymentStatus?: 'paid' | 'unpaid' | 'partial'
+  bookingId?: string
 }
 
 interface WeekCalendarViewProps {
@@ -31,6 +34,7 @@ interface WeekCalendarViewProps {
     notes: string | null
     google_event_id?: string | null
     meet_link?: string | null
+    payment_status?: string | null
   }>
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -135,7 +139,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
 
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
-    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link }))
+    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link, paymentStatus: (b.payment_status || 'unpaid') as 'paid' | 'unpaid' | 'partial', bookingId: b.id }))
 
   // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
   // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
@@ -373,15 +377,24 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
                             {isGoogle && (
                               <p className="text-blue-500 text-[11px]">Google Calendar</p>
                             )}
-                            {event.status && (
-                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                isPending ? 'bg-amber-100 text-amber-700' : event.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
-                                  : event.status === 'confirmed' ? (locale === 'fr' ? 'Confirmé' : 'Confirmed')
-                                  : event.status}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {event.status && (
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                  isPending ? 'bg-amber-100 text-amber-700' : event.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
+                                    : event.status === 'confirmed' ? (locale === 'fr' ? 'Confirmé' : 'Confirmed')
+                                    : event.status}
+                                </span>
+                              )}
+                              {event.source === 'booking' && event.bookingId && (
+                                <PaymentBadge
+                                  status={event.paymentStatus || 'unpaid'}
+                                  table="bookings"
+                                  recordId={event.bookingId}
+                                />
+                              )}
+                            </div>
                           </div>
 
                           {/* Notes */}

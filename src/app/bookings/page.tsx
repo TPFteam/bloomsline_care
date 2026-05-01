@@ -32,6 +32,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { Button } from '@/components/ui/button'
+import { PaymentBadge } from '@/components/ui/payment-badge'
 import { TimeSelect } from '@/components/ui/time-select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useLanguage } from '@/lib/i18n/context'
@@ -63,6 +64,7 @@ interface Booking {
   end_time: string
   timezone: string
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+  payment_status: 'paid' | 'unpaid' | 'partial'
   notes: string | null
   practitioner_notes: string | null
   google_event_id: string | null
@@ -1051,6 +1053,11 @@ export default function BookingsPage() {
                                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusConfig.bg} ${statusConfig.text}`}>
                                           {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
                                         </span>
+                                        <PaymentBadge
+                                          status={booking.payment_status || 'unpaid'}
+                                          table="bookings"
+                                          recordId={booking.id}
+                                        />
                                       </div>
                                       <p className="text-xs text-gray-500 truncate">
                                         {getSessionTypeName(booking.session_type)} · {booking.client_email}

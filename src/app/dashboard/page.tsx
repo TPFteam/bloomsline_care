@@ -34,6 +34,7 @@ import {
   Video,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PaymentBadge } from '@/components/ui/payment-badge'
 import Link from 'next/link'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -109,7 +110,7 @@ function DashboardContent() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
-  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string; meet_link?: string | null }[]>([])
+  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string; meet_link?: string | null; payment_status?: string | null }[]>([])
 
   // Member picker for quick actions
   const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
@@ -1045,6 +1046,11 @@ function DashboardContent() {
                             {locale === 'fr' ? 'En attente' : 'Pending'}
                           </span>
                         )}
+                        <PaymentBadge
+                          status={(session.payment_status as 'paid' | 'unpaid' | 'partial') || 'unpaid'}
+                          table="bookings"
+                          recordId={session.id}
+                        />
                         {session.meet_link && session.status !== 'pending' && (
                           <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(session.meet_link!, '_blank', 'noopener,noreferrer') }}
