@@ -676,10 +676,10 @@ export default function AnalyticsPage() {
       type: 'celebration',
       icon: Heart,
       text: locale === 'fr'
-        ? `Vous avez accompagné ${uniqueMembers.length} personne${uniqueMembers.length > 1 ? 's' : ''} ce mois à travers ${completedInMonth} séance${completedInMonth > 1 ? 's' : ''}.`
+        ? `Vous avez accompagné ${uniqueMembers.length} personne${uniqueMembers.length > 1 ? 's' : ''} ${viewMode === 'year' ? 'cette année' : viewMode === 'custom' ? 'sur cette période' : 'ce mois'} à travers ${completedInMonth} séance${completedInMonth > 1 ? 's' : ''}.`
         : locale === 'es'
           ? `Acompañaste a ${uniqueMembers.length} persona${uniqueMembers.length > 1 ? 's' : ''} este mes a través de ${completedInMonth} sesión${completedInMonth > 1 ? 'es' : ''}.`
-          : `You supported ${uniqueMembers.length} ${uniqueMembers.length === 1 ? 'person' : 'people'} this month through ${completedInMonth} ${completedInMonth === 1 ? 'session' : 'sessions'}.`,
+          : `You supported ${uniqueMembers.length} ${uniqueMembers.length === 1 ? 'person' : 'people'} ${viewMode === 'year' ? 'this year' : viewMode === 'custom' ? 'in this period' : 'this month'} through ${completedInMonth} ${completedInMonth === 1 ? 'session' : 'sessions'}.`,
     })
   }
 
@@ -1116,7 +1116,11 @@ export default function AnalyticsPage() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-0.5">
-                  {locale === 'fr' ? 'Séances ce mois' : locale === 'es' ? 'Sesiones este mes' : 'Sessions this month'}
+                  {viewMode === 'year'
+                    ? (locale === 'fr' ? 'Séances cette année' : 'Sessions this year')
+                    : viewMode === 'custom'
+                      ? (locale === 'fr' ? 'Séances (période)' : 'Sessions (period)')
+                      : (locale === 'fr' ? 'Séances ce mois' : 'Sessions this month')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 leading-none">{sessionsInMonth}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
