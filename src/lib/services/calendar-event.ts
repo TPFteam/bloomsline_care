@@ -167,11 +167,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
       },
     },
     reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'email', minutes: 1440 },
-        { method: 'popup', minutes: 30 },
-      ],
+      useDefault: true,
     },
   }
 }
