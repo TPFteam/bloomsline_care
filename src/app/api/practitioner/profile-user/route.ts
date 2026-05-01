@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
         id: user.id,
         full_name: user.full_name || user.email?.split('@')[0] || 'Practitioner',
         avatar_url: user.avatar_url,
-        email: user.email,
       },
     })
   } catch (error) {

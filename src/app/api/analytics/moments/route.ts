@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server-client'
+import { createClient, createAdminClient } from '@/lib/supabase/server-client'
 
 export async function GET() {
   try {
+    // Auth check — only authenticated users can access analytics
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const supabase = createAdminClient()
 
     // Fetch all moments (admin bypasses RLS)
