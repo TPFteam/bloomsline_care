@@ -1627,7 +1627,6 @@ export default function MembersPage() {
                           { value: 'name' as const, label: locale === 'fr' ? 'Nom (A-Z)' : 'Name (A-Z)' },
                           { value: 'newest' as const, label: locale === 'fr' ? 'Plus récent' : 'Newest first' },
                           { value: 'upcoming' as const, label: locale === 'fr' ? 'Prochaine séance' : 'Upcoming session' },
-                          { value: 'last_session' as const, label: locale === 'fr' ? 'Dernière séance' : 'Last session' },
                           { value: 'status' as const, label: locale === 'fr' ? 'Actifs en premier' : 'Active first' },
                         ]).map(option => (
                           <button
