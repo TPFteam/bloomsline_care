@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
 
@@ -16,6 +16,7 @@ interface CalendarEvent {
   email?: string
   sessionType?: string
   notes?: string
+  meetLink?: string | null
 }
 
 interface WeekCalendarViewProps {
@@ -29,6 +30,7 @@ interface WeekCalendarViewProps {
     session_type: string
     notes: string | null
     google_event_id?: string | null
+    meet_link?: string | null
   }>
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -119,7 +121,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
       if (res.ok) {
         const data = await res.json()
         setGoogleConnected(data.connected)
-        setGoogleEvents((data.events || []).map((e: any) => ({ ...e, source: 'google' as const })))
+        setGoogleEvents((data.events || []).map((e: any) => ({ ...e, source: 'google' as const, meetLink: e.meetLink || null })))
       }
     } catch { /* silent */ }
   }, [weekStart])
@@ -133,7 +135,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
 
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
-    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined }))
+    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link }))
 
   // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
   // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
@@ -351,6 +353,19 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId }
                                 <Mail className="w-3 h-3" />
                                 {event.email}
                               </p>
+                            )}
+                            {event.meetLink && (
+                              <a
+                                href={event.meetLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium"
+                              >
+                                <Video className="w-3 h-3" />
+                                {locale === 'fr' ? 'Rejoindre Google Meet' : 'Join Google Meet'}
+                                <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
                             )}
                             {event.sessionType && (
                               <p className="text-gray-400">{event.sessionType}</p>

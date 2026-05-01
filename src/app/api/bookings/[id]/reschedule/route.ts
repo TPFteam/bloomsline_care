@@ -215,7 +215,7 @@ export async function POST(
           );
           if (response.ok) {
             const event = await response.json();
-            await adminSupabase.from('bookings').update({ google_event_id: event.id }).eq('id', newBooking.id);
+            await adminSupabase.from('bookings').update({ google_event_id: event.id, meet_link: event.hangoutLink || null }).eq('id', newBooking.id);
           }
         } catch (err) {
           console.error('Failed to create new calendar event:', err);

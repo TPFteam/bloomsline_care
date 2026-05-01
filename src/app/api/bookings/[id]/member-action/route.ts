@@ -419,7 +419,7 @@ export async function POST(
             const event = await response.json();
             await adminSupabase
               .from('bookings')
-              .update({ google_event_id: event.id })
+              .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
               .eq('id', newBooking.id);
           }
         } catch (err) {

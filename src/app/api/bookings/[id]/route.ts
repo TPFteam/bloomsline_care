@@ -251,7 +251,7 @@ export async function PATCH(
 
             await adminSupabase
               .from('bookings')
-              .update({ google_event_id: event.id })
+              .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
               .eq('id', id);
 
             await adminSupabase

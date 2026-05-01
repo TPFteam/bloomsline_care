@@ -275,7 +275,10 @@ export async function POST(request: NextRequest) {
 
             await supabase
               .from('bookings')
-              .update({ google_event_id: event.id })
+              .update({
+                google_event_id: event.id,
+                meet_link: event.hangoutLink || null,
+              })
               .eq('id', booking.id);
 
             await supabase

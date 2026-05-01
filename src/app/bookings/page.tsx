@@ -66,6 +66,7 @@ interface Booking {
   notes: string | null
   practitioner_notes: string | null
   google_event_id: string | null
+  meet_link: string | null
   cancelled_at: string | null
   cancelled_by: string | null
   cancellation_reason: string | null
@@ -1051,9 +1052,23 @@ export default function BookingsPage() {
                                           {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
                                         </span>
                                       </div>
-                                      <p className="text-xs text-gray-500 truncate">
-                                        {getSessionTypeName(booking.session_type)} · {booking.client_email}
-                                      </p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-xs text-gray-500 truncate">
+                                          {getSessionTypeName(booking.session_type)} · {booking.client_email}
+                                        </p>
+                                        {booking.meet_link && (
+                                          <a
+                                            href={booking.meet_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-medium rounded-full transition-colors shrink-0"
+                                          >
+                                            <Video className="w-3 h-3" />
+                                            Meet
+                                          </a>
+                                        )}
+                                      </div>
                                     </div>
 
                                     {/* Actions */}

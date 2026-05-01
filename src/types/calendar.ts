@@ -87,6 +87,7 @@ export interface Booking {
   notes: string | null;
   practitioner_notes: string | null;
   google_event_id: string | null;
+  meet_link: string | null;
   outlook_event_id: string | null;
   cancelled_at: string | null;
   cancelled_by: 'client' | 'practitioner' | null;
