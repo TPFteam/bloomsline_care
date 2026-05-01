@@ -407,7 +407,11 @@ export default function AnalyticsPage() {
         sharedResources: sharedRes.data?.length || 0,
         upcomingSessions: enrichedUpcoming,
         resources: ((resourcesRes.data || []) as ResourceRow[]).filter(r => !demoMemberIds.has(r.member_id)),
-        bookings: ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id)),
+        bookings: (() => {
+          const b = ((bookingsRes.data || []) as BookingRow[]).filter(b => !b.member_id || !demoMemberIds.has(b.member_id))
+          console.log('[signals] bookings loaded:', b.length, 'error:', (bookingsRes as any).error, 'sample:', b.slice(0, 2))
+          return b
+        })(),
         currency: (bookingSettingsRes.data as any)?.currency || 'EUR',
       })
 
@@ -638,6 +642,7 @@ export default function AnalyticsPage() {
   })
   const paidBookings = bookingsInPeriod.filter(b => b.payment_status === 'paid')
   const unpaidBookings = bookingsInPeriod.filter(b => b.payment_status !== 'paid')
+  console.log('[signals] payment debug:', { total: bookings.length, inPeriod: bookingsInPeriod.length, paid: paidBookings.length, unpaid: unpaidBookings.length, selMonthStart: selMonthStart.toISOString(), selMonthEnd: selMonthEnd.toISOString() })
   const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
   const pendingRevenue = unpaidBookings.reduce((sum, b) => sum + (b.price || 0), 0)
   const formatCurrency = (amount: number) => {
