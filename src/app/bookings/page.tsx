@@ -1052,23 +1052,9 @@ export default function BookingsPage() {
                                           {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
                                         </span>
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-xs text-gray-500 truncate">
-                                          {getSessionTypeName(booking.session_type)} · {booking.client_email}
-                                        </p>
-                                        {booking.meet_link && (
-                                          <a
-                                            href={booking.meet_link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 hover:bg-blue-100 text-[11px] font-medium rounded-full transition-colors shrink-0"
-                                          >
-                                            <Video className="w-3 h-3" />
-                                            Meet
-                                          </a>
-                                        )}
-                                      </div>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {getSessionTypeName(booking.session_type)} · {booking.client_email}
+                                      </p>
                                     </div>
 
                                     {/* Actions */}
@@ -1112,6 +1098,17 @@ export default function BookingsPage() {
                                             {locale === 'fr' ? 'Absent' : 'No Show'}
                                           </button>
                                         </>
+                                      )}
+                                      {booking.status === 'confirmed' && booking.meet_link && (
+                                        <a
+                                          href={booking.meet_link}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                        >
+                                          <Video className="w-3.5 h-3.5" />
+                                          {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                                        </a>
                                       )}
                                       {booking.status === 'confirmed' && (
                                         <button
