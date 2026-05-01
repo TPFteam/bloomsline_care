@@ -1046,16 +1046,13 @@ function DashboardContent() {
                           </span>
                         )}
                         {session.meet_link && session.status !== 'pending' && (
-                          <a
-                            href={session.meet_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(session.meet_link!, '_blank', 'noopener,noreferrer') }}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
                           >
                             <Video className="w-3.5 h-3.5" />
                             {locale === 'fr' ? 'Rejoindre' : 'Join'}
-                          </a>
+                          </button>
                         )}
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                       </div>
