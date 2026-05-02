@@ -573,11 +573,11 @@ export default function BookingPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
         <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* Left Sidebar — Practitioner Info */}
+          {/* Left Sidebar — Practitioner Info (desktop only) */}
           <motion.aside
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="lg:w-80 shrink-0"
+            className="hidden lg:block lg:w-80 shrink-0"
           >
             <div className="lg:sticky lg:top-24">
               <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden">
@@ -703,6 +703,19 @@ export default function BookingPage() {
               {practitioner.profile.headline && (
                 <p className="text-gray-500 mt-0.5 italic text-sm">{practitioner.profile.headline}</p>
               )}
+              {(practitioner.profile.address || practitioner.profile.city) && (
+                <p className="text-sm text-gray-500 mt-2">
+                  📍 {[practitioner.profile.address, practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')}
+                </p>
+              )}
+              {practitioner.profile.google_maps_url && (
+                <a href={practitioner.profile.google_maps_url} target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 font-medium mt-1 inline-block">
+                  {locale === 'fr' ? 'Voir sur Google Maps →' : 'View on Google Maps →'}
+                </a>
+              )}
+              <Link href={`/practitioner/${slug}`} className="text-xs text-teal-600 font-medium mt-2 block">
+                {locale === 'fr' ? 'Voir le profil complet' : 'View full profile'}
+              </Link>
             </motion.div>
 
             {/* Progress Steps */}
@@ -710,7 +723,7 @@ export default function BookingPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="flex items-center justify-center mb-6"
+              className="flex items-center justify-center mb-6 overflow-x-auto px-2"
             >
               {STEP_ORDER.map((step, index) => (
                 <div key={step} className="flex items-center">
