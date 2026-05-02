@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -70,6 +70,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [showSlotCalendar, setShowSlotCalendar] = useState(false)
+  const keepTimeRef = useRef(false)
 
   // Selected values
   const [selectedMember, setSelectedMember] = useState<Member | null>(preselectedMember || null)
@@ -316,7 +317,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     // times while the new ones are in flight.
     setAvailableSlots([])
     setDayBookings([])
-    setSelectedTime(null)
+    if (keepTimeRef.current) {
+      keepTimeRef.current = false
+    } else {
+      setSelectedTime(null)
+    }
     setSlotsLoading(true)
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -1087,6 +1092,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       dayFormats={scheduleDayFormats}
                       locale={locale}
                       onSelectSlot={(date, time) => {
+                        keepTimeRef.current = true
                         setSelectedDate(startOfDay(date))
                         setSelectedTime(time)
                         setShowSlotCalendar(false)
