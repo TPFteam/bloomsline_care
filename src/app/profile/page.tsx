@@ -777,7 +777,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Address */}
-                  <div>
+                  <div className="mt-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {locale === 'fr' ? 'Adresse' : 'Address'}
                       <span className="text-gray-400 font-normal ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
@@ -792,7 +792,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Google Maps link */}
-                  <div>
+                  <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {locale === 'fr' ? 'Lien Google Maps' : 'Google Maps Link'}
                       <span className="text-gray-400 font-normal ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
