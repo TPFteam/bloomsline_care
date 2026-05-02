@@ -300,7 +300,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
               return m
             })()}
             locale={locale}
-            onSelectSlot={(date, time) => onSlotClick?.(date, time)}
+            onSelectSlot={(date, time) => { console.log('[avail] slot clicked:', date, time); onSlotClick?.(date, time) }}
           />
         </div>
       ) : (
