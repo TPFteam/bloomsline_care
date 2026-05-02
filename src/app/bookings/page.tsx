@@ -166,6 +166,8 @@ export default function BookingsPage() {
     const highlight = searchParams.get('highlight')
     if (highlight) {
       setMainTab('appointments')
+      setBookingView('list')
+      setAppointmentFilter('upcoming')
       setHighlightId(highlight)
     }
   }, [searchParams])
