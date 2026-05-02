@@ -119,6 +119,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const searchParams = useSearchParams()
   const [showAddSession, setShowAddSession] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true' || openBookModal === true)
+  const [rescheduleSession, setRescheduleSession] = useState<any | null>(null)
 
   // Open modal when triggered from parent (e.g. header Book Session button)
   useEffect(() => {
@@ -1182,6 +1183,40 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               {locale === 'fr' ? 'Modifier' : 'Edit'}
                             </button>
                             <button
+                              onClick={() => {
+                                setActionMenuId(null)
+                                // Find matching booking for reschedule
+                                const matchingBooking = pendingBookings.find(b =>
+                                  Math.floor(new Date(b.start_time).getTime() / 60000) === Math.floor(new Date(session.scheduled_at).getTime() / 60000)
+                                )
+                                setRescheduleSession(matchingBooking ? {
+                                  id: matchingBooking.id,
+                                  practitioner_id: session.practitioner_id,
+                                  member_id: session.member_id,
+                                  client_name: `${member.first_name} ${member.last_name}`,
+                                  client_email: member.email || '',
+                                  session_type: session.session_type,
+                                  session_format: session.session_format,
+                                  start_time: session.scheduled_at,
+                                  end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
+                                } : {
+                                  id: session.id,
+                                  practitioner_id: session.practitioner_id,
+                                  member_id: session.member_id,
+                                  client_name: `${member.first_name} ${member.last_name}`,
+                                  client_email: member.email || '',
+                                  session_type: session.session_type,
+                                  session_format: session.session_format,
+                                  start_time: session.scheduled_at,
+                                  end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
+                                })
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <RefreshCw className="w-4 h-4 text-teal-500" />
+                              {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+                            </button>
+                            <button
                               onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'complete' }) }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
@@ -1702,6 +1737,17 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           onSessionsUpdate()
         }}
         preselectedMember={member}
+      />
+
+      {/* Reschedule Modal */}
+      <ScheduleSessionModal
+        isOpen={!!rescheduleSession}
+        onClose={() => setRescheduleSession(null)}
+        onSuccess={() => {
+          setRescheduleSession(null)
+          onSessionsUpdate()
+        }}
+        rescheduleBooking={rescheduleSession}
       />
 
       {/* Propose New Date Modal */}
