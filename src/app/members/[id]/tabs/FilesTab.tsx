@@ -118,6 +118,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [referralEmail, setReferralEmail] = useState(member.referral_email || '')
   const [savingReferral, setSavingReferral] = useState(false)
   const [editingReferral, setEditingReferral] = useState(false)
+  const hasReferralSaved = !!(member.referral_source || member.referral_name)
 
   const handleSaveReferral = async () => {
     setSavingReferral(true)
@@ -907,14 +908,14 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             </div>
             {locale === 'fr' ? 'Référence' : 'Referred by'}
           </h3>
-          {!editingReferral && (referralSource || referralName) && (
+          {!editingReferral && hasReferralSaved && (
             <button onClick={() => setEditingReferral(true)} className="text-xs text-teal-600 hover:text-teal-700 font-medium">
               {locale === 'fr' ? 'Modifier' : 'Edit'}
             </button>
           )}
         </div>
 
-        {editingReferral || (!referralSource && !referralName) ? (
+        {editingReferral || !hasReferralSaved ? (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
