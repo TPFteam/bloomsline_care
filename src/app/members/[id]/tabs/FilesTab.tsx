@@ -971,7 +971,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               <Button
                 size="sm"
                 onClick={handleSaveReferral}
-                disabled={savingReferral || (!referralSource && !referralName)}
+                disabled={savingReferral || !referralSource || !referralName.trim()}
                 className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
               >
                 {savingReferral ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
