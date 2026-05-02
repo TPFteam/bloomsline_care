@@ -1090,6 +1090,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         setSelectedDate(startOfDay(date))
                         setSelectedTime(time)
                         setShowSlotCalendar(false)
+                        setStep('confirm')
                       }}
                     />
                   </div>
