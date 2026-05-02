@@ -1174,7 +1174,7 @@ export default function BookingsPage() {
                                       )}
                                       <button
                                         onClick={() => setDeleteConfirmBooking(booking)}
-                                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                                         title={locale === 'fr' ? 'Supprimer' : 'Delete'}
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
