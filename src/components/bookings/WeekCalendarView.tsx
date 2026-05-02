@@ -287,18 +287,21 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             <div
               key={day.toISOString()}
               className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick ? 'cursor-pointer' : ''}`}
+              style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
                 if (!onSlotClick) return
-                // Only handle clicks on the grid background, not on events
                 if ((e.target as HTMLElement).closest('[data-event]')) return
                 const rect = e.currentTarget.getBoundingClientRect()
-                const y = e.clientY - rect.top
+                // Support both mouse and touch events
+                const clientY = (e as any).touches?.[0]?.clientY ?? (e as any).changedTouches?.[0]?.clientY ?? e.clientY
+                const y = clientY - rect.top
+                if (y < 0 || isNaN(y)) return
                 const rawHour = START_HOUR + y / HOUR_HEIGHT
-                // Round to nearest 15 min
                 const hour = Math.floor(rawHour)
                 const minutes = Math.round((rawHour - hour) * 60 / 15) * 15
                 const adjustedMinutes = minutes === 60 ? 0 : minutes
                 const adjustedHour = minutes === 60 ? hour + 1 : hour
+                if (adjustedHour < START_HOUR || adjustedHour >= END_HOUR) return
                 const time = `${String(adjustedHour).padStart(2, '0')}:${String(adjustedMinutes).padStart(2, '0')}`
                 onSlotClick(day, time)
               }}
