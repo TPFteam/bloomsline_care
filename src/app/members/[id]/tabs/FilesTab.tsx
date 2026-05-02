@@ -98,6 +98,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [isDragging, setIsDragging] = useState(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
+  // Thumbnail URLs for image files
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({})
+
   // File preview modal state
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFile, setPreviewFile] = useState<MemberFile | null>(null)
@@ -180,6 +183,23 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
       setFiles(sortedData)
       setCurrentFolderId(hasFolderSupport ? folderId : null)
+
+      // Generate thumbnail URLs for image files
+      const imageFiles = sortedData.filter(f => !f.is_folder && f.file_type?.startsWith('image/') && f.storage_path)
+      if (imageFiles.length > 0) {
+        const paths = imageFiles.map(f => f.storage_path)
+        const { data: signedData } = await supabase.storage.from('member-files').createSignedUrls(paths, 3600)
+        if (signedData) {
+          const thumbMap: Record<string, string> = {}
+          signedData.forEach((item, i) => {
+            if (item.signedUrl) {
+              const file = imageFiles[i]
+              thumbMap[file.id] = item.signedUrl
+            }
+          })
+          setThumbnails(thumbMap)
+        }
+      }
     } catch (error) {
       console.error('Error fetching files:', error)
     } finally {
@@ -1390,10 +1410,16 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       </DropdownMenu>
                     </div>
 
-                    {/* File icon */}
-                    <div className={`w-12 h-12 rounded-xl ${catStyle.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform`}>
-                      <FileIcon className={`w-6 h-6 ${catStyle.text}`} />
-                    </div>
+                    {/* File icon or thumbnail */}
+                    {thumbnails[file.id] ? (
+                      <div className="w-full aspect-square rounded-xl overflow-hidden mb-3 group-hover:scale-[1.02] transition-transform">
+                        <img src={thumbnails[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`w-12 h-12 rounded-xl ${catStyle.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform`}>
+                        <FileIcon className={`w-6 h-6 ${catStyle.text}`} />
+                      </div>
+                    )}
 
                     {/* File name */}
                     <p className="text-sm font-medium text-gray-900 text-center truncate mb-1">
@@ -1470,13 +1496,24 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                 <div className="text-center text-white/60 pointer-events-auto">
                   <File className="w-16 h-16 mx-auto mb-4 text-white/30" />
                   <p className="text-lg mb-2">{previewFile.file_name}</p>
-                  <p className="text-sm mb-4">{locale === 'fr' ? 'Aperçu non disponible pour ce type de fichier' : 'Preview not available for this file type'}</p>
-                  <button
-                    onClick={() => window.open(previewUrl, '_blank')}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
-                  >
-                    {locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}
-                  </button>
+                  <p className="text-sm text-white/40 mb-1">{formatFileSize(previewFile.file_size)}</p>
+                  <p className="text-sm mb-6">{locale === 'fr' ? 'Aperçu non disponible pour ce type de fichier' : 'Preview not available for this file type'}</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <a
+                      href={previewUrl}
+                      download={previewFile.file_name}
+                      className="px-5 py-2.5 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      {locale === 'fr' ? 'Télécharger' : 'Download'}
+                    </a>
+                    <button
+                      onClick={() => window.open(previewUrl, '_blank')}
+                      className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
+                    >
+                      {locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
