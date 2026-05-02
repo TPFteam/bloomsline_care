@@ -134,6 +134,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       if (error) throw error
       toast.success(locale === 'fr' ? 'Référence enregistrée' : 'Referral saved')
       setEditingReferral(false)
+      onMemberUpdate()
     } catch {
       toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Failed to save')
     } finally {
