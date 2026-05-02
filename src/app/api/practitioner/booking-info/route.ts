@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Get practitioner profile
     const { data: profile, error: profileError } = await adminClient
       .from('practitioner_profiles')
-      .select('id, user_id, slug, headline, bio, specialties, offers_telehealth, offers_in_person')
+      .select('id, user_id, slug, headline, bio, specialties, offers_telehealth, offers_in_person, city, country, address, google_maps_url')
       .eq('slug', slug)
       .eq('is_public', true)
       .single()

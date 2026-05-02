@@ -19,6 +19,10 @@ interface PractitionerInfo {
     specialties: string[]
     offers_telehealth: boolean
     offers_in_person: boolean
+    city: string | null
+    country: string | null
+    address: string | null
+    google_maps_url: string | null
   }
   settings: BookingSettings
   user: {
@@ -605,6 +609,25 @@ export default function BookingPage() {
                     <p className="text-sm text-gray-600 mt-4 leading-relaxed text-left line-clamp-4">
                       {practitioner.profile.bio}
                     </p>
+                  )}
+
+                  {/* Address */}
+                  {(practitioner.profile.address || practitioner.profile.city) && (
+                    <div className="mt-4 text-left">
+                      <p className="text-sm text-gray-600">
+                        {practitioner.profile.address || [practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')}
+                      </p>
+                      {practitioner.profile.google_maps_url && (
+                        <a
+                          href={practitioner.profile.google_maps_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-teal-600 hover:text-teal-700 font-medium mt-1 inline-block"
+                        >
+                          {locale === 'fr' ? 'Voir sur Google Maps →' : 'View on Google Maps →'}
+                        </a>
+                      )}
+                    </div>
                   )}
 
                   {/* Specialties */}
