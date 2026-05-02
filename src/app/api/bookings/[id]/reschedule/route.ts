@@ -54,6 +54,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    // Check calendar email preference
+    const { data: calSettings } = await adminSupabase.from('booking_settings').select('send_own_calendar_emails').eq('user_id', user.id).maybeSingle();
+    const ownSendUpdates = calSettings?.send_own_calendar_emails !== false ? 'all' : 'none';
+
     const isFutureBooking = new Date(booking.start_time).getTime() > Date.now();
 
     // Format dates for notifications
@@ -122,7 +126,7 @@ export async function POST(
             });
           }
 
-          await fetch(`${calendarUrl}?sendUpdates=all`, {
+          await fetch(`${calendarUrl}?sendUpdates=${ownSendUpdates}`, {
             method: 'DELETE',
             headers: authHeaders,
           });
@@ -190,7 +194,7 @@ export async function POST(
       if (googleAuth) {
         try {
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${ownSendUpdates}&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
@@ -224,8 +228,8 @@ export async function POST(
     }
 
     // No Bloomsline emails — Google Calendar handles notifications:
-    // - Old event DELETE with sendUpdates=all → cancellation email (with reason)
-    // - New event POST with sendUpdates=all → invitation email (with new time)
+    // - Old event DELETE with sendUpdates=${ownSendUpdates} → cancellation email (with reason)
+    // - New event POST with sendUpdates=${ownSendUpdates} → invitation email (with new time)
 
     return NextResponse.json({ success: true, newBookingId: newBooking.id });
   } catch (err) {

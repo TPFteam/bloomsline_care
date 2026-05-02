@@ -52,6 +52,10 @@ export async function PATCH(
     // Use admin client for updates
     const adminSupabase = createAdminClient();
 
+    // Check calendar email preference for practitioner-initiated actions
+    const { data: calSettings } = await adminSupabase.from('booking_settings').select('send_own_calendar_emails').eq('user_id', user.id).maybeSingle();
+    const ownSendUpdates = calSettings?.send_own_calendar_emails !== false ? 'all' : 'none';
+
     // Get the booking and verify ownership
     const { data: booking, error: fetchError } = await adminSupabase
       .from('bookings')
@@ -234,7 +238,7 @@ export async function PATCH(
           });
 
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${ownSendUpdates}&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
@@ -316,7 +320,7 @@ export async function PATCH(
           }
 
           // 2. Delete event → Google sends cancellation email with updated description
-          await fetch(`${calendarUrl}?sendUpdates=all`, {
+          await fetch(`${calendarUrl}?sendUpdates=${ownSendUpdates}`, {
             method: 'DELETE',
             headers: authHeaders,
           });
