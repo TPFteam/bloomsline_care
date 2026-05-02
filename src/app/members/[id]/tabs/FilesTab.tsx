@@ -34,6 +34,7 @@ import {
   ZoomIn,
   ZoomOut,
   ExternalLink,
+  Users,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -110,6 +111,34 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [docxContent, setDocxContent] = useState('')
   const [docxLoading, setDocxLoading] = useState(false)
   const [previewZoom, setPreviewZoom] = useState(1)
+
+  // Referral state
+  const [referralSource, setReferralSource] = useState<string>(member.referral_source || '')
+  const [referralName, setReferralName] = useState(member.referral_name || '')
+  const [referralEmail, setReferralEmail] = useState(member.referral_email || '')
+  const [savingReferral, setSavingReferral] = useState(false)
+  const [editingReferral, setEditingReferral] = useState(false)
+
+  const handleSaveReferral = async () => {
+    setSavingReferral(true)
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({
+          referral_source: referralSource || null,
+          referral_name: referralName.trim() || null,
+          referral_email: referralEmail.trim() || null,
+        })
+        .eq('id', memberId)
+      if (error) throw error
+      toast.success(locale === 'fr' ? 'Référence enregistrée' : 'Referral saved')
+      setEditingReferral(false)
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Failed to save')
+    } finally {
+      setSavingReferral(false)
+    }
+  }
 
   // New folder modal state
   const [showNewFolderModal, setShowNewFolderModal] = useState(false)
@@ -860,6 +889,118 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               <User className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-sm text-gray-500">{locale === 'fr' ? 'Aucune information de contact' : 'No contact information available'}</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Referral Source Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="bg-white rounded-2xl p-6 border border-gray-200"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+              <Users className="w-4 h-4 text-violet-600" />
+            </div>
+            {locale === 'fr' ? 'Référence' : 'Referred by'}
+          </h3>
+          {!editingReferral && (referralSource || referralName) && (
+            <button onClick={() => setEditingReferral(true)} className="text-xs text-teal-600 hover:text-teal-700 font-medium">
+              {locale === 'fr' ? 'Modifier' : 'Edit'}
+            </button>
+          )}
+        </div>
+
+        {editingReferral || (!referralSource && !referralName) ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {locale === 'fr' ? 'Source de référence' : 'Referral source'}
+              </label>
+              <select
+                value={referralSource}
+                onChange={(e) => setReferralSource(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 outline-none bg-white text-sm"
+              >
+                <option value="">{locale === 'fr' ? 'Sélectionner...' : 'Select...'}</option>
+                <option value="practitioner">{locale === 'fr' ? 'Autre praticien' : 'Another practitioner'}</option>
+                <option value="patient">{locale === 'fr' ? 'Patient existant' : 'Existing patient'}</option>
+                <option value="online">{locale === 'fr' ? 'Recherche en ligne' : 'Online search'}</option>
+                <option value="social_media">{locale === 'fr' ? 'Réseaux sociaux' : 'Social media'}</option>
+                <option value="word_of_mouth">{locale === 'fr' ? 'Bouche-à-oreille' : 'Word of mouth'}</option>
+                <option value="insurance">{locale === 'fr' ? 'Assurance / réseau santé' : 'Insurance / health network'}</option>
+                <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {locale === 'fr' ? 'Nom du référent' : 'Referrer name'}
+                </label>
+                <input
+                  type="text"
+                  value={referralName}
+                  onChange={(e) => setReferralName(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Dr. Dupont' : 'Dr. Smith'}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {locale === 'fr' ? 'Email du référent' : 'Referrer email'}
+                  <span className="text-gray-400 font-normal ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                </label>
+                <input
+                  type="email"
+                  value={referralEmail}
+                  onChange={(e) => setReferralEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 outline-none text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              {editingReferral && (
+                <Button variant="ghost" size="sm" onClick={() => setEditingReferral(false)} className="rounded-xl">
+                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSaveReferral}
+                disabled={savingReferral || (!referralSource && !referralName)}
+                className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+              >
+                {savingReferral ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {locale === 'fr' ? 'Enregistrer' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {referralSource && (
+              <div className="p-3 rounded-xl bg-gray-50">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{locale === 'fr' ? 'Source' : 'Source'}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {{ practitioner: locale === 'fr' ? 'Autre praticien' : 'Another practitioner', patient: locale === 'fr' ? 'Patient existant' : 'Existing patient', online: locale === 'fr' ? 'Recherche en ligne' : 'Online search', social_media: locale === 'fr' ? 'Réseaux sociaux' : 'Social media', word_of_mouth: locale === 'fr' ? 'Bouche-à-oreille' : 'Word of mouth', insurance: locale === 'fr' ? 'Assurance / réseau santé' : 'Insurance / health network', other: locale === 'fr' ? 'Autre' : 'Other' }[referralSource] || referralSource}
+                </p>
+              </div>
+            )}
+            {referralName && (
+              <div className="p-3 rounded-xl bg-gray-50">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{locale === 'fr' ? 'Nom' : 'Name'}</p>
+                <p className="text-sm font-medium text-gray-900">{referralName}</p>
+              </div>
+            )}
+            {referralEmail && (
+              <div className="p-3 rounded-xl bg-gray-50">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Email</p>
+                <p className="text-sm font-medium text-gray-900">{referralEmail}</p>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

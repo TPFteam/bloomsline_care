@@ -77,6 +77,11 @@ export interface Member {
   // Notes
   internal_notes: string | null
 
+  // Referral
+  referral_source: string | null
+  referral_name: string | null
+  referral_email: string | null
+
   // Flags
   is_demo: boolean // Identifies demo/example profiles for new practitioners
   is_minor: boolean // Student/minor flag
