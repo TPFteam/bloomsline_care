@@ -1548,10 +1548,27 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className="flex-1 bg-white rounded-xl p-8 overflow-auto prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: docxHtml }}
-                    />
+                    <div className="flex-1 bg-white rounded-xl overflow-auto flex flex-col">
+                      <div
+                        className="flex-1 p-8 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: docxHtml }}
+                      />
+                      <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-between bg-gray-50 rounded-b-xl shrink-0">
+                        <p className="text-xs text-gray-400">
+                          {locale === 'fr'
+                            ? 'Ce document peut contenir des images ou du contenu manuscrit non affiché. Téléchargez pour voir le document complet.'
+                            : 'This document may contain images or handwritten content not shown. Download to view the full document.'}
+                        </p>
+                        <a
+                          href={previewUrl}
+                          download={previewFile.file_name}
+                          className="shrink-0 ml-4 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          {locale === 'fr' ? 'Télécharger' : 'Download'}
+                        </a>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (
