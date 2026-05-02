@@ -1990,37 +1990,6 @@ export default function BookingsPage() {
                     </div>
                   </div>
 
-                  {/* Calendar notification setting */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                      {locale === 'fr' ? 'Notifications Google Calendar' : 'Google Calendar Notifications'}
-                    </h4>
-                    <p className="text-xs text-gray-500 mb-4">
-                      {locale === 'fr' ? 'Gérer les emails de notification pour vos propres actions' : 'Manage email notifications for your own actions'}
-                    </p>
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <div
-                        className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.send_own_calendar_emails !== false ? 'bg-teal-600' : 'bg-gray-300'}`}
-                        onClick={() =>
-                          setBookingSettings((prev: any) => ({
-                            ...prev!,
-                            send_own_calendar_emails: prev?.send_own_calendar_emails === false ? true : false,
-                          }))
-                        }
-                      >
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.send_own_calendar_emails !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-700">
-                          {locale === 'fr' ? 'Recevoir les emails pour mes propres réservations' : 'Receive calendar emails for sessions I book'}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {locale === 'fr' ? 'Désactivez pour ne plus recevoir de notifications Google quand vous réservez ou reprogrammez' : 'Turn off to stop receiving Google Calendar emails when you book or reschedule'}
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-
                   <Button
                     type="button"
                     className="mt-6"
