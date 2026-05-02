@@ -775,6 +775,39 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Adresse' : 'Address'}
+                      <span className="text-gray-400 font-normal ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.address || ''}
+                      onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder={locale === 'fr' ? '105 rue Duguesclin, 69006 Lyon' : '123 Main Street, Suite 4'}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Google Maps link */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {locale === 'fr' ? 'Lien Google Maps' : 'Google Maps Link'}
+                      <span className="text-gray-400 font-normal ml-1">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={profile.google_maps_url || ''}
+                      onChange={(e) => setProfile(prev => ({ ...prev, google_maps_url: e.target.value }))}
+                      placeholder="https://maps.google.com/..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      {locale === 'fr' ? 'Collez le lien de votre cabinet sur Google Maps' : 'Paste your practice location link from Google Maps'}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

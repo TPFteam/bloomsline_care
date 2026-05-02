@@ -138,6 +138,8 @@ export interface PractitionerProfile {
   // Location
   city: string | null
   country: string | null
+  address: string | null
+  google_maps_url: string | null
 
   // Professional Identity
   headline: string | null // "Helping families navigate trauma with compassion"
