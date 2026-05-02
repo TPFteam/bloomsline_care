@@ -615,7 +615,7 @@ export default function BookingPage() {
                   {(practitioner.profile.address || practitioner.profile.city) && (
                     <div className="mt-4 text-left">
                       <p className="text-sm text-gray-600">
-                        {practitioner.profile.address || [practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')}
+                        {[practitioner.profile.address, practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')}
                       </p>
                       {practitioner.profile.google_maps_url && (
                         <a
