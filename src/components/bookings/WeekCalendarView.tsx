@@ -47,6 +47,8 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
+interface AvailSlot { start: string; end: string; dayDate: string }
+
 export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
@@ -56,11 +58,16 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
+  const [showAvailability, setShowAvailability] = useState(false)
+  const [availSlots, setAvailSlots] = useState<AvailSlot[]>([])
+  const [availLoading, setAvailLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   // Fetch practitioner timezone + day formats
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      setUserId(user.id)
       supabase
         .from('availability_schedules')
         .select('timezone, day_of_week, session_format')
@@ -137,6 +144,31 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   useEffect(() => {
     fetch('/api/calendar/sync-check', { method: 'POST' }).catch(() => {})
   }, [])
+
+  // Fetch available slots for the week when toggle is on
+  useEffect(() => {
+    if (!showAvailability || !userId) { setAvailSlots([]); return }
+    const fetchSlots = async () => {
+      setAvailLoading(true)
+      const allSlots: AvailSlot[] = []
+      const activeDays = days.filter(d => dayFormats[d.getDay()])
+      await Promise.all(activeDays.map(async (day) => {
+        const dateStr = format(day, 'yyyy-MM-dd')
+        try {
+          const res = await fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=60&skipNotice=true`)
+          if (res.ok) {
+            const data = await res.json()
+            for (const slot of (data.slots || [])) {
+              allSlots.push({ start: slot.slot_start, end: slot.slot_end, dayDate: dateStr })
+            }
+          }
+        } catch { /* silent */ }
+      }))
+      setAvailSlots(allSlots)
+      setAvailLoading(false)
+    }
+    fetchSlots()
+  }, [showAvailability, weekStart, userId, dayFormats])
 
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
@@ -222,8 +254,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             </span>
           )}
         </div>
-        {/* Legend */}
+        {/* Legend + Availability toggle */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowAvailability(prev => !prev)}
+            className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors ${
+              showAvailability ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${showAvailability ? 'bg-emerald-400' : 'bg-gray-300 border border-gray-400'}`} />
+            {locale === 'fr' ? 'Disponibilités' : 'Availability'}
+            {availLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+          </button>
           <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <span className="w-2 h-2 rounded-full bg-teal-100 border border-teal-200" />
             {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
@@ -324,6 +366,39 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   </div>
                 )
               })()}
+
+              {/* Available slots */}
+              {showAvailability && availSlots
+                .filter(s => s.dayDate === format(day, 'yyyy-MM-dd'))
+                .map((slot, si) => {
+                  const startH = getHoursInTz(slot.start)
+                  const endH = getHoursInTz(slot.end)
+                  const top = (startH - START_HOUR) * HOUR_HEIGHT
+                  const height = Math.max((endH - startH) * HOUR_HEIGHT, 20)
+                  return (
+                    <div
+                      key={`slot-${si}`}
+                      data-event
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (!onSlotClick) return
+                        const d = new Date(slot.start)
+                        const tz = practitionerTz || 'UTC'
+                        const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                        const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                        const time = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+                        onSlotClick(day, time)
+                      }}
+                      className="absolute left-1 right-1 rounded-md border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 cursor-pointer transition-colors z-[5] flex items-center justify-center"
+                      style={{ top, height }}
+                    >
+                      <span className="text-[10px] text-emerald-600 font-medium truncate px-1">
+                        {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
+                      </span>
+                    </div>
+                  )
+                })
+              }
 
               {/* Events */}
               {laid.map(event => {
