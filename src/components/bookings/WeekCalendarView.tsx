@@ -233,25 +233,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
-            <ChevronLeft className="w-4 h-4 text-gray-400" />
-          </button>
-          <h3 className="text-sm font-semibold text-gray-800">
-            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}
-          </h3>
-          <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          </button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
-            {locale === 'fr' ? "Aujourd'hui" : 'Today'}
-          </button>
-          {practitionerTz && (
-            <span className="text-[11px] text-gray-400 ml-1">
-              ({practitionerTz.replace(/_/g, ' ').split('/').pop()})
-            </span>
-          )}
-        </div>
+        {/* Legend + Availability toggle */}
         {/* Legend + Availability toggle */}
         <div className="flex items-center gap-4">
           <button
@@ -276,6 +258,26 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
               <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-200" />
               Google Calendar
+            </span>
+          )}
+        </div>
+        {/* Week navigation */}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+            <ChevronLeft className="w-4 h-4 text-gray-400" />
+          </button>
+          <h3 className="text-sm font-semibold text-gray-800">
+            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}
+          </h3>
+          <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </button>
+          <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
+            {locale === 'fr' ? "Aujourd'hui" : 'Today'}
+          </button>
+          {practitionerTz && (
+            <span className="text-[11px] text-gray-400 ml-1">
+              ({practitionerTz.replace(/_/g, ' ').split('/').pop()})
             </span>
           )}
         </div>
