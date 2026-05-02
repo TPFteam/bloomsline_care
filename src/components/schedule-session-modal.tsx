@@ -196,6 +196,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setSelectedSessionFormat(null)
         setSelectedDate(preselectedDate ? startOfDay(preselectedDate) : startOfDay(new Date()))
         setSelectedTime(preselectedTime || null)
+        if (preselectedTime) keepTimeRef.current = true
         setNotes('')
         setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
         setManualSessionType('')
@@ -697,7 +698,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     if (step === 'session' && !preselectedMember) setStep('member')
     else if (step === 'format') setStep('session')
     else if (step === 'datetime') setStep('format')
-    else if (step === 'confirm') setStep(preselectedTime ? 'format' : 'datetime')
+    else if (step === 'confirm') setStep('datetime')
   }
 
   const canProceed = () => {
@@ -1498,7 +1499,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 onClick={() => {
                   if (step === 'member') setStep('session')
                   else if (step === 'session') setStep('format')
-                  else if (step === 'format') setStep(preselectedTime ? 'confirm' : 'datetime')
+                  else if (step === 'format') setStep('datetime')
                   else if (step === 'datetime') setStep('confirm')
                 }}
                 disabled={!canProceed()}
