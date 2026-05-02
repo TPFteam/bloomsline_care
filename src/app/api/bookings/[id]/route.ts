@@ -7,7 +7,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -221,6 +221,7 @@ export async function PATCH(
           const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
           const practName = await getPractitionerName(user.id, adminSupabase);
 
+          const practAddr = await getPractitionerAddress(user.id, adminSupabase);
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName: practName,
@@ -228,11 +229,14 @@ export async function PATCH(
             clientEmail: booking.client_email,
             clientPhone: booking.client_phone,
             sessionTypeName,
+            sessionFormat: booking.session_format,
             startTime: booking.start_time,
             endTime: booking.end_time,
             timezone: booking.timezone,
             notes: booking.notes,
             locale: practUser?.preferred_language || 'fr',
+            practitionerAddress: practAddr.address,
+            practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
             practitionerEmail: practUser?.email,
             practitionerPhone: practUser?.phone,
           });

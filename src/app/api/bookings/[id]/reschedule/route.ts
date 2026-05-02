@@ -5,7 +5,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
 
 /**
  * POST /api/bookings/[id]/reschedule
@@ -201,20 +201,26 @@ export async function POST(
                 Authorization: `Bearer ${googleAuth.accessToken}`,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(buildCalendarEvent({
-                bookingId: newBooking.id,
-                practitionerName: await getPractitionerName(user.id, adminSupabase),
-                clientName: booking.client_name,
-                clientEmail: booking.client_email,
-                clientPhone: booking.client_phone,
-                sessionTypeName,
-                startTime: newSlotStart,
-                endTime: newSlotEnd,
-                timezone: booking.timezone,
-                notes: booking.notes,
-                locale: 'fr',
-                isRescheduled: true,
-              })),
+              body: JSON.stringify(await (async () => {
+                const practAddr = await getPractitionerAddress(user.id, adminSupabase);
+                return buildCalendarEvent({
+                  bookingId: newBooking.id,
+                  practitionerName: await getPractitionerName(user.id, adminSupabase),
+                  clientName: booking.client_name,
+                  clientEmail: booking.client_email,
+                  clientPhone: booking.client_phone,
+                  sessionTypeName,
+                  sessionFormat: booking.session_format,
+                  startTime: newSlotStart,
+                  endTime: newSlotEnd,
+                  timezone: booking.timezone,
+                  notes: booking.notes,
+                  locale: 'fr',
+                  isRescheduled: true,
+                  practitionerAddress: practAddr.address,
+                  practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+                });
+              })()),
             }
           );
           if (response.ok) {

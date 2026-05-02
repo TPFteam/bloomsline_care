@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerAddress } from '@/lib/services/calendar-event';
 
 // POST /api/bookings/[id]/sync-calendar - Sync a booking to Google Calendar
 export async function POST(
@@ -109,6 +109,7 @@ export async function POST(
       console.log(`[sync-calendar] final practitionerName=${practitionerName}`);
       const locale = practUser?.preferred_language || 'fr';
 
+      const practAddr = await getPractitionerAddress(booking.practitioner_id, adminSupabase);
       const calendarEvent = buildCalendarEvent({
         bookingId: id,
         practitionerName,
@@ -116,11 +117,14 @@ export async function POST(
         clientEmail: booking.client_email,
         clientPhone: booking.client_phone,
         sessionTypeName,
+        sessionFormat: booking.session_format,
         startTime: booking.start_time,
         endTime: booking.end_time,
         timezone: booking.timezone,
         notes: booking.notes,
         locale,
+        practitionerAddress: practAddr.address,
+        practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
         practitionerEmail: practUser?.email,
         practitionerPhone: practUser?.phone,
       });

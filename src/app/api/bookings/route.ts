@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent, getPractitionerName } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
 import { waitUntil } from '@vercel/functions';
 
 // POST /api/bookings - Create a new booking (public)
@@ -243,6 +243,7 @@ export async function POST(request: NextRequest) {
             .single();
           const eventTimezone = scheduleData?.timezone || body.timezone;
 
+          const practAddr = await getPractitionerAddress(body.practitioner_id, supabase);
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName,
@@ -250,11 +251,14 @@ export async function POST(request: NextRequest) {
             clientEmail: body.client_email,
             clientPhone: body.client_phone,
             sessionTypeName: sessionType.name,
+            sessionFormat: body.session_format,
             startTime: body.start_time,
             endTime: body.end_time,
             timezone: eventTimezone,
             notes: body.notes,
             locale: practitionerLocale,
+            practitionerAddress: practAddr.address,
+            practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
           });
 
           const response = await fetch(

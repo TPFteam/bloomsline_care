@@ -34,6 +34,23 @@ export async function getPractitionerName(
 }
 
 /**
+ * Get practitioner's address info for calendar events.
+ */
+export async function getPractitionerAddress(
+  userId: string,
+  supabase: SupabaseClient
+): Promise<{ address: string | null; googleMapsUrl: string | null }> {
+  const { data } = await supabase
+    .from('practitioner_profiles')
+    .select('address, city, country, google_maps_url')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!data) return { address: null, googleMapsUrl: null }
+  const address = [data.address, data.city, data.country].filter(Boolean).join(', ') || null
+  return { address, googleMapsUrl: data.google_maps_url || null }
+}
+
+/**
  * Build a standardized Google Calendar event object for Bloomsline bookings.
  * Used across all calendar sync points for consistency.
  */
@@ -45,6 +62,7 @@ export interface CalendarEventParams {
   clientEmail: string
   clientPhone?: string | null
   sessionTypeName: string
+  sessionFormat?: string | null // 'in_person' | 'video'
   startTime: string
   endTime: string
   timezone: string
@@ -52,6 +70,7 @@ export interface CalendarEventParams {
   locale?: string // practitioner's preferred language
   isRescheduled?: boolean
   practitionerAddress?: string | null
+  practitionerGoogleMapsUrl?: string | null
   practitionerEmail?: string | null
   practitionerPhone?: string | null
 }
@@ -64,6 +83,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     clientEmail,
     clientPhone,
     sessionTypeName,
+    sessionFormat,
     startTime,
     endTime,
     timezone,
@@ -71,9 +91,12 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     locale = 'fr',
     isRescheduled = false,
     practitionerAddress,
+    practitionerGoogleMapsUrl,
     practitionerEmail,
     practitionerPhone,
   } = params
+
+  const isInPerson = sessionFormat === 'in_person'
 
   const isFr = locale === 'fr'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bloomsline.com'
@@ -114,6 +137,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   }
 
   lines.push(isFr ? `Type: ${sessionTypeName}` : `Type: ${sessionTypeName}`)
+  lines.push(isFr ? `Format: ${isInPerson ? 'En personne' : 'Vidéo'}` : `Format: ${isInPerson ? 'In person' : 'Video'}`)
   lines.push('')
   lines.push(isFr ? `Client: ${clientName}` : `Client: ${clientName}`)
   lines.push(`Email: ${clientEmail}`)
@@ -122,9 +146,12 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   lines.push(isFr ? `Date: ${dateStr}` : `Date: ${dateStr}`)
   lines.push(isFr ? `Heure: ${timeStart} – ${timeEnd}` : `Time: ${timeStart} – ${timeEnd}`)
 
-  if (practitionerAddress) {
+  if (isInPerson && practitionerAddress) {
     lines.push('')
-    lines.push(isFr ? `Adresse: ${practitionerAddress}` : `Address: ${practitionerAddress}`)
+    lines.push(isFr ? `📍 Lieu: ${practitionerAddress}` : `📍 Location: ${practitionerAddress}`)
+    if (practitionerGoogleMapsUrl) {
+      lines.push(isFr ? `Google Maps: ${practitionerGoogleMapsUrl}` : `Google Maps: ${practitionerGoogleMapsUrl}`)
+    }
   }
 
   if (notes) {
@@ -146,7 +173,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   lines.push(isFr ? `Géré via Bloomsline` : `Managed via Bloomsline`)
   lines.push(appUrl)
 
-  return {
+  const event: Record<string, unknown> = {
     summary: title,
     description: lines.join('\n'),
     start: {
@@ -160,14 +187,25 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     attendees: [
       { email: clientEmail, displayName: clientName },
     ],
-    conferenceData: {
-      createRequest: {
-        requestId: `bloomsline-${bookingId}`,
-        conferenceSolutionKey: { type: 'hangoutsMeet' },
-      },
-    },
     reminders: {
       useDefault: true,
     },
   }
+
+  if (isInPerson) {
+    // In-person: set location, no Meet link
+    if (practitionerAddress) {
+      event.location = practitionerAddress
+    }
+  } else {
+    // Video: create Google Meet link
+    event.conferenceData = {
+      createRequest: {
+        requestId: `bloomsline-${bookingId}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    }
+  }
+
+  return event
 }
