@@ -230,6 +230,8 @@ export default function ProfilePage() {
         bio: profile.bio || null,
         city: profile.city || null,
         country: profile.country || null,
+        address: profile.address || null,
+        google_maps_url: profile.google_maps_url || null,
         intro_video_url: profile.intro_video_url || null,
         credentials: profile.credentials || [],
         education: profile.education || [],
