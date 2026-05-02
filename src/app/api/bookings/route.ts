@@ -155,10 +155,17 @@ export async function POST(request: NextRequest) {
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {
 
-      // Format the requested time in the practitioner's locale
+      // Format the requested time in the practitioner's locale and timezone
+      const { data: schedTz } = await supabase
+        .from('availability_schedules')
+        .select('timezone')
+        .eq('user_id', body.practitioner_id)
+        .limit(1)
+        .maybeSingle();
+      const practTz = schedTz?.timezone || body.timezone || 'Europe/Paris';
       const formattedTime = new Date(body.start_time).toLocaleString(
         practitionerLocale === 'fr' ? 'fr-FR' : practitionerLocale === 'es' ? 'es-ES' : 'en-US',
-        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: practTz }
       );
 
       const metadata = {
