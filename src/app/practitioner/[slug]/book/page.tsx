@@ -723,7 +723,8 @@ export default function BookingPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="flex items-center justify-center mb-6 overflow-x-auto px-2"
+              className="flex items-center justify-center mb-6"
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {STEP_ORDER.map((step, index) => (
                 <div key={step} className="flex items-center">
@@ -734,7 +735,7 @@ export default function BookingPage() {
                     className="flex flex-col items-center gap-1.5 group"
                   >
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-all ${
                         currentStepIndex > index
                           ? 'bg-teal-500 text-white shadow-md shadow-teal-200/50'
                           : currentStepIndex === index
@@ -756,7 +757,7 @@ export default function BookingPage() {
                   </button>
                   {index < STEP_ORDER.length - 1 && (
                     <div
-                      className={`w-10 sm:w-14 h-0.5 mx-2 sm:mx-3 rounded-full transition-colors ${
+                      className={`w-6 sm:w-14 h-0.5 mx-1 sm:mx-3 rounded-full transition-colors ${
                         currentStepIndex > index
                           ? 'bg-teal-400'
                           : 'bg-gray-200'
