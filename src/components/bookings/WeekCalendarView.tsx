@@ -367,38 +367,39 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* Available slots */}
-              {showAvailability && availSlots
-                .filter(s => s.dayDate === format(day, 'yyyy-MM-dd'))
-                .map((slot, si) => {
-                  const startH = getHoursInTz(slot.start)
-                  const endH = getHoursInTz(slot.end)
-                  const top = (startH - START_HOUR) * HOUR_HEIGHT
-                  const height = Math.max((endH - startH) * HOUR_HEIGHT, 20)
-                  return (
-                    <div
-                      key={`slot-${si}`}
-                      data-event
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (!onSlotClick) return
-                        const d = new Date(slot.start)
-                        const tz = practitionerTz || 'UTC'
-                        const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
-                        const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
-                        const time = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
-                        onSlotClick(day, time)
-                      }}
-                      className="absolute left-1 right-1 rounded-md border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100/80 cursor-pointer transition-colors z-[5] flex items-center justify-center"
-                      style={{ top, height }}
-                    >
-                      <span className="text-[10px] text-emerald-600 font-medium truncate px-1">
+              {/* Available slots — stacked pills */}
+              {showAvailability && (() => {
+                const daySlots = availSlots.filter(s => s.dayDate === format(day, 'yyyy-MM-dd'))
+                if (daySlots.length === 0) return null
+                const firstSlotH = getHoursInTz(daySlots[0].start)
+                const topOffset = (firstSlotH - START_HOUR) * HOUR_HEIGHT
+                return (
+                  <div
+                    data-event
+                    className="absolute left-1 right-1 z-[5] flex flex-col gap-1"
+                    style={{ top: topOffset }}
+                  >
+                    {daySlots.map((slot, si) => (
+                      <button
+                        key={`slot-${si}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!onSlotClick) return
+                          const d = new Date(slot.start)
+                          const tz = practitionerTz || 'UTC'
+                          const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                          const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                          const time = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+                          onSlotClick(day, time)
+                        }}
+                        className="w-full px-2 py-1.5 rounded-lg border border-teal-200 bg-teal-50/80 hover:bg-teal-100 text-[10px] font-medium text-teal-700 transition-colors text-center truncate"
+                      >
                         {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
-                      </span>
-                    </div>
-                  )
-                })
-              }
+                      </button>
+                    ))}
+                  </div>
+                )
+              })()}
 
               {/* Events */}
               {laid.map(event => {
