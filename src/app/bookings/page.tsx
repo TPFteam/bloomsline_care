@@ -492,6 +492,32 @@ export default function BookingsPage() {
   const [rescheduleBooking, setRescheduleBooking] = useState<any | null>(null)
   const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string } | null>(null)
   const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
+  const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<any | null>(null)
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    try {
+      setProcessingId(bookingId)
+      const sb = createClient()
+      // Delete the booking
+      const { error } = await sb.from('bookings').delete().eq('id', bookingId)
+      if (error) throw error
+      // Also delete matching session if exists
+      const booking = bookings.find(b => b.id === bookingId)
+      if (booking) {
+        await sb.from('sessions').delete()
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('scheduled_at', booking.start_time)
+      }
+      setBookings(prev => prev.filter(b => b.id !== bookingId))
+      setDeleteConfirmBooking(null)
+      toast.success(locale === 'fr' ? 'Rendez-vous supprimé' : 'Booking deleted')
+    } catch (err) {
+      console.error('Delete booking error:', err)
+      toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Failed to delete booking')
+    } finally {
+      setProcessingId(null)
+    }
+  }
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
   const [rescheduleReason, setRescheduleReason] = useState('')
@@ -1146,6 +1172,13 @@ export default function BookingsPage() {
                                           {locale === 'fr' ? 'Annuler' : 'Cancel'}
                                         </button>
                                       )}
+                                      <button
+                                        onClick={() => setDeleteConfirmBooking(booking)}
+                                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                        title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
                                   </div>
 
@@ -2009,6 +2042,39 @@ export default function BookingsPage() {
               >
                 {processingId === cancelConfirmBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
                 {locale === 'fr' ? 'Annuler le rendez-vous' : 'Cancel booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDeleteConfirmBooking(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {locale === 'fr' ? 'Supprimer ce rendez-vous ?' : 'Delete this booking?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              {deleteConfirmBooking.client_name} — {new Date(deleteConfirmBooking.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
+            </p>
+            <p className="text-xs text-gray-400 mb-6">
+              {locale === 'fr' ? 'Cette action est irréversible. Le rendez-vous sera définitivement supprimé.' : 'This action cannot be undone. The booking will be permanently deleted.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmBooking(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Retour' : 'Back'}
+              </button>
+              <button
+                onClick={() => handleDeleteBooking(deleteConfirmBooking.id)}
+                disabled={processingId === deleteConfirmBooking.id}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {processingId === deleteConfirmBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
               </button>
             </div>
           </div>
