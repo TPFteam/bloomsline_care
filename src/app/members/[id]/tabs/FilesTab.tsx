@@ -31,6 +31,9 @@ import {
   Loader2,
   Check,
   AlertCircle,
+  ZoomIn,
+  ZoomOut,
+  ExternalLink,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -95,6 +98,11 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [isDragging, setIsDragging] = useState(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
 
+  // File preview modal state
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewFile, setPreviewFile] = useState<MemberFile | null>(null)
+  const [previewZoom, setPreviewZoom] = useState(1)
+
   // New folder modal state
   const [showNewFolderModal, setShowNewFolderModal] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -116,12 +124,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [emergencyNotes, setEmergencyNotes] = useState(member.emergency_contact.notes || '')
 
   useEffect(() => {
-    fetchFolderContents(null)
+    fetchFolderContents(null, true)
   }, [memberId])
 
-  const fetchFolderContents = async (folderId: string | null) => {
+  const fetchFolderContents = async (folderId: string | null, isInitial = false) => {
     try {
-      setLoading(true)
+      if (isInitial) setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
@@ -535,12 +543,13 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
     try {
       const { data, error } = await supabase.storage
         .from('member-files')
-        .createSignedUrl(file.storage_path, 60 * 60) // 1 hour expiry
+        .createSignedUrl(file.storage_path, 60 * 60)
 
       if (error) throw error
 
-      // Open in new tab
-      window.open(data.signedUrl, '_blank')
+      setPreviewUrl(data.signedUrl)
+      setPreviewFile(file)
+      setPreviewZoom(1)
     } catch (error) {
       console.error('Error viewing file:', error)
       toast.error(locale === 'fr' ? 'Impossible d\'afficher le fichier' : 'Failed to view file')
@@ -1402,6 +1411,72 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
           </div>
         )}
       </motion.div>
+
+      {/* File Preview Modal */}
+      <AnimatePresence>
+        {previewUrl && previewFile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex flex-col"
+            onClick={() => { setPreviewUrl(null); setPreviewFile(null) }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 bg-black/40" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 min-w-0">
+                <p className="text-white font-medium truncate">{previewFile.file_name}</p>
+                <span className="text-white/50 text-sm shrink-0">{formatFileSize(previewFile.file_size)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPreviewZoom(z => Math.max(0.25, z - 0.25))} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  <ZoomOut className="w-5 h-5" />
+                </button>
+                <span className="text-white/50 text-sm w-12 text-center">{Math.round(previewZoom * 100)}%</span>
+                <button onClick={() => setPreviewZoom(z => Math.min(3, z + 0.25))} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  <ZoomIn className="w-5 h-5" />
+                </button>
+                <button onClick={() => window.open(previewUrl, '_blank')} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" title={locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}>
+                  <ExternalLink className="w-5 h-5" />
+                </button>
+                <button onClick={() => { setPreviewUrl(null); setPreviewFile(null) }} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-auto flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+              {previewFile.file_type.includes('image') ? (
+                <img
+                  src={previewUrl}
+                  alt={previewFile.file_name}
+                  className="max-w-full max-h-full object-contain transition-transform duration-200"
+                  style={{ transform: `scale(${previewZoom})` }}
+                />
+              ) : previewFile.file_type.includes('pdf') ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-full rounded-lg bg-white"
+                  style={{ maxWidth: `${previewZoom * 800}px`, maxHeight: '100%' }}
+                  title={previewFile.file_name}
+                />
+              ) : (
+                <div className="text-center text-white/60">
+                  <File className="w-16 h-16 mx-auto mb-4 text-white/30" />
+                  <p className="text-lg mb-2">{previewFile.file_name}</p>
+                  <p className="text-sm mb-4">{locale === 'fr' ? 'Aperçu non disponible pour ce type de fichier' : 'Preview not available for this file type'}</p>
+                  <button
+                    onClick={() => window.open(previewUrl, '_blank')}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
+                  >
+                    {locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Emergency Contact Section */}
       <motion.div
