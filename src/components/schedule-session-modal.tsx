@@ -1439,9 +1439,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{locale === 'fr' ? 'Heure' : locale === 'es' ? 'Hora' : 'Time'}</span>
                       <span className="font-medium text-gray-900">
-                        {scheduleMode === 'manual'
-                          ? format(new Date(`2000-01-01T${manualTime}`), use24Hour ? 'HH:mm' : 'h:mm a')
-                          : selectedTime && format(new Date(`2000-01-01T${selectedTime}`), use24Hour ? 'HH:mm' : 'h:mm a')}
+                        {(() => {
+                          const t = scheduleMode === 'manual' ? manualTime : (selectedTime || preselectedTime)
+                          if (!t) return '—'
+                          try { return format(new Date(`2000-01-01T${t}`), use24Hour ? 'HH:mm' : 'h:mm a') } catch { return t }
+                        })()}
                       </span>
                     </div>
                     {scheduleMode === 'manual' && (
