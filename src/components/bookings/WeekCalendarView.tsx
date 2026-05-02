@@ -5,6 +5,7 @@ import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
+import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
 import { useLanguage } from '@/lib/i18n/context'
 
 interface CalendarEvent {
@@ -47,8 +48,6 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-interface AvailSlot { start: string; end: string; dayDate: string }
-
 export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
@@ -59,8 +58,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
   const [showAvailability, setShowAvailability] = useState(false)
-  const [availSlots, setAvailSlots] = useState<AvailSlot[]>([])
-  const [availLoading, setAvailLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
   // Fetch practitioner timezone + day formats
@@ -145,30 +142,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     fetch('/api/calendar/sync-check', { method: 'POST' }).catch(() => {})
   }, [])
 
-  // Fetch available slots for the week when toggle is on
-  useEffect(() => {
-    if (!showAvailability || !userId) { setAvailSlots([]); return }
-    const fetchSlots = async () => {
-      setAvailLoading(true)
-      const allSlots: AvailSlot[] = []
-      const activeDays = days.filter(d => dayFormats[d.getDay()])
-      await Promise.all(activeDays.map(async (day) => {
-        const dateStr = format(day, 'yyyy-MM-dd')
-        try {
-          const res = await fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=60&skipNotice=true`)
-          if (res.ok) {
-            const data = await res.json()
-            for (const slot of (data.slots || [])) {
-              allSlots.push({ start: slot.slot_start, end: slot.slot_end, dayDate: dateStr })
-            }
-          }
-        } catch { /* silent */ }
-      }))
-      setAvailSlots(allSlots)
-      setAvailLoading(false)
-    }
-    fetchSlots()
-  }, [showAvailability, weekStart, userId, dayFormats])
 
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
@@ -264,7 +237,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           >
             <span className={`w-2 h-2 rounded-full ${showAvailability ? 'bg-emerald-400' : 'bg-gray-300 border border-gray-400'}`} />
             {locale === 'fr' ? 'Disponibilités' : 'Availability'}
-            {availLoading && <Loader2 className="w-3 h-3 animate-spin" />}
           </button>
           <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <span className="w-2 h-2 rounded-full bg-teal-100 border border-teal-200" />
@@ -310,7 +282,28 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
         ))}
       </div>
 
-      {/* Time grid */}
+      {/* Time grid — swap with SlotCalendarView when availability is toggled */}
+      {showAvailability && userId ? (
+        <div className="border-t border-gray-100" style={{ maxHeight: '600px', overflow: 'auto' }}>
+          <SlotCalendarView
+            userId={userId}
+            sessionDuration={60}
+            selectedFormat={null}
+            disabledDaysOfWeek={(() => {
+              const active = new Set(Object.keys(dayFormats).map(Number))
+              return [0, 1, 2, 3, 4, 5, 6].filter(d => !active.has(d))
+            })()}
+            practitionerTz={practitionerTz}
+            dayFormats={(() => {
+              const m: Record<string, string[]> = {}
+              for (const [k, v] of Object.entries(dayFormats)) m[k] = v
+              return m
+            })()}
+            locale={locale}
+            onSelectSlot={(date, time) => onSlotClick?.(date, time)}
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: '560px' }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -363,40 +356,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                       <div className="w-2 h-2 rounded-full bg-red-400 -ml-1" />
                       <div className="flex-1 h-[1.5px] bg-red-400/60" />
                     </div>
-                  </div>
-                )
-              })()}
-
-              {/* Available slots — stacked pills */}
-              {showAvailability && (() => {
-                const daySlots = availSlots.filter(s => s.dayDate === format(day, 'yyyy-MM-dd'))
-                if (daySlots.length === 0) return null
-                const firstSlotH = getHoursInTz(daySlots[0].start)
-                const topOffset = (firstSlotH - START_HOUR) * HOUR_HEIGHT
-                return (
-                  <div
-                    data-event
-                    className="absolute left-1 right-1 z-[5] flex flex-col gap-1"
-                    style={{ top: topOffset }}
-                  >
-                    {daySlots.map((slot, si) => (
-                      <button
-                        key={`slot-${si}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (!onSlotClick) return
-                          const d = new Date(slot.start)
-                          const tz = practitionerTz || 'UTC'
-                          const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
-                          const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
-                          const time = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
-                          onSlotClick(day, time)
-                        }}
-                        className="w-full px-2 py-1.5 rounded-lg border border-teal-200 bg-teal-50/80 hover:bg-teal-100 text-[10px] font-medium text-teal-700 transition-colors text-center truncate"
-                      >
-                        {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
-                      </button>
-                    ))}
                   </div>
                 )
               })()}
@@ -545,6 +504,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           )
         })}
       </div>
+      )}
 
     </div>
   )
