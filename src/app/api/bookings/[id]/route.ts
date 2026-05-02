@@ -238,7 +238,7 @@ export async function PATCH(
           });
 
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${ownSendUpdates}&conferenceDataVersion=1`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
@@ -320,7 +320,7 @@ export async function PATCH(
           }
 
           // 2. Delete event → Google sends cancellation email with updated description
-          await fetch(`${calendarUrl}?sendUpdates=${ownSendUpdates}`, {
+          await fetch(`${calendarUrl}?sendUpdates=all`, {
             method: 'DELETE',
             headers: authHeaders,
           });

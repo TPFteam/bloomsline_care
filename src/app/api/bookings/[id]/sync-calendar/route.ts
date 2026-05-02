@@ -128,10 +128,7 @@ export async function POST(
       // Backdated session: create the event for the practitioner's historical record
       // but don't send Google Calendar invites to attendees
       const isBackdated = new Date(booking.start_time).getTime() < Date.now();
-      // Check if practitioner wants calendar emails for their own bookings
-      const { data: bSettings } = await adminSupabase.from('booking_settings').select('send_own_calendar_emails').eq('user_id', booking.practitioner_id).maybeSingle();
-      const wantsEmails = bSettings?.send_own_calendar_emails !== false;
-      const sendUpdates = isBackdated ? 'none' : (wantsEmails ? 'all' : 'none');
+      const sendUpdates = isBackdated ? 'none' : 'all';
 
       const response = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}&conferenceDataVersion=1`,

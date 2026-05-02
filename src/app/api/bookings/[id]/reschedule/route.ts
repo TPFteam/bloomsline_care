@@ -126,7 +126,7 @@ export async function POST(
             });
           }
 
-          await fetch(`${calendarUrl}?sendUpdates=${ownSendUpdates}`, {
+          await fetch(`${calendarUrl}?sendUpdates=all`, {
             method: 'DELETE',
             headers: authHeaders,
           });
@@ -194,7 +194,7 @@ export async function POST(
       if (googleAuth) {
         try {
           const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${ownSendUpdates}&conferenceDataVersion=1`,
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
             {
               method: 'POST',
               headers: {
@@ -228,8 +228,8 @@ export async function POST(
     }
 
     // No Bloomsline emails — Google Calendar handles notifications:
-    // - Old event DELETE with sendUpdates=${ownSendUpdates} → cancellation email (with reason)
-    // - New event POST with sendUpdates=${ownSendUpdates} → invitation email (with new time)
+    // - Old event DELETE with sendUpdates=all → cancellation email (with reason)
+    // - New event POST with sendUpdates=all → invitation email (with new time)
 
     return NextResponse.json({ success: true, newBookingId: newBooking.id });
   } catch (err) {
