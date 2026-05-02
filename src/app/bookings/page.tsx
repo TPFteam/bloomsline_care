@@ -920,7 +920,7 @@ export default function BookingsPage() {
 
               {/* Sub Tabs */}
               <div className="flex gap-2 flex-wrap">
-                {(['upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
+                {bookingView !== 'calendar' && (['upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
                   const isActive = appointmentFilter === tab
 
                   return (
