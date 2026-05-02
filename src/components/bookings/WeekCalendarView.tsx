@@ -233,19 +233,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
-        {/* Legend + Availability toggle */}
-        {/* Legend + Availability toggle */}
+        {/* Legend */}
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowAvailability(prev => !prev)}
-            className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors ${
-              showAvailability ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full ${showAvailability ? 'bg-emerald-400' : 'bg-gray-300 border border-gray-400'}`} />
-            {locale === 'fr' ? 'Disponibilités' : 'Availability'}
-            {availLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-          </button>
           <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <span className="w-2 h-2 rounded-full bg-teal-100 border border-teal-200" />
             {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
@@ -280,6 +269,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
               ({practitionerTz.replace(/_/g, ' ').split('/').pop()})
             </span>
           )}
+          <button
+            onClick={() => setShowAvailability(prev => !prev)}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ml-2 ${
+              showAvailability
+                ? 'bg-teal-50 text-teal-700 border-teal-300 shadow-sm'
+                : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className={`w-2 h-2 rounded-full ${showAvailability ? 'bg-teal-500' : 'bg-gray-300'}`} />
+            {locale === 'fr' ? 'Disponibilités' : 'Availability'}
+            {availLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+          </button>
         </div>
       </div>
 
