@@ -587,7 +587,11 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
           const res = await fetch(data.signedUrl)
           const arrayBuffer = await res.arrayBuffer()
           const mammoth = await import('mammoth')
-          const result = await mammoth.convertToHtml({ arrayBuffer })
+          const result = await mammoth.convertToHtml({ arrayBuffer }, {
+            convertImage: mammoth.images.imgElement(() => Promise.resolve({ src: '' })),
+          })
+          // Clean up empty images from skipped drawings
+          result.value = result.value.replace(/<img[^>]*src=""[^>]*>/g, '')
           setDocxHtml(result.value)
           setDocxContent(result.value)
         } catch (err) {
