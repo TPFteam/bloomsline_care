@@ -1419,49 +1419,55 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 z-50 flex flex-col"
-            onClick={() => { setPreviewUrl(null); setPreviewFile(null) }}
+            className="fixed inset-0 bg-black/90 z-[9000]"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-black/40" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center gap-3 min-w-0">
-                <p className="text-white font-medium truncate">{previewFile.file_name}</p>
-                <span className="text-white/50 text-sm shrink-0">{formatFileSize(previewFile.file_size)}</span>
-              </div>
-              <div className="flex items-center gap-2">
+            {/* Floating controls — always on top */}
+            <div className="absolute top-4 right-4 z-[9002] flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-xl px-2 py-1.5">
+              {previewFile.file_type.includes('image') && (<>
                 <button onClick={() => setPreviewZoom(z => Math.max(0.25, z - 0.25))} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  <ZoomOut className="w-5 h-5" />
+                  <ZoomOut className="w-4 h-4" />
                 </button>
-                <span className="text-white/50 text-sm w-12 text-center">{Math.round(previewZoom * 100)}%</span>
+                <span className="text-white/50 text-xs w-10 text-center">{Math.round(previewZoom * 100)}%</span>
                 <button onClick={() => setPreviewZoom(z => Math.min(3, z + 0.25))} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  <ZoomIn className="w-5 h-5" />
+                  <ZoomIn className="w-4 h-4" />
                 </button>
-                <button onClick={() => window.open(previewUrl, '_blank')} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" title={locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}>
-                  <ExternalLink className="w-5 h-5" />
-                </button>
-                <button onClick={() => { setPreviewUrl(null); setPreviewFile(null) }} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                <div className="w-px h-5 bg-white/20 mx-1" />
+              </>)}
+              <button onClick={() => window.open(previewUrl, '_blank')} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" title={locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setPreviewUrl(null); setPreviewFile(null) }} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            {/* Filename — top left */}
+            <div className="absolute top-4 left-4 z-[9002] flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-xl px-4 py-2">
+              <p className="text-white text-sm font-medium truncate max-w-[300px]">{previewFile.file_name}</p>
+              <span className="text-white/40 text-xs shrink-0">{formatFileSize(previewFile.file_size)}</span>
+            </div>
+
+            {/* Click backdrop to close */}
+            <div className="absolute inset-0 z-[9000]" onClick={() => { setPreviewUrl(null); setPreviewFile(null) }} />
+
             {/* Content */}
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+            <div className="absolute inset-0 z-[9001] flex items-center justify-center p-12 pt-16 pointer-events-none">
               {previewFile.file_type.includes('image') ? (
                 <img
                   src={previewUrl}
                   alt={previewFile.file_name}
-                  className="max-w-full max-h-full object-contain transition-transform duration-200"
+                  className="max-w-full max-h-full object-contain transition-transform duration-200 pointer-events-auto"
                   style={{ transform: `scale(${previewZoom})` }}
                 />
               ) : previewFile.file_type.includes('pdf') ? (
                 <iframe
-                  src={previewUrl}
-                  className="w-full h-full rounded-lg bg-white"
-                  style={{ maxWidth: `${previewZoom * 800}px`, maxHeight: '100%' }}
+                  src={`${previewUrl}#toolbar=0`}
+                  className="w-full h-full rounded-xl bg-white pointer-events-auto"
+                  style={{ maxWidth: '900px' }}
                   title={previewFile.file_name}
                 />
               ) : (
-                <div className="text-center text-white/60">
+                <div className="text-center text-white/60 pointer-events-auto">
                   <File className="w-16 h-16 mx-auto mb-4 text-white/30" />
                   <p className="text-lg mb-2">{previewFile.file_name}</p>
                   <p className="text-sm mb-4">{locale === 'fr' ? 'Aperçu non disponible pour ce type de fichier' : 'Preview not available for this file type'}</p>
