@@ -308,19 +308,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }
 
   const fetchAvailableSlots = async () => {
-    console.log('[modal] fetchAvailableSlots called', { userId, selectedSessionType, selectedDate })
-    if (!userId || !selectedSessionType) {
-      console.log('[modal] skipping fetch - missing userId or sessionType')
-      return
-    }
+    if (!userId || !selectedSessionType) return
 
-    // Clear stale slots immediately so the user never sees the previous date's
-    // times while the new ones are in flight.
     setAvailableSlots([])
     setDayBookings([])
-    if (keepTimeRef.current) {
-      keepTimeRef.current = false
-    } else {
+    // Preserve selectedTime if it was set from slot calendar or preselected
+    const shouldKeepTime = keepTimeRef.current
+    keepTimeRef.current = false
+    if (!shouldKeepTime) {
       setSelectedTime(null)
     }
     setSlotsLoading(true)
