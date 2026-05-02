@@ -963,7 +963,7 @@ export default function BookingsPage() {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   processingId={processingId}
-                  onSlotClick={(day, time) => { console.log('[bookings] slot click received:', day, time); setCalendarSlotBooking({ date: day, time }) }}
+                  onSlotClick={(day, time) => setCalendarSlotBooking({ date: day, time })}
                 />
               ) : (
               <>
