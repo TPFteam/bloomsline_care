@@ -161,6 +161,15 @@ export default function BookingsPage() {
     return tab === 'settings' ? 'settings' : 'appointments'
   })
 
+  // React to URL changes (e.g. clicking a booking notification while already on /bookings)
+  useEffect(() => {
+    const highlight = searchParams.get('highlight')
+    if (highlight) {
+      setMainTab('appointments')
+      setHighlightId(highlight)
+    }
+  }, [searchParams])
+
   // Appointments state
   const [bookings, setBookings] = useState<Booking[]>([])
 
