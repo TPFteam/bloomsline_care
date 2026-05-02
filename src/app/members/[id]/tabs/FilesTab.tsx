@@ -1529,21 +1529,23 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                 />
               ) : docxHtml !== null ? (
                 /* DOCX preview — read mode or edit mode */
-                <div className="w-full h-full max-w-[800px] pointer-events-auto flex flex-col">
+                <div className="w-full max-w-[800px] pointer-events-auto flex flex-col" style={{ height: 'calc(100vh - 120px)' }}>
                   {docxLoading ? (
                     <div className="flex-1 flex items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-white/50" />
                     </div>
                   ) : docxEditing ? (
-                    <div className="flex-1 bg-white rounded-xl overflow-auto">
-                      <RichTextEditor
-                        value={docxContent}
-                        onChange={setDocxContent}
-                        memberId={memberId}
-                        locale={locale}
-                        placeholder=""
-                        compact
-                      />
+                    <div className="flex-1 bg-white rounded-xl overflow-hidden flex flex-col">
+                      <div className="flex-1 overflow-auto">
+                        <RichTextEditor
+                          value={docxContent}
+                          onChange={setDocxContent}
+                          memberId={memberId}
+                          locale={locale}
+                          placeholder=""
+                          compact
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div
