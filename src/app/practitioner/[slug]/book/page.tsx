@@ -854,7 +854,11 @@ export default function BookingPage() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{t(locale, { en: 'In person', fr: 'En personne' })}</p>
-                        <p className="text-sm text-gray-500">{t(locale, { en: 'At the practitioner\'s office', fr: 'Au cabinet du praticien' })}</p>
+                        <p className="text-sm text-gray-500">
+                          {practitioner.profile.address
+                            ? [practitioner.profile.address, practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')
+                            : t(locale, { en: 'At the practitioner\'s office', fr: 'Au cabinet du praticien' })}
+                        </p>
                       </div>
                     </div>
                   </motion.button>
