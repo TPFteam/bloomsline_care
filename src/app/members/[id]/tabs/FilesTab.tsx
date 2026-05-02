@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
+import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,6 +105,10 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   // File preview modal state
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewFile, setPreviewFile] = useState<MemberFile | null>(null)
+  const [docxHtml, setDocxHtml] = useState<string | null>(null)
+  const [docxEditing, setDocxEditing] = useState(false)
+  const [docxContent, setDocxContent] = useState('')
+  const [docxLoading, setDocxLoading] = useState(false)
   const [previewZoom, setPreviewZoom] = useState(1)
 
   // New folder modal state
@@ -570,6 +575,27 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
       setPreviewUrl(data.signedUrl)
       setPreviewFile(file)
       setPreviewZoom(1)
+      setDocxHtml(null)
+      setDocxEditing(false)
+      setDocxContent('')
+
+      // Convert DOCX to HTML for preview
+      const isDocx = file.file_name?.toLowerCase().endsWith('.docx') || file.file_type?.includes('wordprocessingml')
+      if (isDocx) {
+        setDocxLoading(true)
+        try {
+          const res = await fetch(data.signedUrl)
+          const arrayBuffer = await res.arrayBuffer()
+          const mammoth = await import('mammoth')
+          const result = await mammoth.convertToHtml({ arrayBuffer })
+          setDocxHtml(result.value)
+          setDocxContent(result.value)
+        } catch (err) {
+          console.error('DOCX conversion error:', err)
+        } finally {
+          setDocxLoading(false)
+        }
+      }
     } catch (error) {
       console.error('Error viewing file:', error)
       toast.error(locale === 'fr' ? 'Impossible d\'afficher le fichier' : 'Failed to view file')
@@ -1459,6 +1485,15 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                 </button>
                 <div className="w-px h-5 bg-white/20 mx-1" />
               </>)}
+              {docxHtml !== null && (
+                <button
+                  onClick={() => { setDocxEditing(!docxEditing); if (!docxEditing) setDocxContent(docxHtml) }}
+                  className={`p-2 rounded-lg transition-colors ${docxEditing ? 'text-teal-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                  title={docxEditing ? (locale === 'fr' ? 'Mode lecture' : 'Read mode') : (locale === 'fr' ? 'Modifier' : 'Edit')}
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
               <button onClick={() => window.open(previewUrl, '_blank')} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors" title={locale === 'fr' ? 'Ouvrir dans un nouvel onglet' : 'Open in new tab'}>
                 <ExternalLink className="w-4 h-4" />
               </button>
@@ -1492,6 +1527,31 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                   style={{ maxWidth: '900px' }}
                   title={previewFile.file_name}
                 />
+              ) : docxHtml !== null ? (
+                /* DOCX preview — read mode or edit mode */
+                <div className="w-full h-full max-w-[800px] pointer-events-auto flex flex-col">
+                  {docxLoading ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-white/50" />
+                    </div>
+                  ) : docxEditing ? (
+                    <div className="flex-1 bg-white rounded-xl overflow-auto">
+                      <RichTextEditor
+                        value={docxContent}
+                        onChange={setDocxContent}
+                        memberId={memberId}
+                        locale={locale}
+                        placeholder=""
+                        compact
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex-1 bg-white rounded-xl p-8 overflow-auto prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: docxHtml }}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="text-center text-white/60 pointer-events-auto">
                   <File className="w-16 h-16 mx-auto mb-4 text-white/30" />
