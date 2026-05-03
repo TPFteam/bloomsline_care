@@ -28,6 +28,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResources, deleteResource, createResource } from '@/lib/services/resources'
@@ -1056,12 +1057,9 @@ export default function MyResourcesPage() {
                       {locale === 'fr' ? 'Téléphone' : 'Phone'}
                       <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={newMember.phone}
-                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                      placeholder={locale === 'fr' ? '+33 6 12 34 56 78' : '+1 (555) 123-4567'}
+                      onChange={(v) => setNewMember({ ...newMember, phone: v })}
                     />
                   </div>
                 </div>

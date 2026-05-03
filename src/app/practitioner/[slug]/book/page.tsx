@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
+import { PhoneInput } from '@/components/ui/phone-input'
 import type { BookingSettings, SessionType, TimeSlot } from '@/types/calendar'
 
 interface PractitionerInfo {
@@ -1157,12 +1158,9 @@ export default function BookingPage() {
                     <Phone className="w-4 h-4 text-gray-400" />
                     {locale === 'fr' ? 'Téléphone' : 'Phone Number'} <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="(555) 123-4567"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow bg-white placeholder-gray-400"
+                    onChange={setClientPhone}
                   />
                 </div>
                 <div>

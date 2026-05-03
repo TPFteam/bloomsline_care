@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Phone, Calendar, Heart, Shield, Save, X, Plus, Loader2, MessageSquare } from 'lucide-react'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -230,7 +231,7 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
                       </div>
                       <div>
                         <label className={labelClass}><Phone className="w-3 h-3" /> {locale === 'fr' ? 'Téléphone' : 'Phone'}</label>
-                        <input value={phone} onChange={e => setPhone(e.target.value)} className={inputClass} />
+                        <PhoneInput value={phone} onChange={setPhone} />
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3">

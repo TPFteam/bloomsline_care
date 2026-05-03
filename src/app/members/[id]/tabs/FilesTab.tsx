@@ -42,6 +42,7 @@ import {
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import {
   DropdownMenu,
@@ -1954,11 +1955,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     {t.members.form.emergencyPhone}
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={emergencyPhone}
-                    onChange={(e) => setEmergencyPhone(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                    onChange={(v) => setEmergencyPhone(v)}
                   />
                 </div>
                 <div>

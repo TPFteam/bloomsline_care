@@ -24,6 +24,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -1399,11 +1400,9 @@ export default function ProfilePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         {t.profile.contact.phone.label}
                       </label>
-                      <input
-                        type="tel"
+                      <PhoneInput
                         value={profile.contact_phone || ''}
-                        onChange={(e) => setProfile(prev => ({ ...prev, contact_phone: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all outline-none"
+                        onChange={(v) => setProfile(prev => ({ ...prev, contact_phone: v }))}
                       />
                       <p className="text-xs text-gray-500 mt-1">{t.profile.contact.phone.help}</p>
                     </div>

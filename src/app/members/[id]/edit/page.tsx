@@ -20,6 +20,7 @@ import {
   Edit,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -342,11 +343,9 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                       <Phone className="w-4 h-4 inline mr-1.5" />
                       {t.members.form.phone}
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all"
+                      onChange={(v) => setPhone(v)}
                     />
                   </div>
                 </div>
@@ -637,11 +636,9 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                       <Phone className="w-4 h-4 inline mr-1.5" />
                       {t.members.form.emergencyPhone}
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={emergencyPhone}
-                      onChange={(e) => setEmergencyPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all"
+                      onChange={(v) => setEmergencyPhone(v)}
                     />
                   </div>
                   <div>
