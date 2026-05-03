@@ -343,20 +343,25 @@ export default function SharedResourcesPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-              {(['all', 'pending', 'submitted', 'reviewed'] as const).map(s => (
+            <div className="flex items-center gap-0 border border-gray-200 rounded-xl overflow-hidden">
+              {([
+                { key: 'all' as const, label: locale === 'fr' ? 'Tous' : 'All', dot: null },
+                { key: 'pending' as const, label: locale === 'fr' ? 'En attente' : 'Pending', dot: 'bg-amber-400' },
+                { key: 'submitted' as const, label: locale === 'fr' ? 'Complété' : 'Completed', dot: 'bg-emerald-400' },
+                { key: 'reviewed' as const, label: locale === 'fr' ? 'Relu' : 'Reviewed', dot: 'bg-emerald-600' },
+              ]).map((s, i) => (
                 <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    statusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  key={s.key}
+                  onClick={() => setStatusFilter(s.key)}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
+                    i > 0 ? 'border-l border-gray-200' : ''
+                  } ${
+                    statusFilter === s.key ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
                   }`}
                 >
-                  {s === 'all' ? (locale === 'fr' ? 'Tous' : 'All') :
-                   s === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending') :
-                   s === 'submitted' ? (locale === 'fr' ? 'Complété' : 'Completed') :
-                   locale === 'fr' ? 'Relu' : 'Reviewed'}
-                  <span className="ml-1 text-gray-400">{statusCounts[s]}</span>
+                  {s.dot && <span className={`w-2 h-2 rounded-full ${s.dot}`} />}
+                  {s.label}
+                  <span className="text-gray-400">{statusCounts[s.key]}</span>
                 </button>
               ))}
             </div>
