@@ -926,7 +926,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
         </>
       {/* Remind Confirmation Modal */}
       {remindResource && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRemindResource(null)}>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={() => setRemindResource(null)}>
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
               <Bell className="w-5 h-5 text-amber-500" />
