@@ -101,6 +101,13 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [shareMessage, setShareMessage] = useState('')
   const [saving, setSaving] = useState(false)
 
+  // Quick share modal
+  const [showQuickShare, setShowQuickShare] = useState(false)
+  const [practResources, setPractResources] = useState<Array<{ id: string; title: string; type: string; blocks: any[] }>>([])
+  const [quickShareSearch, setQuickShareSearch] = useState('')
+  const [quickShareSelected, setQuickShareSelected] = useState<Set<string>>(new Set())
+  const [quickSharing, setQuickSharing] = useState(false)
+
   // Submissions state
   const [submissions, setSubmissions] = useState<SubmissionWithResource[]>([])
   const [remindResource, setRemindResource] = useState<{ id: string; title: string } | null>(null)
@@ -134,6 +141,52 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       fetchSubmissions()
     }
   }, [memberId, member?.id])
+
+  const openQuickShare = async () => {
+    setShowQuickShare(true)
+    setQuickShareSelected(new Set())
+    setQuickShareSearch('')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('resources')
+      .select('id, title, type, blocks')
+      .eq('practitioner_id', user.id)
+      .eq('status', 'published')
+      .order('updated_at', { ascending: false })
+      .limit(20)
+    setPractResources(data || [])
+  }
+
+  const handleQuickShare = async () => {
+    if (quickShareSelected.size === 0) return
+    setQuickSharing(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      let shared = 0
+      for (const resourceId of quickShareSelected) {
+        const { error } = await supabase
+          .from('member_shared_resources')
+          .insert({
+            member_id: memberId,
+            resource_id: resourceId,
+            practitioner_id: user.id,
+            shared_at: new Date().toISOString(),
+          })
+        if (!error) shared++
+      }
+      if (shared > 0) {
+        toast.success(locale === 'fr' ? `${shared} ressource(s) partagée(s)` : `${shared} resource(s) shared`)
+        fetchData()
+      }
+      setShowQuickShare(false)
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Failed to share')
+    } finally {
+      setQuickSharing(false)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -374,14 +427,13 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           )}
         </div>
 
-        <Link href="/resources">
-          <Button
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t.members.shared.shareStory}
-          </Button>
-        </Link>
+        <Button
+          onClick={openQuickShare}
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 transition-colors hover-lift"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {t.members.shared.shareStory}
+        </Button>
       </div>
 
       {/* Shared Resources Section */}
@@ -793,12 +845,10 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.members.shared.noShared}</h3>
                 <p className="text-gray-500 mb-8 max-w-md mx-auto">{t.members.shared.noSharedDescription}</p>
-                <Link href="/resources">
-                  <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift">
-                    <Plus className="w-4 h-4 mr-2" />
-                    {t.members.shared.shareStory}
-                  </Button>
-                </Link>
+                <Button onClick={openQuickShare} className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg shadow-lavender-300/50 px-6 transition-colors hover-lift">
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t.members.shared.shareStory}
+                </Button>
               </div>
             ) : sharedResources.length > 0 ? (
               <>
@@ -944,6 +994,98 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           </div>
         </div>
       )}
+      {/* Quick Share Modal */}
+      <AnimatePresence>
+        {showQuickShare && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowQuickShare(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                </h3>
+                <button onClick={() => setShowQuickShare(false)} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center">
+                  <span className="text-gray-400 text-xl leading-none">&times;</span>
+                </button>
+              </div>
+
+              <div className="p-4 border-b border-gray-100">
+                <input
+                  type="text"
+                  value={quickShareSearch}
+                  onChange={e => setQuickShareSearch(e.target.value)}
+                  placeholder={locale === 'fr' ? 'Rechercher une ressource...' : 'Search resources...'}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm"
+                />
+              </div>
+
+              <div className="max-h-80 overflow-y-auto p-2">
+                {practResources
+                  .filter(r => !quickShareSearch || r.title.toLowerCase().includes(quickShareSearch.toLowerCase()))
+                  .map(resource => {
+                    const isSelected = quickShareSelected.has(resource.id)
+                    const TypeIcon = resourceTypeIcons[resource.type] || FileText
+                    return (
+                      <button
+                        key={resource.id}
+                        onClick={() => {
+                          const next = new Set(quickShareSelected)
+                          if (isSelected) next.delete(resource.id)
+                          else next.add(resource.id)
+                          setQuickShareSelected(next)
+                        }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
+                          isSelected ? 'bg-teal-50 border border-teal-200' : 'hover:bg-gray-50 border border-transparent'
+                        }`}
+                      >
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-teal-100' : 'bg-gray-100'}`}>
+                          <TypeIcon className={`w-4 h-4 ${isSelected ? 'text-teal-600' : 'text-gray-500'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                          <p className="text-xs text-gray-400">{resource.type} · {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}</p>
+                        </div>
+                        {isSelected && <CheckCircle className="w-5 h-5 text-teal-500 shrink-0" />}
+                      </button>
+                    )
+                  })}
+                {practResources.filter(r => !quickShareSearch || r.title.toLowerCase().includes(quickShareSearch.toLowerCase())).length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-8">
+                    {locale === 'fr' ? 'Aucune ressource trouvée' : 'No resources found'}
+                  </p>
+                )}
+              </div>
+
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {quickShareSelected.size > 0
+                    ? (locale === 'fr' ? `${quickShareSelected.size} sélectionnée(s)` : `${quickShareSelected.size} selected`)
+                    : (locale === 'fr' ? 'Sélectionnez des ressources' : 'Select resources')}
+                </p>
+                <Button
+                  onClick={handleQuickShare}
+                  disabled={quickSharing || quickShareSelected.size === 0}
+                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+                >
+                  {quickSharing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+                  {locale === 'fr' ? 'Partager' : 'Share'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
