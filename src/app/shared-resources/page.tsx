@@ -609,12 +609,21 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
                           return (
-                            <div key={record.id} className="flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors">
-                              <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
-                              <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
-                              <span className="text-[11px] text-gray-500 shrink-0 mr-3">{record.member_first_name} {record.member_last_name[0]}.</span>
-                              <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>{badge.label}</span>
-                              <span className="text-[11px] text-gray-400 w-32 shrink-0 text-right">{new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} ({daysAgo}{locale === 'fr' ? 'j' : 'd'})</span>
+                            <div key={record.id} className="cursor-pointer" onClick={() => handleExpandResponse(record)}>
+                              <div className={`flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors ${expandedResponse === record.id ? 'bg-gray-50' : ''}`}>
+                                <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
+                                <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
+                                <span className="text-[11px] text-gray-500 shrink-0 mr-3">{record.member_first_name} {record.member_last_name[0]}.</span>
+                                <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                                <span className="text-[11px] text-gray-400 w-32 shrink-0 text-right">{new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} ({daysAgo}{locale === 'fr' ? 'j' : 'd'})</span>
+                              </div>
+                              {expandedResponse === record.id && (
+                                <div className="px-5 py-3 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                  <p className="text-sm text-gray-400 italic text-center">
+                                    {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )
                         })}
