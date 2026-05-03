@@ -14,6 +14,10 @@ import {
   XCircle,
   FileText,
   Bell,
+  Users,
+  ChevronDown,
+  ExternalLink,
+  MoreHorizontal,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -117,6 +121,8 @@ export default function SharedResourcesPage() {
   }
 
   const [expandedResource, setExpandedResource] = useState<string | null>(null)
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'person' | 'resource'>('person')
 
   // Unique members for filter dropdown
   const uniqueMembers = useMemo(() => {
@@ -154,6 +160,23 @@ export default function SharedResourcesPage() {
       groups.get(r.resource_id)!.members.push(r)
     })
     return Array.from(groups.entries()).map(([id, group]) => ({ resource_id: id, ...group }))
+  }, [filteredRecords])
+
+  // Group by person
+  const groupedByPerson = useMemo(() => {
+    const groups = new Map<string, { name: string; initials: string; resources: SharedRecord[] }>()
+    filteredRecords.forEach(r => {
+      if (!groups.has(r.member_id)) {
+        groups.set(r.member_id, {
+          name: `${r.member_first_name} ${r.member_last_name}`,
+          initials: `${r.member_first_name[0] || ''}${r.member_last_name[0] || ''}`.toUpperCase(),
+          resources: [],
+        })
+      }
+      groups.get(r.member_id)!.resources.push(r)
+    })
+    return Array.from(groups.entries()).map(([id, g]) => ({ member_id: id, ...g }))
+      .sort((a, b) => a.name.localeCompare(b.name))
   }, [filteredRecords])
 
   const statusCounts = useMemo(() => {
@@ -298,6 +321,28 @@ export default function SharedResourcesPage() {
                 ))}
               </select>
             </div>
+            {/* View toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('person')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'person' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                {locale === 'fr' ? 'Personne' : 'Person'}
+              </button>
+              <button
+                onClick={() => setViewMode('resource')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'resource' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <FileText className="w-3 h-3" />
+                {locale === 'fr' ? 'Ressource' : 'Resource'}
+              </button>
+            </div>
+
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
               {(['all', 'pending', 'submitted', 'reviewed'] as const).map(s => (
                 <button
@@ -331,7 +376,75 @@ export default function SharedResourcesPage() {
                   : (locale === 'fr' ? 'Aucun résultat' : 'No results match your filters')}
               </p>
             </div>
+          ) : viewMode === 'person' ? (
+            /* ─── Person View ─── */
+            <div className="space-y-2">
+              {groupedByPerson.map((person) => {
+                const isExpanded = expandedPerson === person.member_id
+                return (
+                  <div key={person.member_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => setExpandedPerson(isExpanded ? null : person.member_id)}
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-100 to-teal-200 flex items-center justify-center text-xs font-bold text-teal-700 shrink-0">
+                        {person.initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">{person.name}</p>
+                        <p className="text-xs text-gray-400">{person.resources.length} {locale === 'fr' ? 'ressource(s)' : 'resource(s)'}</p>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 divide-y divide-gray-50">
+                        {person.resources.map(record => {
+                          const badge = getStatusBadge(record.response_status)
+                          const BadgeIcon = badge.icon
+                          return (
+                            <div key={record.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors">
+                              <div className="w-5 h-5 rounded border border-gray-200 shrink-0" />
+                              <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-800 truncate">{record.resource_title}</p>
+                              </div>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${badge.bg} ${badge.text}`}>
+                                {badge.label}
+                              </span>
+                              <span className="text-xs text-gray-400 shrink-0">
+                                {locale === 'fr' ? 'Envoyé le' : 'Sent'} {new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                                {' '}
+                                ({locale === 'fr' ? `il y a ${Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)} jours` : `${Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)}d ago`})
+                              </span>
+                              <Link href={`/resources/${record.resource_id}`} onClick={e => e.stopPropagation()}>
+                                <button className="px-3 py-1 rounded-lg text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1">
+                                  <Eye className="w-3 h-3" /> Preview
+                                </button>
+                              </Link>
+                              {!record.response_status && (() => {
+                                const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
+                                const canRemind = !lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24
+                                return canRemind ? (
+                                  <button
+                                    onClick={(e) => handleRemind(e, record)}
+                                    disabled={sendingReminder === record.id}
+                                    className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
+                                  >
+                                    {sendingReminder === record.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+                                  </button>
+                                ) : null
+                              })()}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : (
+            /* ─── Resource View ─── */
             <div className="space-y-2">
               {groupedRecords.map((group) => {
                 const isExpanded = expandedResource === group.resource_id
