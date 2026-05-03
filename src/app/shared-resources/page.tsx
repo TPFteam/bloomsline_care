@@ -117,12 +117,25 @@ export default function SharedResourcesPage() {
     })
 
     setRecords(enriched)
+
+    // Fetch groups
+    const { data: groupsData } = await supabase.from('member_groups').select('id, name').eq('practitioner_id', authUser.id)
+    if (groupsData) {
+      const groupsWithMembers = await Promise.all(groupsData.map(async g => {
+        const { data: members } = await supabase.from('member_group_members').select('member_id').eq('group_id', g.id)
+        return { ...g, member_ids: (members || []).map((m: any) => m.member_id) }
+      }))
+      setGroups(groupsWithMembers)
+    }
+
     setLoading(false)
   }
 
   const [expandedResource, setExpandedResource] = useState<string | null>(null)
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'person' | 'resource'>('person')
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'person' | 'resource' | 'group'>('person')
+  const [groups, setGroups] = useState<Array<{ id: string; name: string; member_ids: string[] }>>([])
 
   // Unique members for filter dropdown
   const uniqueMembers = useMemo(() => {
@@ -179,6 +192,14 @@ export default function SharedResourcesPage() {
     return Array.from(groups.entries()).map(([id, g]) => ({ member_id: id, ...g }))
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [filteredRecords])
+
+  // Group by group
+  const groupedByGroup = useMemo(() => {
+    return groups.map(g => ({
+      ...g,
+      resources: filteredRecords.filter(r => g.member_ids.includes(r.member_id)),
+    })).filter(g => g.resources.length > 0)
+  }, [groups, filteredRecords])
 
   const statusCounts = useMemo(() => {
     const counts = { all: records.length, pending: 0, draft: 0, submitted: 0, reviewed: 0 }
@@ -356,6 +377,15 @@ export default function SharedResourcesPage() {
                 <FileText className="w-3 h-3" />
                 {locale === 'fr' ? 'Ressource' : 'Resource'}
               </button>
+              <button
+                onClick={() => setViewMode('group')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'group' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                {locale === 'fr' ? 'Groupe' : 'Group'}
+              </button>
             </div>
           </div>
 
@@ -473,6 +503,53 @@ export default function SharedResourcesPage() {
                                 )}
                               </div>
                               </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+          ) : viewMode === 'group' ? (
+            /* ─── Group View ─── */
+            <div className="space-y-2">
+              {groupedByGroup.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                  <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucun groupe avec des ressources partagées' : 'No groups with shared resources'}</p>
+                </div>
+              ) : groupedByGroup.map(group => {
+                const isExpanded = expandedGroup === group.id
+                return (
+                  <div key={group.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 flex items-center justify-center text-xs font-bold text-violet-700 shrink-0">
+                        {group.name[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">{group.name}</p>
+                        <p className="text-xs text-gray-400">{group.resources.length} {locale === 'fr' ? 'ressource(s)' : 'resource(s)'} · {group.member_ids.length} {locale === 'fr' ? 'membre(s)' : 'member(s)'}</p>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 divide-y divide-gray-50">
+                        {group.resources.map(record => {
+                          const badge = getStatusBadge(record.response_status)
+                          const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
+                          return (
+                            <div key={record.id} className="flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors">
+                              <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
+                              <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
+                              <span className="text-[11px] text-gray-500 shrink-0 mr-3">{record.member_first_name} {record.member_last_name[0]}.</span>
+                              <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                              <span className="text-[11px] text-gray-400 w-32 shrink-0 text-right">{new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} ({daysAgo}{locale === 'fr' ? 'j' : 'd'})</span>
                             </div>
                           )
                         })}
