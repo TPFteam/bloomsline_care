@@ -1048,7 +1048,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           setQuickShareSelected(next)
                         }}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors cursor-pointer ${
-                          alreadyShared ? 'opacity-80 cursor-default' :
+                          alreadyShared ? 'bg-gray-50 cursor-default' :
                           isSelected ? 'bg-teal-50 border border-teal-200' : 'hover:bg-gray-50 border border-transparent'
                         }`}
                       >
