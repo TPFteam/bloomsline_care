@@ -1066,9 +1066,23 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           </div>
                           <p className="text-xs text-gray-400">{resource.type} · {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}</p>
                         </div>
-                        {alreadyShared ? (
-                          <Bell className="w-4 h-4 text-amber-500 shrink-0" />
-                        ) : isSelected ? (
+                        {alreadyShared ? (() => {
+                          const lastReminder = alreadyShared.last_reminder_at ? new Date(alreadyShared.last_reminder_at) : null
+                          const canRemind = !lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24
+                          return canRemind ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setRemindResource({ id: alreadyShared.id, title: resource.title }); }}
+                              className="shrink-0 p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
+                              title={locale === 'fr' ? 'Rappeler' : 'Remind'}
+                            >
+                              <Bell className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <span className="shrink-0 text-[10px] text-gray-400">
+                              {locale === 'fr' ? 'Rappelé' : 'Reminded'}
+                            </span>
+                          )
+                        })() : isSelected ? (
                           <CheckCircle className="w-5 h-5 text-teal-500 shrink-0" />
                         ) : null}
                       </button>
