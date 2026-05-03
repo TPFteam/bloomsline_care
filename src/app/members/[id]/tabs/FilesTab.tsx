@@ -124,11 +124,8 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
     try {
       const filtered = phoneNumbers.filter(p => p.number.trim())
       const updateData: Record<string, unknown> = {
-        phone: filtered[0]?.number || member.phone || null,
-      }
-      // Only save phone_numbers if we have entries (column may not exist yet)
-      if (filtered.length > 0) {
-        updateData.phone_numbers = filtered
+        phone: filtered.length > 0 ? filtered[0].number : (member.phone || null),
+        phone_numbers: filtered.length > 0 ? filtered : [],
       }
       const { error } = await supabase
         .from('members')
