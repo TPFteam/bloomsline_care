@@ -192,6 +192,7 @@ export default function SharedResourcesPage() {
   }, [records])
 
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
+  const [confirmRemind, setConfirmRemind] = useState<SharedRecord | null>(null)
 
   const handleRemind = async (e: React.MouseEvent, record: SharedRecord) => {
     e.stopPropagation()
@@ -419,7 +420,7 @@ export default function SharedResourcesPage() {
                                 const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
                                 return canRemind ? (
                                   <button
-                                    onClick={(e) => handleRemind(e, record)}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmRemind(record) }}
                                     disabled={sendingReminder === record.id}
                                     className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors shrink-0"
                                     title={locale === 'fr' ? 'Rappeler' : 'Remind'}
@@ -444,7 +445,7 @@ export default function SharedResourcesPage() {
                                         const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
                                         return canRemind ? (
                                           <button
-                                            onClick={(e) => { setExpandedResource(null); handleRemind(e, record) }}
+                                            onClick={() => { setExpandedResource(null); setConfirmRemind(record) }}
                                             disabled={sendingReminder === record.id}
                                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                           >
@@ -594,7 +595,7 @@ export default function SharedResourcesPage() {
 
                                 return (
                                   <button
-                                    onClick={(e) => handleRemind(e, record)}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmRemind(record) }}
                                     disabled={sendingReminder === record.id}
                                     className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors flex items-center gap-1"
                                   >
@@ -620,6 +621,45 @@ export default function SharedResourcesPage() {
             </div>
           )}
         </div>
+      {/* Remind Confirmation Modal */}
+      {confirmRemind && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setConfirmRemind(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-5 h-5 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-1">
+              {locale === 'fr' ? 'Envoyer un rappel ?' : 'Send a reminder?'}
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-2">
+              {confirmRemind.member_first_name} {confirmRemind.member_last_name}
+            </p>
+            <p className="text-xs text-gray-400 text-center mb-6">
+              {locale === 'fr' ? `Un rappel sera envoyé pour "${confirmRemind.resource_title}".` : `A reminder will be sent for "${confirmRemind.resource_title}".`}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setConfirmRemind(null)}
+                className="px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-xl"
+              >
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+              <button
+                onClick={async (e) => {
+                  const record = confirmRemind
+                  setConfirmRemind(null)
+                  await handleRemind(e as any, record)
+                }}
+                disabled={sendingReminder === confirmRemind.id}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-xl flex items-center gap-2"
+              >
+                {sendingReminder === confirmRemind.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                {locale === 'fr' ? 'Envoyer' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </main>
     </div>
   )
