@@ -1851,7 +1851,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                   ) : (
                     <div className="flex-1 bg-white rounded-xl overflow-auto flex flex-col">
                       <div
-                        className="flex-1 p-8 prose prose-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h1:text-center prose-ol:list-decimal prose-ul:list-disc prose-li:my-1 [&_u]:underline"
+                        className="flex-1 p-8 prose max-w-none prose-headings:font-bold prose-h1:text-xl prose-h1:text-center prose-p:my-3 prose-ol:list-decimal prose-ol:pl-8 prose-ul:list-disc prose-ul:pl-8 prose-li:my-1 [&_u]:underline"
                         dangerouslySetInnerHTML={{ __html: docxHtml }}
                       />
                       <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-between bg-gray-50 rounded-b-xl shrink-0">
