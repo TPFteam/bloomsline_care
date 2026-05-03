@@ -413,6 +413,21 @@ export default function SharedResourcesPage() {
                                   <Eye className="w-3 h-3" /> Preview
                                 </button>
                               </Link>
+                              {/* Remind bell */}
+                              {(() => {
+                                const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
+                                const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
+                                return canRemind ? (
+                                  <button
+                                    onClick={(e) => handleRemind(e, record)}
+                                    disabled={sendingReminder === record.id}
+                                    className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors shrink-0"
+                                    title={locale === 'fr' ? 'Rappeler' : 'Remind'}
+                                  >
+                                    {sendingReminder === record.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+                                  </button>
+                                ) : null
+                              })()}
                               <div className="relative shrink-0">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setExpandedResource(expandedResource === record.id ? null : record.id) }}
