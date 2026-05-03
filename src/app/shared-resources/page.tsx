@@ -144,6 +144,7 @@ export default function SharedResourcesPage() {
       }
       if (memberFilter.length > 0 && !memberFilter.includes(r.member_id)) return false
       if (statusFilter === 'pending' && r.response_status) return false
+      if (statusFilter === 'draft' && r.response_status !== 'draft') return false
       if (statusFilter === 'submitted' && r.response_status !== 'submitted') return false
       if (statusFilter === 'reviewed' && r.response_status !== 'reviewed') return false
       return true
@@ -180,9 +181,10 @@ export default function SharedResourcesPage() {
   }, [filteredRecords])
 
   const statusCounts = useMemo(() => {
-    const counts = { all: records.length, pending: 0, submitted: 0, reviewed: 0 }
+    const counts = { all: records.length, pending: 0, draft: 0, submitted: 0, reviewed: 0 }
     records.forEach(r => {
       if (!r.response_status) counts.pending++
+      else if (r.response_status === 'draft') counts.draft++
       else if (r.response_status === 'submitted') counts.submitted++
       else if (r.response_status === 'reviewed') counts.reviewed++
     })
@@ -301,6 +303,7 @@ export default function SharedResourcesPage() {
             {([
               { key: 'all' as const, label: locale === 'fr' ? 'Tous' : 'All', dot: null },
               { key: 'pending' as const, label: locale === 'fr' ? 'En attente' : 'Pending', dot: 'bg-amber-400' },
+              { key: 'draft' as const, label: locale === 'fr' ? 'En cours' : 'In progress', dot: 'bg-blue-400' },
               { key: 'submitted' as const, label: locale === 'fr' ? 'Complété' : 'Completed', dot: 'bg-emerald-400' },
               { key: 'reviewed' as const, label: locale === 'fr' ? 'Relu' : 'Reviewed', dot: 'bg-emerald-600' },
             ]).map((s, i) => (
