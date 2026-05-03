@@ -698,10 +698,9 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const BadgeIcon = badge.icon
                           return (
+                            <div key={record.id} className="cursor-pointer" onClick={() => handleExpandResponse(record)}>
                             <div
-                              key={record.id}
-                              className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                              onClick={() => router.push(`/members/${record.member_id}?tab=shared`)}
+                              className={`flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors ${expandedResponse === record.id ? 'bg-gray-50' : ''}`}
                             >
                               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
                                 {record.member_first_name[0]}{record.member_last_name[0]}
@@ -760,6 +759,15 @@ export default function SharedResourcesPage() {
                                   </button>
                                 )
                               })()}
+                            </div>
+                            {/* Inline — no response yet */}
+                            {expandedResponse === record.id && (
+                              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                <p className="text-sm text-gray-400 italic text-center">
+                                  {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
+                                </p>
+                              </div>
+                            )}
                             </div>
                           )
                         })}
