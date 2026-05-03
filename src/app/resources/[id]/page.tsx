@@ -553,7 +553,8 @@ export default function ResourceDetailPage() {
     }
   }
 
-  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string, isRecurring?: boolean) => {
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string, groupId?: string) => {
+    const isRecurring = !!(resource as any)?.is_recurring
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !resource) return
@@ -576,7 +577,8 @@ export default function ResourceDetailPage() {
             practitioner_id: user.id,
             shared_at: new Date().toISOString(),
             message: message || null,
-            is_recurring: isRecurring || !!(resource as any).is_recurring || false,
+            is_recurring: isRecurring,
+            ...(groupId ? { group_id: groupId } : {}),
           })
 
         if (error) {

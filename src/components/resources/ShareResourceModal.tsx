@@ -42,7 +42,7 @@ interface ShareResourceModalProps {
   resource: Resource
   members: SimpleMember[]
   locale: 'en' | 'fr' | 'es'
-  onShare: (resourceId: string, memberIds: string[], message?: string, isRecurring?: boolean) => Promise<void>
+  onShare: (resourceId: string, memberIds: string[], message?: string, groupId?: string) => Promise<void>
   onAddMember?: () => void
   groups?: ShareGroup[]
   alreadySharedMemberIds?: string[]
@@ -105,6 +105,7 @@ export function ShareResourceModal({
 }: ShareResourceModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set())
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [isSharing, setIsSharing] = useState(false)
   const [fetchedSharedIds, setFetchedSharedIds] = useState<string[]>([])
@@ -213,6 +214,7 @@ export function ShareResourceModal({
       if (allSelected) {
         // Deselect all group members
         groupMemberIds.forEach(id => newSet.delete(id))
+        setSelectedGroup(null)
       } else {
         // Select all group members (up to limit)
         groupMemberIds.forEach(id => {
@@ -220,6 +222,7 @@ export function ShareResourceModal({
             newSet.add(id)
           }
         })
+        setSelectedGroup(group.id)
       }
       return newSet
     })
@@ -230,7 +233,7 @@ export function ShareResourceModal({
 
     setIsSharing(true)
     try {
-      await onShare(resource.id, Array.from(selectedMembers), message.trim() || undefined, !!(resource as any).is_recurring)
+      await onShare(resource.id, Array.from(selectedMembers), message.trim() || undefined, selectedGroup || undefined)
       // Reset and close
       setSelectedMembers(new Set())
       setMessage('')
