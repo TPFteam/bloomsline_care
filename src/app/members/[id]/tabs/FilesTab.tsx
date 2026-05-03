@@ -1743,12 +1743,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
                     {/* File icon or thumbnail */}
                     {thumbnails[file.id] ? (
-                      <div className="w-16 h-16 rounded-xl overflow-hidden mx-auto mb-3 group-hover:scale-105 transition-transform">
+                      <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-3 group-hover:scale-[1.02] transition-transform">
                         <img src={thumbnails[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className={`w-12 h-12 rounded-xl ${catStyle.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform`}>
-                        <FileIcon className={`w-6 h-6 ${catStyle.text}`} />
+                      <div className={`w-full aspect-[4/3] rounded-xl ${catStyle.bg} flex items-center justify-center mx-auto mb-3 group-hover:scale-[1.02] transition-transform`}>
+                        <FileIcon className={`w-10 h-10 ${catStyle.text} opacity-40`} />
                       </div>
                     )}
 
