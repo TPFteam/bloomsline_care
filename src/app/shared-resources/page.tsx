@@ -38,6 +38,7 @@ interface SharedRecord {
   response_status: string | null
   response_submitted_at: string | null
   last_reminder_at: string | null
+  group_id: string | null
 }
 
 export default function SharedResourcesPage() {
@@ -76,6 +77,7 @@ export default function SharedResourcesPage() {
         member_id,
         shared_at,
         last_reminder_at,
+        group_id,
         resources(title, type),
         members!inner(first_name, last_name, deleted_at)
       `)
@@ -113,6 +115,7 @@ export default function SharedResourcesPage() {
         response_status: resp?.status || null,
         response_submitted_at: resp?.submitted_at || null,
         last_reminder_at: s.last_reminder_at || null,
+        group_id: (s as any).group_id || null,
       }
     })
 
@@ -193,11 +196,11 @@ export default function SharedResourcesPage() {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [filteredRecords])
 
-  // Group by group
+  // Group by group — only shows resources shared via group action (group_id set)
   const groupedByGroup = useMemo(() => {
     return groups.map(g => ({
       ...g,
-      resources: filteredRecords.filter(r => g.member_ids.includes(r.member_id)),
+      resources: filteredRecords.filter(r => r.group_id === g.id),
     })).filter(g => g.resources.length > 0)
   }, [groups, filteredRecords])
 

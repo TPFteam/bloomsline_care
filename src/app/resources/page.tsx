@@ -457,8 +457,8 @@ export default function MyResourcesPage() {
     setShowShareModal(true)
   }
 
-  // Handle share with multiple members
-  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string) => {
+  // Handle share with multiple members (optional groupId when sharing to a group)
+  const handleShareWithMembers = async (resourceId: string, memberIds: string[], message?: string, groupId?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -490,6 +490,7 @@ export default function MyResourcesPage() {
             practitioner_id: user.id,
             shared_at: new Date().toISOString(),
             message: message || null,
+            ...(groupId ? { group_id: groupId } : {}),
           })
 
         if (error) {
