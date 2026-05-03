@@ -76,16 +76,25 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createAdminClient()
 
     // Step 1: Sending to yourself is always allowed
-    // Step 2: Otherwise, caller must be a practitioner with a direct member relationship
+    // Step 2: Otherwise, caller must have a relationship with the target user
+    //   - Practitioner sending to their member: members.user_id = target AND members.practitioner_id = caller
+    //   - Member sending to their practitioner: members.user_id = caller AND members.practitioner_id = target
     if (userId !== user.id) {
-      const { data: memberLink } = await supabaseAdmin
+      const { data: link1 } = await supabaseAdmin
         .from('members')
         .select('id')
         .eq('user_id', userId)
         .eq('practitioner_id', user.id)
         .maybeSingle()
 
-      if (!memberLink) {
+      const { data: link2 } = !link1 ? await supabaseAdmin
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('practitioner_id', userId)
+        .maybeSingle() : { data: link1 }
+
+      if (!link1 && !link2) {
         return NextResponse.json({ error: 'Unauthorized: No relationship with target user' }, { status: 403 })
       }
     }
