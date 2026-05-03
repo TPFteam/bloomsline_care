@@ -399,13 +399,13 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
                           return (
-                            <div key={record.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 transition-colors group">
-                              <FileText className="w-4 h-4 text-gray-300 shrink-0" />
-                              <p className="text-sm text-gray-700 truncate min-w-0" style={{ flex: '1 1 0', minWidth: 0 }}>{record.resource_title}</p>
-                              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold w-24 shrink-0 ${badge.bg} ${badge.text}`}>
+                            <div key={record.id} className="grid items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group" style={{ gridTemplateColumns: '20px 1fr 100px 180px auto auto' , gap: '8px' }}>
+                              <FileText className="w-4 h-4 text-gray-300" />
+                              <p className="text-sm text-gray-700 truncate">{record.resource_title}</p>
+                              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold ${badge.bg} ${badge.text}`}>
                                 {badge.label}
                               </span>
-                              <span className="text-[11px] text-gray-400 shrink-0 w-44 text-right">
+                              <span className="text-[11px] text-gray-400 text-right">
                                 {locale === 'fr' ? 'Envoyé le' : 'Sent'} {new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
                                 {' '}({locale === 'fr' ? `il y a ${daysAgo} jours` : `${daysAgo}d ago`})
                               </span>
