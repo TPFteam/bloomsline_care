@@ -401,8 +401,8 @@ export default function SharedResourcesPage() {
                           return (
                             <div key={record.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 transition-colors group">
                               <FileText className="w-4 h-4 text-gray-300 shrink-0" />
-                              <p className="flex-1 text-sm text-gray-700 truncate min-w-0">{record.resource_title}</p>
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${badge.bg} ${badge.text}`}>
+                              <p className="text-sm text-gray-700 truncate min-w-0" style={{ flex: '1 1 0', minWidth: 0 }}>{record.resource_title}</p>
+                              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold w-24 shrink-0 ${badge.bg} ${badge.text}`}>
                                 {badge.label}
                               </span>
                               <span className="text-[11px] text-gray-400 shrink-0 w-44 text-right">
