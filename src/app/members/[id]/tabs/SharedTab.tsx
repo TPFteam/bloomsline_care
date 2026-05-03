@@ -1038,7 +1038,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                     const TypeIcon = resourceTypeIcons[resource.type] || FileText
                     const alreadyShared = sharedLibraryResources.find(s => s.resource_id === resource.id)
                     return (
-                      <button
+                      <div
                         key={resource.id}
                         onClick={() => {
                           if (alreadyShared) return
@@ -1047,8 +1047,8 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           else next.add(resource.id)
                           setQuickShareSelected(next)
                         }}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
-                          alreadyShared ? 'opacity-60 cursor-default' :
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors cursor-pointer ${
+                          alreadyShared ? 'opacity-80 cursor-default' :
                           isSelected ? 'bg-teal-50 border border-teal-200' : 'hover:bg-gray-50 border border-transparent'
                         }`}
                       >
@@ -1085,7 +1085,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                         })() : isSelected ? (
                           <CheckCircle className="w-5 h-5 text-teal-500 shrink-0" />
                         ) : null}
-                      </button>
+                      </div>
                     )
                   })}
                 {practResources.filter(r => !quickShareSearch || r.title.toLowerCase().includes(quickShareSearch.toLowerCase())).length === 0 && (
