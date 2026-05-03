@@ -399,17 +399,18 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
                           return (
-                            <div key={record.id} className="grid items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group" style={{ gridTemplateColumns: '20px 1fr 100px 180px auto auto' , gap: '8px' }}>
-                              <FileText className="w-4 h-4 text-gray-300" />
-                              <p className="text-sm text-gray-700 truncate">{record.resource_title}</p>
-                              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold ${badge.bg} ${badge.text}`}>
+                            <div key={record.id} className="flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group">
+                              <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
+                              <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
+                              <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>
                                 {badge.label}
                               </span>
-                              <span className="text-[11px] text-gray-400 text-right">
+                              <span className="text-[11px] text-gray-400 w-40 shrink-0 text-right mr-3">
                                 {locale === 'fr' ? 'Envoyé le' : 'Sent'} {new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
-                                {' '}({locale === 'fr' ? `il y a ${daysAgo} jours` : `${daysAgo}d ago`})
+                                {' '}({daysAgo}{locale === 'fr' ? 'j' : 'd'})
                               </span>
-                              {/* Remind bell */}
+                              {/* Actions — fixed width container */}
+                              <div className="flex items-center gap-1 w-16 shrink-0 justify-end">
                               {(() => {
                                 const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
                                 const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
@@ -417,19 +418,18 @@ export default function SharedResourcesPage() {
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setConfirmRemind(record) }}
                                     disabled={sendingReminder === record.id}
-                                    className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors shrink-0"
+                                    className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
                                     title={locale === 'fr' ? 'Rappeler' : 'Remind'}
                                   >
                                     {sendingReminder === record.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
                                   </button>
-                                ) : lastReminder ? (
-                                  <span className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0" title={lastReminder.toLocaleString()}>
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    {locale === 'fr' ? 'Rappelé' : 'Reminded'} {lastReminder.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
+                                ) : lastReminder && !record.response_status ? (
+                                  <span className="text-[9px] text-emerald-600" title={lastReminder.toLocaleString()}>
+                                    ✓
                                   </span>
                                 ) : null
                               })()}
-                              <div className="relative shrink-0">
+                              <div className="relative">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setExpandedResource(expandedResource === record.id ? null : record.id) }}
                                   className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
@@ -471,6 +471,7 @@ export default function SharedResourcesPage() {
                                     </div>
                                   </>
                                 )}
+                              </div>
                               </div>
                             </div>
                           )
