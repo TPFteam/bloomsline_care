@@ -693,6 +693,8 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
           })
           // Clean up empty images from skipped drawings
           result.value = result.value.replace(/<img[^>]*src=""[^>]*>/g, '')
+          // Add spacing between paragraphs
+          result.value = result.value.replace(/<p>/g, '<p style="margin:0.75em 0">')
           setDocxHtml(result.value)
           setDocxContent(result.value)
         } catch (err) {
