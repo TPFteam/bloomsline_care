@@ -11,7 +11,7 @@ const PUBLIC_PATHS = [
   '/data-protection', '/practitioner', '/shared', '/p/', '/notification-flows',
 ]
 
-const TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_SESSION_TIMEOUT_MS || '1800000') // 30 min
+const TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_SESSION_TIMEOUT_MS || '3600000') // 1 hour
 const WARNING_MS = parseInt(process.env.NEXT_PUBLIC_SESSION_WARNING_MS || '120000') // 2 min
 
 export function SessionGuard({ children }: { children: React.ReactNode }) {
