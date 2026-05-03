@@ -695,6 +695,8 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
           result.value = result.value.replace(/<img[^>]*src=""[^>]*>/g, '')
           // Add spacing between paragraphs
           result.value = result.value.replace(/<p>/g, '<p style="margin:0.75em 0">')
+          // Open all links in new tab
+          result.value = result.value.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
           setDocxHtml(result.value)
           setDocxContent(result.value)
         } catch (err) {
