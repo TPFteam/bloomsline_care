@@ -679,6 +679,17 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
           const mammoth = await import('mammoth')
           const result = await mammoth.convertToHtml({ arrayBuffer }, {
             convertImage: mammoth.images.imgElement(() => Promise.resolve({ src: '' })),
+            styleMap: [
+              "u => u",
+              "strike => s",
+              "b => strong",
+              "i => em",
+              "p[style-name='Title'] => h1.doc-title:fresh",
+              "p[style-name='Heading 1'] => h1:fresh",
+              "p[style-name='Heading 2'] => h2:fresh",
+              "p[style-name='Heading 3'] => h3:fresh",
+              "p[style-name='List Paragraph'] => li:fresh",
+            ],
           })
           // Clean up empty images from skipped drawings
           result.value = result.value.replace(/<img[^>]*src=""[^>]*>/g, '')
@@ -1840,7 +1851,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                   ) : (
                     <div className="flex-1 bg-white rounded-xl overflow-auto flex flex-col">
                       <div
-                        className="flex-1 p-8 prose prose-sm max-w-none"
+                        className="flex-1 p-8 prose prose-sm max-w-none prose-headings:font-bold prose-h1:text-xl prose-h1:text-center prose-ol:list-decimal prose-ul:list-disc prose-li:my-1 [&_u]:underline"
                         dangerouslySetInnerHTML={{ __html: docxHtml }}
                       />
                       <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-between bg-gray-50 rounded-b-xl shrink-0">
