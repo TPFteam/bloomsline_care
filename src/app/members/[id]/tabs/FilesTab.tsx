@@ -873,12 +873,20 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       <MaskedContact value={p.number} type="phone" className="text-sm font-medium text-gray-900" />
                     </div>
                   </div>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(p.number); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(p.number); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingPhones(true)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
               {phoneNumbers.length === 0 && member.phone && (
@@ -890,15 +898,11 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                       <MaskedContact value={member.phone} type="phone" className="text-sm font-medium text-gray-900" />
                     </div>
                   </div>
+                  <button onClick={() => setEditingPhones(true)} className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
               )}
-              <button
-                onClick={() => setEditingPhones(true)}
-                className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors text-sm text-gray-500 hover:text-gray-700 w-full justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                {locale === 'fr' ? 'Gérer les numéros' : 'Manage phone numbers'}
-              </button>
             </>
           ) : (
             <div className="md:col-span-2 space-y-3 p-4 rounded-xl border border-gray-200 bg-gray-50">
