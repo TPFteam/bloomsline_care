@@ -35,6 +35,10 @@ import {
   ZoomOut,
   ExternalLink,
   Users,
+  Globe,
+  MapPin,
+  Link2,
+  MessageCircle,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -111,6 +115,60 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [docxContent, setDocxContent] = useState('')
   const [docxLoading, setDocxLoading] = useState(false)
   const [previewZoom, setPreviewZoom] = useState(1)
+
+  // Additional contacts
+  const [additionalContacts, setAdditionalContacts] = useState<Array<{ type: string; label: string; value: string }>>(
+    (member as any).additional_contacts || []
+  )
+  const [showAddContact, setShowAddContact] = useState(false)
+  const [newContactType, setNewContactType] = useState('phone')
+  const [newContactLabel, setNewContactLabel] = useState('')
+  const [newContactValue, setNewContactValue] = useState('')
+  const [savingContact, setSavingContact] = useState(false)
+
+  const CONTACT_TYPES: Record<string, { icon: any; label: { en: string; fr: string }; placeholder: string }> = {
+    phone: { icon: Phone, label: { en: 'Phone', fr: 'Téléphone' }, placeholder: '06 12 34 56 78' },
+    email: { icon: Mail, label: { en: 'Email', fr: 'Email' }, placeholder: 'email@example.com' },
+    website: { icon: Globe, label: { en: 'Website', fr: 'Site web' }, placeholder: 'https://...' },
+    instagram: { icon: Link2, label: { en: 'Instagram', fr: 'Instagram' }, placeholder: '@username' },
+    linkedin: { icon: Link2, label: { en: 'LinkedIn', fr: 'LinkedIn' }, placeholder: 'linkedin.com/in/...' },
+    facebook: { icon: Link2, label: { en: 'Facebook', fr: 'Facebook' }, placeholder: 'facebook.com/...' },
+    whatsapp: { icon: MessageCircle, label: { en: 'WhatsApp', fr: 'WhatsApp' }, placeholder: '+33 6 ...' },
+    address: { icon: MapPin, label: { en: 'Address', fr: 'Adresse' }, placeholder: '12 rue ...' },
+    other: { icon: Link2, label: { en: 'Other', fr: 'Autre' }, placeholder: '...' },
+  }
+
+  const handleAddContact = async () => {
+    if (!newContactValue.trim()) return
+    setSavingContact(true)
+    try {
+      const typeConfig = CONTACT_TYPES[newContactType]
+      const updated = [...additionalContacts, {
+        type: newContactType,
+        label: newContactLabel.trim() || typeConfig.label[locale === 'fr' ? 'fr' : 'en'],
+        value: newContactValue.trim(),
+      }]
+      const { error } = await supabase.from('members').update({ additional_contacts: updated }).eq('id', memberId)
+      if (error) throw error
+      setAdditionalContacts(updated)
+      setNewContactType('phone')
+      setNewContactLabel('')
+      setNewContactValue('')
+      setShowAddContact(false)
+      toast.success(locale === 'fr' ? 'Contact ajouté' : 'Contact added')
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur' : 'Failed to save')
+    } finally {
+      setSavingContact(false)
+    }
+  }
+
+  const handleDeleteContact = async (index: number) => {
+    const updated = additionalContacts.filter((_, i) => i !== index)
+    await supabase.from('members').update({ additional_contacts: updated }).eq('id', memberId)
+    setAdditionalContacts(updated)
+    toast.success(locale === 'fr' ? 'Supprimé' : 'Deleted')
+  }
 
   // Referral state
   const [referralSource, setReferralSource] = useState<string>(member.referral_source || '')
@@ -800,6 +858,13 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             </div>
             {locale === 'fr' ? 'Informations de Contact' : 'Contact Information'}
           </h3>
+          <button
+            onClick={() => setShowAddContact(!showAddContact)}
+            className="p-2 rounded-xl text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+            title={locale === 'fr' ? 'Ajouter un contact' : 'Add contact info'}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -883,6 +948,83 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             </div>
           </div>
         </div>
+
+        {/* Additional contacts */}
+        {additionalContacts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+            {additionalContacts.map((c, i) => {
+              const config = CONTACT_TYPES[c.type] || CONTACT_TYPES.other
+              const Icon = config.icon
+              return (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0">
+                      <Icon className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">{c.label}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.value}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(c.value); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteContact(i)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Add contact form */}
+        {showAddContact && (
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+            <div className="flex gap-2">
+              <select
+                value={newContactType}
+                onChange={e => { setNewContactType(e.target.value); setNewContactLabel('') }}
+                className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white"
+              >
+                {Object.entries(CONTACT_TYPES).map(([key, cfg]) => (
+                  <option key={key} value={key}>{cfg.label[locale === 'fr' ? 'fr' : 'en']}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={newContactLabel}
+                onChange={e => setNewContactLabel(e.target.value)}
+                placeholder={locale === 'fr' ? 'Libellé (optionnel)' : 'Label (optional)'}
+                className="w-32 px-3 py-2 rounded-lg border border-gray-200 text-sm"
+              />
+              <input
+                type="text"
+                value={newContactValue}
+                onChange={e => setNewContactValue(e.target.value)}
+                placeholder={CONTACT_TYPES[newContactType]?.placeholder || '...'}
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowAddContact(false)} className="rounded-lg">
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </Button>
+              <Button size="sm" onClick={handleAddContact} disabled={savingContact || !newContactValue.trim()} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg">
+                {savingContact && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
+                {locale === 'fr' ? 'Ajouter' : 'Add'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* No contact info message */}
         {!member.email && !member.phone && !member.date_of_birth && (
