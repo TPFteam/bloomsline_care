@@ -1743,7 +1743,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
 
                     {/* File icon or thumbnail */}
                     {thumbnails[file.id] ? (
-                      <div className="w-full aspect-square rounded-xl overflow-hidden mb-3 group-hover:scale-[1.02] transition-transform">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden mx-auto mb-3 group-hover:scale-105 transition-transform">
                         <img src={thumbnails[file.id]} alt={file.file_name} className="w-full h-full object-cover" />
                       </div>
                     ) : (
