@@ -296,7 +296,31 @@ export default function SharedResourcesPage() {
             </div>
           </div>
 
-          {/* Filters */}
+          {/* Status filters — top row */}
+          <div className="flex items-center gap-0 border border-gray-200 rounded-xl overflow-hidden mb-4 w-fit">
+            {([
+              { key: 'all' as const, label: locale === 'fr' ? 'Tous' : 'All', dot: null },
+              { key: 'pending' as const, label: locale === 'fr' ? 'En attente' : 'Pending', dot: 'bg-amber-400' },
+              { key: 'submitted' as const, label: locale === 'fr' ? 'Complété' : 'Completed', dot: 'bg-emerald-400' },
+              { key: 'reviewed' as const, label: locale === 'fr' ? 'Relu' : 'Reviewed', dot: 'bg-emerald-600' },
+            ]).map((s, i) => (
+              <button
+                key={s.key}
+                onClick={() => setStatusFilter(s.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
+                  i > 0 ? 'border-l border-gray-200' : ''
+                } ${
+                  statusFilter === s.key ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {s.dot && <span className={`w-2 h-2 rounded-full ${s.dot}`} />}
+                {s.label}
+                <span className="text-gray-400">{statusCounts[s.key]}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Search + view toggle — second row */}
           <div className="flex items-center gap-3 mb-6">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -304,22 +328,9 @@ export default function SharedResourcesPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={locale === 'fr' ? 'Rechercher par ressource ou membre...' : 'Search by resource or member...'}
+                placeholder={locale === 'fr' ? 'Rechercher par patient ou ressource...' : 'Search by patient or resource...'}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400 transition-colors"
               />
-            </div>
-            {/* Patient filter */}
-            <div className="relative">
-              <select
-                value={memberFilter.length === 0 ? '' : memberFilter[0]}
-                onChange={(e) => setMemberFilter(e.target.value ? [e.target.value] : [])}
-                className="pl-3 pr-8 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400 transition-colors appearance-none text-gray-600"
-              >
-                <option value="">{locale === 'fr' ? 'Tous les patients' : 'All patients'}</option>
-                {uniqueMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
             </div>
             {/* View toggle */}
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
@@ -341,29 +352,6 @@ export default function SharedResourcesPage() {
                 <FileText className="w-3 h-3" />
                 {locale === 'fr' ? 'Ressource' : 'Resource'}
               </button>
-            </div>
-
-            <div className="flex items-center gap-0 border border-gray-200 rounded-xl overflow-hidden">
-              {([
-                { key: 'all' as const, label: locale === 'fr' ? 'Tous' : 'All', dot: null },
-                { key: 'pending' as const, label: locale === 'fr' ? 'En attente' : 'Pending', dot: 'bg-amber-400' },
-                { key: 'submitted' as const, label: locale === 'fr' ? 'Complété' : 'Completed', dot: 'bg-emerald-400' },
-                { key: 'reviewed' as const, label: locale === 'fr' ? 'Relu' : 'Reviewed', dot: 'bg-emerald-600' },
-              ]).map((s, i) => (
-                <button
-                  key={s.key}
-                  onClick={() => setStatusFilter(s.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
-                    i > 0 ? 'border-l border-gray-200' : ''
-                  } ${
-                    statusFilter === s.key ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  {s.dot && <span className={`w-2 h-2 rounded-full ${s.dot}`} />}
-                  {s.label}
-                  <span className="text-gray-400">{statusCounts[s.key]}</span>
-                </button>
-              ))}
             </div>
           </div>
 
