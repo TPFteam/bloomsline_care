@@ -248,15 +248,17 @@ export default function SharedResourcesPage() {
       const blocks = resourceData?.blocks || []
       const subs = responses || []
 
-      if (subs.length === 0) {
+      // Check if any submission has actual answers
+      const subsWithAnswers = subs.filter(s => s.responses && Object.keys(s.responses).length > 0)
+      if (subsWithAnswers.length === 0) {
         setExpandedResponse(record.id)
         setResponseData(null)
-      } else if (subs.length === 1) {
+      } else if (subsWithAnswers.length === 1) {
         // Single submission — open directly in popup
         setResponseModal({ record, response: subs[0], blocks })
       } else {
         // Multiple submissions — show list to pick from
-        setSubmissionsList(subs.map((s, i) => ({ ...s, blocks, record, index: i })))
+        setSubmissionsList(subsWithAnswers.map((s, i) => ({ ...s, blocks, record, index: i })))
       }
     } catch {
       setExpandedResponse(record.id)
@@ -559,8 +561,8 @@ export default function SharedResourcesPage() {
                               </div>
                               </div>
                             </div>
-                            {/* Inline — only for pending */}
-                            {expandedResponse === record.id && !record.response_status && (
+                            {/* Inline — no response yet */}
+                            {expandedResponse === record.id && (
                               <div className="px-5 py-3 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
                                 <p className="text-sm text-gray-400 italic text-center">
                                   {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
