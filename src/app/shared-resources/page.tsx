@@ -137,6 +137,9 @@ export default function SharedResourcesPage() {
   const [expandedResource, setExpandedResource] = useState<string | null>(null)
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
+  const [expandedResponse, setExpandedResponse] = useState<string | null>(null)
+  const [responseData, setResponseData] = useState<any | null>(null)
+  const [responseLoading, setResponseLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'person' | 'resource' | 'group'>('person')
   const [groups, setGroups] = useState<Array<{ id: string; name: string; member_ids: string[] }>>([])
 
@@ -214,6 +217,37 @@ export default function SharedResourcesPage() {
     })
     return counts
   }, [records])
+
+  const handleExpandResponse = async (record: SharedRecord) => {
+    const key = record.id
+    if (expandedResponse === key) { setExpandedResponse(null); return }
+    setExpandedResponse(key)
+    if (!record.response_status) { setResponseData(null); return }
+    setResponseLoading(true)
+    try {
+      const { data } = await supabase
+        .from('resource_responses')
+        .select('id, status, responses, practitioner_notes, submitted_at, reviewed_at')
+        .eq('resource_id', record.resource_id)
+        .eq('member_id', record.member_id)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      // Also fetch the resource blocks to show questions
+      const { data: resourceData } = await supabase
+        .from('resources')
+        .select('blocks')
+        .eq('id', record.resource_id)
+        .single()
+
+      setResponseData({ response: data, blocks: resourceData?.blocks || [] })
+    } catch {
+      setResponseData(null)
+    } finally {
+      setResponseLoading(false)
+    }
+  }
 
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const [confirmRemind, setConfirmRemind] = useState<SharedRecord | null>(null)
@@ -432,7 +466,8 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
                           return (
-                            <div key={record.id} className="flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group">
+                            <div key={record.id} className="cursor-pointer" onClick={() => handleExpandResponse(record)}>
+                            <div className={`flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group ${expandedResponse === record.id ? 'bg-gray-50' : ''}`}>
                               <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
                               <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
                               <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>
@@ -506,6 +541,58 @@ export default function SharedResourcesPage() {
                                 )}
                               </div>
                               </div>
+                            </div>
+                            {/* Expanded response */}
+                            {expandedResponse === record.id && (
+                              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                {!record.response_status ? (
+                                  <p className="text-sm text-gray-400 italic text-center py-4">
+                                    {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
+                                  </p>
+                                ) : responseLoading ? (
+                                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+                                ) : responseData?.response ? (
+                                  <div className="space-y-3">
+                                    {/* Responses */}
+                                    {responseData.blocks
+                                      .filter((b: any) => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'list_input', 'numeric', 'slider'].includes(b.type))
+                                      .map((block: any, i: number) => {
+                                        const answer = responseData.response.responses?.[block.id]
+                                        return (
+                                          <div key={block.id || i} className="bg-white rounded-lg p-3 border border-gray-100">
+                                            <p className="text-xs font-medium text-gray-500 mb-1">
+                                              {block.content?.question || block.content?.label || block.content?.title || `Q${i + 1}`}
+                                            </p>
+                                            <p className={`text-sm ${answer ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                                              {answer
+                                                ? (typeof answer === 'object' ? (Array.isArray(answer) ? answer.join(', ') : JSON.stringify(answer)) : String(answer))
+                                                : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
+                                            </p>
+                                          </div>
+                                        )
+                                      })}
+                                    {/* Review notes */}
+                                    {responseData.response.practitioner_notes && (
+                                      <div className="bg-teal-50 rounded-lg p-3 border border-teal-100">
+                                        <p className="text-xs font-medium text-teal-700 mb-1">
+                                          {locale === 'fr' ? 'Notes du praticien' : 'Practitioner notes'}
+                                        </p>
+                                        <p className="text-sm text-teal-900">{responseData.response.practitioner_notes}</p>
+                                      </div>
+                                    )}
+                                    {responseData.response.submitted_at && (
+                                      <p className="text-[11px] text-gray-400 text-right">
+                                        {locale === 'fr' ? 'Soumis le' : 'Submitted'} {new Date(responseData.response.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-400 italic text-center py-4">
+                                    {locale === 'fr' ? 'Réponse non trouvée' : 'Response not found'}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             </div>
                           )
                         })}
