@@ -512,7 +512,6 @@ export default function SharedResourcesPage() {
                 )
               })}
             </div>
-          ) : (
           ) : viewMode === 'group' ? (
             /* ─── Group View ─── */
             <div className="space-y-2">
