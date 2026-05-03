@@ -112,37 +112,6 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [docxLoading, setDocxLoading] = useState(false)
   const [previewZoom, setPreviewZoom] = useState(1)
 
-  // Phone numbers state
-  const [phoneNumbers, setPhoneNumbers] = useState<Array<{ number: string; label: string }>>(
-    (member as any).phone_numbers || (member.phone ? [{ number: member.phone, label: 'mobile' }] : [])
-  )
-  const [editingPhones, setEditingPhones] = useState(false)
-  const [savingPhones, setSavingPhones] = useState(false)
-
-  const handleSavePhones = async () => {
-    setSavingPhones(true)
-    try {
-      const filtered = phoneNumbers.filter(p => p.number.trim())
-      const updateData: Record<string, unknown> = {
-        phone: filtered.length > 0 ? filtered[0].number : (member.phone || null),
-        phone_numbers: filtered.length > 0 ? filtered : [],
-      }
-      const { error } = await supabase
-        .from('members')
-        .update(updateData)
-        .eq('id', memberId)
-      if (error) throw error
-      setPhoneNumbers(filtered)
-      setEditingPhones(false)
-      toast.success(locale === 'fr' ? 'Téléphones enregistrés' : 'Phone numbers saved')
-      onMemberUpdate()
-    } catch {
-      toast.error(locale === 'fr' ? 'Erreur' : 'Failed to save')
-    } finally {
-      setSavingPhones(false)
-    }
-  }
-
   // Referral state
   const [referralSource, setReferralSource] = useState<string>(member.referral_source || '')
   const [referralName, setReferralName] = useState(member.referral_name || '')
@@ -858,92 +827,27 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
             </div>
           )}
 
-          {/* Phone Numbers */}
-          {!editingPhones ? (
-            <>
-              {phoneNumbers.map((p, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                      <Phone className="w-5 h-5 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">
-                        {{ mobile: locale === 'fr' ? 'Mobile' : 'Mobile', work: locale === 'fr' ? 'Travail' : 'Work', home: locale === 'fr' ? 'Domicile' : 'Home', other: locale === 'fr' ? 'Autre' : 'Other' }[p.label] || p.label}
-                      </p>
-                      <MaskedContact value={p.number} type="phone" className="text-sm font-medium text-gray-900" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(p.number); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setEditingPhones(true)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+          {/* Phone */}
+          {member.phone && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-gray-500" />
                 </div>
-              ))}
-              {phoneNumbers.length === 0 && member.phone && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center"><Phone className="w-5 h-5 text-gray-500" /></div>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                      <MaskedContact value={member.phone} type="phone" className="text-sm font-medium text-gray-900" />
-                    </div>
-                  </div>
-                  <button onClick={() => setEditingPhones(true)} className="p-1.5 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
-                    <Plus className="w-4 h-4" />
-                  </button>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
+                  <MaskedContact value={member.phone} type="phone" className="text-sm font-medium text-gray-900" />
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="md:col-span-2 space-y-3 p-4 rounded-xl border border-gray-200 bg-gray-50">
-              {phoneNumbers.map((p, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <select
-                    value={p.label}
-                    onChange={e => { const next = [...phoneNumbers]; next[i] = { ...next[i], label: e.target.value }; setPhoneNumbers(next) }}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white w-28"
-                  >
-                    <option value="mobile">Mobile</option>
-                    <option value="work">{locale === 'fr' ? 'Travail' : 'Work'}</option>
-                    <option value="home">{locale === 'fr' ? 'Domicile' : 'Home'}</option>
-                    <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
-                  </select>
-                  <input
-                    type="tel"
-                    value={p.number}
-                    onChange={e => { const next = [...phoneNumbers]; next[i] = { ...next[i], number: e.target.value }; setPhoneNumbers(next) }}
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm"
-                    placeholder="06 12 34 56 78"
-                  />
-                  <button onClick={() => setPhoneNumbers(phoneNumbers.filter((_, j) => j !== i))} className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setPhoneNumbers([...phoneNumbers, { number: '', label: 'mobile' }])}
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Ajouter un numéro' : 'Add number'}
-              </button>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="ghost" size="sm" onClick={() => setEditingPhones(false)} className="rounded-lg">{locale === 'fr' ? 'Annuler' : 'Cancel'}</Button>
-                <Button size="sm" onClick={handleSavePhones} disabled={savingPhones} className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg">
-                  {savingPhones && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />}
-                  {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                </Button>
               </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(member.phone!)
+                  toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
+                }}
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
           )}
 
