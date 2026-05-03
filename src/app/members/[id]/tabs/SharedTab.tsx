@@ -1036,16 +1036,19 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   .map(resource => {
                     const isSelected = quickShareSelected.has(resource.id)
                     const TypeIcon = resourceTypeIcons[resource.type] || FileText
+                    const alreadyShared = sharedLibraryResources.find(s => s.resource_id === resource.id)
                     return (
                       <button
                         key={resource.id}
                         onClick={() => {
+                          if (alreadyShared) return
                           const next = new Set(quickShareSelected)
                           if (isSelected) next.delete(resource.id)
                           else next.add(resource.id)
                           setQuickShareSelected(next)
                         }}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
+                          alreadyShared ? 'opacity-60 cursor-default' :
                           isSelected ? 'bg-teal-50 border border-teal-200' : 'hover:bg-gray-50 border border-transparent'
                         }`}
                       >
@@ -1053,10 +1056,21 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           <TypeIcon className={`w-4 h-4 ${isSelected ? 'text-teal-600' : 'text-gray-500'}`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">{resource.title}</p>
+                            {alreadyShared && (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-100 text-teal-700">
+                                {locale === 'fr' ? 'Partagé' : 'Shared'}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-400">{resource.type} · {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : 'blocks'}</p>
                         </div>
-                        {isSelected && <CheckCircle className="w-5 h-5 text-teal-500 shrink-0" />}
+                        {alreadyShared ? (
+                          <Bell className="w-4 h-4 text-amber-500 shrink-0" />
+                        ) : isSelected ? (
+                          <CheckCircle className="w-5 h-5 text-teal-500 shrink-0" />
+                        ) : null}
                       </button>
                     )
                   })}
