@@ -140,6 +140,8 @@ export default function SharedResourcesPage() {
   const [expandedResponse, setExpandedResponse] = useState<string | null>(null)
   const [responseData, setResponseData] = useState<any | null>(null)
   const [responseLoading, setResponseLoading] = useState(false)
+  const [responseModal, setResponseModal] = useState<{ record: SharedRecord; response: any; blocks: any[] } | null>(null)
+  const [submissionsList, setSubmissionsList] = useState<any[] | null>(null)
   const [viewMode, setViewMode] = useState<'person' | 'resource' | 'group'>('person')
   const [groups, setGroups] = useState<Array<{ id: string; name: string; member_ids: string[] }>>([])
 
@@ -219,30 +221,45 @@ export default function SharedResourcesPage() {
   }, [records])
 
   const handleExpandResponse = async (record: SharedRecord) => {
-    const key = record.id
-    if (expandedResponse === key) { setExpandedResponse(null); return }
-    setExpandedResponse(key)
-    if (!record.response_status) { setResponseData(null); return }
+    if (!record.response_status) {
+      // Pending — toggle inline message
+      setExpandedResponse(expandedResponse === record.id ? null : record.id)
+      setResponseData(null)
+      return
+    }
+
+    // Fetch all submissions for this resource + member
     setResponseLoading(true)
     try {
-      const { data } = await supabase
-        .from('resource_responses')
-        .select('id, status, responses, practitioner_notes, submitted_at, reviewed_at')
-        .eq('resource_id', record.resource_id)
-        .eq('member_id', record.member_id)
-        .order('submitted_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      const [{ data: responses }, { data: resourceData }] = await Promise.all([
+        supabase
+          .from('resource_responses')
+          .select('id, status, responses, practitioner_notes, submitted_at, reviewed_at')
+          .eq('resource_id', record.resource_id)
+          .eq('member_id', record.member_id)
+          .order('submitted_at', { ascending: false }),
+        supabase
+          .from('resources')
+          .select('blocks')
+          .eq('id', record.resource_id)
+          .single(),
+      ])
 
-      // Also fetch the resource blocks to show questions
-      const { data: resourceData } = await supabase
-        .from('resources')
-        .select('blocks')
-        .eq('id', record.resource_id)
-        .single()
+      const blocks = resourceData?.blocks || []
+      const subs = responses || []
 
-      setResponseData({ response: data, blocks: resourceData?.blocks || [] })
+      if (subs.length === 0) {
+        setExpandedResponse(record.id)
+        setResponseData(null)
+      } else if (subs.length === 1) {
+        // Single submission — open directly in popup
+        setResponseModal({ record, response: subs[0], blocks })
+      } else {
+        // Multiple submissions — show list to pick from
+        setSubmissionsList(subs.map((s, i) => ({ ...s, blocks, record, index: i })))
+      }
     } catch {
+      setExpandedResponse(record.id)
       setResponseData(null)
     } finally {
       setResponseLoading(false)
@@ -542,55 +559,12 @@ export default function SharedResourcesPage() {
                               </div>
                               </div>
                             </div>
-                            {/* Expanded response */}
-                            {expandedResponse === record.id && (
-                              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
-                                {!record.response_status ? (
-                                  <p className="text-sm text-gray-400 italic text-center py-4">
-                                    {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
-                                  </p>
-                                ) : responseLoading ? (
-                                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-                                ) : responseData?.response ? (
-                                  <div className="space-y-3">
-                                    {/* Responses */}
-                                    {responseData.blocks
-                                      .filter((b: any) => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'list_input', 'numeric', 'slider'].includes(b.type))
-                                      .map((block: any, i: number) => {
-                                        const answer = responseData.response.responses?.[block.id]
-                                        return (
-                                          <div key={block.id || i} className="bg-white rounded-lg p-3 border border-gray-100">
-                                            <p className="text-xs font-medium text-gray-500 mb-1">
-                                              {block.content?.question || block.content?.label || block.content?.title || `Q${i + 1}`}
-                                            </p>
-                                            <p className={`text-sm ${answer ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-                                              {answer
-                                                ? (typeof answer === 'object' ? (Array.isArray(answer) ? answer.join(', ') : JSON.stringify(answer)) : String(answer))
-                                                : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
-                                            </p>
-                                          </div>
-                                        )
-                                      })}
-                                    {/* Review notes */}
-                                    {responseData.response.practitioner_notes && (
-                                      <div className="bg-teal-50 rounded-lg p-3 border border-teal-100">
-                                        <p className="text-xs font-medium text-teal-700 mb-1">
-                                          {locale === 'fr' ? 'Notes du praticien' : 'Practitioner notes'}
-                                        </p>
-                                        <p className="text-sm text-teal-900">{responseData.response.practitioner_notes}</p>
-                                      </div>
-                                    )}
-                                    {responseData.response.submitted_at && (
-                                      <p className="text-[11px] text-gray-400 text-right">
-                                        {locale === 'fr' ? 'Soumis le' : 'Submitted'} {new Date(responseData.response.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                      </p>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-400 italic text-center py-4">
-                                    {locale === 'fr' ? 'Réponse non trouvée' : 'Response not found'}
-                                  </p>
-                                )}
+                            {/* Inline — only for pending */}
+                            {expandedResponse === record.id && !record.response_status && (
+                              <div className="px-5 py-3 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                <p className="text-sm text-gray-400 italic text-center">
+                                  {locale === 'fr' ? 'Aucune réponse soumise' : 'No response submitted yet'}
+                                </p>
                               </div>
                             )}
                             </div>
@@ -795,6 +769,90 @@ export default function SharedResourcesPage() {
             </div>
           )}
         </div>
+      {/* Submissions List Dropdown (multiple submissions) */}
+      {submissionsList && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSubmissionsList(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">{locale === 'fr' ? 'Soumissions' : 'Submissions'}</h3>
+              <button onClick={() => setSubmissionsList(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
+              {submissionsList.map((sub, i) => {
+                const badge = getStatusBadge(sub.status)
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => {
+                      setResponseModal({ record: sub.record, response: sub, blocks: sub.blocks })
+                      setSubmissionsList(null)
+                    }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">{submissionsList.length - i}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? `Soumission ${submissionsList.length - i}` : `Submission ${submissionsList.length - i}`}</p>
+                      <p className="text-xs text-gray-400">{sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${badge.bg} ${badge.text}`}>{badge.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Response Detail Popup */}
+      {responseModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setResponseModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{responseModal.record.resource_title}</h3>
+                <p className="text-xs text-gray-400">{responseModal.record.member_first_name} {responseModal.record.member_last_name}</p>
+              </div>
+              <button onClick={() => setResponseModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {responseModal.blocks
+                .filter((b: any) => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'list_input', 'numeric', 'slider', 'mood', 'fill_blank'].includes(b.type))
+                .map((block: any, i: number) => {
+                  const answer = responseModal.response.responses?.[block.id]
+                  return (
+                    <div key={block.id || i}>
+                      <p className="text-xs font-medium text-gray-500 mb-1">
+                        {block.content?.question || block.content?.label || block.content?.title || `Q${i + 1}`}
+                      </p>
+                      <p className={`text-sm ${answer ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                        {answer
+                          ? (typeof answer === 'object' ? (Array.isArray(answer) ? answer.join(', ') : JSON.stringify(answer)) : String(answer))
+                          : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
+                      </p>
+                    </div>
+                  )
+                })}
+              {responseModal.response.practitioner_notes && (
+                <div className="bg-teal-50 rounded-xl p-4 border border-teal-100 mt-4">
+                  <p className="text-xs font-semibold text-teal-700 mb-1">{locale === 'fr' ? 'Notes du praticien' : 'Practitioner notes'}</p>
+                  <p className="text-sm text-teal-900 whitespace-pre-wrap">{responseModal.response.practitioner_notes}</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+              <p className="text-[11px] text-gray-400">
+                {responseModal.response.submitted_at && (
+                  <>{locale === 'fr' ? 'Soumis le' : 'Submitted'} {new Date(responseModal.response.submitted_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</>
+                )}
+              </p>
+              <button onClick={() => setResponseModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
+                {locale === 'fr' ? 'Fermer' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Remind Confirmation Modal */}
       {confirmRemind && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setConfirmRemind(null)}>
