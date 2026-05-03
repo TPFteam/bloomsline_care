@@ -138,9 +138,15 @@ export function PhoneInput({ value, onChange, placeholder, className = '', defau
         <ChevronDown className="w-3 h-3 text-gray-400" />
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown — uses fixed positioning to escape scroll containers */}
       {isOpen && (
-        <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+        <div
+          className="fixed w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-[9999] overflow-hidden"
+          style={{
+            top: (dropdownRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+            left: dropdownRef.current?.getBoundingClientRect().left ?? 0,
+          }}
+        >
           {/* Search */}
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
