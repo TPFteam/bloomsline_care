@@ -320,10 +320,23 @@ function SettingsContent() {
                       </div>
 
                       {authProvider !== 'email' ? (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                          {locale === 'fr'
-                            ? `Votre compte utilise la connexion ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider}. Pour changer votre adresse e-mail, modifiez-la directement chez votre fournisseur.`
-                            : `Your account uses ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider} sign-in. To change your email, update it with your provider.`}
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 space-y-2">
+                          <p className="font-medium">
+                            {locale === 'fr'
+                              ? `Votre compte utilise la connexion ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider}.`
+                              : `Your account uses ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider} sign-in.`}
+                          </p>
+                          <p className="leading-relaxed">
+                            {locale === 'fr' ? (
+                              <>
+                                Votre adresse e-mail est gérée par votre fournisseur d&apos;identité et ne peut pas être modifiée ici. Pour utiliser une autre adresse avec Bloomsline, écrivez-nous à <a href="mailto:hi@bloomsline.com" className="font-medium underline">hi@bloomsline.com</a> en précisant l&apos;ancienne et la nouvelle adresse — nous effectuerons le changement manuellement.
+                              </>
+                            ) : (
+                              <>
+                                Your email is managed by your identity provider and can&apos;t be changed here. To use a different email with Bloomsline, email us at <a href="mailto:hi@bloomsline.com" className="font-medium underline">hi@bloomsline.com</a> with your old and new addresses — we&apos;ll switch it manually.
+                              </>
+                            )}
+                          </p>
                         </div>
                       ) : (
                         <>
