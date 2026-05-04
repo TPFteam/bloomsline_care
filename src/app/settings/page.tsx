@@ -243,10 +243,25 @@ function SettingsContent() {
                   <CardContent>
                     <div className="space-y-4">
                       <div>
-                        <h3 className="font-medium text-gray-900">Delete Account</h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Your account will be deactivated and you will no longer be able to log in.
-                          Your data will be preserved. To reactivate your account, please contact support.
+                        <h3 className="font-medium text-gray-900">
+                          {locale === 'fr' ? 'Fermer le compte' : 'Close Account'}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                          {locale === 'fr'
+                            ? "La fermeture de votre compte vous déconnecte immédiatement et empêche toute future connexion."
+                            : 'Closing your account signs you out immediately and prevents any future login.'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                          {locale === 'fr'
+                            ? "En tant que plateforme clinique, Bloomsline conserve les dossiers de vos patients (notes de séance, suivis) conformément aux obligations de conservation des données de santé en France (généralement 10 à 20 ans). Votre compte est donc désactivé plutôt que définitivement supprimé."
+                            : 'As a clinical platform, Bloomsline retains your patients\' records (session notes, treatment history) in accordance with French health data retention requirements (typically 10–20 years). Your account is therefore deactivated rather than fully erased.'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                          {locale === 'fr' ? (
+                            <>Pour demander la suppression complète de vos données personnelles (droit à l&apos;effacement, RGPD art. 17), contactez <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                          ) : (
+                            <>To request full deletion of your personal data (Right to Erasure, GDPR Art. 17), contact <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                          )}
                         </p>
                       </div>
                       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
@@ -255,41 +270,66 @@ function SettingsContent() {
                       }}>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
-                            Delete Account
+                            {locale === 'fr' ? 'Fermer le compte' : 'Close Account'}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure you want to delete your account?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Your account will be deactivated and you will be signed out immediately.
-                              Your data will be preserved, but you will not be able to log in until support reactivates your account.
+                            <AlertDialogTitle>
+                              {locale === 'fr' ? 'Fermer votre compte ?' : 'Close your account?'}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription asChild>
+                              <div className="space-y-2 text-sm text-gray-600">
+                                <p>
+                                  {locale === 'fr'
+                                    ? "Vous serez déconnecté(e) immédiatement et ne pourrez plus vous reconnecter. Pour rouvrir votre compte, contactez le support."
+                                    : 'You will be signed out immediately and unable to log back in. To reopen your account, contact support.'}
+                                </p>
+                                <p>
+                                  {locale === 'fr'
+                                    ? "Les dossiers cliniques de vos patients seront conservés selon les obligations légales de conservation des données de santé."
+                                    : 'Your patients\' clinical records will be retained as required by health data retention laws.'}
+                                </p>
+                                <p>
+                                  {locale === 'fr' ? (
+                                    <>Pour la suppression définitive de vos données personnelles (RGPD), écrivez à <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                                  ) : (
+                                    <>For permanent deletion of your personal data (GDPR), email <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                                  )}
+                                </p>
+                              </div>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <div className="py-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Type <span className="font-bold">DELETE</span> to confirm
+                              {locale === 'fr' ? (
+                                <>Tapez <span className="font-bold">FERMER</span> pour confirmer</>
+                              ) : (
+                                <>Type <span className="font-bold">CLOSE</span> to confirm</>
+                              )}
                             </label>
                             <input
                               type="text"
                               value={deleteConfirmation}
                               onChange={(e) => setDeleteConfirmation(e.target.value)}
-                              placeholder="DELETE"
+                              placeholder={locale === 'fr' ? 'FERMER' : 'CLOSE'}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                             />
                           </div>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel>
+                              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                            </AlertDialogCancel>
                             <Button
                               variant="outline"
                               className="border-red-300 bg-red-600 text-white hover:bg-red-700"
-                              disabled={deleteConfirmation !== 'DELETE' || isDeactivating}
+                              disabled={(deleteConfirmation !== 'CLOSE' && deleteConfirmation !== 'FERMER') || isDeactivating}
                               onClick={handleDeactivateAccount}
                             >
                               {isDeactivating ? (
                                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                               ) : null}
-                              Delete Account
+                              {locale === 'fr' ? 'Fermer le compte' : 'Close Account'}
                             </Button>
                           </AlertDialogFooter>
                         </AlertDialogContent>

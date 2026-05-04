@@ -12,8 +12,8 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    if (body.confirmation !== 'DELETE') {
-      return NextResponse.json({ error: 'Invalid confirmation. Please type DELETE to confirm.' }, { status: 400 })
+    if (body.confirmation !== 'DELETE' && body.confirmation !== 'CLOSE' && body.confirmation !== 'FERMER') {
+      return NextResponse.json({ error: 'Invalid confirmation.' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()
