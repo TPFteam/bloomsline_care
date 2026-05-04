@@ -68,6 +68,29 @@ interface SubmissionWithResource extends ResourceResponse {
   resource: Resource
 }
 
+interface PatientSharedStory {
+  id: string // story_share id
+  story_id: string
+  shared_at: string
+  story: {
+    id: string
+    title: string
+    content: any[]
+    media_urls: any[]
+    unique_slug: string
+    updated_at: string
+  }
+}
+
+interface StoryShareComment {
+  id: string
+  share_id: string
+  author_id: string
+  author_type: 'practitioner' | 'member'
+  content: string
+  created_at: string
+}
+
 // Resource type icons
 const resourceTypeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
@@ -94,6 +117,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   // Shared resources state
   const [sharedResources, setSharedResources] = useState<SharedResourceWithStory[]>([])
   const [sharedLibraryResources, setSharedLibraryResources] = useState<SharedLibraryResource[]>([])
+  const [patientStories, setPatientStories] = useState<PatientSharedStory[]>([])
+  const [viewingPatientStory, setViewingPatientStory] = useState<PatientSharedStory | null>(null)
+  const [storyComments, setStoryComments] = useState<StoryShareComment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [postingComment, setPostingComment] = useState(false)
   const [availableStories, setAvailableStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
   const [showShareModal, setShowShareModal] = useState(false)
@@ -229,6 +257,15 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
       setSharedLibraryResources(libraryData || [])
 
+      // Fetch stories that the patient shared with this practitioner
+      const { data: patientShareData } = await supabase
+        .from('story_shares')
+        .select(`id, story_id, shared_at, story:stories!inner(id, title, content, media_urls, unique_slug, updated_at)`)
+        .eq('member_id', memberId)
+        .eq('practitioner_id', user.id)
+        .order('shared_at', { ascending: false })
+      setPatientStories((patientShareData || []) as any)
+
       // Fetch available stories
       const sharedStoryIds = (sharedData || []).map(s => s.story_id)
 
@@ -278,6 +315,68 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       setSubmissions((data || []) as SubmissionWithResource[])
     } catch (error) {
       console.error('Error fetching submissions:', error)
+    }
+  }
+
+  const openPatientStory = async (share: PatientSharedStory) => {
+    setViewingPatientStory(share)
+    setStoryComments([])
+    setNewComment('')
+    const { data } = await supabase
+      .from('story_share_comments')
+      .select('*')
+      .eq('share_id', share.id)
+      .order('created_at', { ascending: true })
+    setStoryComments((data || []) as StoryShareComment[])
+  }
+
+  const postStoryComment = async () => {
+    if (!viewingPatientStory || !newComment.trim()) return
+    setPostingComment(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data, error } = await supabase
+        .from('story_share_comments')
+        .insert({
+          share_id: viewingPatientStory.id,
+          author_id: user.id,
+          author_type: 'practitioner',
+          content: newComment.trim(),
+        })
+        .select()
+        .single()
+      if (error) throw error
+      setStoryComments(prev => [...prev, data as StoryShareComment])
+      setNewComment('')
+
+      // Notify member
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('user_id')
+        .eq('id', memberId)
+        .single()
+      if (memberData?.user_id) {
+        const session = (await supabase.auth.getSession()).data.session
+        if (session) {
+          fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              userId: memberData.user_id,
+              userType: 'member',
+              type: 'story_comment',
+              entityType: 'story_share',
+              entityId: viewingPatientStory.id,
+              metadata: { storyTitle: viewingPatientStory.story.title || 'Untitled' },
+            }),
+          }).catch(() => {})
+        }
+      }
+    } catch (err) {
+      toast.error(locale === 'fr' ? 'Erreur' : 'Failed to post comment')
+    } finally {
+      setPostingComment(false)
     }
   }
 
@@ -829,6 +928,43 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
             </motion.div>
           )}
 
+          {/* Stories shared by patient */}
+          {patientStories.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl border border-violet-200 overflow-hidden"
+            >
+              <div className="p-4 border-b border-gray-100/50 flex items-center gap-2 bg-violet-50/30">
+                <BookOpen className="w-5 h-5 text-violet-600" />
+                <h3 className="font-semibold text-gray-900">
+                  {locale === 'fr' ? 'Histoires envoyées par le patient' : 'Stories shared by patient'}
+                </h3>
+                <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">{patientStories.length}</span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {patientStories.map(share => (
+                  <button
+                    key={share.id}
+                    onClick={() => openPatientStory(share)}
+                    className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{share.story.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</p>
+                      <p className="text-xs text-gray-400">
+                        {locale === 'fr' ? 'Partagé le' : 'Shared'} {new Date(share.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-gray-300 -rotate-90" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* Shared Stories List */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -994,6 +1130,95 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           </div>
         </div>
       )}
+      {/* Patient Story Viewer Modal */}
+      {viewingPatientStory && (
+        <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4" onClick={() => setViewingPatientStory(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-violet-50/30">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{viewingPatientStory.story.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</h3>
+                <p className="text-xs text-gray-400">
+                  {locale === 'fr' ? 'Mis à jour le' : 'Updated'} {new Date(viewingPatientStory.story.updated_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+              <button onClick={() => setViewingPatientStory(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {(viewingPatientStory.story.content || []).map((block: any, i: number) => {
+                if (block.type === 'heading') {
+                  const Tag = `h${block.content?.level || 2}` as any
+                  return <Tag key={i} className="font-bold text-gray-900">{block.content?.text}</Tag>
+                }
+                if (block.type === 'text') {
+                  return <p key={i} className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{block.content?.text}</p>
+                }
+                if (block.type === 'list') {
+                  const Tag = block.content?.ordered ? 'ol' : 'ul'
+                  return (
+                    <Tag key={i} className={`text-sm text-gray-800 ${block.content?.ordered ? 'list-decimal' : 'list-disc'} pl-5 space-y-1`}>
+                      {(block.content?.items || []).map((it: string, j: number) => <li key={j}>{it}</li>)}
+                    </Tag>
+                  )
+                }
+                if (block.type === 'quote') {
+                  return <blockquote key={i} className="border-l-4 border-violet-300 pl-4 italic text-gray-700">{block.content?.text}</blockquote>
+                }
+                if (block.type === 'media' || block.type === 'image') {
+                  const items = block.content?.items || []
+                  return (
+                    <div key={i} className="grid grid-cols-2 gap-2">
+                      {items.map((m: any, j: number) => (
+                        m.fileType === 'image' || m.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                          ? <img key={j} src={m.url} alt="" className="rounded-lg object-cover w-full" />
+                          : <a key={j} href={m.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">{m.fileName || m.url}</a>
+                      ))}
+                    </div>
+                  )
+                }
+                return null
+              })}
+
+              {/* Comment thread */}
+              <div className="pt-4 mt-4 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+                  {locale === 'fr' ? 'Conversation' : 'Conversation'}
+                </p>
+                {storyComments.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">{locale === 'fr' ? 'Aucun commentaire pour le moment' : 'No comments yet'}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {storyComments.map(c => (
+                      <div key={c.id} className={`flex ${c.author_type === 'practitioner' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${c.author_type === 'practitioner' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                          <p className="text-sm whitespace-pre-wrap">{c.content}</p>
+                          <p className={`text-[10px] mt-1 ${c.author_type === 'practitioner' ? 'text-teal-100' : 'text-gray-400'}`}>
+                            {new Date(c.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 shrink-0 flex gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), postStoryComment())}
+                placeholder={locale === 'fr' ? 'Écrire un commentaire...' : 'Write a comment...'}
+                className="flex-1 px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                disabled={postingComment}
+              />
+              <Button onClick={postStoryComment} disabled={postingComment || !newComment.trim()} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-4">
+                {postingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : (locale === 'fr' ? 'Envoyer' : 'Send')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Share Modal */}
       <AnimatePresence>
         {showQuickShare && (
