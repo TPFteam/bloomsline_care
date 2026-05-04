@@ -258,9 +258,9 @@ function SettingsContent() {
                         </p>
                         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
                           {locale === 'fr' ? (
-                            <>Pour demander la suppression complète de vos données personnelles (droit à l&apos;effacement, RGPD art. 17), contactez <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                            <>Pour demander la suppression complète de vos données personnelles (droit à l&apos;effacement, RGPD art. 17), contactez <a href="mailto:hi@theredbloomsland.com" className="text-teal-600 underline">hi@theredbloomsland.com</a>.</>
                           ) : (
-                            <>To request full deletion of your personal data (Right to Erasure, GDPR Art. 17), contact <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                            <>To request full deletion of your personal data (Right to Erasure, GDPR Art. 17), contact <a href="mailto:hi@theredbloomsland.com" className="text-teal-600 underline">hi@theredbloomsland.com</a>.</>
                           )}
                         </p>
                       </div>
@@ -292,9 +292,9 @@ function SettingsContent() {
                                 </p>
                                 <p>
                                   {locale === 'fr' ? (
-                                    <>Pour la suppression définitive de vos données personnelles (RGPD), écrivez à <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                                    <>Pour la suppression définitive de vos données personnelles (RGPD), écrivez à <a href="mailto:hi@theredbloomsland.com" className="text-teal-600 underline">hi@theredbloomsland.com</a>.</>
                                   ) : (
-                                    <>For permanent deletion of your personal data (GDPR), email <a href="mailto:privacy@bloomsline.com" className="text-teal-600 underline">privacy@bloomsline.com</a>.</>
+                                    <>For permanent deletion of your personal data (GDPR), email <a href="mailto:hi@theredbloomsland.com" className="text-teal-600 underline">hi@theredbloomsland.com</a>.</>
                                   )}
                                 </p>
                               </div>
