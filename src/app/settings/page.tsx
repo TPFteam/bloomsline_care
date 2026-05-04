@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { ArrowLeft, Check, X, Loader2, ExternalLink, Shield, UserCog, AlertTriangle, FileText, Lock, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react'
+import { ArrowLeft, Check, X, Loader2, ExternalLink, Shield, UserCog, AlertTriangle, FileText, Lock, ShieldCheck, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -38,8 +38,65 @@ function SettingsContent() {
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
+  // Email change state
+  const [currentEmail, setCurrentEmail] = useState<string>('')
+  const [authProvider, setAuthProvider] = useState<string>('email')
+  const [newEmail, setNewEmail] = useState('')
+  const [emailPassword, setEmailPassword] = useState('')
+  const [updatingEmail, setUpdatingEmail] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+
   // Success/error messages
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Load current user info on mount
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      setCurrentEmail(user.email || '')
+      setAuthProvider((user.app_metadata?.provider as string) || 'email')
+      // new_email exists when a change is pending confirmation
+      const pending = (user as { new_email?: string }).new_email
+      if (pending) setPendingEmail(pending)
+    })
+  }, [])
+
+  const handleUpdateEmail = async () => {
+    if (!newEmail.trim() || !emailPassword) return
+    setMessage(null)
+    setUpdatingEmail(true)
+    try {
+      const supabase = createClient()
+      // Re-authenticate first
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
+        email: currentEmail,
+        password: emailPassword,
+      })
+      if (reAuthError) {
+        setMessage({ type: 'error', text: locale === 'fr' ? 'Mot de passe incorrect' : 'Incorrect password' })
+        return
+      }
+      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() })
+      if (error) {
+        setMessage({ type: 'error', text: error.message })
+        return
+      }
+      setPendingEmail(newEmail.trim())
+      setNewEmail('')
+      setEmailPassword('')
+      setMessage({
+        type: 'success',
+        text: locale === 'fr'
+          ? `Un lien de confirmation a été envoyé à ${newEmail.trim()}. La modification sera appliquée après confirmation.`
+          : `A confirmation link has been sent to ${newEmail.trim()}. The change will apply after you confirm.`,
+      })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update email' })
+    } finally {
+      setUpdatingEmail(false)
+    }
+  }
 
   // Handle account deactivation
   const handleDeactivateAccount = async () => {
@@ -230,6 +287,92 @@ function SettingsContent() {
 
               {/* Account Tab */}
               {activeTab === 'account' && (
+                <div className="space-y-6">
+                  {/* Email change card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-teal-600" />
+                        {locale === 'fr' ? 'Adresse e-mail' : 'Email Address'}
+                      </CardTitle>
+                      <CardDescription>
+                        {locale === 'fr'
+                          ? 'Mettez à jour l\'adresse e-mail associée à votre compte'
+                          : 'Update the email address associated with your account'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {locale === 'fr' ? 'E-mail actuel' : 'Current email'}
+                        </label>
+                        <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+                          {currentEmail || '—'}
+                        </div>
+                        {pendingEmail && (
+                          <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            {locale === 'fr'
+                              ? `Modification en attente : ${pendingEmail}. Cliquez sur le lien envoyé à cette adresse pour confirmer.`
+                              : `Pending change: ${pendingEmail}. Click the link sent to that address to confirm.`}
+                          </p>
+                        )}
+                      </div>
+
+                      {authProvider !== 'email' ? (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                          {locale === 'fr'
+                            ? `Votre compte utilise la connexion ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider}. Pour changer votre adresse e-mail, modifiez-la directement chez votre fournisseur.`
+                            : `Your account uses ${authProvider === 'google' ? 'Google' : authProvider === 'azure' ? 'Microsoft' : authProvider} sign-in. To change your email, update it with your provider.`}
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {locale === 'fr' ? 'Nouvelle adresse e-mail' : 'New email address'}
+                            </label>
+                            <input
+                              type="email"
+                              value={newEmail}
+                              onChange={(e) => setNewEmail(e.target.value)}
+                              placeholder="you@example.com"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              disabled={updatingEmail}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {locale === 'fr' ? 'Confirmez votre mot de passe' : 'Confirm your password'}
+                            </label>
+                            <input
+                              type="password"
+                              value={emailPassword}
+                              onChange={(e) => setEmailPassword(e.target.value)}
+                              placeholder="••••••••"
+                              autoComplete="current-password"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              disabled={updatingEmail}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 leading-relaxed">
+                            {locale === 'fr'
+                              ? 'Un lien de confirmation sera envoyé à votre nouvelle adresse. Le changement ne sera appliqué qu\'après que vous aurez cliqué sur ce lien. Vous restez connecté(e) entre-temps.'
+                              : 'A confirmation link will be sent to your new address. The change applies only after you click the link. You\'ll stay signed in in the meantime.'}
+                          </p>
+                          <Button
+                            onClick={handleUpdateEmail}
+                            disabled={updatingEmail || !newEmail.trim() || !emailPassword || newEmail.trim() === currentEmail}
+                            className="bg-teal-600 hover:bg-teal-700 text-white"
+                          >
+                            {updatingEmail && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                            {locale === 'fr' ? 'Mettre à jour l\'e-mail' : 'Update Email'}
+                          </Button>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Danger Zone */}
                 <Card className="border-red-200">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-red-700">
@@ -337,6 +480,7 @@ function SettingsContent() {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
               )}
             </div>
           </div>
