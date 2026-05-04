@@ -132,10 +132,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 })
     }
 
+    // Notification types that should NOT trigger an email (in-app only)
+    const SKIP_EMAIL_TYPES = new Set(['story_comment'])
+
     // Send email (awaited, not fire-and-forget)
     let emailSent = false
     let emailError: string | null = null
-    try {
+    if (SKIP_EMAIL_TYPES.has(type)) {
+      emailError = 'skipped_by_type'
+    } else try {
       let recipientEmail = fallbackEmail
       console.log(`[notifications/send] Email lookup: userId=${userId}, fallbackEmail=${fallbackEmail || 'none'}, type=${type}`)
       try {
