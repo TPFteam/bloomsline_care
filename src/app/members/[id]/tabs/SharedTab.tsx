@@ -1202,7 +1202,18 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
               <button onClick={() => setViewingPatientStory(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {(viewingPatientStory.story.content || []).map((block: any, i: number) => {
+              {(() => {
+                const raw: any = viewingPatientStory.story.content
+                let blocks: any[] = []
+                if (Array.isArray(raw)) blocks = raw
+                else if (typeof raw === 'string') {
+                  try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) blocks = parsed } catch {}
+                  if (blocks.length === 0 && raw.trim()) blocks = [{ type: 'text', content: { text: raw } }]
+                } else if (raw && typeof raw === 'object') {
+                  if (Array.isArray(raw.blocks)) blocks = raw.blocks
+                }
+                return blocks
+              })().map((block: any, i: number) => {
                 if (block.type === 'heading') {
                   const Tag = `h${block.content?.level || 2}` as any
                   return <Tag key={i} className="font-bold text-gray-900">{block.content?.text}</Tag>
