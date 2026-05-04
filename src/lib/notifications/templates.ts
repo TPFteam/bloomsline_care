@@ -346,6 +346,20 @@ const templates: Record<NotificationType, NotificationTemplate> = {
           : `${m.memberName} submitted ${m.resourceTitle}`,
   },
 
+  story_shared: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Histoire partagée' : 'Story shared',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `${m.memberName} a partagé une histoire avec vous : "${m.storyTitle}"`
+        : `${m.memberName} shared a story with you: "${m.storyTitle}"`,
+    actionUrl: (m) => `/members/${m.memberId}?tab=shared`,
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.memberName} a partagé une histoire`
+        : `${m.memberName} shared a story with you`,
+  },
+
   resource_started: {
     title: (m, locale) =>
       locale === 'fr' ? 'Ressource commencée' : locale === 'es' ? 'Recurso iniciado' : 'Resource started',

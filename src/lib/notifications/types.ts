@@ -20,6 +20,7 @@ export type NotificationType =
   | 'bloom_checkin'
   // B2B - Practitioner Notifications
   | 'resource_submitted'
+  | 'story_shared'
   | 'resource_started'
   | 'booking_request'
   | 'session_confirmed'

@@ -16,6 +16,7 @@ import {
   Share2,
   XCircle,
   RefreshCw,
+  BookOpen,
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useRouter, usePathname } from 'next/navigation'
@@ -33,6 +34,7 @@ const notificationIcons: Record<string, React.ElementType> = {
   resource_shared: Share2,
   resource_assigned: FileText,
   resource_submitted: FileText,
+  story_shared: BookOpen,
   resource_started: FileText,
   session_scheduled: Calendar,
   session_reminder_24h: Clock,
@@ -58,6 +60,7 @@ const notificationColors: Record<string, string> = {
   resource_shared: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
   resource_assigned: 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400',
   resource_submitted: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+  story_shared: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
   session_scheduled: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
   booking_request: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
   booking_cancelled: 'bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-400',
