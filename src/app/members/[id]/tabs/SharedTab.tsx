@@ -145,6 +145,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   // Resource completion filter
   const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
+  const [activeShareTab, setActiveShareTab] = useState<'resources' | 'stories'>('resources')
 
   // Scroll to highlighted resource or section
   useEffect(() => {
@@ -535,6 +536,36 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
         </Button>
       </div>
 
+      {/* Tab navigation */}
+      <div className="flex items-center gap-1 border-b border-gray-200">
+        <button
+          onClick={() => setActiveShareTab('resources')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-[2px] transition-colors ${
+            activeShareTab === 'resources'
+              ? 'border-teal-500 text-teal-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {locale === 'fr' ? 'Ressources' : 'Resources'}
+          {sharedLibraryResources.length > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{sharedLibraryResources.length}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveShareTab('stories')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-[2px] transition-colors ${
+            activeShareTab === 'stories'
+              ? 'border-teal-500 text-teal-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {locale === 'fr' ? 'Histoires' : 'Stories'}
+          {(patientStories.length + sharedResources.length) > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{patientStories.length + sharedResources.length}</span>
+          )}
+        </button>
+      </div>
+
       {/* Shared Resources Section */}
       <>
           {/* Share Modal */}
@@ -604,7 +635,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           </AnimatePresence>
 
           {/* Shared Library Resources */}
-          {sharedLibraryResources.length > 0 && (
+          {activeShareTab === 'resources' && sharedLibraryResources.length > 0 && (
             <motion.div
               id="shared-resources-section"
               initial={{ opacity: 0, y: 20 }}
@@ -929,7 +960,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           )}
 
           {/* Stories shared by patient */}
-          {patientStories.length > 0 && (
+          {activeShareTab === 'stories' && patientStories.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -965,13 +996,39 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
             </motion.div>
           )}
 
-          {/* Shared Stories List */}
+          {/* Resources tab empty state */}
+          {activeShareTab === 'resources' && sharedLibraryResources.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+            >
+              <div className="p-16 text-center">
+                <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <FileText className="w-10 h-10 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {locale === 'fr' ? 'Aucune ressource partagée' : 'No resources shared yet'}
+                </h3>
+                <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                  {locale === 'fr' ? 'Partagez des ressources de votre bibliothèque avec ce patient.' : 'Share resources from your library with this patient.'}
+                </p>
+                <Button onClick={openQuickShare} className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-6">
+                  <Plus className="w-4 h-4 mr-2" />
+                  {locale === 'fr' ? 'Partager une ressource' : 'Share a resource'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Shared Stories List (Stories tab only) */}
+          {activeShareTab === 'stories' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
           >
-            {sharedResources.length === 0 && sharedLibraryResources.length === 0 ? (
+            {sharedResources.length === 0 && patientStories.length === 0 ? (
               <div className="p-16 text-center">
                 <div className="relative inline-block">
                   <div className="absolute inset-0 bg-gradient-to-br from-lavender-400/30 to-mint-400/30 rounded-3xl blur-xl" />
@@ -1059,6 +1116,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
               </>
             ) : null}
           </motion.div>
+          )}
         </>
       {/* Remind Confirmation Modal */}
       {remindResource && (
