@@ -360,6 +360,24 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : `${m.memberName} shared a story with you`,
   },
 
+  story_comment: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Nouveau commentaire' : 'New comment',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? (m.memberName
+          ? `${m.memberName} a répondu sur "${m.storyTitle}"`
+          : `Votre praticien a répondu sur "${m.storyTitle}"`)
+        : (m.memberName
+          ? `${m.memberName} replied on "${m.storyTitle}"`
+          : `Your practitioner replied on "${m.storyTitle}"`),
+    actionUrl: (m) => m.memberId ? `/members/${m.memberId}?tab=shared` : `/stories?openStoryId=${m.storyId || ''}`,
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `Nouveau commentaire sur "${m.storyTitle}"`
+        : `New comment on "${m.storyTitle}"`,
+  },
+
   resource_started: {
     title: (m, locale) =>
       locale === 'fr' ? 'Ressource commencée' : locale === 'es' ? 'Recurso iniciado' : 'Resource started',

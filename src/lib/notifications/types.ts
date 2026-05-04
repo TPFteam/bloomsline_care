@@ -21,6 +21,7 @@ export type NotificationType =
   // B2B - Practitioner Notifications
   | 'resource_submitted'
   | 'story_shared'
+  | 'story_comment'
   | 'resource_started'
   | 'booking_request'
   | 'session_confirmed'

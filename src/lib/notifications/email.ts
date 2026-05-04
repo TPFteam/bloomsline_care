@@ -229,6 +229,7 @@ export function getEmailContent(
     booking_confirmed: { en: 'View Booking', fr: 'Voir la réservation', es: 'Ver reserva' },
     resource_submitted: { en: 'Review Submission', fr: 'Voir la soumission', es: 'Revisar envío' },
     story_shared: { en: 'Read Story', fr: 'Lire l\'histoire', es: 'Leer historia' },
+    story_comment: { en: 'View Comment', fr: 'Voir le commentaire', es: 'Ver comentario' },
     booking_request: { en: 'Review Request', fr: 'Voir la demande', es: 'Revisar solicitud' },
     reschedule_requested: { en: 'Respond', fr: 'Répondre', es: 'Responder' },
   }
