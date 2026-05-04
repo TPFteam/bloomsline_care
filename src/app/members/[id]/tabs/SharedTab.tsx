@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -112,6 +113,8 @@ const resourceTypeConfig: Record<string, { bg: string; text: string; iconBg: str
 export default function SharedTab({ memberId, member, highlightResourceId }: SharedTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const openShareIdFromUrl = searchParams.get('openShareId')
 
 
   // Shared resources state
@@ -170,6 +173,16 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       fetchSubmissions()
     }
   }, [memberId, member?.id])
+
+  // Auto-open patient story when navigated from notification
+  useEffect(() => {
+    if (!openShareIdFromUrl || patientStories.length === 0) return
+    const share = patientStories.find(s => s.id === openShareIdFromUrl)
+    if (share) {
+      setActiveShareTab('stories')
+      openPatientStory(share)
+    }
+  }, [openShareIdFromUrl, patientStories])
 
   const openQuickShare = async () => {
     setShowQuickShare(true)
@@ -369,7 +382,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
               type: 'story_comment',
               entityType: 'story_share',
               entityId: viewingPatientStory.id,
-              metadata: { storyTitle: viewingPatientStory.story.title || 'Untitled' },
+              metadata: {
+                storyTitle: viewingPatientStory.story.title || 'Untitled',
+                storyId: viewingPatientStory.story.id,
+                shareId: viewingPatientStory.id,
+              },
             }),
           }).catch(() => {})
         }
@@ -1256,16 +1273,24 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   <p className="text-xs text-gray-400 italic">{locale === 'fr' ? 'Aucun commentaire pour le moment' : 'No comments yet'}</p>
                 ) : (
                   <div className="space-y-3">
-                    {storyComments.map(c => (
-                      <div key={c.id} className={`flex ${c.author_type === 'practitioner' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${c.author_type === 'practitioner' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                          <p className="text-sm whitespace-pre-wrap">{c.content}</p>
-                          <p className={`text-[10px] mt-1 ${c.author_type === 'practitioner' ? 'text-teal-100' : 'text-gray-400'}`}>
-                            {new Date(c.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                    {storyComments.map((c, i) => {
+                      const isLast = i === storyComments.length - 1
+                      const shouldHighlight = isLast && !!openShareIdFromUrl && c.author_type === 'member'
+                      return (
+                        <div
+                          key={c.id}
+                          ref={isLast ? (el) => { if (el && shouldHighlight) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } : undefined}
+                          className={`flex ${c.author_type === 'practitioner' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div className={`max-w-[80%] rounded-2xl px-4 py-2 transition-all ${c.author_type === 'practitioner' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-800'} ${shouldHighlight ? 'ring-2 ring-amber-400 ring-offset-2 animate-pulse' : ''}`}>
+                            <p className="text-sm whitespace-pre-wrap">{c.content}</p>
+                            <p className={`text-[10px] mt-1 ${c.author_type === 'practitioner' ? 'text-teal-100' : 'text-gray-400'}`}>
+                              {new Date(c.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

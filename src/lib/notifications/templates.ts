@@ -371,7 +371,7 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : (m.memberName
           ? `${m.memberName} replied on "${m.storyTitle}"`
           : `Your practitioner replied on "${m.storyTitle}"`),
-    actionUrl: (m) => m.memberId ? `/members/${m.memberId}?tab=shared` : `/stories?openStoryId=${m.storyId || ''}`,
+    actionUrl: (m) => m.memberId ? `/members/${m.memberId}?tab=shared&openShareId=${m.shareId || ''}` : `/stories?openStoryId=${m.storyId || ''}`,
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `Nouveau commentaire sur "${m.storyTitle}"`
