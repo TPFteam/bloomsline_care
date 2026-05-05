@@ -285,30 +285,21 @@ export default function AppeaPresentation() {
 
         {/* Slide 7 — Hypothèses */}
         <Slide active={current === 6}>
-          <div className="flex flex-col h-full p-10 md:p-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-6">
+          <div className="flex flex-col h-full p-12 md:p-20">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Hypothèses
             </h2>
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-5">
-              <HypothesisCard
-                num="1"
-                accent="teal"
-                premise="Le matériel se perd entre les séances chez l'adulte."
-                question="L'enfant et l'adolescent, plus à l'aise avec le digital, pourraient-ils s'approprier plus naturellement un outil de suivi entre les séances ?"
-              />
-              <HypothesisCard
-                num="2"
-                accent="emerald"
-                premise="Le lien thérapeutique se fragilise quand la charge cognitive du suivi s'accentue dans la durée."
-                question="Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l'adolescence où la fiabilité de l'adulte est centrale ?"
-              />
-              <HypothesisCard
-                num="3"
-                accent="amber"
-                premise="Si l'IA conversationnelle s'invite déjà dans le parcours thérapeutique des adultes, qu'en est-il chez les enfants et adolescents ?"
-                question="Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?"
-              />
-            </div>
+            <ol className="flex-1 max-w-4xl space-y-6 text-lg leading-relaxed text-gray-800 list-decimal pl-6 marker:text-teal-600 marker:font-semibold">
+              <li>
+                Le matériel se perd entre les séances chez l&apos;adulte. L&apos;enfant et l&apos;adolescent, plus à l&apos;aise avec le digital, pourraient-ils s&apos;approprier plus naturellement un outil de suivi entre les séances ?
+              </li>
+              <li>
+                Le lien thérapeutique se fragilise quand la charge cognitive du suivi s&apos;accentue dans la durée. Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l&apos;adolescence où la fiabilité de l&apos;adulte est centrale ?
+              </li>
+              <li>
+                Si l&apos;IA conversationnelle s&apos;invite déjà dans le parcours thérapeutique des adultes, qu&apos;en est-il chez les enfants et adolescents ? Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?
+              </li>
+            </ol>
           </div>
         </Slide>
 
@@ -425,37 +416,3 @@ function ConstatCard({ quote, arrow }: { quote: string; arrow: string }) {
   )
 }
 
-function HypothesisCard({
-  num, accent, premise, question,
-}: {
-  num: string
-  accent: 'teal' | 'emerald' | 'amber'
-  premise: string
-  question: string
-}) {
-  const accentMap = {
-    teal: { num: 'text-teal-700', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
-    emerald: { num: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
-    amber: { num: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-  }
-  const c = accentMap[accent]
-
-  return (
-    <div className={`bg-white rounded-2xl border-2 ${c.border} p-7 flex flex-col gap-5 relative overflow-hidden`}>
-      <div className={`absolute top-0 right-0 w-40 h-40 ${c.bg} rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none`} />
-
-      <div className="flex items-baseline gap-3 relative">
-        <span className={`text-xs font-semibold ${c.text} uppercase tracking-widest`}>Hypothèse</span>
-        <span className={`text-5xl font-bold ${c.num} leading-none`}>{num}</span>
-      </div>
-
-      <p className="text-base text-gray-700 leading-relaxed relative italic border-l-2 border-gray-200 pl-4">
-        {premise}
-      </p>
-
-      <p className="text-base text-gray-900 font-semibold leading-snug relative flex-1">
-        {question}
-      </p>
-    </div>
-  )
-}
