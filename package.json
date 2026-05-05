@@ -29,6 +29,8 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.24",
     "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "libphonenumber-js": "^1.12.42",
     "lucide-react": "^0.554.0",
     "mammoth": "^1.12.0",

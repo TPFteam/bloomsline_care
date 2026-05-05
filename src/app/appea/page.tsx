@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Download, Mail, Linkedin, MessageCircle, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Loader2, Mail, Linkedin, MessageCircle, Calendar } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 
 const SLIDES = 8
 
 export default function AppeaPresentation() {
   const [current, setCurrent] = useState(0)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -18,7 +19,54 @@ export default function AppeaPresentation() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const handleDownload = () => window.print()
+  const handleDownload = async () => {
+    setGenerating(true)
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      // Capture each slide
+      const slides = Array.from(document.querySelectorAll('.slide'))
+      // PDF: A4 landscape (297 × 210 mm)
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+
+      for (let i = 0; i < slides.length; i++) {
+        const slideEl = slides[i] as HTMLElement
+        // Force the slide to render off-screen at standard size
+        const wasHidden = slideEl.style.display === 'none' || !slideEl.classList.contains('active')
+        const originalStyle = slideEl.getAttribute('style') || ''
+        slideEl.setAttribute('style', `${originalStyle}; display: flex !important; position: absolute; left: -9999px; top: 0; width: 1280px; max-width: 1280px; aspect-ratio: 16 / 9; min-height: 720px;`)
+
+        const canvas = await html2canvas(slideEl, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+        })
+
+        // Restore
+        slideEl.setAttribute('style', originalStyle)
+        if (wasHidden) {
+          // restored class state by react re-render, no-op
+        }
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95)
+        if (i > 0) pdf.addPage('a4', 'landscape')
+        pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+      }
+
+      pdf.save('Bloomsline-APPEA.pdf')
+    } catch (err) {
+      console.error('PDF generation failed:', err)
+      alert('PDF generation failed. Try the browser print fallback (Ctrl/Cmd+P).')
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-slate-100">
@@ -55,10 +103,11 @@ export default function AppeaPresentation() {
           <span className="text-sm text-gray-500 mr-2">{current + 1} / {SLIDES}</span>
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+            disabled={generating}
+            className="flex items-center gap-2 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors disabled:opacity-60 disabled:cursor-wait"
           >
-            <Download className="w-4 h-4" />
-            Télécharger PDF
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {generating ? 'Génération...' : 'Télécharger PDF'}
           </button>
         </div>
       </div>
