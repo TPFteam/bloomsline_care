@@ -21,61 +21,44 @@ export default function AppeaPresentation() {
 
   const handleDownload = async () => {
     setGenerating(true)
+    const startSlide = current
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import('html2canvas-pro'),
         import('jspdf'),
       ])
 
-      // Capture each slide
-      const slides = Array.from(document.querySelectorAll('.slide'))
-      // PDF: 16:9 widescreen presentation (matches slide aspect ratio)
-      // Standard widescreen slide: 13.33" × 7.5" = 338.67mm × 190.5mm
       const PAGE_W = 338.67
       const PAGE_H = 190.5
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
 
-      for (let i = 0; i < slides.length; i++) {
-        const slideEl = slides[i] as HTMLElement
-        const originalStyle = slideEl.getAttribute('style') || ''
-        const hadActive = slideEl.classList.contains('active')
+      for (let i = 0; i < SLIDES; i++) {
+        // Switch to this slide and wait for React render
+        setCurrent(i)
+        await new Promise(r => setTimeout(r, 200))
 
-        // Make the slide measurable + visible off-screen
-        slideEl.classList.add('active')
-        slideEl.setAttribute(
-          'style',
-          `${originalStyle}; display: flex !important; position: fixed !important; left: -10000px !important; top: 0 !important; width: 1280px !important; max-width: 1280px !important; height: 720px !important; min-height: 720px !important; max-height: 720px !important; aspect-ratio: auto !important; box-shadow: none !important;`
-        )
-        // Wait a frame for layout
-        await new Promise(r => requestAnimationFrame(() => r(null)))
+        // Capture the now-visible active slide
+        const slideEl = document.querySelector('.slide.active') as HTMLElement | null
+        if (!slideEl) continue
 
         const canvas = await html2canvas(slideEl, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          width: 1280,
-          height: 720,
-          windowWidth: 1280,
-          windowHeight: 720,
         })
-
-        // Restore
-        slideEl.setAttribute('style', originalStyle)
-        if (!hadActive) slideEl.classList.remove('active')
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([PAGE_W, PAGE_H], 'landscape')
-        pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+        pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST')
       }
 
       pdf.save('Bloomsline-APPEA.pdf')
     } catch (err) {
       console.error('PDF generation failed:', err)
-      alert('PDF generation failed. Try the browser print fallback (Ctrl/Cmd+P).')
+      alert('PDF generation failed.')
     } finally {
+      setCurrent(startSlide)
       setGenerating(false)
     }
   }
