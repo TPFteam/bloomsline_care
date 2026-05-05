@@ -186,17 +186,18 @@ export default function AppeaPresentation() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce qui m&apos;amène vers vous
             </h2>
-            <ul className="flex-1 max-w-4xl space-y-6 text-lg leading-relaxed text-gray-800 list-disc pl-6 marker:text-teal-600">
-              <li>
-                J&apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
-              </li>
-              <li>
-                Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent.
-              </li>
-              <li>
-                L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément ce regard pluriel et exigeant que je sollicite.
-              </li>
-            </ul>
+            <div className="flex-1 max-w-4xl space-y-6 text-lg leading-relaxed text-gray-800">
+              {[
+                `J'étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.`,
+                `Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd'hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l'enfant et de l'adolescent.`,
+                `L'APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C'est précisément ce regard pluriel et exigeant que je sollicite.`,
+              ].map((text, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="text-teal-600 text-2xl leading-snug shrink-0">•</span>
+                  <p className="flex-1">{text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </Slide>
 
@@ -249,20 +250,19 @@ export default function AppeaPresentation() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce que les premiers entretiens ont permis d&apos;éclairer
             </h2>
-            <ul className="flex-1 max-w-4xl space-y-5 text-lg leading-relaxed text-gray-800 list-disc pl-6 marker:text-teal-600">
-              <li>
-                Dix échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
-              </li>
-              <li>
-                Trois axes de retour&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
-              </li>
-              <li>
-                Plusieurs praticiens utilisent aujourd&apos;hui cette approche dans leur pratique quotidienne.
-              </li>
-              <li>
-                Les retours actuels portent essentiellement sur la pratique avec des adultes.
-              </li>
-            </ul>
+            <div className="flex-1 max-w-4xl space-y-5 text-lg leading-relaxed text-gray-800">
+              {[
+                `Dix échanges avec des psychologues d'orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.`,
+                `Trois axes de retour : facilité d'usage, qualité du lien thérapeutique, structuration du suivi.`,
+                `Plusieurs praticiens utilisent aujourd'hui cette approche dans leur pratique quotidienne.`,
+                `Les retours actuels portent essentiellement sur la pratique avec des adultes.`,
+              ].map((text, i) => (
+                <div key={i} className="flex gap-3">
+                  <span className="text-teal-600 text-2xl leading-snug shrink-0">•</span>
+                  <p className="flex-1">{text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </Slide>
 
@@ -289,32 +289,30 @@ export default function AppeaPresentation() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Hypothèses
             </h2>
-            <ol className="flex-1 max-w-4xl space-y-7 list-decimal pl-6 marker:text-teal-600 marker:font-semibold marker:text-2xl">
-              <li className="space-y-2">
-                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
-                  Le matériel se perd entre les séances chez l&apos;adulte.
-                </p>
-                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-                  L&apos;enfant et l&apos;adolescent, plus à l&apos;aise avec le digital, pourraient-ils s&apos;approprier plus naturellement un outil de suivi entre les séances ?
-                </p>
-              </li>
-              <li className="space-y-2">
-                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
-                  Le lien thérapeutique se fragilise quand la charge cognitive du suivi s&apos;accentue dans la durée.
-                </p>
-                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-                  Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l&apos;adolescence où la fiabilité de l&apos;adulte est centrale ?
-                </p>
-              </li>
-              <li className="space-y-2">
-                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
-                  Si l&apos;IA conversationnelle s&apos;invite déjà dans le parcours thérapeutique des adultes, qu&apos;en est-il chez les enfants et adolescents ?
-                </p>
-                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-                  Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?
-                </p>
-              </li>
-            </ol>
+            <div className="flex-1 max-w-4xl space-y-7">
+              {[
+                {
+                  title: `Le matériel se perd entre les séances chez l'adulte.`,
+                  question: `L'enfant et l'adolescent, plus à l'aise avec le digital, pourraient-ils s'approprier plus naturellement un outil de suivi entre les séances ?`,
+                },
+                {
+                  title: `Le lien thérapeutique se fragilise quand la charge cognitive du suivi s'accentue dans la durée.`,
+                  question: `Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l'adolescence où la fiabilité de l'adulte est centrale ?`,
+                },
+                {
+                  title: `Si l'IA conversationnelle s'invite déjà dans le parcours thérapeutique des adultes, qu'en est-il chez les enfants et adolescents ?`,
+                  question: `Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?`,
+                },
+              ].map((h, i) => (
+                <div key={i} className="flex gap-4">
+                  <span className="text-2xl md:text-3xl font-bold text-teal-600 leading-tight shrink-0 w-8">{i + 1}.</span>
+                  <div className="space-y-2 flex-1">
+                    <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">{h.title}</p>
+                    <p className="text-base md:text-lg text-gray-700 leading-relaxed">{h.question}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Slide>
 
