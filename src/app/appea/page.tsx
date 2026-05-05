@@ -212,7 +212,7 @@ export default function AppeaPresentation() {
                 arrow="le matériel émerge entre les séances mais peut se perdre avant de pouvoir être travaillé"
               />
               <ConstatCard
-                quote='"Elle m&apos;a confondu avec une autre patiente", "Elle m&apos;a reposé la même question"'
+                quote={`Elle m'a confondu avec une autre patiente", "Elle m'a reposé la même question`}
                 arrow="sentiment d'être un dossier parmi d'autres, fragilisation du lien thérapeutique"
               />
               <ConstatCard
