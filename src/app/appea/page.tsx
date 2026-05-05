@@ -182,45 +182,21 @@ export default function AppeaPresentation() {
 
         {/* Slide 2 — Ce qui m'amène vers vous */}
         <Slide active={current === 1}>
-          <div className="flex flex-col h-full p-12 md:p-20 relative overflow-hidden bg-gradient-to-br from-stone-50 via-white to-emerald-50/50">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-teal-100/40 to-emerald-200/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-emerald-100/30 to-teal-100/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
-
-            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
+          <div className="flex flex-col h-full p-12 md:p-20">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce qui m&apos;amène vers vous
             </h2>
-
-            <div className="relative flex-1 max-w-3xl">
-              {/* Vertical timeline line */}
-              <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-teal-300 via-emerald-300 to-amber-300" />
-
-              <div className="space-y-7 pl-12">
-                {/* Paragraph 1 */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-teal-500 ring-4 ring-teal-100" />
-                  <p className="text-lg leading-relaxed text-gray-800">
-                    <span className="text-5xl float-left mr-3 mt-1 leading-none font-bold text-teal-700">J</span>
-                    &apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
-                  </p>
-                </div>
-
-                {/* Paragraph 2 */}
-                <div className="relative clear-both">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
-                  <p className="text-lg leading-relaxed text-gray-800">
-                    Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de <span className="font-semibold text-emerald-800">l&apos;enfant et de l&apos;adolescent</span>.
-                  </p>
-                </div>
-
-                {/* Paragraph 3 */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-100" />
-                  <p className="text-lg leading-relaxed text-gray-800">
-                    L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément <span className="italic font-medium text-amber-800">ce regard pluriel et exigeant</span> que je sollicite.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ul className="flex-1 max-w-4xl space-y-6 text-lg leading-relaxed text-gray-800 list-disc pl-6 marker:text-teal-600">
+              <li>
+                J&apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
+              </li>
+              <li>
+                Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent.
+              </li>
+              <li>
+                L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément ce regard pluriel et exigeant que je sollicite.
+              </li>
+            </ul>
           </div>
         </Slide>
 
@@ -269,52 +245,24 @@ export default function AppeaPresentation() {
 
         {/* Slide 5 — Ce que les premiers entretiens ont permis d'éclairer */}
         <Slide active={current === 4}>
-          <div className="flex flex-col h-full p-12 md:p-20 relative overflow-hidden bg-gradient-to-br from-stone-50 via-white to-emerald-50/50">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-emerald-100/40 to-teal-200/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-teal-100/30 to-emerald-100/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
-
-            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
+          <div className="flex flex-col h-full p-12 md:p-20">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce que les premiers entretiens ont permis d&apos;éclairer
             </h2>
-
-            <div className="relative flex-1 max-w-3xl">
-              {/* Vertical timeline line */}
-              <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-teal-300 via-emerald-300 to-amber-300" />
-
-              <div className="space-y-6 pl-12">
-                {/* Paragraph 1 — Sample */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-teal-500 ring-4 ring-teal-100" />
-                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
-                    <span className="text-3xl font-bold text-teal-700 mr-1">Dix</span> échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
-                  </p>
-                </div>
-
-                {/* Paragraph 2 — Three axes */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
-                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
-                    <span className="font-semibold text-emerald-800">Trois axes de retour</span>&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
-                  </p>
-                </div>
-
-                {/* Paragraph 3 — Adoption */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
-                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
-                    Plusieurs praticiens utilisent <span className="font-semibold text-emerald-800">aujourd&apos;hui</span> cette approche dans leur pratique quotidienne.
-                  </p>
-                </div>
-
-                {/* Paragraph 4 — Limit (sets up the next slide) */}
-                <div className="relative">
-                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-100" />
-                  <p className="text-base md:text-lg leading-relaxed text-gray-800 italic">
-                    Les retours actuels portent <span className="not-italic font-semibold text-amber-800">essentiellement sur la pratique avec des adultes</span>.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ul className="flex-1 max-w-4xl space-y-5 text-lg leading-relaxed text-gray-800 list-disc pl-6 marker:text-teal-600">
+              <li>
+                Dix échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
+              </li>
+              <li>
+                Trois axes de retour&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
+              </li>
+              <li>
+                Plusieurs praticiens utilisent aujourd&apos;hui cette approche dans leur pratique quotidienne.
+              </li>
+              <li>
+                Les retours actuels portent essentiellement sur la pratique avec des adultes.
+              </li>
+            </ul>
           </div>
         </Slide>
 
