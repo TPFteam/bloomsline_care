@@ -74,39 +74,70 @@ export default function AppeaPresentation() {
       <div className="slide-wrapper pt-20 pb-24 px-4 md:px-12">
         {/* Slide 1 — Cover */}
         <Slide active={current === 0} index={0}>
-          <div className="flex flex-col justify-between h-full p-12 md:p-20 bg-gradient-to-br from-stone-50 via-white to-emerald-50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-semibold text-gray-900 text-lg">Bloomsline</span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 h-full bg-gradient-to-br from-stone-50 via-white to-emerald-50 relative overflow-hidden">
+            {/* Decorative gradient blob */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-teal-200/40 to-emerald-300/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-br from-emerald-200/30 to-teal-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
-            <div className="space-y-8 max-w-4xl">
-              <p className="text-sm font-semibold text-teal-700 uppercase tracking-widest">
-                Présentation à l&apos;attention des formateurs et psychologues membres de l&apos;APPEA
-              </p>
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight">
-                Suivi inter-séances en clinique :
-                <span className="block mt-2 text-teal-700">pertinence pour l&apos;enfant et l&apos;adolescent ?</span>
-              </h1>
-              <div className="h-1 w-24 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full" />
-            </div>
-
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <div>
-                <p className="text-xl font-semibold text-gray-900">Sarah Lagzouli</p>
-                <p className="text-sm text-gray-500 mt-1">Co-fondatrice · Bloomsline</p>
-                <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
-                  <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-1.5 hover:text-teal-700">
-                    <Mail className="w-3.5 h-3.5" /> sarah.lagzouli@gmail.com
-                  </a>
-                  <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
-                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
-                  </a>
+            {/* Left content */}
+            <div className="relative md:col-span-3 flex flex-col justify-between p-10 md:p-14">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
+                <span className="font-semibold text-gray-900 text-lg">Bloomsline</span>
               </div>
-              <p className="text-sm text-gray-400">Mai 2026</p>
+
+              <div className="space-y-5 max-w-2xl">
+                <span className="inline-block px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-semibold tracking-wide">
+                  Pour les formateurs et psychologues de l&apos;APPEA
+                </span>
+                <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight">
+                  Suivi inter-séances en clinique :
+                  <span className="block mt-2 text-teal-700">pertinence pour l&apos;enfant et l&apos;adolescent ?</span>
+                </h1>
+                <p className="text-base md:text-lg text-gray-600 leading-relaxed">
+                  Une démarche de recherche clinique qui interroge la continuité du travail thérapeutique entre les séances dans le champ de l&apos;enfance et de l&apos;adolescence.
+                </p>
+                <div className="h-1 w-20 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full" />
+              </div>
+
+              <div className="flex flex-wrap items-end justify-between gap-4 pt-6 border-t border-gray-200/70">
+                <div>
+                  <p className="text-base font-semibold text-gray-900">Sarah Lagzouli</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Co-fondatrice · Bloomsline</p>
+                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-600">
+                    <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-1 hover:text-teal-700">
+                      <Mail className="w-3 h-3" /> sarah.lagzouli@gmail.com
+                    </a>
+                    <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-teal-700">
+                      <Linkedin className="w-3 h-3" /> LinkedIn
+                    </a>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">Mai 2026</p>
+              </div>
+            </div>
+
+            {/* Right — Sommaire */}
+            <div className="hidden md:flex md:col-span-2 relative bg-white/60 backdrop-blur-sm border-l border-gray-200/60 p-10 flex-col justify-center">
+              <p className="text-xs font-semibold text-teal-700 uppercase tracking-widest mb-5">Sommaire</p>
+              <ol className="space-y-3 text-sm">
+                {[
+                  'Ce qui m\'amène vers vous',
+                  'Constats cliniques',
+                  'Vision en une phrase',
+                  'Premiers entretiens',
+                  'La question posée',
+                  'Hypothèses',
+                  'Échangeons',
+                ].map((title, i) => (
+                  <li key={i} className="flex items-baseline gap-3 text-gray-700">
+                    <span className="text-xs font-mono text-teal-600 w-5 shrink-0">{String(i + 2).padStart(2, '0')}</span>
+                    <span className="leading-snug">{title}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </Slide>
