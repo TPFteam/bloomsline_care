@@ -45,6 +45,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
   const [showHistory, setShowHistory] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(new Set(['status', 'highlights', 'themes']))
   const [error, setError] = useState<string | null>(null)
+  const [delta, setDelta] = useState<{ total: number; breakdown: Record<string, number>; sinceDate: string | null } | null>(null)
 
   // Section labels
   const sectionLabels: Record<SectionId, { en: string; fr: string; es: string }> = {
@@ -95,6 +96,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
       if (response.ok) {
         const data = await response.json()
         setSummary(data.summary)
+        setDelta(data.delta || null)
       } else if (response.status !== 404) {
         const data = await response.json()
         setError(data.error || (locale === 'fr' ? 'Impossible de charger le résumé' : 'Failed to fetch summary'))
@@ -151,6 +153,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
 
       if (response.ok) {
         setSummary(data.summary)
+        setDelta(null) // Reset delta after successful generation
         if (data.warning) {
           toast.warning(data.warning)
         } else {
@@ -396,6 +399,50 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
               </div>
             ) : summary ? (
               <div className="space-y-3">
+                {/* Delta banner — newer data available */}
+                {delta && delta.total >= 10 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-900 mb-1">
+                        {locale === 'fr'
+                          ? `${delta.total} nouvelles données disponibles`
+                          : locale === 'es'
+                            ? `${delta.total} nuevos datos disponibles`
+                            : `${delta.total} new updates available`}
+                      </p>
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        {[
+                          delta.breakdown.sessions && `${delta.breakdown.sessions} ${locale === 'fr' ? 'séances' : locale === 'es' ? 'sesiones' : 'sessions'}`,
+                          delta.breakdown.notes && `${delta.breakdown.notes} ${locale === 'fr' ? 'notes' : 'notes'}`,
+                          delta.breakdown.reflections && `${delta.breakdown.reflections} ${locale === 'fr' ? 'réflexions' : locale === 'es' ? 'reflexiones' : 'reflections'}`,
+                          delta.breakdown.files && `${delta.breakdown.files} ${locale === 'fr' ? 'fichiers' : locale === 'es' ? 'archivos' : 'files'}`,
+                          delta.breakdown.stories && `${delta.breakdown.stories} ${locale === 'fr' ? 'histoires' : locale === 'es' ? 'historias' : 'stories'}`,
+                          delta.breakdown.responses && `${delta.breakdown.responses} ${locale === 'fr' ? 'réponses' : locale === 'es' ? 'respuestas' : 'responses'}`,
+                          delta.breakdown.bookings && `${delta.breakdown.bookings} ${locale === 'fr' ? 'réservations' : locale === 'es' ? 'reservas' : 'bookings'}`,
+                          delta.breakdown.comments && `${delta.breakdown.comments} ${locale === 'fr' ? 'commentaires' : locale === 'es' ? 'comentarios' : 'comments'}`,
+                          delta.breakdown.milestones && `${delta.breakdown.milestones} ${locale === 'fr' ? 'jalons' : locale === 'es' ? 'hitos' : 'milestones'}`,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={generateSummary}
+                      disabled={generating}
+                      className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                    >
+                      {generating ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                      )}
+                      {locale === 'fr' ? 'Actualiser' : locale === 'es' ? 'Actualizar' : 'Refresh'}
+                    </Button>
+                  </div>
+                )}
+
                 {/* Timestamp */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -436,24 +483,39 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
             ) : (
               <div className="flex flex-col items-center justify-center py-10">
                 <div className="w-14 h-14 rounded-xl bg-teal-500/10 flex items-center justify-center mb-4">
-                  <Sparkles className="w-7 h-7 text-teal-600" />
+                  {generating ? (
+                    <Loader2 className="w-7 h-7 text-teal-600 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-7 h-7 text-teal-600" />
+                  )}
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 mb-1">
-                  {locale === 'fr' ? 'Générer Bloom Pulse' : locale === 'es' ? 'Generar Bloom Pulse' : 'Generate Bloom Pulse'}
+                  {generating
+                    ? (locale === 'fr' ? 'Génération en cours…' : locale === 'es' ? 'Generando…' : 'Generating…')
+                    : (locale === 'fr' ? 'Générer Bloom Pulse' : locale === 'es' ? 'Generar Bloom Pulse' : 'Generate Bloom Pulse')}
                 </h3>
-                <p className="text-gray-500 text-sm text-center max-w-xs mb-5">
+                <p className="text-gray-500 text-sm text-center max-w-sm mb-2">
                   {locale === 'fr'
-                    ? `Créez un aperçu pour ${memberName} basé sur les séances et notes.`
+                    ? `Créez un aperçu pour ${memberName} basé sur les séances, notes et fichiers.`
                     : locale === 'es'
-                    ? `Crea una vista para ${memberName} basada en sesiones y notas.`
-                    : `Create an overview for ${memberName} based on sessions and notes.`}
+                    ? `Crea una vista para ${memberName} basada en sesiones, notas y archivos.`
+                    : `Create an overview for ${memberName} based on sessions, notes, and files.`}
                 </p>
-                <Button
-                  onClick={generateSummary}
-                  className="bg-teal-500 hover:bg-teal-600 text-white"
-                >
-                  {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
-                </Button>
+                <p className="text-xs text-gray-400 text-center max-w-sm mb-5">
+                  {locale === 'fr'
+                    ? "La première génération peut prendre jusqu'à 30 secondes pour les patients avec beaucoup de fichiers. Les générations suivantes sont rapides."
+                    : locale === 'es'
+                    ? 'La primera generación puede tardar hasta 30 segundos para pacientes con muchos archivos. Las siguientes son rápidas.'
+                    : 'First generation may take up to 30 seconds for patients with many files. Subsequent generations are fast.'}
+                </p>
+                {!generating && (
+                  <Button
+                    onClick={generateSummary}
+                    className="bg-teal-500 hover:bg-teal-600 text-white"
+                  >
+                    {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
+                  </Button>
+                )}
               </div>
             )}
           </div>

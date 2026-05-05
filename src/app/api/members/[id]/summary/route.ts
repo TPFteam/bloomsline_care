@@ -9,6 +9,7 @@ import {
   type SummaryContext,
   type SupportedLocale,
 } from '@/lib/summary/prompts'
+import { extractAllMemberFiles, formatExtractionsForPrompt } from '@/lib/pulse/file-extraction'
 import type { SummaryContent } from '@/types/member'
 
 /**
@@ -182,14 +183,21 @@ export async function POST(
       locale,
     }
 
-    // Build prompts
-    const systemPrompt = getSummarySystemPrompt(locale)
-    const userPrompt = buildSummaryPrompt(context)
-
-    // Call Claude API
+    // Initialize Anthropic client (used by both file extraction and synthesis)
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     })
+
+    // Extract patient files (cache-aware: only re-runs on new/changed files)
+    const fileExtractions = await extractAllMemberFiles(supabase, anthropic, memberId)
+    const fileContextBlock = formatExtractionsForPrompt(fileExtractions)
+
+    // Build prompts
+    const systemPrompt = getSummarySystemPrompt(locale)
+    let userPrompt = buildSummaryPrompt(context)
+    if (fileContextBlock) {
+      userPrompt = `${userPrompt}\n\n${fileContextBlock}`
+    }
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -347,7 +355,48 @@ export async function GET(
         return NextResponse.json({ error: 'Failed to fetch summary' }, { status: 500 })
       }
 
-      return NextResponse.json({ summary: summary || null })
+      // Compute delta: count of events since the latest Pulse generation
+      let delta: { total: number; breakdown: Record<string, number>; sinceDate: string | null } | null = null
+      if (summary) {
+        const since = summary.generated_at
+        const [
+          sessionsCount,
+          notesCount,
+          milestonesCount,
+          reflectionsCount,
+          filesCount,
+          storyShareCount,
+          storyCommentCount,
+          resourceResponsesCount,
+          bookingsCount,
+        ] = await Promise.all([
+          supabase.from('sessions').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
+          supabase.from('progress_notes').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
+          supabase.from('milestones').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('updated_at', since),
+          supabase.from('member_reflections').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('created_at', since),
+          supabase.from('member_files').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('created_at', since),
+          supabase.from('story_shares').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('shared_at', since),
+          supabase.from('story_share_comments').select('id', { count: 'exact', head: true }).eq('author_type', 'member').gt('created_at', since),
+          supabase.from('resource_responses').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('updated_at', since),
+          supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
+        ])
+
+        const breakdown = {
+          sessions: sessionsCount.count || 0,
+          notes: notesCount.count || 0,
+          milestones: milestonesCount.count || 0,
+          reflections: reflectionsCount.count || 0,
+          files: filesCount.count || 0,
+          stories: storyShareCount.count || 0,
+          comments: storyCommentCount.count || 0,
+          responses: resourceResponsesCount.count || 0,
+          bookings: bookingsCount.count || 0,
+        }
+        const total = Object.values(breakdown).reduce((a, b) => a + b, 0)
+        delta = { total, breakdown, sinceDate: since }
+      }
+
+      return NextResponse.json({ summary: summary || null, delta })
     }
   } catch (error) {
     console.error('Summary fetch error:', error)
