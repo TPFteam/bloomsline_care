@@ -167,19 +167,19 @@ export default function AppeaPresentation() {
             </h2>
             <div className="relative flex-1 grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-teal-500">
-                <span className="text-5xl font-bold bg-gradient-to-br from-teal-600 to-emerald-700 bg-clip-text text-transparent leading-none">01</span>
+                <span className="text-5xl font-bold text-teal-700 leading-none">01</span>
                 <p className="text-base text-gray-700 leading-relaxed flex-1">
                   J&apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
                 </p>
               </div>
               <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-emerald-500">
-                <span className="text-5xl font-bold bg-gradient-to-br from-emerald-600 to-green-700 bg-clip-text text-transparent leading-none">02</span>
+                <span className="text-5xl font-bold text-emerald-700 leading-none">02</span>
                 <p className="text-base text-gray-700 leading-relaxed flex-1">
                   Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent.
                 </p>
               </div>
               <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-amber-500">
-                <span className="text-5xl font-bold bg-gradient-to-br from-amber-500 to-orange-600 bg-clip-text text-transparent leading-none">03</span>
+                <span className="text-5xl font-bold text-amber-600 leading-none">03</span>
                 <p className="text-base text-gray-700 leading-relaxed flex-1">
                   L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément ce regard pluriel et exigeant que je sollicite.
                 </p>
@@ -242,7 +242,7 @@ export default function AppeaPresentation() {
               {/* Card 1 — Sample size */}
               <div className="bg-white border border-gray-200 rounded-2xl p-7 flex gap-6 hover:shadow-md transition-shadow">
                 <div className="shrink-0">
-                  <div className="text-6xl font-bold bg-gradient-to-br from-teal-600 to-emerald-700 bg-clip-text text-transparent leading-none">10</div>
+                  <div className="text-6xl font-bold text-teal-700 leading-none">10</div>
                 </div>
                 <p className="text-base text-gray-700 leading-relaxed self-center">
                   Dix échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
@@ -252,7 +252,7 @@ export default function AppeaPresentation() {
               {/* Card 2 — Three axes */}
               <div className="bg-white border border-gray-200 rounded-2xl p-7 flex gap-6 hover:shadow-md transition-shadow">
                 <div className="shrink-0">
-                  <div className="text-6xl font-bold bg-gradient-to-br from-emerald-600 to-green-700 bg-clip-text text-transparent leading-none">3</div>
+                  <div className="text-6xl font-bold text-emerald-700 leading-none">3</div>
                 </div>
                 <p className="text-base text-gray-700 leading-relaxed self-center">
                   Trois axes de retour&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
@@ -454,9 +454,9 @@ function HypothesisCard({
   question: string
 }) {
   const accentMap = {
-    teal: { gradient: 'from-teal-600 to-emerald-700', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
-    emerald: { gradient: 'from-emerald-600 to-green-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
-    amber: { gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+    teal: { num: 'text-teal-700', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
+    emerald: { num: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+    amber: { num: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
   }
   const c = accentMap[accent]
 
@@ -466,7 +466,7 @@ function HypothesisCard({
 
       <div className="flex items-baseline gap-3 relative">
         <span className={`text-xs font-semibold ${c.text} uppercase tracking-widest`}>Hypothèse</span>
-        <span className={`text-5xl font-bold bg-gradient-to-br ${c.gradient} bg-clip-text text-transparent leading-none`}>{num}</span>
+        <span className={`text-5xl font-bold ${c.num} leading-none`}>{num}</span>
       </div>
 
       <p className="text-base text-gray-700 leading-relaxed relative italic border-l-2 border-gray-200 pl-4">
