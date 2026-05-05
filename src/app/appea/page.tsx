@@ -56,11 +56,33 @@ export default function AppeaPresentation() {
           backgroundColor: '#ffffff',
         })
 
+        // Capture link positions BEFORE restoring style
+        const slideRect = slideEl.getBoundingClientRect()
+        const scaleX = PAGE_W / slideRect.width
+        const scaleY = PAGE_H / slideRect.height
+        const linkRects: { x: number; y: number; w: number; h: number; url: string }[] = []
+        slideEl.querySelectorAll('a[href]').forEach(a => {
+          const href = (a as HTMLAnchorElement).href
+          if (!href || href.startsWith('javascript:')) return
+          const r = a.getBoundingClientRect()
+          if (r.width === 0 || r.height === 0) return
+          linkRects.push({
+            x: (r.left - slideRect.left) * scaleX,
+            y: (r.top - slideRect.top) * scaleY,
+            w: r.width * scaleX,
+            h: r.height * scaleY,
+            url: href,
+          })
+        })
+
         slideEl.setAttribute('style', originalStyle)
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([PAGE_W, PAGE_H], 'landscape')
         pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST')
+
+        // Add clickable link annotations on this page
+        linkRects.forEach(l => pdf.link(l.x, l.y, l.w, l.h, { url: l.url }))
       }
 
       pdf.save('Bloomsline-APPEA.pdf')
