@@ -258,9 +258,9 @@ export default function AppeaPresentation() {
               En une phrase
             </h2>
             <blockquote className="text-3xl md:text-5xl font-semibold text-gray-900 leading-snug max-w-5xl text-center tracking-tight">
-              «&nbsp;Soutenir la <span className="text-teal-700">continuité du travail thérapeutique</span> entre les séances.
-              <span className="block mt-4 text-2xl md:text-3xl font-normal text-gray-600">
-                Sans alourdir le quotidien du praticien et sans intrusion pour le patient.&nbsp;»
+              Soutenir la <span className="text-teal-700">continuité du travail thérapeutique</span> entre les séances.
+              <span className="block mt-4">
+                Sans alourdir le quotidien du praticien et sans intrusion pour le patient.
               </span>
             </blockquote>
             <div className="h-1 w-24 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-12" />
