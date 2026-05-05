@@ -199,6 +199,25 @@ export async function POST(
       userPrompt = `${userPrompt}\n\n${fileContextBlock}`
     }
 
+    // Build data-sources manifest (transparency: practitioner can see exactly what was fed in)
+    const dataSources = {
+      sessions: sessions.length,
+      notes: notes.length,
+      milestones: milestones.length,
+      reflections: reflections.length,
+      sharedResources: sharedResources.length,
+      milestoneComments: milestoneComments.length,
+      files: fileExtractions.map(e => ({
+        id: e.fileId,
+        name: e.fileName,
+        status: e.status, // 'done' | 'cached' | 'skipped' | 'failed'
+        error: e.error,
+      })),
+      filesIndexed: fileExtractions.filter(e => e.status === 'done' || e.status === 'cached').length,
+      filesFailed: fileExtractions.filter(e => e.status === 'failed').length,
+      filesSkipped: fileExtractions.filter(e => e.status === 'skipped').length,
+    }
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
@@ -238,13 +257,15 @@ export async function POST(
     // Generate plain text version
     const summaryText = generatePlainTextSummary(summaryContent, locale)
 
-    // Store summary in database
+    // Store summary in database (data sources included in summary_content JSONB)
+    const summaryContentWithSources = { ...summaryContent, _data_sources: dataSources }
+
     const { data: savedSummary, error: saveError } = await supabase
       .from('member_summaries')
       .insert({
         member_id: memberId,
         practitioner_id: user.id,
-        summary_content: summaryContent,
+        summary_content: summaryContentWithSources,
         summary_text: summaryText,
         model_used: response.model,
         tokens_used: response.usage.output_tokens,
@@ -259,18 +280,20 @@ export async function POST(
       return NextResponse.json({
         summary: {
           id: null,
-          summary_content: summaryContent,
+          summary_content: summaryContentWithSources,
           summary_text: summaryText,
           generated_at: new Date().toISOString(),
           model_used: response.model,
           tokens_used: response.usage.output_tokens,
         },
+        dataSources,
         warning: 'Summary generated but failed to save to history',
       })
     }
 
     return NextResponse.json({
       summary: savedSummary,
+      dataSources,
     })
   } catch (error) {
     console.error('Summary generation error:', error)

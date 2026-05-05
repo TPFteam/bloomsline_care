@@ -46,6 +46,21 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
   const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(new Set(['status', 'highlights', 'themes']))
   const [error, setError] = useState<string | null>(null)
   const [delta, setDelta] = useState<{ total: number; breakdown: Record<string, number>; sinceDate: string | null } | null>(null)
+  const [showDataSources, setShowDataSources] = useState(false)
+
+  type FileSource = { id: string; name: string; status: 'done' | 'cached' | 'skipped' | 'failed'; error?: string }
+  type DataSources = {
+    sessions: number
+    notes: number
+    milestones: number
+    reflections: number
+    sharedResources: number
+    milestoneComments: number
+    files: FileSource[]
+    filesIndexed: number
+    filesFailed: number
+    filesSkipped: number
+  }
 
   // Section labels
   const sectionLabels: Record<SectionId, { en: string; fr: string; es: string }> = {
@@ -468,6 +483,98 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName }: Me
                 {renderSection('attention', (summary.summary_content as SummaryContent).areas_of_attention, 3)}
                 {renderSection('recommendations', (summary.summary_content as SummaryContent).recommendations, 4)}
                 {renderSection('nextSteps', (summary.summary_content as SummaryContent).next_steps, 5)}
+
+                {/* Data Sources — transparency on what fed into this Pulse */}
+                {(() => {
+                  const sources = (summary.summary_content as SummaryContent & { _data_sources?: DataSources })._data_sources
+                  if (!sources) return null
+                  const totalCounts = sources.sessions + sources.notes + sources.milestones + sources.reflections + sources.sharedResources + sources.milestoneComments
+                  return (
+                    <div className="mt-6 bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setShowDataSources(!showDataSources)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4 text-slate-600" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {locale === 'fr' ? 'Sources de données' : locale === 'es' ? 'Fuentes de datos' : 'Data sources'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {totalCounts} {locale === 'fr' ? 'éléments' : locale === 'es' ? 'elementos' : 'records'} · {sources.filesIndexed} / {sources.files.length} {locale === 'fr' ? 'fichiers indexés' : locale === 'es' ? 'archivos indexados' : 'files indexed'}
+                            </p>
+                          </div>
+                        </div>
+                        {showDataSources ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                      </button>
+                      {showDataSources && (
+                        <div className="p-4 pt-0 space-y-4">
+                          {/* Counts */}
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            {[
+                              { label: locale === 'fr' ? 'Séances' : 'Sessions', value: sources.sessions },
+                              { label: locale === 'fr' ? 'Notes' : 'Notes', value: sources.notes },
+                              { label: locale === 'fr' ? 'Jalons' : 'Milestones', value: sources.milestones },
+                              { label: locale === 'fr' ? 'Réflexions' : 'Reflections', value: sources.reflections },
+                              { label: locale === 'fr' ? 'Ressources' : 'Resources', value: sources.sharedResources },
+                              { label: locale === 'fr' ? 'Commentaires' : 'Comments', value: sources.milestoneComments },
+                            ].map((item) => (
+                              <div key={item.label} className="bg-gray-50 rounded-lg p-2 text-center">
+                                <div className="text-base font-bold text-gray-900">{item.value}</div>
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wide">{item.label}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* File list */}
+                          {sources.files.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                {locale === 'fr' ? 'Fichiers' : locale === 'es' ? 'Archivos' : 'Files'} ({sources.files.length})
+                              </p>
+                              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                {sources.files.map((f) => {
+                                  const isOk = f.status === 'done' || f.status === 'cached'
+                                  const Icon = isOk ? CheckCircle2 : f.status === 'failed' ? AlertCircle : AlertTriangle
+                                  const colorCls = isOk ? 'text-emerald-600' : f.status === 'failed' ? 'text-red-500' : 'text-gray-400'
+                                  return (
+                                    <div key={f.id} className="flex items-center gap-2 text-xs">
+                                      <Icon className={`w-3.5 h-3.5 shrink-0 ${colorCls}`} />
+                                      <span className="text-gray-700 truncate flex-1">{f.name}</span>
+                                      <span className="text-gray-400 text-[10px] uppercase">
+                                        {f.status === 'done' && (locale === 'fr' ? 'extrait' : locale === 'es' ? 'extraído' : 'extracted')}
+                                        {f.status === 'cached' && (locale === 'fr' ? 'en cache' : locale === 'es' ? 'cacheado' : 'cached')}
+                                        {f.status === 'skipped' && (locale === 'fr' ? 'ignoré' : locale === 'es' ? 'omitido' : 'skipped')}
+                                        {f.status === 'failed' && (locale === 'fr' ? 'échec' : locale === 'es' ? 'fallo' : 'failed')}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                              {sources.filesFailed > 0 && (
+                                <p className="text-[11px] text-red-500 mt-2">
+                                  {locale === 'fr'
+                                    ? `${sources.filesFailed} fichier(s) ont échoué — réessayez en régénérant`
+                                    : `${sources.filesFailed} file(s) failed — retry by regenerating`}
+                                </p>
+                              )}
+                              {sources.filesSkipped > 0 && (
+                                <p className="text-[11px] text-gray-500 mt-1">
+                                  {locale === 'fr'
+                                    ? `${sources.filesSkipped} fichier(s) ignoré(s) (format non pris en charge)`
+                                    : `${sources.filesSkipped} file(s) skipped (format not yet supported)`}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Disclaimer */}
                 <div className="mt-6 p-3 bg-gray-50 rounded-lg border border-gray-100">
