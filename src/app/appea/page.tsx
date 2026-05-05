@@ -301,26 +301,33 @@ export default function AppeaPresentation() {
                 </p>
                 <p className="text-white/80 text-xs mt-4 underline group-hover:no-underline">calendly.com/sarah-lagzouli/30min</p>
               </a>
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 space-y-4">
+              <div className="bg-white rounded-2xl p-8 border border-gray-200 relative">
+                {/* Sarah photo */}
+                <div className="absolute -top-8 right-8 w-20 h-20 rounded-full overflow-hidden ring-4 ring-white shadow-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/sarah.png" alt="Sarah Lagzouli" className="w-full h-full object-cover" />
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Ou contactez-moi par message</h3>
-                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <MessageCircle className="w-4 h-4 text-emerald-700" />
-                  </div>
-                  <span className="text-sm font-medium">WhatsApp</span>
-                </a>
-                <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Mail className="w-4 h-4 text-blue-700" />
-                  </div>
-                  <span className="text-sm font-medium">sarah.lagzouli@gmail.com</span>
-                </a>
-                <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Linkedin className="w-4 h-4 text-blue-700" />
-                  </div>
-                  <span className="text-sm font-medium">linkedin.com/in/sarah-lagzouli</span>
-                </a>
+                <div className="space-y-4">
+                  <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <MessageCircle className="w-4 h-4 text-emerald-700" />
+                    </div>
+                    <span className="text-sm font-medium">WhatsApp</span>
+                  </a>
+                  <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-blue-700" />
+                    </div>
+                    <span className="text-sm font-medium">sarah.lagzouli@gmail.com</span>
+                  </a>
+                  <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Linkedin className="w-4 h-4 text-blue-700" />
+                    </div>
+                    <span className="text-sm font-medium">linkedin.com/in/sarah-lagzouli</span>
+                  </a>
+                </div>
               </div>
             </div>
             <div className="mt-auto pt-6 flex justify-end">
