@@ -23,7 +23,7 @@ export default function AppeaPresentation() {
     setGenerating(true)
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
+        import('html2canvas-pro'),
         import('jspdf'),
       ])
 
@@ -36,23 +36,32 @@ export default function AppeaPresentation() {
 
       for (let i = 0; i < slides.length; i++) {
         const slideEl = slides[i] as HTMLElement
-        // Force the slide to render off-screen at standard size
-        const wasHidden = slideEl.style.display === 'none' || !slideEl.classList.contains('active')
         const originalStyle = slideEl.getAttribute('style') || ''
-        slideEl.setAttribute('style', `${originalStyle}; display: flex !important; position: absolute; left: -9999px; top: 0; width: 1280px; max-width: 1280px; aspect-ratio: 16 / 9; min-height: 720px;`)
+        const hadActive = slideEl.classList.contains('active')
+
+        // Make the slide measurable + visible off-screen
+        slideEl.classList.add('active')
+        slideEl.setAttribute(
+          'style',
+          `${originalStyle}; display: flex !important; position: fixed !important; left: -10000px !important; top: 0 !important; width: 1280px !important; max-width: 1280px !important; height: 720px !important; min-height: 720px !important; max-height: 720px !important; aspect-ratio: auto !important; box-shadow: none !important;`
+        )
+        // Wait a frame for layout
+        await new Promise(r => requestAnimationFrame(() => r(null)))
 
         const canvas = await html2canvas(slideEl, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
+          width: 1280,
+          height: 720,
+          windowWidth: 1280,
+          windowHeight: 720,
         })
 
         // Restore
         slideEl.setAttribute('style', originalStyle)
-        if (wasHidden) {
-          // restored class state by react re-render, no-op
-        }
+        if (!hadActive) slideEl.classList.remove('active')
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage('a4', 'landscape')
