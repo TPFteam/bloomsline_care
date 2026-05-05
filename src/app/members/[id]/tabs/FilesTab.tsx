@@ -1705,15 +1705,15 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
                     className="group relative bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition-all border border-transparent hover:border-gray-200"
                     onClick={() => handleView(file)}
                   >
-                    {/* Three-dot menu */}
+                    {/* Three-dot menu — hidden until card hover */}
                     <div
-                      className="absolute top-2 right-2 z-10"
+                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white border border-gray-200 transition-colors shadow-sm">
-                            <MoreHorizontal className="w-4 h-4 text-gray-600" />
+                          <button className="p-1.5 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 transition-colors shadow-md">
+                            <MoreHorizontal className="w-4 h-4 text-gray-700" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 rounded-xl">
