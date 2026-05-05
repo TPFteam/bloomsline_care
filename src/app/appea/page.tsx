@@ -41,12 +41,22 @@ export default function AppeaPresentation() {
         const slideEl = document.querySelector('.slide.active') as HTMLElement | null
         if (!slideEl) continue
 
+        // Strip card chrome (border, rounded corners, shadow) for full-bleed PDF
+        const originalStyle = slideEl.getAttribute('style') || ''
+        slideEl.setAttribute(
+          'style',
+          `${originalStyle}; border: none !important; border-radius: 0 !important; box-shadow: none !important;`
+        )
+        await new Promise(r => requestAnimationFrame(() => r(null)))
+
         const canvas = await html2canvas(slideEl, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
         })
+
+        slideEl.setAttribute('style', originalStyle)
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
         if (i > 0) pdf.addPage([PAGE_W, PAGE_H], 'landscape')
