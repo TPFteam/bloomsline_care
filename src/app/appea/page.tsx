@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Download, Mail, Linkedin, MessageCircle, Calendar, Quote, FlaskConical, Users, HelpCircle, Lightbulb, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Mail, Linkedin, MessageCircle, Calendar } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 const SLIDES = 8
 
@@ -21,7 +22,6 @@ export default function AppeaPresentation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-slate-100">
-      {/* Print styles */}
       <style jsx global>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
@@ -40,8 +40,6 @@ export default function AppeaPresentation() {
             border: none !important;
             box-shadow: none !important;
             border-radius: 0 !important;
-            transform: none !important;
-            opacity: 1 !important;
           }
           .slide:last-child { page-break-after: auto !important; }
         }
@@ -52,12 +50,7 @@ export default function AppeaPresentation() {
 
       {/* Top bar */}
       <div className="no-print fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-semibold text-gray-900">Bloomsline · APPEA</span>
-        </div>
+        <Logo size="sm" showText />
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500 mr-2">{current + 1} / {SLIDES}</span>
           <button
@@ -70,130 +63,100 @@ export default function AppeaPresentation() {
         </div>
       </div>
 
-      {/* Slides */}
       <div className="slide-wrapper pt-20 pb-24 px-4 md:px-12">
-        {/* Slide 1 — Cover */}
-        <Slide active={current === 0} index={0}>
-          <div className="grid grid-cols-1 md:grid-cols-5 h-full bg-gradient-to-br from-stone-50 via-white to-emerald-50 relative overflow-hidden">
-            {/* Decorative gradient blob */}
+        {/* Slide 1 — Couverture */}
+        <Slide active={current === 0}>
+          <div className="flex flex-col h-full p-12 md:p-16 bg-gradient-to-br from-stone-50 via-white to-emerald-50 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-teal-200/40 to-emerald-300/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-br from-emerald-200/30 to-teal-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
-            {/* Left content */}
-            <div className="relative md:col-span-3 flex flex-col justify-between p-10 md:p-14">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-semibold text-gray-900 text-lg">Bloomsline</span>
-              </div>
-
-              <div className="space-y-5 max-w-2xl">
-                <span className="inline-block px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs font-semibold tracking-wide">
-                  Pour les formateurs et psychologues de l&apos;APPEA
-                </span>
-                <h1 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight">
-                  Suivi inter-séances en clinique :
-                  <span className="block mt-2 text-teal-700">pertinence pour l&apos;enfant et l&apos;adolescent ?</span>
-                </h1>
-                <p className="text-base md:text-lg text-gray-600 leading-relaxed">
-                  Une démarche de recherche clinique qui interroge la continuité du travail thérapeutique entre les séances dans le champ de l&apos;enfance et de l&apos;adolescence.
-                </p>
-                <div className="h-1 w-20 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full" />
-              </div>
-
-              <div className="flex flex-wrap items-end justify-between gap-4 pt-6 border-t border-gray-200/70">
-                <div>
-                  <p className="text-base font-semibold text-gray-900">Sarah Lagzouli</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Co-fondatrice · Bloomsline</p>
-                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-600">
-                    <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-1 hover:text-teal-700">
-                      <Mail className="w-3 h-3" /> sarah.lagzouli@gmail.com
-                    </a>
-                    <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-teal-700">
-                      <Linkedin className="w-3 h-3" /> LinkedIn
-                    </a>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400">Mai 2026</p>
-              </div>
+            <div className="relative flex-1 flex flex-col justify-center max-w-4xl">
+              <p className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-6">
+                Présentation à l&apos;attention des psychologues membres de l&apos;APPEA
+              </p>
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight tracking-tight">
+                Suivi inter-séances en clinique :
+                <span className="block mt-3 text-teal-700">pertinence pour l&apos;enfant et l&apos;adolescent ?</span>
+              </h1>
+              <div className="h-1 w-24 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-8" />
             </div>
 
-            {/* Right — Sommaire */}
-            <div className="hidden md:flex md:col-span-2 relative bg-white/60 backdrop-blur-sm border-l border-gray-200/60 p-10 flex-col justify-center">
-              <p className="text-xs font-semibold text-teal-700 uppercase tracking-widest mb-5">Sommaire</p>
-              <ol className="space-y-3 text-sm">
-                {[
-                  'Ce qui m\'amène vers vous',
-                  'Constats cliniques',
-                  'Vision en une phrase',
-                  'Premiers entretiens',
-                  'La question posée',
-                  'Hypothèses',
-                  'Échangeons',
-                ].map((title, i) => (
-                  <li key={i} className="flex items-baseline gap-3 text-gray-700">
-                    <span className="text-xs font-mono text-teal-600 w-5 shrink-0">{String(i + 2).padStart(2, '0')}</span>
-                    <span className="leading-snug">{title}</span>
-                  </li>
-                ))}
-              </ol>
+            <div className="relative flex flex-wrap items-end justify-between gap-6 pt-6 border-t border-gray-200/70">
+              <div>
+                <p className="text-xl font-semibold text-gray-900">Sarah Lagzouli</p>
+                <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
+                  <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-1.5 hover:text-teal-700">
+                    <Mail className="w-3.5 h-3.5" /> sarah.lagzouli@gmail.com
+                  </a>
+                  <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                  </a>
+                  <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
+                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+                  </a>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-3">
+                <p className="text-sm text-gray-400">Mai 2026</p>
+                <Logo size="xs" showText />
+              </div>
             </div>
           </div>
         </Slide>
 
         {/* Slide 2 — Ce qui m'amène vers vous */}
-        <Slide active={current === 1} index={1}>
-          <div className="flex flex-col h-full p-12 md:p-20">
-            <SlideTitle icon={Lightbulb} eyebrow="Démarche" title="Ce qui m'amène vers vous" />
+        <Slide active={current === 1}>
+          <div className="flex flex-col h-full p-12 md:p-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-8">
+              Ce qui m&apos;amène vers vous
+            </h2>
             <div className="flex-1 flex flex-col justify-center max-w-4xl space-y-6 text-lg leading-relaxed text-gray-700">
               <p>
-                J&apos;étudie une approche de suivi inter-séances qui permet aux patients de
-                <span className="font-semibold text-gray-900"> prolonger le travail thérapeutique entre les séances</span>,
-                et au praticien de suivre les évolutions et régressions en temps réel.
+                J&apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
               </p>
               <p>
-                Après une première phase de validation auprès de praticiens travaillant avec des adultes,
-                je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de
-                <span className="font-semibold text-gray-900"> la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent</span>.
+                Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent.
               </p>
               <p>
-                L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques.
-                C&apos;est précisément ce <span className="font-semibold text-gray-900">regard pluriel et exigeant</span> que je sollicite.
+                L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément ce regard pluriel et exigeant que je sollicite.
               </p>
             </div>
           </div>
         </Slide>
 
-        {/* Slide 3 — Constats cliniques */}
-        <Slide active={current === 2} index={2}>
-          <div className="flex flex-col h-full p-12 md:p-16">
-            <SlideTitle icon={Quote} eyebrow="Observations" title="Les constats cliniques de départ" subtitle="Issus d'entretiens avec des praticiens" />
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+        {/* Slide 3 — Les constats cliniques de départ issus d'entretiens */}
+        <Slide active={current === 2}>
+          <div className="flex flex-col h-full p-10 md:p-14">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-6">
+              Les constats cliniques de départ issus d&apos;entretiens
+            </h2>
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
               <ConstatCard
                 quote="Quand je reviens en séance, j'ai oublié ce que je voulais dire"
-                interpretation="Le matériel émerge entre les séances mais peut se perdre avant de pouvoir être travaillé"
+                arrow="le matériel émerge entre les séances mais peut se perdre avant de pouvoir être travaillé"
               />
               <ConstatCard
-                quote="Elle m'a confondu avec une autre patiente — Elle m'a reposé la même question"
-                interpretation="Sentiment d'être un dossier parmi d'autres, fragilisation du lien thérapeutique"
+                quote='"Elle m&apos;a confondu avec une autre patiente", "Elle m&apos;a reposé la même question"'
+                arrow="sentiment d'être un dossier parmi d'autres, fragilisation du lien thérapeutique"
               />
               <ConstatCard
                 quote="ChatGPT m'aide dans ma thérapie"
-                interpretation="L'utilisation de l'IA pour prolonger la thérapie est source de mentalisation, d'absence d'intégration et d'activation émotionnelle non contenue sans cadre"
+                arrow="l'utilisation de l'IA pour prolonger la thérapie est source de mentalisation, d'absence d'intégration et d'activation émotionnelle non contenue sans cadre"
               />
               <ConstatCard
                 quote="J'ai arrêté la thérapie parce que je n'ai pas vu de résultats"
-                interpretation="Ce qui constitue une évolution (inconfort, silences, oublis) est assimilé comme un échec par le patient"
+                arrow="ce qui constitue une évolution (inconfort, silences, oublis) est assimilé comme un échec par le patient"
               />
             </div>
           </div>
         </Slide>
 
         {/* Slide 4 — En une phrase */}
-        <Slide active={current === 3} index={3}>
+        <Slide active={current === 3}>
           <div className="flex flex-col h-full justify-center items-center p-12 md:p-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-            <p className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-12">En une phrase</p>
+            <h2 className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-12">
+              En une phrase
+            </h2>
             <blockquote className="text-3xl md:text-5xl font-semibold text-gray-900 leading-snug max-w-5xl text-center tracking-tight">
               «&nbsp;Soutenir la <span className="text-teal-700">continuité du travail thérapeutique</span> entre les séances.
               <span className="block mt-4 text-2xl md:text-3xl font-normal text-gray-600">
@@ -204,51 +167,39 @@ export default function AppeaPresentation() {
           </div>
         </Slide>
 
-        {/* Slide 5 — Premiers entretiens */}
-        <Slide active={current === 4} index={4}>
-          <div className="flex flex-col h-full p-12 md:p-20">
-            <SlideTitle icon={Users} eyebrow="État actuel" title="Ce que les premiers entretiens ont permis d'éclairer" />
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
-                <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide">Périmètre</p>
-                <p className="text-3xl font-bold text-gray-900">10</p>
-                <p className="text-gray-600 leading-relaxed text-sm">
-                  échanges avec des psychologues d&apos;orientations variées : <strong>intégrative, TCC, systémique, psychanalyse</strong>,
-                  incluant des superviseurs et formateurs.
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
-                <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide">Trois axes de retour</p>
-                <ul className="space-y-2 text-gray-700 text-sm leading-relaxed">
-                  <li className="flex gap-2"><span className="text-teal-600">•</span> Facilité d&apos;usage</li>
-                  <li className="flex gap-2"><span className="text-teal-600">•</span> Qualité du lien thérapeutique</li>
-                  <li className="flex gap-2"><span className="text-teal-600">•</span> Structuration du suivi</li>
-                </ul>
-              </div>
-              <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-6">
-                <p className="text-gray-800 leading-relaxed text-sm">
-                  <strong>Plusieurs praticiens utilisent aujourd&apos;hui cette approche</strong> dans leur pratique quotidienne.
-                </p>
-              </div>
-              <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6">
-                <p className="text-gray-800 leading-relaxed text-sm">
-                  <strong>Limite actuelle :</strong> les retours portent essentiellement sur la pratique avec des adultes.
-                </p>
-              </div>
+        {/* Slide 5 — Ce que les premiers entretiens ont permis d'éclairer */}
+        <Slide active={current === 4}>
+          <div className="flex flex-col h-full p-12 md:p-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-8">
+              Ce que les premiers entretiens ont permis d&apos;éclairer
+            </h2>
+            <div className="flex-1 flex flex-col justify-center max-w-4xl space-y-5 text-lg leading-relaxed text-gray-700">
+              <p>
+                Dix échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
+              </p>
+              <p>
+                Trois axes de retour&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
+              </p>
+              <p>
+                Plusieurs praticiens utilisent aujourd&apos;hui cette approche dans leur pratique quotidienne.
+              </p>
+              <p>
+                Les retours actuels portent essentiellement sur la pratique avec des adultes.
+              </p>
             </div>
           </div>
         </Slide>
 
-        {/* Slide 6 — Question */}
-        <Slide active={current === 5} index={5}>
+        {/* Slide 6 — La question que je vous pose */}
+        <Slide active={current === 5}>
           <div className="flex flex-col h-full justify-center p-12 md:p-20 bg-gradient-to-br from-stone-50 to-emerald-50">
-            <p className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-8 flex items-center gap-2">
-              <HelpCircle className="w-4 h-4" /> La question que je vous pose
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight max-w-5xl tracking-tight">
+            <h2 className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-8">
+              La question que je vous pose
+            </h2>
+            <p className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight max-w-5xl tracking-tight">
               Cette logique de continuité inter-séances peut-elle s&apos;inscrire avec
               <span className="text-teal-700"> pertinence dans la clinique de l&apos;enfant et de l&apos;adolescent</span> ?
-            </h2>
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <span className="px-4 py-2 bg-white border border-gray-200 rounded-full text-base text-gray-700 font-medium">À quelles conditions ?</span>
               <span className="px-4 py-2 bg-white border border-gray-200 rounded-full text-base text-gray-700 font-medium">Avec quelles adaptations ?</span>
@@ -257,9 +208,11 @@ export default function AppeaPresentation() {
         </Slide>
 
         {/* Slide 7 — Hypothèses */}
-        <Slide active={current === 6} index={6}>
+        <Slide active={current === 6}>
           <div className="flex flex-col h-full p-10 md:p-14">
-            <SlideTitle icon={FlaskConical} eyebrow="Pistes de réflexion" title="Hypothèses" />
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-6">
+              Hypothèses
+            </h2>
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-5">
               <HypothesisCard
                 num="1"
@@ -284,11 +237,13 @@ export default function AppeaPresentation() {
         </Slide>
 
         {/* Slide 8 — Échangeons */}
-        <Slide active={current === 7} index={7}>
-          <div className="flex flex-col h-full p-12 md:p-20 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
-            <SlideTitle icon={MessageCircle} eyebrow="Suite" title="Échangeons" />
+        <Slide active={current === 7}>
+          <div className="flex flex-col h-full p-12 md:p-16 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-3">
+              Échangeons
+            </h2>
             <p className="text-lg text-gray-700 mb-8 max-w-3xl">
-              Si cette démarche vous parle, voici comment poursuivre :
+              Si cette démarche vous parle, voici comment poursuivre&nbsp;:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
               <a
@@ -306,7 +261,7 @@ export default function AppeaPresentation() {
               </a>
               <div className="bg-white rounded-2xl p-8 border border-gray-200 space-y-4">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Ou contactez-moi par message</h3>
-                <a href="https://wa.me/?text=Bonjour%20Sarah" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
+                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
                     <MessageCircle className="w-4 h-4 text-emerald-700" />
                   </div>
@@ -322,15 +277,12 @@ export default function AppeaPresentation() {
                   <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
                     <Linkedin className="w-4 h-4 text-blue-700" />
                   </div>
-                  <span className="text-sm font-medium">LinkedIn</span>
+                  <span className="text-sm font-medium">linkedin.com/in/sarah-lagzouli</span>
                 </a>
               </div>
             </div>
-            <div className="mt-auto flex items-center gap-3 text-xs text-gray-400">
-              <div className="w-6 h-6 rounded bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-white" />
-              </div>
-              Bloomsline
+            <div className="mt-auto pt-6 flex justify-end">
+              <Logo size="xs" showText />
             </div>
           </div>
         </Slide>
@@ -367,7 +319,7 @@ export default function AppeaPresentation() {
   )
 }
 
-function Slide({ active, children }: { active: boolean; index: number; children: React.ReactNode }) {
+function Slide({ active, children }: { active: boolean; children: React.ReactNode }) {
   return (
     <div
       className={`slide ${active ? 'active' : ''} bg-white rounded-3xl shadow-xl border border-gray-200 mx-auto overflow-hidden`}
@@ -378,27 +330,13 @@ function Slide({ active, children }: { active: boolean; index: number; children:
   )
 }
 
-function SlideTitle({ icon: Icon, eyebrow, title, subtitle }: { icon: React.ElementType; eyebrow: string; title: string; subtitle?: string }) {
-  return (
-    <div className="mb-6">
-      <p className="text-sm font-semibold text-teal-700 uppercase tracking-widest mb-3 flex items-center gap-2">
-        <Icon className="w-4 h-4" /> {eyebrow}
-      </p>
-      <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">{title}</h2>
-      {subtitle && <p className="text-gray-500 mt-2">{subtitle}</p>}
-    </div>
-  )
-}
-
-function ConstatCard({ quote, interpretation }: { quote: string; interpretation: string }) {
+function ConstatCard({ quote, arrow }: { quote: string; arrow: string }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-2">
-        <Quote className="w-4 h-4 text-teal-600 shrink-0 mt-1" />
-        <p className="text-gray-900 italic font-medium leading-relaxed">&ldquo;{quote}&rdquo;</p>
-      </div>
-      <div className="pl-6 border-l-2 border-teal-200">
-        <p className="text-gray-600 text-sm leading-relaxed">{interpretation}</p>
+      <p className="text-gray-900 italic font-medium leading-relaxed">&ldquo;{quote}&rdquo;</p>
+      <div className="flex gap-2 pl-1 border-l-2 border-teal-300">
+        <span className="text-teal-600 text-base leading-relaxed pl-2">→</span>
+        <p className="text-gray-600 text-sm leading-relaxed">{arrow}</p>
       </div>
     </div>
   )
