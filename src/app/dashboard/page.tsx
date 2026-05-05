@@ -193,6 +193,7 @@ function DashboardContent() {
         .from('members')
         .select('id, first_name, last_name, created_at')
         .eq('practitioner_id', userId)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(3)
 
@@ -217,17 +218,17 @@ function DashboardContent() {
           id,
           shared_at,
           resource:resources(id, title, type),
-          member:members(id, first_name, last_name)
+          member:members(id, first_name, last_name, deleted_at)
         `)
         .eq('practitioner_id', userId)
         .order('shared_at', { ascending: false })
-        .limit(5)
+        .limit(10)
 
       if (!sharedError && sharedResources) {
         sharedResources.forEach((share) => {
           const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
           const member = Array.isArray(share.member) ? share.member[0] : share.member
-          if (resource && member) {
+          if (resource && member && !(member as { deleted_at?: string }).deleted_at) {
             const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
             activities.push({
               id: `share-${share.id}`,
@@ -243,17 +244,20 @@ function DashboardContent() {
         })
       }
 
-      // Fetch bookings/sessions
+      // Fetch bookings/sessions — also fetch deleted_at via member join to filter out
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
-        .select('id, client_name, session_type, status, start_time, created_at, member_id')
+        .select('id, client_name, session_type, status, start_time, created_at, member_id, member:members(deleted_at)')
         .eq('practitioner_id', userId)
         .in('status', ['confirmed', 'completed', 'pending'])
         .order('created_at', { ascending: false })
-        .limit(5)
+        .limit(10)
 
       if (!bookingsError && bookings) {
         bookings.forEach((booking) => {
+          // Skip bookings whose member was soft-deleted
+          const m = Array.isArray((booking as any).member) ? (booking as any).member[0] : (booking as any).member
+          if (booking.member_id && m?.deleted_at) return
           const isCompleted = booking.status === 'completed'
           activities.push({
             id: `booking-${booking.id}`,
@@ -276,18 +280,18 @@ function DashboardContent() {
           submitted_at,
           status,
           resource:resources(id, title, type),
-          member:members(id, first_name, last_name)
+          member:members(id, first_name, last_name, deleted_at)
         `)
         .eq('practitioner_id', userId)
         .eq('status', 'submitted')
         .order('submitted_at', { ascending: false })
-        .limit(5)
+        .limit(10)
 
       if (!submissionsError && submissions) {
         submissions.forEach((sub) => {
           const resource = Array.isArray(sub.resource) ? sub.resource[0] : sub.resource
           const member = Array.isArray(sub.member) ? sub.member[0] : sub.member
-          if (resource && member) {
+          if (resource && member && !(member as { deleted_at?: string }).deleted_at) {
             const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
             activities.push({
               id: `submission-${sub.id}`,
