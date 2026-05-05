@@ -273,8 +273,8 @@ export default function AppeaPresentation() {
               La question que je vous pose
             </h2>
             <p className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight max-w-5xl tracking-tight">
-              Cette logique de continuité inter-séances peut-elle s&apos;inscrire avec
-              <span className="text-teal-700"> pertinence dans la clinique de l&apos;enfant et de l&apos;adolescent</span> ?
+              Cette logique de continuité inter-séances peut-elle{' '}
+              <span className="text-teal-700">s&apos;inscrire avec pertinence dans la clinique de l&apos;enfant et de l&apos;adolescent ?</span>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <span className="px-4 py-2 bg-white border border-gray-200 rounded-full text-base text-gray-700 font-medium">À quelles conditions ?</span>
