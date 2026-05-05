@@ -29,8 +29,11 @@ export default function AppeaPresentation() {
 
       // Capture each slide
       const slides = Array.from(document.querySelectorAll('.slide'))
-      // PDF: A4 landscape (297 × 210 mm)
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      // PDF: 16:9 widescreen presentation (matches slide aspect ratio)
+      // Standard widescreen slide: 13.33" × 7.5" = 338.67mm × 190.5mm
+      const PAGE_W = 338.67
+      const PAGE_H = 190.5
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] })
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
 
@@ -64,7 +67,7 @@ export default function AppeaPresentation() {
         if (!hadActive) slideEl.classList.remove('active')
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95)
-        if (i > 0) pdf.addPage('a4', 'landscape')
+        if (i > 0) pdf.addPage([PAGE_W, PAGE_H], 'landscape')
         pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
       }
 
