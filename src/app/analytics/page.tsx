@@ -342,7 +342,8 @@ export default function AnalyticsPage() {
           supabase
             .from('members')
             .select('id, first_name, last_name, status, last_session_at, created_at, is_demo')
-            .eq('practitioner_id', user.id),
+            .eq('practitioner_id', user.id)
+            .is('deleted_at', null),
           supabase
             .from('sessions')
             .select('id, member_id, status, scheduled_at, session_type, mood_rating, session_format, payment_status, price')

@@ -494,6 +494,7 @@ function DashboardContent() {
         .from('members')
         .select('id, first_name, last_name, status, last_session_at, email, phone, user_id')
         .eq('practitioner_id', authUser.id)
+        .is('deleted_at', null)
         .order('first_name')
       if (membersData) setMembers(membersData)
 
@@ -504,21 +505,30 @@ function DashboardContent() {
       const [bookingsRes, sessionsRes] = await Promise.all([
         supabase
           .from('bookings')
-          .select('*')
+          .select('*, member:members(deleted_at)')
           .eq('practitioner_id', authUser.id)
           .in('status', ['confirmed', 'pending'])
           .gte('start_time', now)
           .order('start_time', { ascending: true })
-          .limit(5),
+          .limit(10),
         supabase
           .from('sessions')
-          .select('id, session_type, scheduled_at, member_id, status, practitioner_id')
+          .select('id, session_type, scheduled_at, member_id, status, practitioner_id, member:members(deleted_at)')
           .eq('practitioner_id', authUser.id)
           .eq('status', 'scheduled')
           .gte('scheduled_at', now)
           .order('scheduled_at', { ascending: true })
-          .limit(5),
+          .limit(10),
       ])
+
+      // Filter out bookings/sessions for soft-deleted members
+      const isMemberDeleted = (row: any): boolean => {
+        if (!row?.member_id) return false
+        const m = Array.isArray(row.member) ? row.member[0] : row.member
+        return !!m?.deleted_at
+      }
+      if (bookingsRes.data) bookingsRes.data = bookingsRes.data.filter((b: any) => !isMemberDeleted(b)).slice(0, 5)
+      if (sessionsRes.data) sessionsRes.data = sessionsRes.data.filter((s: any) => !isMemberDeleted(s)).slice(0, 5)
 
       // Merge: use bookings as primary, fill in sessions-only entries
       const bookingMemberIds = new Set((bookingsRes.data || []).map(b => `${b.member_id}_${b.start_time}`))
@@ -531,7 +541,7 @@ function DashboardContent() {
       if (sessionsOnly.length > 0) {
         const memberIds = [...new Set(sessionsOnly.map(s => s.member_id).filter(Boolean))]
         const { data: memberNames } = memberIds.length > 0
-          ? await supabase.from('members').select('id, first_name, last_name').in('id', memberIds)
+          ? await supabase.from('members').select('id, first_name, last_name').in('id', memberIds).is('deleted_at', null)
           : { data: [] }
         const nameMap: Record<string, string> = {}
         memberNames?.forEach(m => { nameMap[m.id] = `${m.first_name} ${m.last_name}` })

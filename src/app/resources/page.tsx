@@ -350,6 +350,7 @@ export default function MyResourcesPage() {
         .select('id, first_name, last_name, email, avatar_url')
         .eq('practitioner_id', user.id)
         .eq('status', 'active')
+        .is('deleted_at', null)
         .order('first_name', { ascending: true })
       setMembers(data || [])
 

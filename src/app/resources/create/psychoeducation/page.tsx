@@ -1137,6 +1137,7 @@ function CreatePsychoeducationContent() {
             .select('id, first_name, last_name, email, avatar_url')
             .eq('practitioner_id', userId)
             .eq('status', 'active')
+            .is('deleted_at', null)
             .order('first_name')
 
           if (membersData && membersData.length > 0) {

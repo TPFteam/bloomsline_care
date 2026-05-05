@@ -244,6 +244,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         .select('*')
         .eq('practitioner_id', user.id)
         .eq('status', 'active')
+        .is('deleted_at', null)
         .order('first_name')
 
       if (membersData) {
