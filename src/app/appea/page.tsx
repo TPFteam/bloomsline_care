@@ -289,15 +289,30 @@ export default function AppeaPresentation() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Hypothèses
             </h2>
-            <ol className="flex-1 max-w-4xl space-y-6 text-lg leading-relaxed text-gray-800 list-decimal pl-6 marker:text-teal-600 marker:font-semibold">
-              <li>
-                Le matériel se perd entre les séances chez l&apos;adulte. L&apos;enfant et l&apos;adolescent, plus à l&apos;aise avec le digital, pourraient-ils s&apos;approprier plus naturellement un outil de suivi entre les séances ?
+            <ol className="flex-1 max-w-4xl space-y-7 list-decimal pl-6 marker:text-teal-600 marker:font-semibold marker:text-2xl">
+              <li className="space-y-2">
+                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
+                  Le matériel se perd entre les séances chez l&apos;adulte.
+                </p>
+                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+                  L&apos;enfant et l&apos;adolescent, plus à l&apos;aise avec le digital, pourraient-ils s&apos;approprier plus naturellement un outil de suivi entre les séances ?
+                </p>
               </li>
-              <li>
-                Le lien thérapeutique se fragilise quand la charge cognitive du suivi s&apos;accentue dans la durée. Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l&apos;adolescence où la fiabilité de l&apos;adulte est centrale ?
+              <li className="space-y-2">
+                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
+                  Le lien thérapeutique se fragilise quand la charge cognitive du suivi s&apos;accentue dans la durée.
+                </p>
+                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+                  Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l&apos;adolescence où la fiabilité de l&apos;adulte est centrale ?
+                </p>
               </li>
-              <li>
-                Si l&apos;IA conversationnelle s&apos;invite déjà dans le parcours thérapeutique des adultes, qu&apos;en est-il chez les enfants et adolescents ? Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?
+              <li className="space-y-2">
+                <p className="text-xl md:text-2xl font-bold text-gray-900 leading-snug">
+                  Si l&apos;IA conversationnelle s&apos;invite déjà dans le parcours thérapeutique des adultes, qu&apos;en est-il chez les enfants et adolescents ?
+                </p>
+                <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+                  Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?
+                </p>
               </li>
             </ol>
           </div>
