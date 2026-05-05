@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Download, Mail, Linkedin, MessageCircle, Calendar, Quote, FlaskConical, Users, HelpCircle, Lightbulb, Sparkles, Smartphone, HeartHandshake, ShieldCheck } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Mail, Linkedin, MessageCircle, Calendar, Quote, FlaskConical, Users, HelpCircle, Lightbulb, Sparkles } from 'lucide-react'
 
 const SLIDES = 8
 
@@ -262,31 +262,22 @@ export default function AppeaPresentation() {
             <SlideTitle icon={FlaskConical} eyebrow="Pistes de réflexion" title="Hypothèses" />
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-5">
               <HypothesisCard
-                num="01"
-                icon={Smartphone}
+                num="1"
                 accent="teal"
-                topic="Génération digitale"
                 premise="Le matériel se perd entre les séances chez l'adulte."
                 question="L'enfant et l'adolescent, plus à l'aise avec le digital, pourraient-ils s'approprier plus naturellement un outil de suivi entre les séances ?"
-                tags={['Adoption digitale', 'Continuité', 'Auto-observation']}
               />
               <HypothesisCard
-                num="02"
-                icon={HeartHandshake}
+                num="2"
                 accent="emerald"
-                topic="Lien thérapeutique"
                 premise="Le lien thérapeutique se fragilise quand la charge cognitive du suivi s'accentue dans la durée."
                 question="Cet enjeu est-il plus aigu chez les plus jeunes, particulièrement à l'adolescence où la fiabilité de l'adulte est centrale ?"
-                tags={['Fiabilité', 'Adolescence', 'Mémoire du soignant']}
               />
               <HypothesisCard
-                num="03"
-                icon={ShieldCheck}
+                num="3"
                 accent="amber"
-                topic="Cadre éthique de l'IA"
-                premise="L'IA conversationnelle s'invite déjà dans le parcours thérapeutique des adultes."
-                question="Qu'en est-il chez les enfants et adolescents ? Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?"
-                tags={['Protection du mineur', 'Éthique IA', 'Cadre clinique']}
+                premise="Si l'IA conversationnelle s'invite déjà dans le parcours thérapeutique des adultes, qu'en est-il chez les enfants et adolescents ?"
+                question="Comment leur offrir un cadre éthique qui soutient le travail sans les exposer ?"
               />
             </div>
           </div>
@@ -414,54 +405,36 @@ function ConstatCard({ quote, interpretation }: { quote: string; interpretation:
 }
 
 function HypothesisCard({
-  num, icon: Icon, accent, topic, premise, question, tags,
+  num, accent, premise, question,
 }: {
   num: string
-  icon: React.ElementType
   accent: 'teal' | 'emerald' | 'amber'
-  topic: string
   premise: string
   question: string
-  tags: string[]
 }) {
   const accentMap = {
-    teal: { gradient: 'from-teal-600 to-emerald-700', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', tagBg: 'bg-teal-100', tagText: 'text-teal-800' },
-    emerald: { gradient: 'from-emerald-600 to-green-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', tagBg: 'bg-emerald-100', tagText: 'text-emerald-800' },
-    amber: { gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', tagBg: 'bg-amber-100', tagText: 'text-amber-900' },
+    teal: { gradient: 'from-teal-600 to-emerald-700', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
+    emerald: { gradient: 'from-emerald-600 to-green-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+    amber: { gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
   }
   const c = accentMap[accent]
 
   return (
-    <div className={`bg-white rounded-2xl border-2 ${c.border} p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow relative overflow-hidden`}>
-      <div className={`absolute top-0 right-0 w-32 h-32 ${c.bg} rounded-full blur-2xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none`} />
+    <div className={`bg-white rounded-2xl border-2 ${c.border} p-7 flex flex-col gap-5 relative overflow-hidden`}>
+      <div className={`absolute top-0 right-0 w-40 h-40 ${c.bg} rounded-full blur-3xl opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none`} />
 
-      <div className="flex items-start justify-between relative">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${c.gradient} flex items-center justify-center shadow-md`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <span className={`text-3xl font-bold ${c.text} font-mono opacity-40`}>{num}</span>
+      <div className="flex items-baseline gap-3 relative">
+        <span className={`text-xs font-semibold ${c.text} uppercase tracking-widest`}>Hypothèse</span>
+        <span className={`text-5xl font-bold bg-gradient-to-br ${c.gradient} bg-clip-text text-transparent leading-none`}>{num}</span>
       </div>
 
-      <div className="relative">
-        <p className={`text-[10px] font-bold ${c.text} uppercase tracking-widest mb-2`}>{topic}</p>
-        <p className="text-sm text-gray-600 leading-relaxed italic border-l-2 border-gray-200 pl-3">
-          {premise}
-        </p>
-      </div>
+      <p className="text-base text-gray-700 leading-relaxed relative italic border-l-2 border-gray-200 pl-4">
+        {premise}
+      </p>
 
-      <div className="relative flex-1">
-        <p className="text-base text-gray-900 font-semibold leading-snug">
-          {question}
-        </p>
-      </div>
-
-      <div className="relative flex flex-wrap gap-1.5 pt-3 border-t border-gray-100">
-        {tags.map((tag, i) => (
-          <span key={i} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${c.tagBg} ${c.tagText}`}>
-            {tag}
-          </span>
-        ))}
-      </div>
+      <p className="text-base text-gray-900 font-semibold leading-snug relative flex-1">
+        {question}
+      </p>
     </div>
   )
 }
