@@ -269,54 +269,50 @@ export default function AppeaPresentation() {
 
         {/* Slide 5 — Ce que les premiers entretiens ont permis d'éclairer */}
         <Slide active={current === 4}>
-          <div className="flex flex-col h-full p-10 md:p-14 relative overflow-hidden">
-            <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-emerald-100/40 to-teal-200/30 rounded-full blur-3xl translate-y-1/3 translate-x-1/4 pointer-events-none" />
-            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-8">
+          <div className="flex flex-col h-full p-12 md:p-20 relative overflow-hidden bg-gradient-to-br from-stone-50 via-white to-emerald-50/50">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-emerald-100/40 to-teal-200/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-teal-100/30 to-emerald-100/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce que les premiers entretiens ont permis d&apos;éclairer
             </h2>
-            <div className="relative flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Card 1 — Sample size */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 flex gap-6 hover:shadow-md transition-shadow">
-                <div className="shrink-0">
-                  <div className="text-6xl font-bold text-teal-700 leading-none">10</div>
-                </div>
-                <p className="text-base text-gray-700 leading-relaxed self-center">
-                  Dix échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
-                </p>
-              </div>
 
-              {/* Card 2 — Three axes */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 flex gap-6 hover:shadow-md transition-shadow">
-                <div className="shrink-0">
-                  <div className="text-6xl font-bold text-emerald-700 leading-none">3</div>
-                </div>
-                <p className="text-base text-gray-700 leading-relaxed self-center">
-                  Trois axes de retour&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
-                </p>
-              </div>
+            <div className="relative flex-1 max-w-3xl">
+              {/* Vertical timeline line */}
+              <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-teal-300 via-emerald-300 to-amber-300" />
 
-              {/* Card 3 — Adoption (positive) */}
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-7 flex gap-4 items-center hover:shadow-md transition-shadow">
-                <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+              <div className="space-y-6 pl-12">
+                {/* Paragraph 1 — Sample */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-teal-500 ring-4 ring-teal-100" />
+                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
+                    <span className="text-3xl font-bold text-teal-700 mr-1">Dix</span> échanges avec des psychologues d&apos;orientations variées (intégrative, TCC, systémique, psychanalyse), incluant des superviseurs et des formateurs.
+                  </p>
                 </div>
-                <p className="text-base text-gray-800 leading-relaxed font-medium">
-                  Plusieurs praticiens utilisent aujourd&apos;hui cette approche dans leur pratique quotidienne.
-                </p>
-              </div>
 
-              {/* Card 4 — Limit */}
-              <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-7 flex gap-4 items-center hover:shadow-md transition-shadow">
-                <div className="shrink-0 w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-                  </svg>
+                {/* Paragraph 2 — Three axes */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
+                    <span className="font-semibold text-emerald-800">Trois axes de retour</span>&nbsp;: facilité d&apos;usage, qualité du lien thérapeutique, structuration du suivi.
+                  </p>
                 </div>
-                <p className="text-base text-gray-800 leading-relaxed font-medium">
-                  Les retours actuels portent essentiellement sur la pratique avec des adultes.
-                </p>
+
+                {/* Paragraph 3 — Adoption */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                  <p className="text-base md:text-lg leading-relaxed text-gray-800">
+                    Plusieurs praticiens utilisent <span className="font-semibold text-emerald-800">aujourd&apos;hui</span> cette approche dans leur pratique quotidienne.
+                  </p>
+                </div>
+
+                {/* Paragraph 4 — Limit (sets up the next slide) */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-100" />
+                  <p className="text-base md:text-lg leading-relaxed text-gray-800 italic">
+                    Les retours actuels portent <span className="not-italic font-semibold text-amber-800">essentiellement sur la pratique avec des adultes</span>.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
