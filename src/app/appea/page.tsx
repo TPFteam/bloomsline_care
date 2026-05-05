@@ -164,7 +164,7 @@ export default function AppeaPresentation() {
                   <a href="mailto:sarah.lagzouli@gmail.com" className="flex items-center gap-1.5 hover:text-teal-700">
                     <Mail className="w-3.5 h-3.5" /> sarah.lagzouli@gmail.com
                   </a>
-                  <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
+                  <a href="https://wa.me/33671482004" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
                     <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                   </a>
                   <a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-teal-700">
@@ -349,7 +349,7 @@ export default function AppeaPresentation() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Ou contactez-moi par message</h3>
                 <div className="space-y-4">
-                  <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
+                  <a href="https://wa.me/33671482004" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-teal-700 transition-colors">
                     <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center">
                       <MessageCircle className="w-4 h-4 text-emerald-700" />
                     </div>
