@@ -42,14 +42,19 @@ function computeSourceHash(file: MemberFile): string {
 }
 
 /**
- * Determine whether a file should be processed via vision (image / PDF)
- * or skipped (unsupported type).
+ * Determine how a file should be processed:
+ * - 'vision': sent as image/PDF to Claude vision
+ * - 'text': extract text locally (DOCX via mammoth, plain text), then summarize with Claude
+ * - 'skip': format not supported
  */
-function isExtractable(fileType: string): 'vision' | 'skip' {
-  const t = fileType.toLowerCase()
+function getExtractionMode(fileType: string, fileName: string): 'vision' | 'text' | 'skip' {
+  const t = (fileType || '').toLowerCase()
+  const name = (fileName || '').toLowerCase()
+
   if (t.startsWith('image/')) return 'vision'
-  if (t === 'application/pdf') return 'vision'
-  // DOCX/text files: skip for now (we said keep it simple)
+  if (t === 'application/pdf' || name.endsWith('.pdf')) return 'vision'
+  if (t === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || name.endsWith('.docx')) return 'text'
+  if (t.startsWith('text/') || name.endsWith('.txt') || name.endsWith('.md')) return 'text'
   return 'skip'
 }
 
@@ -85,6 +90,72 @@ async function downloadAsBase64(url: string): Promise<{ data: string; mediaType:
   } catch (err) {
     console.error('[file-extraction] download error:', err)
     return null
+  }
+}
+
+/**
+ * Extract raw text from a DOCX or plain-text file.
+ */
+async function extractRawText(
+  url: string,
+  mode: 'docx' | 'plain',
+): Promise<string> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch file: ${res.status}`)
+
+  if (mode === 'docx') {
+    const buf = await res.arrayBuffer()
+    // Dynamic import keeps mammoth out of the edge bundle
+    const mammoth = await import('mammoth')
+    const result = await mammoth.extractRawText({ arrayBuffer: buf })
+    return result.value || ''
+  }
+
+  // Plain text
+  return await res.text()
+}
+
+/**
+ * Summarize raw text with Claude (no vision needed).
+ */
+async function summarizeText(
+  anthropic: Anthropic,
+  file: MemberFile,
+  rawText: string,
+): Promise<{ summary: string; tokensUsed: number; model: string }> {
+  // Truncate very long text to keep prompt size reasonable (~30k chars ≈ 7.5k tokens)
+  const truncated = rawText.length > 30000 ? rawText.slice(0, 30000) + '\n\n[truncated]' : rawText
+
+  const systemPrompt = `You are a clinical documentation assistant. Summarize the contents of this document for a mental health practitioner's review.
+
+Output ONLY a single paragraph (max 200 words) describing:
+- What kind of document this is
+- Key clinical or contextual information
+- Names, dates, diagnoses, medications, or other identifiable clinical data
+- Anything a practitioner would want to know without re-reading the file
+
+Be factual and concise. Do not editorialize.`
+
+  const response = await anthropic.messages.create({
+    model: EXTRACTION_MODEL,
+    max_tokens: 400,
+    system: systemPrompt,
+    messages: [{
+      role: 'user',
+      content: `File name: ${file.file_name}${file.description ? `\nDescription: ${file.description}` : ''}\nCategory: ${file.category}\n\n--- DOCUMENT CONTENT ---\n${truncated}`,
+    }],
+  })
+
+  const summary = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('')
+    .trim()
+
+  return {
+    summary,
+    tokensUsed: response.usage.output_tokens,
+    model: response.model,
   }
 }
 
@@ -163,9 +234,9 @@ async function processFile(
   file: MemberFile,
 ): Promise<ExtractionResult> {
   const newHash = computeSourceHash(file)
-  const extractable = isExtractable(file.file_type)
+  const mode = getExtractionMode(file.file_type, file.file_name)
 
-  if (extractable === 'skip') {
+  if (mode === 'skip') {
     return { fileId: file.id, fileName: file.file_name, summary: null, status: 'skipped' }
   }
 
@@ -198,15 +269,28 @@ async function processFile(
     const url = await getSignedUrl(supabase, file.storage_path)
     if (!url) throw new Error('Failed to generate signed URL for file')
 
-    const downloaded = await downloadAsBase64(url)
-    if (!downloaded) throw new Error('Failed to download file')
+    let summary: string
+    let tokensUsed: number
+    let model: string
 
-    const { summary, tokensUsed, model } = await extractWithVision(
-      anthropic,
-      file,
-      downloaded.data,
-      downloaded.mediaType,
-    )
+    if (mode === 'vision') {
+      const downloaded = await downloadAsBase64(url)
+      if (!downloaded) throw new Error('Failed to download file')
+      const result = await extractWithVision(anthropic, file, downloaded.data, downloaded.mediaType)
+      summary = result.summary
+      tokensUsed = result.tokensUsed
+      model = result.model
+    } else {
+      // mode === 'text' (DOCX or plain text)
+      const isDocx = file.file_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        || file.file_name.toLowerCase().endsWith('.docx')
+      const rawText = await extractRawText(url, isDocx ? 'docx' : 'plain')
+      if (!rawText.trim()) throw new Error('No extractable text in file')
+      const result = await summarizeText(anthropic, file, rawText)
+      summary = result.summary
+      tokensUsed = result.tokensUsed
+      model = result.model
+    }
 
     await supabase.from('file_extractions').upsert({
       file_id: file.id,
