@@ -182,29 +182,43 @@ export default function AppeaPresentation() {
 
         {/* Slide 2 — Ce qui m'amène vers vous */}
         <Slide active={current === 1}>
-          <div className="flex flex-col h-full p-10 md:p-14 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-teal-100/40 to-emerald-200/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-8">
+          <div className="flex flex-col h-full p-12 md:p-20 relative overflow-hidden bg-gradient-to-br from-stone-50 via-white to-emerald-50/50">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-teal-100/40 to-emerald-200/30 rounded-full blur-3xl -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-emerald-100/30 to-teal-100/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
+
+            <h2 className="relative text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-10">
               Ce qui m&apos;amène vers vous
             </h2>
-            <div className="relative flex-1 grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-teal-500">
-                <span className="text-5xl font-bold text-teal-700 leading-none">01</span>
-                <p className="text-base text-gray-700 leading-relaxed flex-1">
-                  J&apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
-                </p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-emerald-500">
-                <span className="text-5xl font-bold text-emerald-700 leading-none">02</span>
-                <p className="text-base text-gray-700 leading-relaxed flex-1">
-                  Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de l&apos;enfant et de l&apos;adolescent.
-                </p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 flex flex-col gap-5 hover:shadow-md transition-shadow border-t-4 border-t-amber-500">
-                <span className="text-5xl font-bold text-amber-600 leading-none">03</span>
-                <p className="text-base text-gray-700 leading-relaxed flex-1">
-                  L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément ce regard pluriel et exigeant que je sollicite.
-                </p>
+
+            <div className="relative flex-1 max-w-3xl">
+              {/* Vertical timeline line */}
+              <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-teal-300 via-emerald-300 to-amber-300" />
+
+              <div className="space-y-7 pl-12">
+                {/* Paragraph 1 */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-teal-500 ring-4 ring-teal-100" />
+                  <p className="text-lg leading-relaxed text-gray-800">
+                    <span className="text-5xl float-left mr-3 mt-1 leading-none font-bold text-teal-700">J</span>
+                    &apos;étudie une approche de suivi inter-séances qui permet aux patients de prolonger le travail thérapeutique entre les séances, et au praticien de suivre les évolutions et régressions en temps réel.
+                  </p>
+                </div>
+
+                {/* Paragraph 2 */}
+                <div className="relative clear-both">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+                  <p className="text-lg leading-relaxed text-gray-800">
+                    Après une première phase de validation auprès de praticiens travaillant avec des adultes, je souhaite aujourd&apos;hui questionner sa pertinence dans le champ de la psychologie et de la psychopathologie de <span className="font-semibold text-emerald-800">l&apos;enfant et de l&apos;adolescent</span>.
+                  </p>
+                </div>
+
+                {/* Paragraph 3 */}
+                <div className="relative">
+                  <div className="absolute -left-[42px] top-2 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-100" />
+                  <p className="text-lg leading-relaxed text-gray-800">
+                    L&apos;APPEA réunit des psychologues spécialisés dans ce champ, issus de différentes orientations cliniques. C&apos;est précisément <span className="italic font-medium text-amber-800">ce regard pluriel et exigeant</span> que je sollicite.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
