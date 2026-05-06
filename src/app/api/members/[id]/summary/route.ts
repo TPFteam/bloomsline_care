@@ -254,6 +254,55 @@ export async function POST(
       }, { status: 500 })
     }
 
+    // Citation validation — drop any source IDs the model invented.
+    // Build a set of valid IDs per source type so we can filter cited sources.
+    if (summaryContent.v2) {
+      const validIds: Record<string, Set<string>> = {
+        session: new Set(sessions.map(s => s.id)),
+        note: new Set(notes.map(n => n.id)),
+        milestone: new Set(milestones.map(m => m.id)),
+        file: new Set(fileExtractions.filter(e => e.summary).map(e => e.fileId)),
+      }
+      const localeStr = locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US'
+      const shortDate = (iso: string | null | undefined) => {
+        if (!iso) return ''
+        try {
+          return new Date(iso).toLocaleDateString(localeStr, { month: 'short', day: 'numeric' })
+        } catch { return '' }
+      }
+      const labelLookup: Record<string, Map<string, string>> = {
+        session: new Map(sessions.map(s => [s.id, `${locale === 'fr' ? 'Séance' : locale === 'es' ? 'Sesión' : 'Session'} ${shortDate(s.scheduled_at)}`.trim()])),
+        note: new Map(notes.map(n => [n.id, `${locale === 'fr' ? 'Note' : 'Note'} ${shortDate(n.created_at)}`.trim()])),
+        milestone: new Map(milestones.map(m => [m.id, m.title || (locale === 'fr' ? 'Objectif' : 'Goal')])),
+        file: new Map(fileExtractions.filter(e => e.summary).map(e => [e.fileId, e.fileName])),
+      }
+      const validateSources = (sources: unknown): Array<{ type: string; id: string; label?: string }> | undefined => {
+        if (!Array.isArray(sources)) return undefined
+        const cleaned = sources
+          .filter((s): s is { type: string; id: string } =>
+            !!s && typeof s === 'object' && 'type' in s && 'id' in s &&
+            typeof (s as { type: unknown }).type === 'string' &&
+            typeof (s as { id: unknown }).id === 'string'
+          )
+          .filter(s => validIds[s.type]?.has(s.id))
+          .slice(0, 4)
+          .map(s => ({
+            type: s.type,
+            id: s.id,
+            label: labelLookup[s.type]?.get(s.id),
+          }))
+        return cleaned.length > 0 ? cleaned : undefined
+      }
+      const cleanItems = <T extends { sources?: unknown }>(items: T[] | undefined): T[] | undefined => {
+        if (!Array.isArray(items)) return items
+        return items.map(item => ({ ...item, sources: validateSources(item.sources) })) as T[]
+      }
+      summaryContent.v2.themes = cleanItems(summaryContent.v2.themes) || []
+      summaryContent.v2.highlights = cleanItems(summaryContent.v2.highlights) || []
+      summaryContent.v2.attention = cleanItems(summaryContent.v2.attention) || []
+      summaryContent.v2.recommendations = cleanItems(summaryContent.v2.recommendations) || []
+    }
+
     // Generate plain text version
     const summaryText = generatePlainTextSummary(summaryContent, locale)
 
@@ -397,7 +446,7 @@ export async function GET(
           supabase.from('progress_notes').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
           supabase.from('milestones').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('updated_at', since),
           supabase.from('member_reflections').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('created_at', since),
-          supabase.from('member_files').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('created_at', since),
+          supabase.from('member_files').select('id', { count: 'exact', head: true }).eq('member_id', memberId).or('is_folder.is.null,is_folder.eq.false').gt('created_at', since),
           supabase.from('story_shares').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('shared_at', since),
           supabase.from('story_share_comments').select('id', { count: 'exact', head: true }).eq('author_type', 'member').gt('created_at', since),
           supabase.from('resource_responses').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('updated_at', since),
@@ -419,7 +468,110 @@ export async function GET(
         delta = { total, breakdown, sinceDate: since }
       }
 
-      return NextResponse.json({ summary: summary || null, delta })
+      // ─── Mood timeline (last 84 days = 12 weeks) ──────────────────
+      const ninetyDaysAgo = new Date(Date.now() - 84 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: moodRows } = await supabase
+        .from('member_reflections')
+        .select('mood_value, created_at')
+        .eq('member_id', memberId)
+        .gte('created_at', ninetyDaysAgo)
+        .not('mood_value', 'is', null)
+        .order('created_at', { ascending: true })
+      const moodTimeline = (moodRows || []).map(r => ({
+        date: r.created_at,
+        mood: r.mood_value as number,
+      }))
+
+      // ─── Since last completed session ───────────────────────────────
+      let sinceLastSession: {
+        lastSessionDate: string | null
+        lastSessionId: string | null
+        breakdown: Record<string, number>
+        total: number
+      } | null = null
+      const { data: lastSession } = await supabase
+        .from('sessions')
+        .select('id, scheduled_at')
+        .eq('member_id', memberId)
+        .eq('practitioner_id', user.id)
+        .eq('status', 'completed')
+        .lt('scheduled_at', new Date().toISOString())
+        .order('scheduled_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (lastSession) {
+        const sinceTs = lastSession.scheduled_at
+        const [
+          newNotes,
+          newReflections,
+          newFiles,
+          newComments,
+          newResponses,
+          newMilestones,
+        ] = await Promise.all([
+          supabase.from('progress_notes').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', sinceTs),
+          supabase.from('member_reflections').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('created_at', sinceTs),
+          supabase.from('member_files').select('id', { count: 'exact', head: true }).eq('member_id', memberId).or('is_folder.is.null,is_folder.eq.false').gt('created_at', sinceTs),
+          supabase.from('story_share_comments').select('id', { count: 'exact', head: true }).eq('author_type', 'member').gt('created_at', sinceTs),
+          supabase.from('resource_responses').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('updated_at', sinceTs),
+          supabase.from('milestones').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('updated_at', sinceTs),
+        ])
+        const breakdown = {
+          notes: newNotes.count || 0,
+          reflections: newReflections.count || 0,
+          files: newFiles.count || 0,
+          comments: newComments.count || 0,
+          responses: newResponses.count || 0,
+          milestones: newMilestones.count || 0,
+        }
+        const total = Object.values(breakdown).reduce((a, b) => a + b, 0)
+        sinceLastSession = {
+          lastSessionDate: sinceTs,
+          lastSessionId: lastSession.id,
+          breakdown,
+          total,
+        }
+      }
+
+      // ─── Upcoming session (within next 24h) for pre-session brief mode ────
+      const now = new Date()
+      const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+      let upcomingSession: {
+        id: string
+        scheduled_at: string
+        session_type: string
+        session_format: string | null
+        minutesUntil: number
+      } | null = null
+      const { data: nextSession } = await supabase
+        .from('sessions')
+        .select('id, scheduled_at, session_type, session_format')
+        .eq('member_id', memberId)
+        .eq('practitioner_id', user.id)
+        .in('status', ['scheduled', 'confirmed'])
+        .gt('scheduled_at', now.toISOString())
+        .lt('scheduled_at', in24h)
+        .order('scheduled_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (nextSession) {
+        const minutesUntil = Math.round((new Date(nextSession.scheduled_at).getTime() - now.getTime()) / 60000)
+        upcomingSession = {
+          id: nextSession.id,
+          scheduled_at: nextSession.scheduled_at,
+          session_type: nextSession.session_type,
+          session_format: nextSession.session_format,
+          minutesUntil,
+        }
+      }
+
+      return NextResponse.json({
+        summary: summary || null,
+        delta,
+        moodTimeline,
+        sinceLastSession,
+        upcomingSession,
+      })
     }
   } catch (error) {
     console.error('Summary fetch error:', error)

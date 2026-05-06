@@ -86,6 +86,9 @@ export interface Member {
   is_demo: boolean // Identifies demo/example profiles for new practitioners
   is_minor: boolean // Student/minor flag
 
+  // Custom pricing — overrides session-type rate when set
+  session_price: number | null
+
   // Metadata
   created_at: string
   updated_at: string
@@ -512,13 +515,67 @@ export function formatDateTime(date: string | null, locale: 'en' | 'fr' | 'es' =
 // MEMBER SUMMARY TYPES
 // ============================================
 
+export type PulseSentiment = 'progressing' | 'stable' | 'plateau' | 'attention'
+export type ThemeTone = 'positive' | 'neutral' | 'concerning'
+export type HighlightType = 'progress' | 'strength' | 'milestone' | 'insight'
+export type AttentionSeverity = 'low' | 'medium' | 'high'
+export type RecommendationTimeframe = 'this_week' | 'next_session' | 'ongoing'
+
+export type PulseSourceType = 'session' | 'note' | 'milestone' | 'file' | 'reflection'
+
+export interface PulseSource {
+  type: PulseSourceType
+  id: string
+  label?: string  // Short human-readable label (e.g. "Session 9/15", "Goal: Sleep")
+}
+
+export interface PulseTheme {
+  label: string
+  tone: ThemeTone
+  sources?: PulseSource[]
+}
+
+export interface PulseHighlight {
+  title: string
+  detail: string
+  type: HighlightType
+  sources?: PulseSource[]
+}
+
+export interface PulseAttention {
+  title: string
+  detail: string
+  severity: AttentionSeverity
+  sources?: PulseSource[]
+}
+
+export interface PulseRecommendation {
+  title: string
+  detail: string
+  timeframe: RecommendationTimeframe
+  sources?: PulseSource[]
+}
+
 export interface SummaryContent {
+  // Legacy fields — kept for backward compatibility with old summaries
   current_status: string
   progress_highlights: string[]
   key_themes: string[]
   areas_of_attention: string[]
   recommendations: string[]
   next_steps: string[]
+
+  // v2 — structured for visual rendering. Optional so legacy summaries still parse.
+  v2?: {
+    sentiment: PulseSentiment
+    status_headline: string         // 1 short sentence (≤12 words)
+    status_detail: string           // 1-2 sentences expanding the headline
+    themes: PulseTheme[]
+    highlights: PulseHighlight[]
+    attention: PulseAttention[]
+    recommendations: PulseRecommendation[]
+    next_steps: string[]            // simple action verbs, kept as plain strings
+  }
 }
 
 export interface MemberSummary {

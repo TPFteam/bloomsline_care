@@ -218,9 +218,11 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     setActiveTab(tab)
     updateTabInUrl(tab)
     setHighlightId(id)
-    // Clear highlight after 3 seconds
+    // Clear highlight ring after a delay. Files tab may need to fetch a
+    // subfolder before scrolling, so give it a bit more headroom.
     if (id) {
-      setTimeout(() => setHighlightId(undefined), 3000)
+      const delay = tab === 'files' ? 6000 : 3000
+      setTimeout(() => setHighlightId(undefined), delay)
     }
   }
 
@@ -496,13 +498,13 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                 />
               )}
               {activeTab === 'notes' && (
-                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} onSessionsUpdate={fetchRelatedData} member={member} />
+                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} onSessionsUpdate={fetchRelatedData} member={member} highlightNoteId={highlightId} />
               )}
               {activeTab === 'progress' && (
                 <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />
               )}
               {activeTab === 'files' && (
-                <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} />
+                <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} highlightFileId={highlightId} />
               )}
               {activeTab === 'shared' && (
                 <SharedTab memberId={member.id} member={member} highlightResourceId={highlightId} />

@@ -452,6 +452,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     }
   }
 
+
   const handleSavePreferences = async () => {
     setSaving(true)
     try {
@@ -1475,6 +1476,20 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         }}
         memberId={member.id}
         memberName={getMemberFullName(member)}
+        onNavigateToSource={(sourceType, sourceId) => {
+          // Map Pulse source types → tab IDs
+          const tabMap: Record<string, TabId | null> = {
+            session: 'sessions',
+            note: 'notes',
+            milestone: 'progress',
+            file: 'files',
+            reflection: null, // no destination — reflections are patient-private
+          }
+          const targetTab = tabMap[sourceType]
+          if (targetTab && onNavigateToTab) {
+            onNavigateToTab(targetTab, sourceId)
+          }
+        }}
       />
     </div>
   )

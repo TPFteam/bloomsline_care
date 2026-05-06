@@ -55,6 +55,7 @@ interface NotesTabProps {
   onNotesUpdate: () => void
   onSessionsUpdate?: () => void
   member?: Member
+  highlightNoteId?: string
 }
 
 type ActiveCategory = 'sessions' | 'observations' | 'browse'
@@ -159,7 +160,7 @@ const defaultNoteTypes: readonly string[] = DEFAULT_NOTE_TYPES
 const fixedNoteTypes: readonly string[] = FIXED_NOTE_TYPES
 const deletableDefaults: readonly string[] = DELETABLE_DEFAULT_NOTE_TYPES
 
-export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate, onSessionsUpdate, member }: NotesTabProps) {
+export default function NotesTab({ memberId, sessions, notes: initialNotes, onNotesUpdate, onSessionsUpdate, member, highlightNoteId }: NotesTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -188,6 +189,23 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>('sessions')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
+  // External highlight (e.g. from Pulse citation click) — switch to Browse subtab,
+  // auto-select the note (renders the detail pane), and scroll its row into view.
+  useEffect(() => {
+    if (!highlightNoteId) return
+    // The "Browse" UI tab maps internally to activeCategory === 'observations'
+    // (the 'sessions' category shows session cards, not individual notes).
+    setActiveCategory('observations')
+    setSelectedItemId(highlightNoteId)
+    setEditingNoteId(null)
+    setDeletingNoteId(null)
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-note-row="${highlightNoteId}"]`) as HTMLElement | null
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 200)
+    return () => clearTimeout(t)
+  }, [highlightNoteId])
+
   // Edit session modal
   const [editingSessionModal, setEditingSessionModal] = useState(false)
 
@@ -201,6 +219,28 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   // Custom note types
   const [customNoteTypes, setCustomNoteTypes] = useState<string[]>([])
   const [hiddenDefaults, setHiddenDefaults] = useState<string[]>([])
+  // Whether this practitioner sees the legacy 7 defaults or just the 2 fixed ones.
+  // Existing practitioners (signed up before this change) keep the legacy set;
+  // new signups start with only `recurrence` + `hypothese` as defaults.
+  const [usesLegacyDefaults, setUsesLegacyDefaults] = useState<boolean>(false)
+
+  // Fetch the legacy-tags flag for the current user
+  useEffect(() => {
+    let cancelled = false
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return
+      supabase
+        .from('users')
+        .select('uses_legacy_default_tags')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (cancelled) return
+          setUsesLegacyDefaults(!!data?.uses_legacy_default_tags)
+        })
+    })
+    return () => { cancelled = true }
+  }, [supabase])
   const [showCustomTypeInput, setShowCustomTypeInput] = useState(false)
   const [customTypeValue, setCustomTypeValue] = useState('')
   const customTypeInputRef = useRef<HTMLInputElement>(null)
@@ -211,7 +251,13 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const customTypeMenuRef = useRef<HTMLDivElement>(null)
   const longPressTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
-  const visibleDefaults = defaultNoteTypes.filter(t => !hiddenDefaults.includes(t))
+  // Effective default tags depend on the legacy flag:
+  //   legacy practitioner → all 7 (recurrence, hypothese, general, symptome, transfert, contre_transfert, ajustement_envisage)
+  //   new practitioner    → just 2 (recurrence, hypothese)
+  const effectiveDefaultTags: readonly string[] = usesLegacyDefaults
+    ? defaultNoteTypes
+    : fixedNoteTypes
+  const visibleDefaults = effectiveDefaultTags.filter(t => !hiddenDefaults.includes(t))
   const allNoteTypes = [...visibleDefaults, ...customNoteTypes]
 
   // ==============================
@@ -1045,7 +1091,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     const buildNoteTypes = async () => {
       const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
 
-      const types: { type: string; label: string }[] = DEFAULT_NOTE_TYPES.map(nt => ({
+      // Defaults shown depend on legacy flag — see effectiveDefaultTags above
+      const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
+      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
         type: nt,
         label: noteTypeLabels?.[nt] || nt,
       }))
@@ -1070,7 +1118,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       setSnEditorNoteTypes(types)
     }
     buildNoteTypes()
-  }, [supabase, t])
+  }, [supabase, t, usesLegacyDefaults])
 
   const handleSaveSessionNote = async (sessionId: string, content: string) => {
     if (!content.trim() && snAttachments.length === 0) return
@@ -1953,7 +2001,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       autoFocus
                       milestones={milestones}
                       noteTypes={snEditorNoteTypes}
-                      lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                      lockedTypes={effectiveDefaultTags as unknown as string[]}
                       onAddType={handleEditorAddType}
                       onRenameType={handleEditorRenameType}
                       onDeleteType={handleEditorDeleteType}
@@ -2582,12 +2630,13 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         return (
                           <tr
                             key={note.id}
+                            data-note-row={note.id}
                             onClick={() => {
                               setSelectedItemId(note.id)
                               setEditingNoteId(null)
                               setDeletingNoteId(null)
                             }}
-                            className={`hover:bg-gray-50/80 cursor-pointer transition-colors ${isOrphanedSession ? 'bg-red-50/30' : ''} ${!isFirstInGroup ? 'border-t-0' : ''}`}
+                            className={`hover:bg-gray-50/80 cursor-pointer transition-colors ${isOrphanedSession ? 'bg-red-50/30' : ''} ${!isFirstInGroup ? 'border-t-0' : ''} ${highlightNoteId === note.id ? 'ring-2 ring-amber-300 ring-inset bg-amber-50/40' : ''}`}
                           >
                             {/* Date + Type — only on first row of group */}
                             {isFirstInGroup ? (

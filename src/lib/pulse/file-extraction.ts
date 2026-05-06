@@ -101,14 +101,31 @@ async function extractRawText(
   mode: 'docx' | 'plain',
 ): Promise<string> {
   const res = await fetch(url)
-  if (!res.ok) throw new Error(`Failed to fetch file: ${res.status}`)
+  if (!res.ok) throw new Error(`Fetch failed: HTTP ${res.status}`)
 
   if (mode === 'docx') {
-    const buf = await res.arrayBuffer()
-    // Dynamic import keeps mammoth out of the edge bundle
-    const mammoth = await import('mammoth')
-    const result = await mammoth.extractRawText({ arrayBuffer: buf })
-    return result.value || ''
+    let arrayBuffer: ArrayBuffer
+    try {
+      arrayBuffer = await res.arrayBuffer()
+    } catch (err) {
+      throw new Error(`Read body failed: ${err instanceof Error ? err.message : 'unknown'}`)
+    }
+    // Mammoth in Node prefers a Buffer; convert from ArrayBuffer.
+    const buffer = Buffer.from(arrayBuffer)
+
+    let mammothLib: typeof import('mammoth')
+    try {
+      mammothLib = await import('mammoth')
+    } catch (err) {
+      throw new Error(`mammoth import failed: ${err instanceof Error ? err.message : 'unknown'}`)
+    }
+
+    try {
+      const result = await mammothLib.extractRawText({ buffer })
+      return result.value || ''
+    } catch (err) {
+      throw new Error(`mammoth.extractRawText failed: ${err instanceof Error ? err.message : 'unknown'}`)
+    }
   }
 
   // Plain text
@@ -330,10 +347,12 @@ export async function extractAllMemberFiles(
   anthropic: Anthropic,
   memberId: string,
 ): Promise<ExtractionResult[]> {
+  // Folders share this table (is_folder=true, empty storage_path) — skip them.
   const { data: files } = await supabase
     .from('member_files')
     .select('*')
     .eq('member_id', memberId)
+    .or('is_folder.is.null,is_folder.eq.false')
     .order('created_at', { ascending: true })
 
   if (!files || files.length === 0) return []
@@ -361,7 +380,7 @@ export function formatExtractionsForPrompt(results: ExtractionResult[]): string 
   if (usable.length === 0) return ''
 
   const lines = usable.map(
-    (r) => `### ${r.fileName}\n${r.summary}`
+    (r) => `### [file:${r.fileId}] ${r.fileName}\n${r.summary}`
   )
   return `## Patient Files (extracted summaries)\n\n${lines.join('\n\n')}`
 }

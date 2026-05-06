@@ -16,6 +16,7 @@ import {
   X,
   Info,
   Eye,
+  EyeOff,
   Shield,
   Phone,
   Mail,
@@ -39,6 +40,7 @@ import {
   MapPin,
   Link2,
   MessageCircle,
+  Wallet,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -60,6 +62,7 @@ interface FilesTabProps {
   memberId: string
   member: Member
   onMemberUpdate: () => void
+  highlightFileId?: string
 }
 
 // Helper function to calculate time connected
@@ -80,7 +83,7 @@ function getTimeConnected(dateString: string): string {
   return `${years} year${years > 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`
 }
 
-export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabProps) {
+export default function FilesTab({ memberId, member, onMemberUpdate, highlightFileId }: FilesTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +119,60 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   const [docxContent, setDocxContent] = useState('')
   const [docxLoading, setDocxLoading] = useState(false)
   const [previewZoom, setPreviewZoom] = useState(1)
+
+  // Custom session price
+  const [editingPrice, setEditingPrice] = useState(false)
+  const [priceVisible, setPriceVisible] = useState(false)
+  const [priceInput, setPriceInput] = useState<string>(member.session_price != null ? String(member.session_price) : '')
+  const [savingPrice, setSavingPrice] = useState(false)
+  const [currencyCode, setCurrencyCode] = useState<string>('EUR')
+
+  useEffect(() => {
+    let cancelled = false
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return
+      supabase
+        .from('booking_settings')
+        .select('currency')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (cancelled) return
+          if (data?.currency) setCurrencyCode(data.currency)
+        })
+    })
+    return () => { cancelled = true }
+  }, [supabase])
+
+  const handleSavePrice = async () => {
+    setSavingPrice(true)
+    try {
+      const trimmed = priceInput.trim()
+      const value = trimmed === '' ? null : Number(trimmed)
+      if (value !== null && (Number.isNaN(value) || value < 0)) {
+        toast.error(locale === 'fr' ? 'Tarif invalide' : 'Invalid price')
+        setSavingPrice(false)
+        return
+      }
+      const { error } = await supabase
+        .from('members')
+        .update({ session_price: value })
+        .eq('id', member.id)
+      if (error) throw error
+      toast.success(
+        value === null
+          ? (locale === 'fr' ? 'Tarif personnalisé supprimé' : 'Custom price cleared')
+          : (locale === 'fr' ? 'Tarif mis à jour' : 'Price updated')
+      )
+      setEditingPrice(false)
+      onMemberUpdate()
+    } catch (error) {
+      console.error('Error updating price:', error)
+      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
+    } finally {
+      setSavingPrice(false)
+    }
+  }
 
   // Additional contacts
   const [additionalContacts, setAdditionalContacts] = useState<Array<{ type: string; label: string; value: string }>>(
@@ -224,6 +281,41 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
   useEffect(() => {
     fetchFolderContents(null, true)
   }, [memberId])
+
+  // External highlight (e.g. Pulse citation click) — scroll to file & open preview.
+  // If the file lives in a subfolder, navigate there first then this effect re-fires.
+  const lastHandledHighlightRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!highlightFileId || lastHandledHighlightRef.current === highlightFileId) return
+    let cancelled = false
+    ;(async () => {
+      // Look in the currently loaded files first
+      const inCurrent = files.find(f => f.id === highlightFileId)
+      if (inCurrent) {
+        lastHandledHighlightRef.current = highlightFileId
+        // Scroll into view, then open preview
+        setTimeout(() => {
+          const el = document.querySelector(`[data-file-card="${highlightFileId}"]`) as HTMLElement | null
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 150)
+        if (!inCurrent.is_folder) await handleView(inCurrent)
+        return
+      }
+      // Not in current folder — fetch the file row to discover its parent folder
+      const { data: fileRow } = await supabase
+        .from('member_files')
+        .select('*')
+        .eq('id', highlightFileId)
+        .eq('member_id', memberId)
+        .maybeSingle()
+      if (cancelled || !fileRow) return
+      const parentFolderId = (fileRow as MemberFile).parent_folder_id ?? null
+      // Navigate to parent folder; effect will re-run with new `files` and find the row.
+      await fetchFolderContents(parentFolderId)
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightFileId, files])
 
   const fetchFolderContents = async (folderId: string | null, isInitial = false) => {
     try {
@@ -963,6 +1055,101 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               </p>
             </div>
           </div>
+
+          {/* Custom Session Price — full width row */}
+          {(() => {
+            const symbol = currencyCode === 'EUR' ? '€' : currencyCode === 'USD' ? '$' : currencyCode === 'GBP' ? '£' : currencyCode
+            const hasPrice = member.session_price != null
+            const formatted = hasPrice
+              ? new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                  style: 'currency',
+                  currency: currencyCode,
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                }).format(member.session_price as number)
+              : ''
+
+            return (
+              <div className="md:col-span-2 flex items-center gap-3 p-3 rounded-xl bg-gray-50 group">
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0">
+                  <Wallet className="w-5 h-5 text-gray-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider">
+                    {locale === 'fr' ? 'Tarif par séance' : 'Session Price'}
+                  </p>
+                  {editingPrice ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="relative flex-1 max-w-[180px]">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">{symbol}</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.01"
+                          autoFocus
+                          value={priceInput}
+                          onChange={(e) => setPriceInput(e.target.value)}
+                          placeholder={locale === 'fr' ? 'ex. 50' : 'e.g. 50'}
+                          className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleSavePrice}
+                        disabled={savingPrice}
+                        className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8"
+                      >
+                        {savingPrice ? <Loader2 className="w-3 h-3 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPriceInput(member.session_price != null ? String(member.session_price) : '')
+                          setEditingPrice(false)
+                        }}
+                        className="rounded-lg h-8 text-gray-500"
+                      >
+                        {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                      </Button>
+                    </div>
+                  ) : hasPrice ? (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-medium text-gray-900 tabular-nums">
+                        {priceVisible ? formatted : `••••• ${symbol}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPriceVisible(v => !v)}
+                        className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-white transition-colors"
+                        aria-label={priceVisible ? (locale === 'fr' ? 'Masquer' : 'Hide') : (locale === 'fr' ? 'Afficher' : 'Show')}
+                      >
+                        {priceVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 mt-0.5">
+                      {locale === 'fr' ? 'Tarifs par défaut' : 'Using default rates'}
+                    </p>
+                  )}
+                </div>
+                {!editingPrice && (
+                  <button
+                    onClick={() => {
+                      setPriceInput(member.session_price != null ? String(member.session_price) : '')
+                      setPriceVisible(true)
+                      setEditingPrice(true)
+                    }}
+                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                    title={locale === 'fr' ? 'Modifier' : 'Edit'}
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Additional contacts */}
@@ -1696,13 +1883,15 @@ export default function FilesTab({ memberId, member, onMemberUpdate }: FilesTabP
               {regularFiles.map((file, index) => {
                 const FileIcon = getFileIcon(file.file_type)
                 const catStyle = categoryColors[file.category]
+                const isHighlighted = highlightFileId === file.id
                 return (
                   <motion.div
                     key={file.id}
+                    data-file-card={file.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.03 * (folders.length + index) }}
-                    className="group relative bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition-all border border-transparent hover:border-gray-200"
+                    className={`group relative bg-gray-50 hover:bg-gray-100 rounded-xl p-4 cursor-pointer transition-all border ${isHighlighted ? 'border-amber-300 ring-2 ring-amber-200' : 'border-transparent hover:border-gray-200'}`}
                     onClick={() => handleView(file)}
                   >
                     {/* Three-dot menu — hidden until card hover */}

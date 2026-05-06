@@ -71,24 +71,95 @@ ${LANGUAGE_INSTRUCTIONS[locale]}
 
 ## Output Format
 
-Respond with a valid JSON object containing these sections:
+Respond with a valid JSON object containing BOTH the legacy fields (for backward compatibility) AND a structured \`v2\` object for visual rendering:
 
 {
-  "current_status": "A 2-3 sentence overview of where the client currently is in their therapeutic journey",
-  "progress_highlights": ["Achievement 1", "Achievement 2", "Achievement 3"],
-  "key_themes": ["Theme 1", "Theme 2", "Theme 3"],
-  "areas_of_attention": ["Concern 1", "Concern 2"],
-  "recommendations": ["Recommendation 1", "Recommendation 2"],
-  "next_steps": ["Action item 1", "Action item 2"]
+  "current_status": "A 2-3 sentence overview (legacy)",
+  "progress_highlights": ["Plain bullet 1", "Plain bullet 2"],
+  "key_themes": ["Theme 1", "Theme 2"],
+  "areas_of_attention": ["Concern 1"],
+  "recommendations": ["Recommendation 1"],
+  "next_steps": ["Action 1"],
+
+  "v2": {
+    "sentiment": "progressing" | "stable" | "plateau" | "attention",
+    "status_headline": "Short headline, max 12 words. No clinical jargon.",
+    "status_detail": "1-2 sentences expanding the headline.",
+
+    "themes": [
+      { "label": "anxiety", "tone": "concerning", "sources": [{ "type": "session", "id": "abc-123" }] },
+      { "label": "self-compassion", "tone": "positive", "sources": [{ "type": "note", "id": "def-456" }] }
+    ],
+
+    "highlights": [
+      { "title": "Started journaling daily", "detail": "Reports calmer mornings since week 3.", "type": "progress", "sources": [{ "type": "session", "id": "abc-123" }, { "type": "session", "id": "ghi-789" }] },
+      { "title": "Strong social support", "detail": "Reliable network of two close friends mentioned across 4 sessions.", "type": "strength", "sources": [{ "type": "session", "id": "abc-123" }] },
+      { "title": "Completed exposure goal", "detail": "Achieved hierarchy step 3 (public speaking).", "type": "milestone", "sources": [{ "type": "milestone", "id": "mil-001" }] },
+      { "title": "Pattern: anxiety after work calls", "detail": "Mentioned in 3 of last 5 sessions.", "type": "insight", "sources": [{ "type": "session", "id": "abc-123" }] }
+    ],
+
+    "attention": [
+      { "title": "Sleep regression", "detail": "Reported poor sleep last 2 sessions.", "severity": "medium", "sources": [{ "type": "session", "id": "abc-123" }] },
+      { "title": "Missed last 2 reflections", "detail": "Engagement may be dropping.", "severity": "low" }
+    ],
+
+    "recommendations": [
+      { "title": "Revisit grounding techniques", "detail": "Consider re-introducing 5-4-3-2-1 from session 4.", "timeframe": "next_session", "sources": [{ "type": "session", "id": "abc-123" }] },
+      { "title": "Check in on medication", "detail": "Patient mentioned starting new SSRI 3 weeks ago.", "timeframe": "this_week", "sources": [{ "type": "note", "id": "def-456" }] }
+    ],
+
+    "next_steps": [
+      "Schedule follow-up within 2 weeks",
+      "Share sleep hygiene resource",
+      "Review goal hierarchy progress"
+    ]
+  }
 }
 
-Keep each section concise:
-- current_status: 2-3 sentences
-- progress_highlights: 3-5 bullet points
-- key_themes: 3-5 bullet points
-- areas_of_attention: 2-4 bullet points
-- recommendations: 2-4 bullet points
-- next_steps: 2-3 bullet points`
+### Guidance for v2 fields
+
+- **sentiment**: pick ONE based on overall trajectory:
+  - \`progressing\` = clear forward movement, mood improving, goals advancing
+  - \`stable\` = steady, no major changes, maintaining gains
+  - \`plateau\` = stuck, no progress for a while, may need new approach
+  - \`attention\` = concerning trend, regression, or risk signals
+
+- **status_headline**: ONE short sentence, plain language, no jargon. Examples: "Steady progress on anxiety, sleep needs attention." / "Strong therapeutic alliance, plateau on social goals."
+
+- **themes**: 3-6 short noun phrases (1-3 words each). \`tone\` reflects whether the theme is a strength, neutral observation, or concern.
+
+- **highlights**: 3-5 items. \`type\` distinguishes:
+  - \`progress\` = forward movement
+  - \`strength\` = existing resource the patient leverages
+  - \`milestone\` = goal achieved
+  - \`insight\` = pattern you noticed in the data
+
+- **attention**: 0-4 items. \`severity\`:
+  - \`high\` = urgent, address next session
+  - \`medium\` = monitor closely
+  - \`low\` = note for awareness
+
+- **recommendations**: 0-4 items. \`timeframe\`:
+  - \`this_week\` = act before next session
+  - \`next_session\` = bring up in upcoming session
+  - \`ongoing\` = thematic, no specific deadline
+
+- **next_steps**: 2-4 short imperative actions.
+
+### Citation rules (CRITICAL)
+
+Every claim in highlights, attention, recommendations, and themes should cite the source data it came from. Use the IDs from the input:
+
+- Each input record is tagged with \`[type:id]\` — for example \`[session:abc-123]\`, \`[note:def-456]\`, \`[milestone:mil-001]\`, \`[file:xyz-789]\`
+- In the JSON output, attach a \`sources\` array to each item: \`"sources": [{ "type": "session", "id": "abc-123" }]\`
+- Valid types are: \`session\`, \`note\`, \`milestone\`, \`file\`
+- ONLY cite IDs that you actually saw in the input. Do not invent IDs.
+- Cite up to 4 sources per item. If a claim spans many records, pick the most representative.
+- If an item is general/synthesized and has no specific source, omit the \`sources\` field entirely.
+
+Keep all titles and labels short. Detail fields should be 1-2 sentences max.
+
+Both the legacy fields AND v2 must be present — the legacy fields are for older clients that haven't been updated yet.`
 }
 
 /**
@@ -146,11 +217,11 @@ Last Session: ${member.last_session_at ? formatDate(member.last_session_at, loca
     }
   }
 
-  // Sessions Summary
+  // Sessions Summary — include IDs so AI can cite them
   if (sessions.length > 0) {
     const completedSessions = sessions.filter(s => s.status === 'completed')
     const sessionSummaries = completedSessions.slice(0, 10).map(session => {
-      const parts = [`- ${formatDate(session.scheduled_at, locale)}: ${getSessionTypeLabel(session.session_type)}`]
+      const parts = [`- [session:${session.id}] ${formatDate(session.scheduled_at, locale)}: ${getSessionTypeLabel(session.session_type)}`]
 
       if (session.mood_rating) {
         parts[0] += ` (Mood: ${session.mood_rating}/10)`
@@ -177,16 +248,16 @@ Last Session: ${member.last_session_at ? formatDate(member.last_session_at, loca
     sections.push(`## Session History\n\nNo sessions recorded yet.`)
   }
 
-  // Progress Notes
+  // Progress Notes — include IDs
   if (notes.length > 0) {
     const recentNotes = notes.slice(0, 8).map(note => {
-      return `- [${note.note_type}] ${formatDate(note.created_at, locale)}: ${truncate(note.content, 150)}`
+      return `- [note:${note.id}] [${note.note_type}] ${formatDate(note.created_at, locale)}: ${truncate(note.content, 150)}`
     })
 
     sections.push(`## Progress Notes (${notes.length} total, showing recent ${Math.min(8, notes.length)})\n\n${recentNotes.join('\n')}`)
   }
 
-  // Milestones & Goals
+  // Milestones & Goals — include IDs
   if (milestones.length > 0) {
     const activeGoals = milestones.filter(m => !m.achieved && (m.status === 'building' || m.status === 'thriving'))
     const achievedGoals = milestones.filter(m => m.achieved || m.status === 'independent')
@@ -196,14 +267,14 @@ Last Session: ${member.last_session_at ? formatDate(member.last_session_at, loca
     if (activeGoals.length > 0) {
       goalsSummary.push(`Active Goals (${activeGoals.length}):`)
       activeGoals.forEach(goal => {
-        goalsSummary.push(`- ${goal.title} [${goal.category}]: ${goal.description || 'No description'}`)
+        goalsSummary.push(`- [milestone:${goal.id}] ${goal.title} [${goal.category}]: ${goal.description || 'No description'}`)
       })
     }
 
     if (achievedGoals.length > 0) {
       goalsSummary.push(`\nAchieved Goals (${achievedGoals.length}):`)
       achievedGoals.slice(0, 5).forEach(goal => {
-        goalsSummary.push(`- ${goal.title} (achieved ${goal.achieved_at ? formatDate(goal.achieved_at, locale) : 'date unknown'})`)
+        goalsSummary.push(`- [milestone:${goal.id}] ${goal.title} (achieved ${goal.achieved_at ? formatDate(goal.achieved_at, locale) : 'date unknown'})`)
       })
     }
 
