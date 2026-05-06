@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
@@ -20,6 +21,7 @@ interface CalendarEvent {
   meetLink?: string | null
   paymentStatus?: 'paid' | 'unpaid'
   bookingId?: string
+  memberId?: string | null
 }
 
 interface WeekCalendarViewProps {
@@ -35,6 +37,7 @@ interface WeekCalendarViewProps {
     google_event_id?: string | null
     meet_link?: string | null
     payment_status?: string | null
+    member_id?: string | null
   }>
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
@@ -170,7 +173,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
 
   const bookingEvents: CalendarEvent[] = bookings
     .filter(b => b.status !== 'cancelled')
-    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link, paymentStatus: (b.payment_status || 'unpaid') as 'paid' | 'unpaid', bookingId: b.id }))
+    .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link, paymentStatus: (b.payment_status || 'unpaid') as 'paid' | 'unpaid', bookingId: b.id, memberId: b.member_id || null }))
 
   // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
   // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
@@ -455,72 +458,101 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setSelectedEvent(null)} />
                         <div
-                          className="absolute z-50 bg-white rounded-xl shadow-xl border border-gray-200 p-4 w-56"
+                          className="absolute z-50 bg-white rounded-xl shadow-xl border border-gray-200 w-64 overflow-hidden"
                           style={{ top: top + Math.min(height, 40), left: `calc(${left} + 4px)` }}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <p className="font-semibold text-gray-900 text-sm mb-1">{event.title}</p>
-                          <div className="space-y-1 text-xs text-gray-500 mb-3">
-                            <p className="flex items-center gap-1.5">
+                          {/* Header — name + view profile */}
+                          <div className="px-4 pt-3.5 pb-3 border-b border-gray-100">
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <p className="font-semibold text-gray-900 text-sm leading-tight flex-1 break-words">{event.title}</p>
+                              {event.memberId && (
+                                <Link
+                                  href={`/members/${event.memberId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-0.5 text-[11px] text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap shrink-0 mt-0.5"
+                                >
+                                  {locale === 'fr' ? 'Profil' : 'Profile'}
+                                  <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              )}
+                            </div>
+                            <p className="flex items-center gap-1.5 text-xs text-gray-500">
                               <Clock className="w-3 h-3" />
                               {formatTimeInTz(event.start)} – {formatTimeInTz(event.end)}
                             </p>
+                          </div>
+
+                          {/* Body */}
+                          <div className="px-4 py-3 space-y-2.5">
+                            {/* Status pills */}
+                            {(event.status || event.sessionType || (event.source === 'booking' && event.bookingId)) && (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {event.status && (
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                    isPending ? 'bg-amber-100 text-amber-700' : event.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
+                                      : event.status === 'confirmed' ? (locale === 'fr' ? 'Confirmé' : 'Confirmed')
+                                      : event.status}
+                                  </span>
+                                )}
+                                {event.source === 'booking' && event.bookingId && (
+                                  <PaymentBadge
+                                    status={event.paymentStatus || 'unpaid'}
+                                    table="bookings"
+                                    recordId={event.bookingId}
+                                  />
+                                )}
+                                {event.sessionType && (
+                                  <span className="text-[10px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full font-medium">
+                                    {event.sessionType.replace(/_/g, ' ')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Email */}
                             {event.email && (
-                              <p className="flex items-center gap-1.5">
-                                <Mail className="w-3 h-3" />
-                                {event.email}
+                              <p className="flex items-center gap-1.5 text-xs text-gray-500 min-w-0">
+                                <Mail className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{event.email}</span>
                               </p>
                             )}
+
+                            {/* Meet link — primary action */}
                             {event.meetLink && (
                               <a
                                 href={event.meetLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium"
+                                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors"
                               >
-                                <Video className="w-3 h-3" />
+                                <Video className="w-3.5 h-3.5" />
                                 {locale === 'fr' ? 'Rejoindre Google Meet' : 'Join Google Meet'}
-                                <ExternalLink className="w-2.5 h-2.5" />
+                                <ExternalLink className="w-3 h-3" />
                               </a>
                             )}
-                            {event.sessionType && (
-                              <p className="text-gray-400">{event.sessionType}</p>
-                            )}
+
+                            {/* Google source tag */}
                             {isGoogle && (
-                              <p className="text-blue-500 text-[11px]">Google Calendar</p>
+                              <p className="text-[10px] text-blue-500">Google Calendar</p>
                             )}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {event.status && (
-                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                  isPending ? 'bg-amber-100 text-amber-700' : event.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'
-                                }`}>
-                                  {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
-                                    : event.status === 'confirmed' ? (locale === 'fr' ? 'Confirmé' : 'Confirmed')
-                                    : event.status}
-                                </span>
-                              )}
-                              {event.source === 'booking' && event.bookingId && (
-                                <PaymentBadge
-                                  status={event.paymentStatus || 'unpaid'}
-                                  table="bookings"
-                                  recordId={event.bookingId}
-                                />
-                              )}
-                            </div>
+
+                            {/* Notes */}
+                            {event.notes && (
+                              <p className="text-xs text-gray-500 italic border-t border-gray-100 pt-2.5">{event.notes}</p>
+                            )}
                           </div>
 
-                          {/* Notes */}
-                          {event.notes && (
-                            <p className="text-xs text-gray-400 italic border-t border-gray-50 pt-2 mt-1">{event.notes}</p>
-                          )}
-
-                          {/* Actions for pending bookings */}
+                          {/* Footer — actions */}
                           {isPending && onApprove && onReject && (
-                            <div className="flex gap-2 pt-2 border-t border-gray-100 mt-2">
+                            <div className="px-4 pb-3 pt-1 flex gap-2 border-t border-gray-100">
                               <button
                                 onClick={(e) => { e.stopPropagation(); onApprove(event.id); setSelectedEvent(null) }}
                                 disabled={processingId === event.id}
-                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50"
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 mt-2"
                               >
                                 {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                                 {locale === 'fr' ? 'Accepter' : 'Approve'}
@@ -528,7 +560,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                               <button
                                 onClick={(e) => { e.stopPropagation(); onReject(event.id); setSelectedEvent(null) }}
                                 disabled={processingId === event.id}
-                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50 mt-2"
                               >
                                 <X className="w-3 h-3" />
                                 {locale === 'fr' ? 'Refuser' : 'Reject'}
@@ -536,13 +568,12 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             </div>
                           )}
 
-                          {/* Cancel for confirmed bookings */}
                           {event.status === 'confirmed' && event.source === 'booking' && onReject && (
-                            <div className="pt-2 border-t border-gray-100 mt-2">
+                            <div className="px-4 pb-3 pt-2 border-t border-gray-100">
                               <button
                                 onClick={(e) => { e.stopPropagation(); onReject(event.id); setSelectedEvent(null) }}
                                 disabled={processingId === event.id}
-                                className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
+                                className="w-full flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
                               >
                                 {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                                 {locale === 'fr' ? 'Annuler' : 'Cancel'}

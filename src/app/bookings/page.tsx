@@ -56,6 +56,7 @@ import type { User as UserType } from '@/types/user'
 interface Booking {
   id: string
   practitioner_id: string
+  member_id: string | null
   client_name: string
   client_email: string
   client_phone: string | null

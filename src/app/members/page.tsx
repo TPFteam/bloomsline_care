@@ -36,6 +36,7 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   CalendarPlus,
+  UserCheck,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -666,19 +667,37 @@ export default function MembersPage() {
   }
 
   // Bulk status change
-  const handleBulkStatusChange = async (newStatus: 'active' | 'inactive') => {
+  const [bulkStatusMenuOpen, setBulkStatusMenuOpen] = useState(false)
+  const [bulkStatusUpdating, setBulkStatusUpdating] = useState(false)
+
+  const handleBulkStatusChange = async (newStatus: 'active' | 'inactive' | 'pending') => {
     if (selectedIds.size === 0) return
+    setBulkStatusUpdating(true)
     try {
-      for (const id of selectedIds) {
-        await supabase.from('members').update({ status: newStatus }).eq('id', id)
-      }
+      const ids = Array.from(selectedIds)
+      const { error } = await supabase
+        .from('members')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .in('id', ids)
+      if (error) throw error
       const updated = members.map(m => selectedIds.has(m.id) ? { ...m, status: newStatus } : m)
       setMembers(updated)
       calculateStats(updated)
+      setBulkStatusMenuOpen(false)
       exitSelectionMode()
-      toast.success(locale === 'fr' ? `Statut mis à jour` : `Status updated`)
+      const label =
+        newStatus === 'active' ? (locale === 'fr' ? 'Actif' : 'Active')
+        : newStatus === 'inactive' ? (locale === 'fr' ? 'Inactif' : 'Inactive')
+        : (locale === 'fr' ? 'En attente' : 'Pending')
+      toast.success(
+        locale === 'fr'
+          ? `${ids.length} membre(s) → ${label}`
+          : `${ids.length} member(s) → ${label}`
+      )
     } catch {
       toast.error(locale === 'fr' ? 'Erreur' : 'Failed')
+    } finally {
+      setBulkStatusUpdating(false)
     }
   }
 
@@ -2343,6 +2362,51 @@ export default function MembersPage() {
                 <Send className="w-3.5 h-3.5" />
                 {locale === 'fr' ? 'Inviter' : 'Invite'}
               </button>
+
+              {/* Status — opens popover with Active / Inactive / Pending */}
+              <div className="relative">
+                <button
+                  onClick={() => setBulkStatusMenuOpen(o => !o)}
+                  disabled={bulkStatusUpdating || selectedIds.size === 0}
+                  className="px-3 py-1.5 text-xs font-medium bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  {bulkStatusUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                  {locale === 'fr' ? 'Statut' : 'Status'}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${bulkStatusMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {bulkStatusMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setBulkStatusMenuOpen(false)}
+                    />
+                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-xl border border-gray-200 py-1.5 min-w-[160px] z-50">
+                      <button
+                        onClick={() => handleBulkStatusChange('active')}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        {locale === 'fr' ? 'Actif' : 'Active'}
+                      </button>
+                      <button
+                        onClick={() => handleBulkStatusChange('pending')}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        {locale === 'fr' ? 'En attente' : 'Pending'}
+                      </button>
+                      <button
+                        onClick={() => handleBulkStatusChange('inactive')}
+                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-gray-400" />
+                        {locale === 'fr' ? 'Inactif' : 'Inactive'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 onClick={handleBulkDelete}
                 className="px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-500 rounded-lg transition-colors flex items-center gap-1.5"

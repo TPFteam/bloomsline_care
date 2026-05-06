@@ -512,7 +512,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         const sessionTypeLabel = getSessionTypeLabel(manualSessionType)
         // sessions table enum is 'in_person' | 'virtual'; bookings table uses 'video'
         const manualFormat: 'in_person' | 'virtual' = selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual'
-        const manualPrice = sessionTypes.find(st => st.id === manualSessionType)?.price ?? null
+        const sessionTypePrice = sessionTypes.find(st => st.id === manualSessionType)?.price ?? null
+        // Patient-level override: members.session_price wins over session-type rate.
+        const manualPrice = selectedMember.session_price ?? sessionTypePrice
         const sessionData = {
           practitioner_id: userId,
           member_id: selectedMember.id,
@@ -577,6 +579,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         // Calendar mode: create booking first, then session (avoids orphan sessions)
 
         // 1. Create booking entry (source of truth)
+        // Patient-level override: members.session_price wins over session-type rate.
+        const calendarPrice = selectedMember.session_price ?? selectedSessionType!.price ?? null
         const bookingData = {
           practitioner_id: userId,
           client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
@@ -590,7 +594,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'video',
           status: 'confirmed',
           member_id: selectedMember.id,
-          price: selectedSessionType!.price ?? null,
+          price: calendarPrice,
         }
 
         console.log('Creating booking with data:', bookingData)
@@ -622,7 +626,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             duration_minutes: durationToUse,
             status: 'scheduled',
             notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
-            price: selectedSessionType!.price ?? null,
+            price: calendarPrice,
           })
         } catch (sessionErr) {
           console.warn('Could not create session entry:', sessionErr)

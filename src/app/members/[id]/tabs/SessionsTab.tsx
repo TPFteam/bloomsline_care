@@ -43,7 +43,7 @@ import { EditSessionModal } from '@/components/EditSessionModal'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
-import { DEFAULT_NOTE_TYPES } from '@/types/member'
+import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
 
 interface SessionsTabProps {
   memberId: string
@@ -213,6 +213,19 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [sessionSummaryNotes, setSessionSummaryNotes] = useState<Record<string, SessionNote | null>>({})
   const [milestones, setMilestones] = useState<MilestoneOption[]>([])
   const [editorNoteTypes, setEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
+  // Legacy practitioners see the original 7 default tags; new practitioners see only the 2 fixed ones.
+  const [usesLegacyDefaults, setUsesLegacyDefaults] = useState<boolean>(false)
+  useEffect(() => {
+    let cancelled = false
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return
+      supabase.from('users').select('uses_legacy_default_tags').eq('id', user.id).maybeSingle().then(({ data }) => {
+        if (!cancelled) setUsesLegacyDefaults(!!data?.uses_legacy_default_tags)
+      })
+    })
+    return () => { cancelled = true }
+  }, [supabase])
+  const effectiveDefaultTags: readonly string[] = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
 
 
   // Session summary note editing state
@@ -261,8 +274,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     const buildNoteTypes = async () => {
       const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
 
-      // Start with defaults
-      const types: { type: string; label: string }[] = DEFAULT_NOTE_TYPES.map(nt => ({
+      // Start with defaults — depends on the practitioner's legacy flag
+      const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
+      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
         type: nt,
         label: noteTypeLabels?.[nt] || nt,
       }))
@@ -288,7 +302,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       setEditorNoteTypes(types)
     }
     buildNoteTypes()
-  }, [supabase, t])
+  }, [supabase, t, usesLegacyDefaults])
 
   // Fetch notes for all sessions
   useEffect(() => {
@@ -1278,6 +1292,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           autoFocus
                           milestones={milestones}
                           noteTypes={editorNoteTypes}
+                          lockedTypes={effectiveDefaultTags as unknown as string[]}
                           memberName={member?.first_name}
                         />
                         <div className="flex items-center justify-end gap-2 px-3 py-2">
@@ -1508,6 +1523,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             autoFocus
                             milestones={milestones}
                             noteTypes={editorNoteTypes}
+                            lockedTypes={effectiveDefaultTags as unknown as string[]}
                             memberName={member?.first_name}
                           />
                           <div className="flex items-center justify-end gap-2 px-3 py-2">
