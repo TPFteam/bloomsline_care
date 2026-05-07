@@ -18,9 +18,22 @@ import {
   ChevronDown,
   ExternalLink,
   MoreHorizontal,
+  Trash2,
+  Download,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
 import { AppHeader, AppSidebar } from '@/components/layout'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
@@ -270,6 +283,67 @@ export default function SharedResourcesPage() {
 
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const [confirmRemind, setConfirmRemind] = useState<SharedRecord | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<SharedRecord | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const handleDownloadPdf = async (record: SharedRecord) => {
+    if (downloadingId) return
+    setDownloadingId(record.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in')
+      await downloadResourceSubmissionPDF({
+        supabase,
+        resourceId: record.resource_id,
+        memberId: record.member_id,
+        practitionerId: user.id,
+        locale: locale as 'en' | 'fr' | 'es',
+      })
+    } catch (err) {
+      console.error('Error downloading PDF:', err)
+      toast.error(locale === 'fr' ? 'Échec du téléchargement' : 'Download failed')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  // Delete only the patient's response. The share/assignment stays so they can re-submit.
+  const handleDeleteResponse = async () => {
+    if (!deleteConfirm) return
+    setDeleting(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in')
+
+      const { error } = await supabase
+        .from('resource_responses')
+        .delete()
+        .eq('member_id', deleteConfirm.member_id)
+        .eq('resource_id', deleteConfirm.resource_id)
+        .eq('practitioner_id', user.id)
+
+      if (error) throw error
+
+      // Reset the share's progress markers so it shows as pending again
+      await supabase
+        .from('member_shared_resources')
+        .update({ completed_at: null, viewed_at: null })
+        .eq('id', deleteConfirm.id)
+
+      setRecords(prev => prev.map(r => r.id === deleteConfirm.id
+        ? { ...r, response_status: null }
+        : r
+      ))
+      toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
+      setDeleteConfirm(null)
+    } catch (err) {
+      console.error('Error deleting response:', err)
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const handleRemind = async (e: React.MouseEvent, record: SharedRecord) => {
     e.stopPropagation()
@@ -555,6 +629,28 @@ export default function SharedResourcesPage() {
                                         <Users className="w-3.5 h-3.5 text-gray-400" />
                                         {locale === 'fr' ? 'Voir le patient' : 'View member'}
                                       </button>
+                                      {record.response_status && (
+                                        <>
+                                          <div className="border-t border-gray-100 my-1" />
+                                          <button
+                                            onClick={() => { setExpandedResource(null); handleDownloadPdf(record) }}
+                                            disabled={downloadingId === record.id}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                          >
+                                            {downloadingId === record.id
+                                              ? <Loader2 className="w-3.5 h-3.5 text-teal-600 animate-spin" />
+                                              : <Download className="w-3.5 h-3.5 text-teal-600" />}
+                                            {locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                                          </button>
+                                          <button
+                                            onClick={() => { setExpandedResource(null); setDeleteConfirm(record) }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                          </button>
+                                        </>
+                                      )}
                                     </div>
                                   </>
                                 )}
@@ -609,13 +705,34 @@ export default function SharedResourcesPage() {
                           const badge = getStatusBadge(record.response_status)
                           const daysAgo = Math.floor((Date.now() - new Date(record.shared_at).getTime()) / 86400000)
                           return (
-                            <div key={record.id} className="cursor-pointer" onClick={() => handleExpandResponse(record)}>
+                            <div key={record.id} className="cursor-pointer group" onClick={() => handleExpandResponse(record)}>
                               <div className={`flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors ${expandedResponse === record.id ? 'bg-gray-50' : ''}`}>
                                 <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
                                 <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
                                 <span className="text-[11px] text-gray-500 shrink-0 mr-3">{record.member_first_name} {record.member_last_name[0]}.</span>
                                 <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>{badge.label}</span>
-                                <span className="text-[11px] text-gray-400 w-32 shrink-0 text-right">{new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} ({daysAgo}{locale === 'fr' ? 'j' : 'd'})</span>
+                                <span className="text-[11px] text-gray-400 w-32 shrink-0 text-right mr-2">{new Date(record.shared_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} ({daysAgo}{locale === 'fr' ? 'j' : 'd'})</span>
+                                {record.response_status && (
+                                  <>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDownloadPdf(record) }}
+                                      disabled={downloadingId === record.id}
+                                      className="p-1 rounded-md text-gray-300 hover:text-teal-600 hover:bg-teal-50 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                      title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                                    >
+                                      {downloadingId === record.id
+                                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        : <Download className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm(record) }}
+                                      className="p-1 rounded-md text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                      title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                               {expandedResponse === record.id && (
                                 <div className="px-5 py-3 bg-gray-50 border-t border-gray-100" onClick={e => e.stopPropagation()}>
@@ -768,6 +885,27 @@ export default function SharedResourcesPage() {
                                   </button>
                                 )
                               })()}
+                              {record.response_status && (
+                                <>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadPdf(record) }}
+                                    disabled={downloadingId === record.id}
+                                    className="p-1 rounded-md text-gray-300 hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                                    title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                                  >
+                                    {downloadingId === record.id
+                                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      : <Download className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(record) }}
+                                    className="p-1 rounded-md text-gray-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                             {/* Inline — no response yet */}
                             {expandedResponse === record.id && (
@@ -911,6 +1049,44 @@ export default function SharedResourcesPage() {
           </div>
         </div>
       )}
+
+      {/* Delete response confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Supprimer la réponse ?' : 'Delete this response?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const memberName = deleteConfirm
+                  ? `${deleteConfirm.member_first_name} ${deleteConfirm.member_last_name}`.trim()
+                  : ''
+                return locale === 'fr'
+                  ? `Cela supprimera définitivement la réponse de ${memberName} à "${deleteConfirm?.resource_title}". Le partage reste actif — ils pourront soumettre une nouvelle réponse. Cette action est irréversible.`
+                  : `This will permanently delete ${memberName}'s response to "${deleteConfirm?.resource_title}". The share stays active — they can submit a new response. This cannot be undone.`
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteResponse() }}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+            >
+              {deleting
+                ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
+                : (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </main>
     </div>
   )

@@ -52,7 +52,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
+import { Download } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
@@ -325,6 +337,10 @@ export default function ResourceDetailPage() {
   const [submissions, setSubmissions] = useState<ResourceSubmission[]>([])
   const [sharedMembers, setSharedMembers] = useState<SharedMemberInfo[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+  // Delete response confirmation — removes the patient's submission, leaves the share intact
+  const [deleteResponseConfirm, setDeleteResponseConfirm] = useState<{ memberId: string; memberName: string } | null>(null)
+  const [deletingResponse, setDeletingResponse] = useState(false)
+  const [downloadingMemberId, setDownloadingMemberId] = useState<string | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -477,6 +493,42 @@ export default function ResourceDetailPage() {
       fetchResource()
     }
   }, [params.id, locale])
+
+  const handleDeleteResponse = async () => {
+    if (!deleteResponseConfirm || !resource) return
+    setDeletingResponse(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in')
+
+      // Delete only the patient's response — the share/assignment stays so they can re-submit
+      const { error } = await supabase
+        .from('resource_responses')
+        .delete()
+        .eq('member_id', deleteResponseConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+
+      if (error) throw error
+
+      // Also clear completed_at on the share so it goes back to "pending"
+      await supabase
+        .from('member_shared_resources')
+        .update({ completed_at: null, viewed_at: null })
+        .eq('member_id', deleteResponseConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+
+      toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
+      setDeleteResponseConfirm(null)
+      fetchSubmissions(resource.id)
+    } catch (err) {
+      console.error('Error deleting response:', err)
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
+    } finally {
+      setDeletingResponse(false)
+    }
+  }
 
   const fetchSubmissions = async (resourceId: string) => {
     setLoadingSubmissions(true)
@@ -2920,6 +2972,61 @@ export default function ResourceDetailPage() {
                                   </Button>
                                 )
                               )}
+
+                              {/* Download PDF — only when a real response exists (not psychoeducation) */}
+                              {!isPsychoeducation && submission && resource && (
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
+                                    if (downloadingMemberId) return
+                                    setDownloadingMemberId(shared.member_id)
+                                    try {
+                                      const { data: { user } } = await supabase.auth.getUser()
+                                      if (!user) throw new Error('Not signed in')
+                                      await downloadResourceSubmissionPDF({
+                                        supabase,
+                                        resourceId: resource.id,
+                                        memberId: shared.member_id,
+                                        practitionerId: user.id,
+                                        locale: locale as 'en' | 'fr' | 'es',
+                                      })
+                                    } catch (err) {
+                                      console.error('Error downloading PDF:', err)
+                                      toast.error(locale === 'fr' ? 'Échec du téléchargement' : 'Download failed')
+                                    } finally {
+                                      setDownloadingMemberId(null)
+                                    }
+                                  }}
+                                  disabled={downloadingMemberId === shared.member_id}
+                                  className="p-2 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                                  title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                                >
+                                  {downloadingMemberId === shared.member_id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Download className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
+
+                              {/* Delete response — only available when a response actually exists */}
+                              {!isPsychoeducation && submission && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setDeleteResponseConfirm({
+                                      memberId: shared.member_id,
+                                      memberName: `${shared.member?.first_name || ''} ${shared.member?.last_name || ''}`.trim() || (locale === 'fr' ? 'ce patient' : 'this patient'),
+                                    })
+                                  }}
+                                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -3222,6 +3329,39 @@ export default function ResourceDetailPage() {
             groups={memberGroups}
           />
         )}
+
+        {/* Delete response confirmation */}
+        <AlertDialog
+          open={!!deleteResponseConfirm}
+          onOpenChange={(open) => { if (!open) setDeleteResponseConfirm(null) }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {locale === 'fr' ? 'Supprimer la réponse ?' : 'Delete this response?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {locale === 'fr'
+                  ? `Cela supprimera définitivement la réponse de ${deleteResponseConfirm?.memberName}. Le partage reste actif — ils pourront soumettre une nouvelle réponse. Cette action est irréversible.`
+                  : `This will permanently delete ${deleteResponseConfirm?.memberName}'s response. The share stays active — they can submit a new response. This cannot be undone.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingResponse}>
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleDeleteResponse() }}
+                disabled={deletingResponse}
+                className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+              >
+                {deletingResponse
+                  ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
+                  : (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       {/* PDF viewer overlay */}

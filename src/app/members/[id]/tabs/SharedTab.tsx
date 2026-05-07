@@ -25,9 +25,21 @@ import {
   ChevronUp,
   Clock,
   Bell,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -468,41 +480,90 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
     }
   }
 
-  const handleUnshare = async (resourceId: string) => {
-    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir retirer le partage de cette ressource ?' : 'Are you sure you want to unshare this resource?')) return
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
+  const handleDownloadResponse = async (memberId: string, resourceId: string, practitionerId: string, shareRowId: string) => {
+    if (downloadingId) return
+    setDownloadingId(shareRowId)
     try {
-      const { error } = await supabase
-        .from('shared_resources')
-        .delete()
-        .eq('id', resourceId)
-
-      if (error) throw error
-
-      toast.success(locale === 'fr' ? 'Partage retiré' : 'Resource unshared')
-      fetchData()
-    } catch (error) {
-      console.error('Error unsharing resource:', error)
-      toast.error(locale === 'fr' ? 'Impossible de retirer le partage' : 'Failed to unshare resource')
+      await downloadResourceSubmissionPDF({
+        supabase,
+        resourceId,
+        memberId,
+        practitionerId,
+        locale: locale as 'en' | 'fr' | 'es',
+      })
+    } catch (err) {
+      console.error('Error downloading PDF:', err)
+      toast.error(locale === 'fr' ? 'Échec du téléchargement' : 'Download failed')
+    } finally {
+      setDownloadingId(null)
     }
   }
 
-  const handleUnshareLibraryResource = async (resourceId: string) => {
-    if (!confirm(locale === 'fr' ? 'Êtes-vous sûr de vouloir annuler le partage?' : 'Are you sure you want to unshare this resource?')) return
+  // Two distinct actions:
+  //   - Library/worksheet resources: delete only the patient's *response* (share stays active)
+  //   - Story shares: unshare the story (no responses on stories)
+  type DeleteAction =
+    | { kind: 'response'; shareRowId: string; memberId: string; resourceId: string; practitionerId: string; title?: string }
+    | { kind: 'story'; shareRowId: string; title?: string }
+  const [deleteAction, setDeleteAction] = useState<DeleteAction | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  const handleUnshare = (resourceId: string, title?: string) => {
+    setDeleteAction({ kind: 'story', shareRowId: resourceId, title })
+  }
+
+  const handleUnshareLibraryResource = (
+    shareRowId: string,
+    opts?: { title?: string; hasResponse?: boolean; memberId?: string; resourceId?: string; practitionerId?: string }
+  ) => {
+    if (!opts?.memberId || !opts?.resourceId || !opts?.practitionerId) return
+    setDeleteAction({
+      kind: 'response',
+      shareRowId,
+      memberId: opts.memberId,
+      resourceId: opts.resourceId,
+      practitionerId: opts.practitionerId,
+      title: opts.title,
+    })
+  }
+
+  const performDelete = async () => {
+    if (!deleteAction) return
+    setDeleting(true)
     try {
-      const { error } = await supabase
-        .from('member_shared_resources')
-        .delete()
-        .eq('id', resourceId)
-
-      if (error) throw error
-
-      toast.success(locale === 'fr' ? 'Partage annulé' : 'Resource unshared')
+      if (deleteAction.kind === 'response') {
+        // Delete the response only — share stays so patient can re-submit
+        const { error } = await supabase
+          .from('resource_responses')
+          .delete()
+          .eq('member_id', deleteAction.memberId)
+          .eq('resource_id', deleteAction.resourceId)
+          .eq('practitioner_id', deleteAction.practitionerId)
+        if (error) throw error
+        // Reset progress markers on the share so it goes back to pending
+        await supabase
+          .from('member_shared_resources')
+          .update({ completed_at: null, viewed_at: null })
+          .eq('id', deleteAction.shareRowId)
+        toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
+      } else {
+        // Story share — just remove the share row
+        const { error } = await supabase
+          .from('shared_resources')
+          .delete()
+          .eq('id', deleteAction.shareRowId)
+        if (error) throw error
+        toast.success(locale === 'fr' ? 'Partage retiré' : 'Share removed')
+      }
+      setDeleteAction(null)
       fetchData()
     } catch (error) {
-      console.error('Error unsharing library resource:', error)
-      toast.error(locale === 'fr' ? 'Échec de l\'annulation du partage' : 'Failed to unshare resource')
+      console.error('Error performing delete:', error)
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -872,14 +933,38 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                               <ExternalLink className="w-4 h-4" />
                             </Button>
                           </Link>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleUnshareLibraryResource(resource.id)}
-                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors h-9 w-9 p-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {/* Download + Delete — only when a response exists */}
+                          {submissions.some(s => s.resource_id === resource.resource_id) && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadResponse(resource.member_id, resource.resource_id, resource.practitioner_id, resource.id)}
+                                disabled={downloadingId === resource.id}
+                                className="text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0 disabled:opacity-50"
+                                title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                              >
+                                {downloadingId === resource.id
+                                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                                  : <Download className="w-4 h-4" />}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUnshareLibraryResource(resource.id, {
+                                  title: resource.resource.title,
+                                  hasResponse: true,
+                                  memberId: resource.member_id,
+                                  resourceId: resource.resource_id,
+                                  practitionerId: resource.practitioner_id,
+                                })}
+                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors h-9 w-9 p-0"
+                                title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -1120,7 +1205,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleUnshare(resource.id)}
+                            onClick={() => handleUnshare(resource.id, resource.story?.title || undefined)}
                             className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1433,6 +1518,51 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Delete confirmation — adapts copy + action based on what's being deleted */}
+      <AlertDialog
+        open={!!deleteAction}
+        onOpenChange={(open) => { if (!open) setDeleteAction(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteAction?.kind === 'response'
+                ? (locale === 'fr' ? 'Supprimer la réponse ?' : 'Delete this response?')
+                : (locale === 'fr' ? 'Retirer le partage ?' : 'Remove this share?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const titleStr = deleteAction?.title ? `"${deleteAction.title}"` : (locale === 'fr' ? 'cette ressource' : 'this resource')
+                if (deleteAction?.kind === 'response') {
+                  return locale === 'fr'
+                    ? `Cela supprimera définitivement la réponse de ce patient à ${titleStr}. Le partage reste actif — ils pourront soumettre une nouvelle réponse. Cette action est irréversible.`
+                    : `This will permanently delete this patient's response to ${titleStr}. The share stays active — they can submit a new response. This cannot be undone.`
+                }
+                return locale === 'fr'
+                  ? `Cela retirera ${titleStr} de ce patient.`
+                  : `This will remove ${titleStr} from this patient.`
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); performDelete() }}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+            >
+              {deleting
+                ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
+                : deleteAction?.kind === 'response'
+                  ? (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')
+                  : (locale === 'fr' ? 'Supprimer' : 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
