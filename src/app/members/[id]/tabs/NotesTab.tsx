@@ -2267,7 +2267,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 )}
                                 {(note.title || (note as any).milestones?.title) && (() => {
                                   const goalTitle = (note.title || (note as any).milestones?.title) as string
-                                  const truncated = goalTitle.length > 10 ? goalTitle.slice(0, 10) + '...' : goalTitle
+                                  const truncated = goalTitle.length > 20 ? goalTitle.slice(0, 20) + '...' : goalTitle
                                   const prefix = locale === 'fr' ? 'Axe de travail' : locale === 'es' ? 'Objetivo' : 'Goal'
                                   return (
                                     <span
