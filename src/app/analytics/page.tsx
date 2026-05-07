@@ -21,6 +21,7 @@ import {
   BarChart3,
   Grid3X3,
   CreditCard,
+  Settings,
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useLanguage } from '@/lib/i18n/context'
@@ -28,6 +29,15 @@ import { AppSidebar, AppHeader } from '@/components/layout'
 import { BloomInlineChat } from '@/components/bloom/bloom-inline-chat'
 import { createClient } from '@/lib/supabase/browser-client'
 import type { User } from '@/types/user'
+import {
+  computeEngagement,
+  parseEngagementSettings,
+  DEFAULT_ENGAGEMENT_SETTINGS,
+  type EngagementSettings,
+} from '@/lib/analytics/engagement'
+import { EngagementSettingsDrawer } from '@/components/analytics/EngagementSettingsDrawer'
+import { PatientQuickViewDrawer } from '@/components/analytics/PatientQuickViewDrawer'
+import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -38,6 +48,7 @@ interface MemberRow {
   status: string
   last_session_at: string | null
   created_at: string
+  date_of_birth?: string | null
 }
 
 interface SessionRow {
@@ -121,6 +132,17 @@ interface AnalyticsState {
   bookings: BookingRow[]
   currency: string
   sessionTypePrices: Record<string, number>
+  // Engagement signals (per-member arrays for the orbit scoring)
+  notesByMember: Record<string, Array<{ id: string; created_at: string; note_type?: string }>>
+  reflectionsByMember: Record<string, Array<{ id: string; created_at: string }>>
+  filesByMember: Record<string, Array<{ id: string; created_at: string }>>
+  storiesByMember: Record<string, Array<{ id: string; shared_at: string }>>
+  storyCommentsByMember: Record<string, Array<{ id: string; created_at: string; author_type: 'practitioner' | 'member' }>>
+  resourceResponsesByMember: Record<string, Array<{ id: string; updated_at: string; status: string }>>
+  pulseSentimentByMember: Record<string, 'progressing' | 'stable' | 'plateau' | 'attention' | null>
+  // For the patient quick-view drawer
+  pulseByMember: Record<string, { sentiment: 'progressing' | 'stable' | 'plateau' | 'attention' | null; headline: string | null; generatedAt: string } | null>
+  assignedResourcesByMember: Record<string, number>  // total shared count
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -263,6 +285,10 @@ export default function AnalyticsPage() {
     }
     return 'chart'
   })
+  const [engagementSettings, setEngagementSettings] = useState<EngagementSettings>(DEFAULT_ENGAGEMENT_SETTINGS)
+  const [showEngagementDrawer, setShowEngagementDrawer] = useState(false)
+  const [quickViewMemberId, setQuickViewMemberId] = useState<string | null>(null)
+  const [pulseModalMemberId, setPulseModalMemberId] = useState<string | null>(null)
 
   const openBloom = (prompt?: string) => {
     setBloomPrompt(prompt)
@@ -322,6 +348,7 @@ export default function AnalyticsPage() {
 
       if (profile) {
         setUserProfile(profile as User)
+        setEngagementSettings(parseEngagementSettings((profile as { engagement_settings?: unknown }).engagement_settings))
       } else {
         setUserProfile({
           id: user.id,
@@ -337,11 +364,15 @@ export default function AnalyticsPage() {
 
       const now = new Date()
 
-      const [membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes, resourcesRes, bookingsRes, bookingSettingsRes] =
-        await Promise.all([
+      const [
+        membersRes, sessionsRes, milestonesRes, notesRes, sharedRes, upcomingRes, resourcesRes, bookingsRes, bookingSettingsRes,
+        // Engagement signals
+        progressNotesByMemberRes, reflectionsRes, filesRes, storySharesRes, storyCommentsRes, resourceResponsesRes, summariesRes,
+        memberSharedRes,
+      ] = await Promise.all([
           supabase
             .from('members')
-            .select('id, first_name, last_name, status, last_session_at, created_at, is_demo')
+            .select('id, first_name, last_name, status, last_session_at, created_at, is_demo, date_of_birth')
             .eq('practitioner_id', user.id)
             .is('deleted_at', null),
           supabase
@@ -382,6 +413,46 @@ export default function AnalyticsPage() {
             .select('currency, session_types')
             .eq('user_id', user.id)
             .maybeSingle(),
+          // Per-member progress notes for engagement scoring + tag patterns
+          supabase
+            .from('progress_notes')
+            .select('id, member_id, note_type, created_at')
+            .eq('practitioner_id', user.id),
+          // Patient reflections (mood/gratitude)
+          supabase
+            .from('member_reflections')
+            .select('id, member_id, created_at'),
+          // Patient files (excluding folders)
+          supabase
+            .from('member_files')
+            .select('id, member_id, created_at')
+            .or('is_folder.is.null,is_folder.eq.false'),
+          // Story shares
+          supabase
+            .from('story_shares')
+            .select('id, member_id, shared_at')
+            .eq('practitioner_id', user.id),
+          // Story share comments
+          supabase
+            .from('story_share_comments')
+            .select('id, share_id, author_type, created_at, story_shares!inner(member_id, practitioner_id)')
+            .eq('story_shares.practitioner_id', user.id),
+          // Resource responses (submissions)
+          supabase
+            .from('resource_responses')
+            .select('id, member_id, status, updated_at')
+            .eq('practitioner_id', user.id),
+          // Latest Bloom Pulse summary per member (for sentiment override + headline)
+          supabase
+            .from('member_summaries')
+            .select('member_id, summary_content, summary_text, generated_at')
+            .eq('practitioner_id', user.id)
+            .order('generated_at', { ascending: false }),
+          // Member resource assignments — for the "X / N completed" ratio per patient
+          supabase
+            .from('member_shared_resources')
+            .select('id, member_id, shared_at')
+            .eq('practitioner_id', user.id),
         ])
 
       const allMembers = (membersRes.data || []) as (MemberRow & { is_demo?: boolean })[]
@@ -402,6 +473,62 @@ export default function AnalyticsPage() {
           member_name: m ? `${m.first_name} ${m.last_name}` : '—',
         }
       })
+
+      // Group engagement signal arrays by member_id (used by computeEngagement)
+      const groupBy = <T extends { member_id: string }>(rows: T[]): Record<string, T[]> => {
+        const out: Record<string, T[]> = {}
+        for (const r of rows) {
+          if (!r.member_id || demoMemberIds.has(r.member_id)) continue
+          if (!out[r.member_id]) out[r.member_id] = []
+          out[r.member_id].push(r)
+        }
+        return out
+      }
+      const notesByMember = groupBy((progressNotesByMemberRes.data || []) as Array<{ id: string; member_id: string; created_at: string }>)
+      const reflectionsByMember = groupBy((reflectionsRes.data || []) as Array<{ id: string; member_id: string; created_at: string }>)
+      const filesByMember = groupBy((filesRes.data || []) as Array<{ id: string; member_id: string; created_at: string }>)
+      const storiesByMember = groupBy((storySharesRes.data || []) as Array<{ id: string; member_id: string; shared_at: string }>)
+      const resourceResponsesByMember = groupBy((resourceResponsesRes.data || []) as Array<{ id: string; member_id: string; status: string; updated_at: string }>)
+
+      // Story comments are joined via story_shares for member_id
+      type StoryCommentRow = { id: string; share_id: string; author_type: 'practitioner' | 'member'; created_at: string; story_shares: { member_id: string } | { member_id: string }[] | null }
+      const storyCommentsByMember: Record<string, Array<{ id: string; created_at: string; author_type: 'practitioner' | 'member' }>> = {}
+      for (const c of (storyCommentsRes.data || []) as StoryCommentRow[]) {
+        const ss = Array.isArray(c.story_shares) ? c.story_shares[0] : c.story_shares
+        const mId = ss?.member_id
+        if (!mId || demoMemberIds.has(mId)) continue
+        if (!storyCommentsByMember[mId]) storyCommentsByMember[mId] = []
+        storyCommentsByMember[mId].push({ id: c.id, created_at: c.created_at, author_type: c.author_type })
+      }
+
+      // Latest Pulse per member (sentiment + headline) — results sorted desc by generated_at
+      type SummaryRow = {
+        member_id: string
+        summary_content: { v2?: { sentiment?: string; status_headline?: string }; current_status?: string } | null
+        summary_text?: string | null
+        generated_at: string
+      }
+      const pulseSentimentByMember: Record<string, 'progressing' | 'stable' | 'plateau' | 'attention' | null> = {}
+      const pulseByMember: Record<string, { sentiment: 'progressing' | 'stable' | 'plateau' | 'attention' | null; headline: string | null; generatedAt: string } | null> = {}
+      for (const s of (summariesRes.data || []) as SummaryRow[]) {
+        if (pulseByMember[s.member_id]) continue // first hit is the latest
+        const sentiment = s.summary_content?.v2?.sentiment
+        const validSentiment: 'progressing' | 'stable' | 'plateau' | 'attention' | null =
+          sentiment === 'progressing' || sentiment === 'stable' || sentiment === 'plateau' || sentiment === 'attention' ? sentiment : null
+        pulseSentimentByMember[s.member_id] = validSentiment
+        pulseByMember[s.member_id] = {
+          sentiment: validSentiment,
+          headline: s.summary_content?.v2?.status_headline || s.summary_content?.current_status?.split('.')[0]?.trim() || null,
+          generatedAt: s.generated_at,
+        }
+      }
+
+      // Total resources assigned per member (via member_shared_resources)
+      const assignedResourcesByMember: Record<string, number> = {}
+      for (const r of (memberSharedRes.data || []) as Array<{ id: string; member_id: string }>) {
+        if (!r.member_id || demoMemberIds.has(r.member_id)) continue
+        assignedResourcesByMember[r.member_id] = (assignedResourcesByMember[r.member_id] || 0) + 1
+      }
 
       setData({
         members,
@@ -425,6 +552,15 @@ export default function AnalyticsPage() {
           }
           return map
         })(),
+        notesByMember,
+        reflectionsByMember,
+        filesByMember,
+        storiesByMember,
+        storyCommentsByMember,
+        resourceResponsesByMember,
+        pulseSentimentByMember,
+        pulseByMember,
+        assignedResourcesByMember,
       })
 
       // Fetch deleted/unconverted prospects
@@ -554,77 +690,35 @@ export default function AnalyticsPage() {
   const pct = (v: number) => totalHealthSessions > 0 ? Math.round((v / totalHealthSessions) * 100) : 0
 
   // ── Client Engagement Radar ────────────────────────────────────────
-  const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
+  // Pulls from the configurable engagement signals; see lib/analytics/engagement.ts
   interface EngagementEntry {
     member: MemberRow
     score: number
-    attendance: number
-    recency: number
-    consistency: number
-    momentum: number
+    tier: 'ontrack' | 'watch' | 'checkin'
     riskReason: string
+    pulseOverride: 'up' | 'down' | null
   }
 
   const engagementScores: EngagementEntry[] = members
     .filter((m) => m.status === 'active')
     .map((m) => {
       const memberSessions = sessions.filter((s) => s.member_id === m.id)
-      const recentSessions = memberSessions.filter((s) => new Date(s.scheduled_at) >= threeMonthsAgo)
-
-      // Attendance (0-30)
-      const scheduled = recentSessions.filter((s) => s.status !== 'scheduled').length
-      const completed = recentSessions.filter((s) => s.status === 'completed').length
-      const attendanceRate = scheduled > 0 ? completed / scheduled : 0
-      const attendance = scheduled > 0 ? Math.round(attendanceRate * 30) : 15
-
-      // Recency (0-30)
-      const lastD = daysAgo(m.last_session_at)
-      const recency = lastD === null ? 0 : lastD <= 7 ? 30 : lastD <= 14 ? 20 : lastD <= 30 ? 10 : 0
-
-      // Consistency (0-20)
-      const completedDates = memberSessions
-        .filter((s) => s.status === 'completed')
-        .map((s) => new Date(s.scheduled_at).getTime())
-        .sort((a, b) => a - b)
-      let consistency = 10
-      if (completedDates.length >= 3) {
-        const gaps: number[] = []
-        for (let i = 1; i < completedDates.length; i++) {
-          gaps.push((completedDates[i] - completedDates[i - 1]) / (1000 * 60 * 60 * 24))
-        }
-        const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length
-        const stdDev = Math.sqrt(gaps.reduce((sum, g) => sum + (g - avgGap) ** 2, 0) / gaps.length)
-        consistency = stdDev < 3 ? 20 : stdDev < 7 ? 15 : stdDev < 14 ? 10 : 5
-      }
-
-      // Momentum (0-20)
       const memberMilestones = milestones.filter((ms) => ms.member_id === m.id)
-      let momentum = 10
-      if (memberMilestones.length > 0) {
-        const recentlyMoved = memberMilestones.some((ms) => new Date(ms.updated_at) >= thirtyDaysAgo)
-        momentum = recentlyMoved ? 20 : 5
-      }
-
-      const score = attendance + recency + consistency + momentum
-
-      // Risk reason
-      const cancellations = recentSessions.filter((s) => s.status === 'cancelled').length
-      let riskReason = ''
-      if (lastD === null) {
-        riskReason = locale === 'fr' ? 'Pas encore rencontré' : locale === 'es' ? 'Aún no se han visto' : 'Not yet met'
-      } else if (lastD > 14) {
-        riskReason = humanTimeAgo(lastD, locale)
-      } else if (cancellations >= 2) {
-        riskReason = locale === 'fr' ? `${cancellations} séances annulées récemment` : locale === 'es' ? `${cancellations} sesiones canceladas recientemente` : `${cancellations} sessions cancelled recently`
-      } else if (momentum <= 5) {
-        riskReason = locale === 'fr' ? 'Parcours au ralenti' : locale === 'es' ? 'Recorrido en pausa' : 'Journey has slowed down'
-      } else {
-        riskReason = locale === 'fr' ? 'Moins actif récemment' : locale === 'es' ? 'Menos activo recientemente' : 'Less active recently'
-      }
-
-      return { member: m, score, attendance, recency, consistency, momentum, riskReason }
+      const result = computeEngagement({
+        memberId: m.id,
+        lastSessionAt: m.last_session_at,
+        sessions: memberSessions,
+        notes: data.notesByMember[m.id] || [],
+        milestones: memberMilestones,
+        reflections: data.reflectionsByMember[m.id] || [],
+        resources: data.resourceResponsesByMember[m.id] || [],
+        stories: data.storiesByMember[m.id] || [],
+        storyComments: data.storyCommentsByMember[m.id] || [],
+        files: data.filesByMember[m.id] || [],
+        bookings: bookings.filter(b => b.member_id === m.id).map(b => ({ id: b.id, start_time: b.start_time, status: b.status })),
+        pulseSentiment: data.pulseSentimentByMember[m.id] || null,
+      }, engagementSettings, locale as 'en' | 'fr' | 'es')
+      return { member: m, score: result.score, tier: result.tier, riskReason: result.riskReason, pulseOverride: result.pulseOverride }
     })
     .sort((a, b) => a.score - b.score)
 
@@ -828,8 +922,9 @@ export default function AnalyticsPage() {
     const angle = (137.508 * i * Math.PI) / 180
     const offsetX = Math.cos(angle) * distance
     const offsetY = Math.sin(angle) * distance
-    const color = e.score >= 70 ? 'emerald' : e.score >= 40 ? 'amber' : 'orange'
-    const level = e.score >= 70 ? 'ontrack' : e.score >= 40 ? 'watch' : 'checkin'
+    // Use computed tier (which honours Pulse override) for color, score for distance
+    const color = e.tier === 'ontrack' ? 'emerald' : e.tier === 'watch' ? 'amber' : 'orange'
+    const level = e.tier
     return { ...e, distance, angle, offsetX, offsetY, color, level, index: i }
   })
   const orbitOverflow = Math.max(0, engagementScores.length - 20)
@@ -1509,6 +1604,13 @@ export default function AnalyticsPage() {
                     {locale === 'fr' ? 'Plus proche = plus engagé' : locale === 'es' ? 'Más cerca = más comprometido' : 'Closer to you = more engaged'}
                   </p>
                 </div>
+                <button
+                  onClick={() => setShowEngagementDrawer(true)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  title={locale === 'fr' ? 'Paramètres des signaux' : locale === 'es' ? 'Configuración de señales' : 'Signal settings'}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
               </div>
 
               {/* Orbit Map */}
@@ -1531,14 +1633,15 @@ export default function AnalyticsPage() {
                     const bgColor = om.color === 'emerald' ? 'bg-emerald-500' : om.color === 'amber' ? 'bg-amber-400' : 'bg-orange-400'
                     const glowColor = om.color === 'emerald' ? 'rgba(16,185,129,0.3)' : om.color === 'amber' ? 'rgba(245,158,11,0.3)' : 'rgba(251,146,60,0.3)'
                     return (
-                      <Link key={om.member.id} href={`/members/${om.member.id}`}>
                         <motion.div
+                          key={om.member.id}
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ delay: om.index * 0.04, duration: 0.4 }}
                           whileHover={{ scale: 1.2 }}
                           onHoverStart={() => setHoveredMember(om.member.id)}
                           onHoverEnd={() => setHoveredMember(null)}
+                          onClick={() => setQuickViewMemberId(om.member.id)}
                           className={`absolute w-7 h-7 rounded-full ${bgColor} flex items-center justify-center cursor-pointer`}
                           style={{
                             left: `calc(50% + ${om.offsetX}px - 14px)`,
@@ -1591,7 +1694,6 @@ export default function AnalyticsPage() {
                             })()}
                           </AnimatePresence>
                         </motion.div>
-                      </Link>
                     )
                   })}
                   {/* Overflow indicator */}
@@ -1905,6 +2007,67 @@ export default function AnalyticsPage() {
         )}
         </div>
       </main>
+
+      {/* Patient quick-view drawer (orbit click) */}
+      {data && (() => {
+        const m = quickViewMemberId ? members.find(mm => mm.id === quickViewMemberId) : null
+        const entry = quickViewMemberId ? engagementScores.find(e => e.member.id === quickViewMemberId) : null
+        const completedResources = quickViewMemberId
+          ? (data.resourceResponsesByMember[quickViewMemberId] || []).filter(r => r.status === 'submitted' || r.status === 'reviewed').length
+          : 0
+        return (
+          <PatientQuickViewDrawer
+            isOpen={!!quickViewMemberId && !!m}
+            onClose={() => setQuickViewMemberId(null)}
+            locale={locale as 'en' | 'fr' | 'es'}
+            data={m && entry ? {
+              member: { id: m.id, first_name: m.first_name, last_name: m.last_name, date_of_birth: (m as MemberRow).date_of_birth },
+              tier: entry.tier,
+              sessions: sessions.filter(s => s.member_id === m.id).map(s => ({ id: s.id, status: s.status, scheduled_at: s.scheduled_at })),
+              notesWithTag: data.notesByMember[m.id] || [],
+              pulse: data.pulseByMember[m.id] || null,
+              totalAssignedResources: data.assignedResourcesByMember[m.id] || 0,
+              completedResources,
+            } : null}
+            onOpenPulseModal={(memberId) => {
+              setQuickViewMemberId(null)
+              setPulseModalMemberId(memberId)
+            }}
+          />
+        )
+      })()}
+
+      {/* Bloom Pulse modal — opened from the quick-view */}
+      {pulseModalMemberId && (() => {
+        const m = members.find(mm => mm.id === pulseModalMemberId)
+        if (!m) return null
+        return (
+          <MemberSummaryModal
+            isOpen={!!pulseModalMemberId}
+            onClose={() => setPulseModalMemberId(null)}
+            memberId={pulseModalMemberId}
+            memberName={`${m.first_name} ${m.last_name}`.trim()}
+          />
+        )
+      })()}
+
+      {/* Engagement settings drawer */}
+      <EngagementSettingsDrawer
+        isOpen={showEngagementDrawer}
+        onClose={() => setShowEngagementDrawer(false)}
+        settings={engagementSettings}
+        locale={locale as 'en' | 'fr' | 'es'}
+        onSave={async (next) => {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) throw new Error('Not signed in')
+          const { error } = await supabase
+            .from('users')
+            .update({ engagement_settings: next })
+            .eq('id', user.id)
+          if (error) throw error
+          setEngagementSettings(next)
+        }}
+      />
 
       {/* Bloom overlay */}
       <BloomInlineChat
