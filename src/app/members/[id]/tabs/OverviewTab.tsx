@@ -119,9 +119,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   // Combined recent notes (from sessions, session notes, milestone comments)
   interface CombinedNote {
     id: string
+    note_id: string  // raw progress_notes.id for deep-link navigation
     content: string
     created_at: string
     type: 'session_summary' | 'note'
+    note_type?: string  // raw tag from progress_notes (e.g. 'hypothese', 'recurrence')
     isHtml?: boolean
     source_label: string
     session_date?: string
@@ -371,9 +373,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             if (note.note_type === 'session_summary') {
               combined.push({
                 id: `note-${note.id}`,
+                note_id: note.id,
                 content: note.content,
                 created_at: note.created_at,
                 type: 'session_summary',
+                note_type: note.note_type,
                 isHtml: true,
                 source_label: locale === 'fr' ? 'Résumé de séance' : locale === 'es' ? 'Resumen de sesión' : 'Session Summary',
                 session_date: sessionData?.scheduled_at,
@@ -382,9 +386,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             } else {
               combined.push({
                 id: `note-${note.id}`,
+                note_id: note.id,
                 content: note.content,
                 created_at: note.created_at,
                 type: 'note',
+                note_type: note.note_type,
                 source_label: 'Note',
               })
             }
@@ -1145,54 +1151,96 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
           </AnimatePresence>
         )
 
-      case 'recent_notes':
-        const noteTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId; sub?: SubTabId }> = {
-          session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions_notes', sub: 'sessions' },
-          note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions_notes', sub: 'notes' },
+      case 'recent_notes': {
+        // Tag color palette — matches NotesTab's getNoteColor
+        const tagColors: Record<string, { bg: string; text: string; border: string }> = {
+          general:             { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200' },
+          recurrence:          { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
+          hypothese:           { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200' },
+          symptome:            { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200' },
+          transfert:           { bg: 'bg-yellow-50',  text: 'text-yellow-700',  border: 'border-yellow-200' },
+          contre_transfert:    { bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200' },
+          ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+          session_summary:     { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
         }
-        const handleNoteClick = (note: CombinedNote) => {
-          const style = noteTypeStyles[note.type]
-          if (onNavigateToTab) {
-            onNavigateToTab(style.tab, note.session_id, style.sub)
+        const fallbackTagColor = { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' }
+
+        // Resolve a human-readable label for any tag (uses i18n if available)
+        const tagLabel = (slug: string): string => {
+          const noteTypeLabels = (t.members as { noteTypes?: Record<string, string> })?.noteTypes
+          if (slug === 'session_summary') return locale === 'fr' ? 'Résumé de séance' : locale === 'es' ? 'Resumen de sesión' : 'Session Summary'
+          return noteTypeLabels?.[slug] || slug.replace(/_/g, ' ')
+        }
+
+        // Build list of latest 3 unique INLINE tags. We scan note content for
+        // <mark data-tag="..." data-tag-label="...">tagged text</mark>
+        // (the actual content tags practitioners apply inside the rich-text
+        // editor). For each tag, keep the most recent note that introduced
+        // it AND the tagged text fragment so we can show "tag → text".
+        const seen = new Set<string>()
+        const recentTags: Array<{ tag: string; label?: string; text: string; note: CombinedNote }> = []
+        const tagRegex = /<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"[^>]*>([\s\S]*?)<\/mark>/g
+        for (const note of allNotes) {
+          if (!note.content) continue
+          const inlineTags: Array<{ type: string; label: string; text: string }> = []
+          let m: RegExpExecArray | null
+          tagRegex.lastIndex = 0
+          while ((m = tagRegex.exec(note.content)) !== null) {
+            const innerText = stripHtml(m[3]).trim()
+            inlineTags.push({ type: m[1], label: m[2], text: innerText })
           }
+          for (const inline of inlineTags) {
+            if (seen.has(inline.type)) continue
+            seen.add(inline.type)
+            recentTags.push({ tag: inline.type, label: inline.label, text: inline.text, note })
+            if (recentTags.length >= 3) break
+          }
+          if (recentTags.length >= 3) break
         }
-        return combinedNotes.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <MessageSquare className="w-6 h-6 text-gray-400" />
+
+        if (recentTags.length === 0) {
+          return (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="w-6 h-6 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {locale === 'fr' ? 'Les tags utilisés apparaîtront ici' : locale === 'es' ? 'Las etiquetas usadas aparecerán aquí' : 'Tags you use will appear here'}
+              </p>
             </div>
-            <p className="text-sm text-gray-500">{t.members.overview.noNotes}</p>
-            <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les notes de séances et axes de travail apparaîtront ici' : 'Session and goal notes will appear here'}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {combinedNotes.map((note, index) => {
-              const typeStyle = noteTypeStyles[note.type]
+          )
+        }
+
+        return (
+          <div className="space-y-2">
+            {recentTags.map(({ tag, label, text, note }, index) => {
+              const colors = tagColors[tag] || fallbackTagColor
+              const displayLabel = label || tagLabel(tag)
               return (
-                <motion.div
-                  key={note.id}
+                <motion.button
+                  key={tag}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * index }}
-                  className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                  onClick={() => handleNoteClick(note)}
+                  onClick={() => onNavigateToTab?.('sessions_notes', note.note_id, 'notes')}
+                  className="group w-full p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`}>
-                        {typeStyle.icon}
-                        {note.source_label}
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${colors.bg} ${colors.text} ${colors.border} shrink-0`}>
+                        {displayLabel}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 shrink-0">
                         {formatRelativeTime(note.created_at)}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                     </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" />
                   </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">{stripHtml(note.content)}</p>
-                </motion.div>
+                  {text && (
+                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{text}</p>
+                  )}
+                </motion.button>
               )
             })}
 
@@ -1206,6 +1254,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             </button>
           </div>
         )
+      }
 
       case 'shared_resources':
         return sharedResources.length === 0 ? (
