@@ -757,22 +757,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center ">
-            <Clock className="w-5 h-5 text-blue-600" />
-          </div>
-          {t.members.sessions.title}
-        </h2>
-        <Button
-          onClick={() => setShowScheduleModal(true)}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-lg transition-colors hover-lift"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {t.members.sessions.addSession}
-        </Button>
-      </div>
 
       {/* Add Session Form */}
       <AnimatePresence>
@@ -959,16 +943,27 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           )}
         </h3>
 
-        {upcomingSessions.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4 ">
-              <Calendar className="w-7 h-7 text-blue-400" />
+        <div className="space-y-2">
+          {/* Add Session — card-style CTA at the top of the list */}
+          <button
+            type="button"
+            onClick={() => setShowScheduleModal(true)}
+            className="w-full p-4 rounded-xl border border-dashed border-gray-300 hover:border-gray-900 bg-gray-50/40 hover:bg-gray-50 transition-all group flex items-center gap-3 text-left"
+          >
+            <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 group-hover:border-gray-900 flex items-center justify-center transition-colors">
+              <Plus className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
             </div>
-            <p className="text-sm font-medium text-gray-500">{t.members.sessions.noUpcoming}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {upcomingSessions.map((session, index) => {
+            <span className="text-sm font-medium text-gray-500 group-hover:text-gray-900 transition-colors">
+              {t.members.sessions.addSession}
+            </span>
+          </button>
+
+          {upcomingSessions.length === 0 && (
+            <p className="text-sm text-gray-400 italic text-center py-2">
+              {t.members.sessions.noUpcoming}
+            </p>
+          )}
+          {upcomingSessions.length > 0 && upcomingSessions.map((session, index) => {
               const FormatIcon = formatIcon[session.session_format]
               const hasRescheduleRequest = session.reschedule_requested && session.reschedule_status === 'pending'
               const hasPendingProposal = session.reschedule_status === 'proposed'
@@ -988,7 +983,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     delay: 0.05 * index,
                     boxShadow: highlightSessionId === session.id ? { duration: 1.5, repeat: 2 } : {}
                   }}
-                  className={`p-5 rounded-2xl bg-gradient-to-r ${
+                  className={`p-4 rounded-xl bg-gradient-to-r ${
                     hasRescheduleRequest
                       ? 'from-amber-50/80 to-amber-100/50 border-amber-300/60'
                       : hasPendingProposal
@@ -1082,16 +1077,16 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     </div>
                   )}
 
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${
                         hasRescheduleRequest
                           ? 'from-amber-100 to-amber-200'
                           : hasPendingProposal
                           ? 'from-purple-100 to-purple-200'
                           : 'from-blue-100 to-blue-200'
-                      } flex items-center justify-center `}>
-                        <FormatIcon className={`w-6 h-6 ${
+                      } flex items-center justify-center`}>
+                        <FormatIcon className={`w-4 h-4 ${
                           hasRescheduleRequest
                             ? 'text-amber-600'
                             : hasPendingProposal
@@ -1099,34 +1094,33 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             : 'text-blue-600'
                         }`} />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-gray-900">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900 text-sm">
                             {t.members.sessionTypes[session.session_type]}
                           </p>
                           {session.member_confirmed && (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
                               <Check className="w-3 h-3" />
                               {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                            weekday: 'long',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                            {session.duration_minutes} {t.members.sessions.minutes}
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                          <span>
+                            {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
                           </span>
-                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                            {t.members.sessionFormats[session.session_format]}
-                          </span>
+                          <span>·</span>
+                          <span>{session.duration_minutes} {t.members.sessions.minutes}</span>
+                          <span>·</span>
+                          <span>{t.members.sessionFormats[session.session_format]}</span>
+                          <span>·</span>
                           <PaymentBadge
                             status={session.payment_status || 'unpaid'}
                             table={session.id.startsWith('booking-') ? 'bookings' : 'sessions'}
@@ -1320,8 +1314,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 </motion.div>
               )
             })}
-          </div>
-        )}
+        </div>
       </motion.div>
 
       {/* Past Sessions */}

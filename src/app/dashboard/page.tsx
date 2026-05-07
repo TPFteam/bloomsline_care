@@ -1082,7 +1082,7 @@ function DashboardContent() {
                         transition={{ delay: 0.35 + index * 0.05 }}
                       >
                         {session.member_id ? (
-                          <Link href={`/members/${session.member_id}?tab=sessions`}>{content}</Link>
+                          <Link href={`/members/${session.member_id}?tab=sessions_notes`}>{content}</Link>
                         ) : (
                           content
                         )}

@@ -32,14 +32,15 @@ import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel, getMemb
 import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { getUserPreferences, updateUserPreferences, DEFAULT_CARD_LAYOUT, type CardLayoutItem } from '@/lib/services/preferences'
 
-type TabId = 'overview' | 'sessions' | 'notes' | 'progress' | 'files' | 'shared'
+type TabId = 'overview' | 'sessions_notes' | 'progress' | 'files' | 'shared'
+type SubTabId = 'sessions' | 'notes'
 
 interface OverviewTabProps {
   member: Member
   notes: ProgressNote[]
   sessions: MemberSession[]
   onMemberUpdate: () => void
-  onNavigateToTab?: (tab: TabId, highlightId?: string) => void
+  onNavigateToTab?: (tab: TabId, highlightId?: string, sub?: SubTabId) => void
 }
 
 // Debounce helper
@@ -139,17 +140,19 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   useEffect(() => {
     getUserPreferences().then(prefs => {
       if (prefs?.overview_card_layout) {
+        let layout = prefs.overview_card_layout
         // Add ai_summary card if it doesn't exist (for existing users)
-        const hasAiSummary = prefs.overview_card_layout.some(c => c.id === 'ai_summary')
-        if (!hasAiSummary) {
-          const updatedLayout = [
+        if (!layout.some(c => c.id === 'ai_summary')) {
+          layout = [
             { id: 'ai_summary', column: 0 as const, order: 0 },
-            ...prefs.overview_card_layout.map(c => ({ ...c, order: c.order + 1 }))
+            ...layout.map(c => ({ ...c, order: c.order + 1 }))
           ]
-          setCardLayout(updatedLayout)
-        } else {
-          setCardLayout(prefs.overview_card_layout)
         }
+        // Drop cards that have been removed/merged:
+        //   - `preferences` is now a sub-section inside the About card
+        //   - `active_goals` is hidden for now (lives in the Journey tab)
+        layout = layout.filter(c => c.id !== 'preferences' && c.id !== 'active_goals')
+        setCardLayout(layout)
       }
     })
   }, [])
@@ -638,74 +641,96 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
       case 'about':
         return (
-          <AnimatePresence mode="wait">
-            {editingAbout ? (
-              <motion.div
-                key="editing"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <textarea
-                  value={aboutNotes}
-                  onChange={(e) => setAboutNotes(e.target.value)}
-                  placeholder="Add notes about this client..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
-                />
-                <div className="flex justify-end gap-2 mt-3">
+          <>
+            <AnimatePresence mode="wait">
+              {editingAbout ? (
+                <motion.div
+                  key="editing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <textarea
+                    value={aboutNotes}
+                    onChange={(e) => setAboutNotes(e.target.value)}
+                    placeholder="Add notes about this client..."
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
+                  />
+                  <div className="flex justify-end gap-2 mt-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAboutNotes(member.internal_notes || '')
+                        setEditingAbout(false)
+                      }}
+                      className="rounded-lg"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveAbout}
+                      disabled={saving}
+                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : member.internal_notes ? (
+                <motion.p
+                  key="content"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed"
+                >
+                  {member.internal_notes}
+                </motion.p>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <FileText className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune note ajoutée' : 'No notes added yet'}</p>
+                  <Button
+                    size="sm"
+                    onClick={() => setEditingAbout(true)}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    {locale === 'fr' ? 'Ajouter des notes' : 'Add Notes'}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Merged: Key considerations / Points d'attention as a sub-section */}
+            <div className="mt-5 pt-5 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3 group/prefs">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {locale === 'fr' ? "Points d'attention" : locale === 'es' ? 'Puntos de atención' : 'Key considerations'}
+                </h4>
+                {!editingPreferences && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      setAboutNotes(member.internal_notes || '')
-                      setEditingAbout(false)
-                    }}
-                    className="rounded-lg"
+                    onClick={() => setEditingPreferences(true)}
+                    className="text-gray-400 hover:text-gray-700 h-6 w-6 p-0 rounded-md opacity-0 group-hover/prefs:opacity-100 transition-opacity"
                   >
-                    Cancel
+                    <Edit3 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveAbout}
-                    disabled={saving}
-                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              </motion.div>
-            ) : member.internal_notes ? (
-              <motion.p
-                key="content"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed"
-              >
-                {member.internal_notes}
-              </motion.p>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8"
-              >
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <FileText className="w-6 h-6 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune note ajoutée' : 'No notes added yet'}</p>
-                <Button
-                  size="sm"
-                  onClick={() => setEditingAbout(true)}
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  {locale === 'fr' ? 'Ajouter des notes' : 'Add Notes'}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                )}
+              </div>
+              {renderCardContent('preferences')}
+            </div>
+          </>
         )
 
       case 'active_goals':
@@ -772,43 +797,65 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             <p className="text-xs text-gray-400 mt-1">{locale === 'fr' ? 'Les séances passées apparaîtront ici' : 'Past sessions will appear here'}</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {sessions.slice(0, 3).map((session, index) => (
-              <motion.div
-                key={session.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * index }}
-                className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                onClick={() => onNavigateToTab?.('sessions', session.id)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                      {sessionFormatIcons[session.session_format]}
-                      {getSessionFormatLabel(session.session_format, locale)}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                      session.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                      session.status === 'cancelled' ? 'bg-red-50 text-red-700' :
-                      session.status === 'no_show' ? 'bg-amber-50 text-amber-700' :
-                      'bg-blue-50 text-blue-700'
-                    }`}>
-                      {locale === 'fr'
-                        ? ({ scheduled: 'planifié', confirmed: 'confirmé', completed: 'terminé', cancelled: 'annulé', no_show: 'absent' }[session.status?.toLowerCase()] || session.status)
-                        : session.status}
-                    </span>
+          <div className="space-y-2">
+            {sessions.slice(0, 3).map((session, index) => {
+              const FormatIcon = session.session_format === 'in_person' ? User
+                : session.session_format === 'phone' ? Phone
+                : Video
+              const statusStyle =
+                session.status === 'completed' ? { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' }
+                : session.status === 'cancelled' ? { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' }
+                : session.status === 'no_show' ? { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' }
+                : { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' }
+              const statusLabel = locale === 'fr'
+                ? ({ scheduled: 'planifié', confirmed: 'confirmé', completed: 'terminé', cancelled: 'annulé', no_show: 'absent' } as Record<string, string>)[session.status?.toLowerCase()] || session.status
+                : session.status
+              return (
+                <motion.div
+                  key={session.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 * index }}
+                  className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer"
+                  onClick={() => onNavigateToTab?.('sessions_notes', session.id, 'sessions')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center border border-gray-200 shrink-0">
+                        <FormatIcon className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {getSessionTypeLabel(session.session_type, locale)}
+                          </p>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${statusStyle.bg} ${statusStyle.text} shrink-0`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`}></span>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                          <span>
+                            {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </span>
+                          <span>·</span>
+                          <span>{session.duration_minutes} {locale === 'fr' ? 'min' : 'min'}</span>
+                          <span>·</span>
+                          <span>{getSessionFormatLabel(session.session_format, locale)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0 ml-2" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
-                </div>
-                <p className="font-medium text-gray-900 text-sm mb-1">{getSessionTypeLabel(session.session_type, locale)}</p>
-                <p className="text-xs text-gray-500">{formatRelativeTime(session.scheduled_at)}</p>
-              </motion.div>
-            ))}
+                </motion.div>
+              )
+            })}
 
             {/* View All Sessions button - always show to navigate to sessions tab */}
             <button
-              onClick={() => onNavigateToTab?.('sessions', 'past-sessions-section')}
+              onClick={() => onNavigateToTab?.('sessions_notes', 'past-sessions-section', 'sessions')}
               className="w-full py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center justify-center gap-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {locale === 'fr' ? `Voir toutes les séances (${sessions.length})` : `View All Sessions (${sessions.length})`}
@@ -1099,14 +1146,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         )
 
       case 'recent_notes':
-        const noteTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
-          session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
-          note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
+        const noteTypeStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId; sub?: SubTabId }> = {
+          session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions_notes', sub: 'sessions' },
+          note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions_notes', sub: 'notes' },
         }
         const handleNoteClick = (note: CombinedNote) => {
           const style = noteTypeStyles[note.type]
           if (onNavigateToTab) {
-            onNavigateToTab(style.tab, note.session_id)
+            onNavigateToTab(style.tab, note.session_id, style.sub)
           }
         }
         return combinedNotes.length === 0 ? (
@@ -1252,9 +1299,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-xl ${cardInfo.iconBg} flex items-center justify-center ${cardInfo.iconColor}`}>
-                {cardInfo.icon}
-              </div>
+              {cardConfig.id !== 'ai_summary' && (
+                <div className={`w-9 h-9 rounded-xl ${cardInfo.iconBg} flex items-center justify-center ${cardInfo.iconColor}`}>
+                  {cardInfo.icon}
+                </div>
+              )}
               {cardInfo.label}
             </h3>
             <div className="flex items-center gap-1">
@@ -1405,9 +1454,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               <div className="p-5 overflow-y-auto max-h-[60vh]">
                 <div className="space-y-3">
                   {allNotes.map((note, index) => {
-                    const noteStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId }> = {
-                      session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions' },
-                      note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'notes' },
+                    const noteStyles: Record<string, { bg: string; text: string; icon: React.ReactNode; tab: TabId; sub?: SubTabId }> = {
+                      session_summary: { bg: 'bg-blue-50', text: 'text-blue-700', icon: <FileText className="w-3 h-3" />, tab: 'sessions_notes', sub: 'sessions' },
+                      note: { bg: 'bg-gray-100', text: 'text-gray-700', icon: <MessageSquare className="w-3 h-3" />, tab: 'sessions_notes', sub: 'notes' },
                     }
                     const style = noteStyles[note.type]
                     return (
@@ -1419,7 +1468,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                         className="group p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                         onClick={() => {
                           setShowAllNotesModal(false)
-                          onNavigateToTab?.(style.tab, note.session_id)
+                          onNavigateToTab?.(style.tab, note.session_id, style.sub)
                         }}
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -1477,17 +1526,17 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         memberId={member.id}
         memberName={getMemberFullName(member)}
         onNavigateToSource={(sourceType, sourceId) => {
-          // Map Pulse source types → tab IDs
-          const tabMap: Record<string, TabId | null> = {
-            session: 'sessions',
-            note: 'notes',
-            milestone: 'progress',
-            file: 'files',
+          // Map Pulse source types → main tab + optional sub-tab
+          const tabMap: Record<string, { tab: TabId; sub?: SubTabId } | null> = {
+            session: { tab: 'sessions_notes', sub: 'sessions' },
+            note: { tab: 'sessions_notes', sub: 'notes' },
+            milestone: { tab: 'progress' },
+            file: { tab: 'files' },
             reflection: null, // no destination — reflections are patient-private
           }
-          const targetTab = tabMap[sourceType]
-          if (targetTab && onNavigateToTab) {
-            onNavigateToTab(targetTab, sourceId)
+          const target = tabMap[sourceType]
+          if (target && onNavigateToTab) {
+            onNavigateToTab(target.tab, sourceId, target.sub)
           }
         }}
       />

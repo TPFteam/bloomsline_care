@@ -2228,7 +2228,18 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         }
                       } else {
                         const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
-                        rows.push({ note, tag: tagMatch ? { type: tagMatch[1], label: tagMatch[2] } : null, tagContent: stripHtml(note.content) })
+                        let derivedTag: { type: string; label: string } | null = tagMatch
+                          ? { type: tagMatch[1], label: tagMatch[2] }
+                          : null
+                        // Goal notes (milestone_comments) don't have inline <mark> tags;
+                        // they store their tag in `note_type` directly. Surface it here so
+                        // goal-note rows show a tag pill like session notes.
+                        if (!derivedTag && note.milestone_id && note.note_type && note.note_type !== 'general') {
+                          const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+                          const label = noteTypeLabels?.[note.note_type] || note.note_type.replace(/_/g, ' ')
+                          derivedTag = { type: note.note_type, label }
+                        }
+                        rows.push({ note, tag: derivedTag, tagContent: stripHtml(note.content) })
                       }
                     }
                     return rows.map((row, idx) => {
@@ -2255,8 +2266,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                   </span>
                                 )}
                                 {(note.title || (note as any).milestones?.title) && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 flex-shrink-0">
-                                    <Target className="w-2.5 h-2.5" />{note.title || (note as any).milestones?.title}
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 flex-shrink-0">
+                                    <Target className="w-2.5 h-2.5" />
+                                    <span>
+                                      {locale === 'fr' ? 'Objectif' : locale === 'es' ? 'Objetivo' : 'Goal'} · {note.title || (note as any).milestones?.title}
+                                    </span>
                                   </span>
                                 )}
                               </div>

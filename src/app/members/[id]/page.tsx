@@ -40,7 +40,8 @@ import FilesTab from './tabs/FilesTab'
 import SharedTab from './tabs/SharedTab'
 import NotesTab from './tabs/NotesTab'
 
-type TabId = 'overview' | 'sessions' | 'notes' | 'progress' | 'files' | 'shared'
+type TabId = 'overview' | 'sessions_notes' | 'progress' | 'files' | 'shared'
+type SubTabId = 'sessions' | 'notes'
 
 export default function MemberProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -49,15 +50,32 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // Get initial tab from URL or default to 'overview'
-  const tabFromUrl = searchParams.get('tab') as TabId | null
-  const validTabs: TabId[] = ['overview', 'sessions', 'notes', 'progress', 'files', 'shared']
-  const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview'
+  // Get initial tab from URL or default to 'overview'.
+  // Back-compat: legacy `?tab=sessions` and `?tab=notes` URLs are mapped to the
+  // new merged 'sessions_notes' tab with the correct sub-tab pre-selected.
+  const rawTabFromUrl = searchParams.get('tab')
+  const rawSubFromUrl = searchParams.get('sub') as SubTabId | null
+  const validTabs: TabId[] = ['overview', 'sessions_notes', 'progress', 'files', 'shared']
+  let initialTab: TabId = 'overview'
+  let initialSub: SubTabId = 'sessions'
+  if (rawTabFromUrl === 'sessions') {
+    initialTab = 'sessions_notes'
+    initialSub = 'sessions'
+  } else if (rawTabFromUrl === 'notes') {
+    initialTab = 'sessions_notes'
+    initialSub = 'notes'
+  } else if (rawTabFromUrl && validTabs.includes(rawTabFromUrl as TabId)) {
+    initialTab = rawTabFromUrl as TabId
+    if (initialTab === 'sessions_notes' && (rawSubFromUrl === 'sessions' || rawSubFromUrl === 'notes')) {
+      initialSub = rawSubFromUrl
+    }
+  }
 
   const [member, setMember] = useState<Member | null>(null)
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+  const [activeSubTab, setActiveSubTab] = useState<SubTabId>(initialSub)
   const [showConvertConfirm, setShowConvertConfirm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [bookSessionTrigger, setBookSessionTrigger] = useState(false)
@@ -70,10 +88,11 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     fetchRelatedData()
   }, [resolvedParams.id])
 
-  // Redirect prospect to 'sessions' tab if on a tab they can't see
+  // Redirect prospect to 'sessions_notes' tab if on a tab they can't see
   useEffect(() => {
     if (member?.status === 'prospect' && !prospectTabs.includes(activeTab)) {
-      setActiveTab('sessions')
+      setActiveTab('sessions_notes')
+      setActiveSubTab('sessions')
     }
   }, [member?.status])
 
@@ -201,22 +220,31 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     }
   }
 
-  // Helper to update URL with tab parameter
-  const updateTabInUrl = (tab: TabId) => {
+  // Helper to update URL with tab + optional sub-tab
+  const updateTabInUrl = (tab: TabId, sub?: SubTabId) => {
     const params = new URLSearchParams(searchParams.toString())
     if (tab === 'overview') {
       params.delete('tab')
     } else {
       params.set('tab', tab)
     }
+    if (tab === 'sessions_notes') {
+      // Only set sub when not the default ('sessions')
+      if (sub && sub !== 'sessions') params.set('sub', sub)
+      else params.delete('sub')
+    } else {
+      params.delete('sub')
+    }
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
     router.replace(newUrl, { scroll: false })
   }
 
-  // Handler for navigating to tabs with optional highlight
-  const handleNavigateToTab = (tab: TabId, id?: string) => {
+  // Handler for navigating to tabs with optional highlight + optional sub-tab.
+  // Pulse citations route session/note source types here with a sub hint.
+  const handleNavigateToTab = (tab: TabId, id?: string, sub?: SubTabId) => {
     setActiveTab(tab)
-    updateTabInUrl(tab)
+    if (sub) setActiveSubTab(sub)
+    updateTabInUrl(tab, sub)
     setHighlightId(id)
     // Clear highlight ring after a delay. Files tab may need to fetch a
     // subfolder before scrolling, so give it a bit more headroom.
@@ -229,21 +257,32 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   // Handler for tab button clicks
   const handleTabClick = (tab: TabId) => {
     setActiveTab(tab)
-    updateTabInUrl(tab)
+    updateTabInUrl(tab, tab === 'sessions_notes' ? activeSubTab : undefined)
+  }
+
+  // Handler for sub-tab clicks inside Sessions and Notes
+  const handleSubTabClick = (sub: SubTabId) => {
+    setActiveSubTab(sub)
+    updateTabInUrl('sessions_notes', sub)
   }
 
   const isProspect = member?.status === 'prospect'
 
+  const sessionsAndNotesLabel = locale === 'fr'
+    ? 'Séances'
+    : locale === 'es'
+      ? 'Sesiones'
+      : 'Sessions'
+
   const allTabs: { id: TabId; label: string; icon: typeof FileText }[] = [
     { id: 'overview', label: t.members.profile.overview, icon: User },
-    { id: 'sessions', label: t.members.profile.sessions, icon: Clock },
-    { id: 'notes', label: t.members.profile.notes, icon: StickyNote },
+    { id: 'sessions_notes', label: sessionsAndNotesLabel, icon: Clock },
     { id: 'progress', label: t.members.profile.progress, icon: TrendingUp },
     { id: 'files', label: t.members.profile.files, icon: FileText },
     { id: 'shared', label: t.members.profile.sharedResources, icon: Share2 },
   ]
 
-  const prospectTabs: TabId[] = ['sessions', 'files']
+  const prospectTabs: TabId[] = ['sessions_notes', 'files']
   const tabs = isProspect ? allTabs.filter(tab => prospectTabs.includes(tab.id)) : allTabs
 
   const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
@@ -307,8 +346,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setActiveTab('sessions')
-                      updateTabInUrl('sessions')
+                      setActiveTab('sessions_notes')
+                      setActiveSubTab('sessions')
+                      updateTabInUrl('sessions_notes', 'sessions')
                       setBookSessionTrigger(true)
                     }}
                     className="text-teal-600 border-teal-200 hover:bg-teal-50 hover:text-teal-700"
@@ -458,7 +498,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -486,19 +526,48 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   onNavigateToTab={handleNavigateToTab}
                 />
               )}
-              {activeTab === 'sessions' && (
-                <SessionsTab
-                  memberId={member.id}
-                  member={member}
-                  sessions={sessions}
-                  onSessionsUpdate={fetchRelatedData}
-                  highlightSessionId={highlightId}
-                  openBookModal={bookSessionTrigger}
-                  onBookModalOpened={() => setBookSessionTrigger(false)}
-                />
-              )}
-              {activeTab === 'notes' && (
-                <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} onSessionsUpdate={fetchRelatedData} member={member} highlightNoteId={highlightId} />
+              {activeTab === 'sessions_notes' && (
+                <div>
+                  {/* Sub-tab strip — underline style, secondary nav */}
+                  <div className="flex items-center gap-6 mb-5 border-b border-gray-200">
+                    {([
+                      { id: 'sessions' as const, label: t.members.profile.sessions, icon: Clock },
+                      { id: 'notes' as const, label: 'Notes', icon: StickyNote },
+                    ]).map(sub => {
+                      const SubIcon = sub.icon
+                      const isActive = activeSubTab === sub.id
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => handleSubTabClick(sub.id)}
+                          className={`flex items-center gap-2 px-1 pb-2.5 -mb-px text-sm font-medium transition-colors border-b-2 ${
+                            isActive
+                              ? 'text-gray-900 border-gray-900'
+                              : 'text-gray-500 border-transparent hover:text-gray-700'
+                          }`}
+                        >
+                          <SubIcon className="w-4 h-4" />
+                          {sub.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {activeSubTab === 'sessions' && (
+                    <SessionsTab
+                      memberId={member.id}
+                      member={member}
+                      sessions={sessions}
+                      onSessionsUpdate={fetchRelatedData}
+                      highlightSessionId={highlightId}
+                      openBookModal={bookSessionTrigger}
+                      onBookModalOpened={() => setBookSessionTrigger(false)}
+                    />
+                  )}
+                  {activeSubTab === 'notes' && (
+                    <NotesTab memberId={member.id} sessions={sessions} notes={notes} onNotesUpdate={fetchRelatedData} onSessionsUpdate={fetchRelatedData} member={member} highlightNoteId={highlightId} />
+                  )}
+                </div>
               )}
               {activeTab === 'progress' && (
                 <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />

@@ -3567,7 +3567,7 @@ function MemberCard({
         {/* Actions */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <Link
-            href={`/members/${member.id}?tab=sessions&book=true`}
+            href={`/members/${member.id}?tab=sessions_notes&book=true`}
             className="p-2 rounded-full text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
             title={locale === 'fr' ? 'Réserver une séance' : 'Book session'}
           >
