@@ -2265,14 +2265,20 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                     <LinkIcon className="w-2.5 h-2.5" />{getSessionLabelShort(note.session_id)}
                                   </span>
                                 )}
-                                {(note.title || (note as any).milestones?.title) && (
-                                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 flex-shrink-0">
-                                    <Target className="w-2.5 h-2.5" />
-                                    <span>
-                                      {locale === 'fr' ? 'Objectif' : locale === 'es' ? 'Objetivo' : 'Goal'} · {note.title || (note as any).milestones?.title}
+                                {(note.title || (note as any).milestones?.title) && (() => {
+                                  const goalTitle = (note.title || (note as any).milestones?.title) as string
+                                  const truncated = goalTitle.length > 10 ? goalTitle.slice(0, 10) + '...' : goalTitle
+                                  const prefix = locale === 'fr' ? 'Axe de travail' : locale === 'es' ? 'Objetivo' : 'Goal'
+                                  return (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] text-emerald-600 flex-shrink-0"
+                                      title={`${prefix} · ${goalTitle}`}
+                                    >
+                                      <Target className="w-2.5 h-2.5" />
+                                      <span>{prefix} · {truncated}</span>
                                     </span>
-                                  </span>
-                                )}
+                                  )
+                                })()}
                               </div>
                               <div className="flex items-center gap-1.5">
                                 {tag && tagColors && (
