@@ -68,6 +68,67 @@ function formatDate(iso: string, locale: Locale): string {
   })
 }
 
+/**
+ * Coerce a response value into a single string safely.
+ *
+ * Worst-case inputs we've seen: deeply nested objects (response saved as
+ * an upload metadata blob), arrays where a string is expected, circular
+ * references caused by accidental front-end serialization. `String(obj)`
+ * returns `[object Object]` for plain objects which is useless in a PDF;
+ * JSON.stringify can throw on circulars. This helper handles both.
+ */
+function coerceToText(value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) {
+    const parts = value.map(v => coerceToText(v)).filter((s): s is string => !!s)
+    return parts.length > 0 ? parts.join(', ') : null
+  }
+  if (typeof value === 'object') {
+    // Objects with a `url`/`name`/`text` field: prefer those.
+    const obj = value as Record<string, unknown>
+    if (typeof obj.text === 'string' && obj.text.trim()) return obj.text
+    if (typeof obj.value === 'string' && obj.value.trim()) return obj.value
+    if (typeof obj.label === 'string' && obj.label.trim()) return obj.label
+    try {
+      const serialized = JSON.stringify(value)
+      // Don't render `{}` or `null` as content
+      return serialized && serialized !== '{}' && serialized !== 'null' ? serialized : null
+    } catch {
+      // Circular references etc. — give up gracefully.
+      return null
+    }
+  }
+  return null
+}
+
+/**
+ * Resolve a file-response shape (string URL, {url, name}, or array of those)
+ * into a flat list of {url, name} entries.
+ */
+function extractFiles(value: unknown): Array<{ url: string; name?: string }> {
+  if (!value) return []
+  if (typeof value === 'string') return [{ url: value }]
+  if (Array.isArray(value)) {
+    return value.flatMap(v => extractFiles(v))
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    const url = typeof obj.url === 'string' ? obj.url
+      : typeof obj.path === 'string' ? obj.path
+      : typeof obj.publicUrl === 'string' ? obj.publicUrl
+      : null
+    if (url) {
+      const name = typeof obj.name === 'string' ? obj.name
+        : typeof obj.fileName === 'string' ? obj.fileName
+        : undefined
+      return [{ url, name }]
+    }
+  }
+  return []
+}
+
 /** Render a single answer to plain HTML based on the block type. */
 function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): string {
   const notAnswered = locale === 'fr' ? 'Non renseigné' : locale === 'es' ? 'Sin respuesta' : 'Not answered'
@@ -77,51 +138,86 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
     return `<em style="color:#9ca3af">${notAnswered}</em>`
   }
 
-  switch (block.type) {
-    case 'prompt':
-    case 'numeric':
-    case 'slider':
-    case 'mood':
-    case 'date_picker':
-    case 'time_input':
-    case 'yes_no':
-    case 'multiple_choice':
-    case 'scale':
-    case 'likert':
-      return `<div style="white-space:pre-wrap">${escapeHtml(String(response))}</div>`
-
-    case 'checklist':
-    case 'list_input':
-      if (Array.isArray(response)) {
-        const items = response.map(r => `<li style="margin:2px 0">${escapeHtml(String(r))}</li>`).join('')
-        return `<ul style="margin:4px 0;padding-left:20px;list-style:disc">${items}</ul>`
+  // Wrap the body in a try/catch so a single weirdly-shaped response can't
+  // bring down the whole PDF render. Worst case we fall through to a
+  // "unrenderable" placeholder.
+  try {
+    switch (block.type) {
+      case 'prompt':
+      case 'numeric':
+      case 'slider':
+      case 'mood':
+      case 'date_picker':
+      case 'time_input':
+      case 'yes_no':
+      case 'multiple_choice':
+      case 'scale':
+      case 'likert': {
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div style="white-space:pre-wrap">${escapeHtml(text)}</div>`
       }
-      return `<div>${escapeHtml(String(response))}</div>`
 
-    case 'table_exercise': {
-      const cols = ('columns' in block && Array.isArray((block as { columns?: unknown }).columns))
-        ? ((block as unknown as { columns: { id: string; header: string }[] }).columns)
-        : []
-      const rows = Array.isArray(response) ? (response as Record<string, string>[]) : []
-      if (rows.length === 0 || cols.length === 0) {
-        return `<em style="color:#9ca3af">${notAnswered}</em>`
+      case 'checklist':
+      case 'list_input': {
+        if (Array.isArray(response)) {
+          const items = response
+            .map(r => coerceToText(r))
+            .filter((s): s is string => !!s)
+            .map(s => `<li style="margin:2px 0">${escapeHtml(s)}</li>`)
+            .join('')
+          if (!items) return `<em style="color:#9ca3af">${notAnswered}</em>`
+          return `<ul style="margin:4px 0;padding-left:20px;list-style:disc">${items}</ul>`
+        }
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div>${escapeHtml(text)}</div>`
       }
-      const head = cols.map(c => `<th style="text-align:left;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;font-size:11px;color:#6b7280">${escapeHtml(c.header)}</th>`).join('')
-      const body = rows.map(r =>
-        `<tr>${cols.map(c => `<td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:12px">${escapeHtml(r[c.id] || '-')}</td>`).join('')}</tr>`
-      ).join('')
-      return `<table style="border-collapse:collapse;width:100%;margin:6px 0"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
-    }
 
-    case 'video_response':
-    case 'audio_response':
-    case 'file_response': {
-      const label = locale === 'fr' ? 'Fichier soumis' : locale === 'es' ? 'Archivo enviado' : 'File submitted'
-      return `<em style="color:#6b7280">[${label}]</em>`
-    }
+      case 'table_exercise': {
+        const cols = ('columns' in block && Array.isArray((block as { columns?: unknown }).columns))
+          ? ((block as unknown as { columns: { id: string; header: string }[] }).columns)
+          : []
+        const rows = Array.isArray(response) ? (response as Record<string, unknown>[]) : []
+        if (rows.length === 0 || cols.length === 0) {
+          return `<em style="color:#9ca3af">${notAnswered}</em>`
+        }
+        const head = cols.map(c => `<th style="text-align:left;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;font-size:11px;color:#6b7280">${escapeHtml(c.header)}</th>`).join('')
+        const body = rows.map(r =>
+          `<tr>${cols.map(c => {
+            const cellText = coerceToText(r?.[c.id]) || '-'
+            return `<td style="padding:6px 8px;border:1px solid #e5e7eb;font-size:12px">${escapeHtml(cellText)}</td>`
+          }).join('')}</tr>`
+        ).join('')
+        return `<table style="border-collapse:collapse;width:100%;margin:6px 0"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
+      }
 
-    default:
-      return `<div style="white-space:pre-wrap">${escapeHtml(String(response))}</div>`
+      case 'video_response':
+      case 'audio_response':
+      case 'file_response': {
+        const files = extractFiles(response)
+        const label = locale === 'fr' ? 'Fichier soumis' : locale === 'es' ? 'Archivo enviado' : 'File submitted'
+        if (files.length === 0) {
+          return `<em style="color:#6b7280">[${label}]</em>`
+        }
+        const items = files.map(f => {
+          const display = f.name || label
+          return `<li style="margin:2px 0">${escapeHtml(display)}</li>`
+        }).join('')
+        return `<ul style="margin:4px 0;padding-left:20px;list-style:disc;color:#6b7280;font-size:12px">${items}</ul>`
+      }
+
+      default: {
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div style="white-space:pre-wrap">${escapeHtml(text)}</div>`
+      }
+    }
+  } catch (err) {
+    // Defensive: never let one bad response break the PDF.
+    console.warn('[resource-submission-pdf] renderAnswer failed for block', block.id, err)
+    const unrenderable = locale === 'fr' ? 'Réponse non affichable' : locale === 'es' ? 'Respuesta no mostrable' : 'Response cannot be displayed'
+    return `<em style="color:#ef4444">[${unrenderable}]</em>`
   }
 }
 
