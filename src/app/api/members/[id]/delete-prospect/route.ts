@@ -37,7 +37,56 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    // Soft delete — mark as deleted, keep data for analytics
+    // Wipe resource-flow data tied to this member BEFORE soft-deleting
+    // the row. Product decision (May 2026): when a member is deleted,
+    // their worksheet responses + assignments + share rows are removed
+    // entirely so old patient data doesn't linger in the practitioner's
+    // UI. Sessions, notes, files, etc. follow their own lifecycles.
+    //
+    // We capture response IDs first so we can clean up any notifications
+    // that pointed at them (the notifications table has no FK link to
+    // resource_responses, so cascade can't reach it).
+    const { data: responseRows } = await supabase
+      .from('resource_responses')
+      .select('id')
+      .eq('member_id', id)
+    const responseIds = (responseRows || []).map(r => r.id as string)
+
+    try {
+      // resource_responses
+      await supabase
+        .from('resource_responses')
+        .delete()
+        .eq('member_id', id)
+
+      // member_shared_resources (the share/assignment from practitioner → member)
+      await supabase
+        .from('member_shared_resources')
+        .delete()
+        .eq('member_id', id)
+
+      // resource_assignments (the assigned-to link)
+      await supabase
+        .from('resource_assignments')
+        .delete()
+        .eq('member_id', id)
+
+      // Notifications for those responses (best-effort)
+      if (responseIds.length > 0) {
+        await supabase
+          .from('notifications')
+          .delete()
+          .eq('entity_type', 'resource_response')
+          .in('entity_id', responseIds)
+      }
+    } catch (cleanupErr) {
+      // Don't block the member delete on resource cleanup — log and proceed.
+      console.warn('Resource data cleanup on member delete failed:', cleanupErr)
+    }
+
+    // Soft delete — mark as deleted, keep the member row + status/reason
+    // for analytics and audit. Resource data above is the only thing
+    // hard-deleted.
     const { error } = await supabase
       .from('members')
       .update({
