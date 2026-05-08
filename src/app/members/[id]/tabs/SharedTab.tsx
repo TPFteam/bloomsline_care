@@ -75,6 +75,7 @@ interface SharedLibraryResource {
     title: string
     type: string
     description: string | null
+    is_recurring?: boolean
   }
 }
 
@@ -158,6 +159,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   // Expanded response viewer
   const [expandedResponseId, setExpandedResponseId] = useState<string | null>(null)
+  // For recurring resources, the practitioner can have multiple submissions
+  // per (member, resource). This map tracks which submission is currently
+  // selected inside each expanded card. Keyed by share-row id (same key as
+  // expandedResponseId).
+  const [selectedSubmissionByShareId, setSelectedSubmissionByShareId] = useState<Record<string, string>>({})
 
   // Resource completion filter
   const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
@@ -270,7 +276,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
         .from('member_shared_resources')
         .select(`
           *,
-          resource:resources!inner(id, title, type, description)
+          resource:resources!inner(id, title, type, description, is_recurring)
         `)
         .eq('member_id', memberId)
         .eq('practitioner_id', user.id)
@@ -1010,9 +1016,27 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
                       {/* View Responses - for interactive resource types */}
                       {(() => {
-                        const submission = submissions.find(s => s.resource_id === resource.resource_id)
                         const isInteractive = ['worksheet', 'exercise', 'assessment', 'table'].includes(resource.resource.type)
-                        if (!isInteractive || !submission) return null
+                        if (!isInteractive) return null
+
+                        // Recurring resources can have multiple submissions per
+                        // (member, resource). Pull them all (newest first) and
+                        // let the practitioner switch between submissions inside
+                        // the expanded card.
+                        const isRecurring = !!resource.resource.is_recurring
+                        const allMatching = submissions
+                          .filter(s => s.resource_id === resource.resource_id)
+                          .sort((a, b) => {
+                            const ta = new Date(a.submitted_at || a.created_at).getTime()
+                            const tb = new Date(b.submitted_at || b.created_at).getTime()
+                            return tb - ta
+                          })
+                        if (allMatching.length === 0) return null
+
+                        // Default to the newest. If the practitioner has clicked
+                        // a different one in this session, honour that.
+                        const selectedId = selectedSubmissionByShareId[resource.id] || allMatching[0].id
+                        const submission = allMatching.find(s => s.id === selectedId) || allMatching[0]
 
                         const isSubmitted = submission.status === 'submitted' || submission.status === 'reviewed'
                         const isExpanded = expandedResponseId === resource.id
@@ -1034,6 +1058,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                             >
                               <Eye className="w-3.5 h-3.5" />
                               {locale === 'fr' ? 'Voir les réponses' : 'View Responses'}
+                              {isRecurring && allMatching.length > 1 && (
+                                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-semibold">
+                                  {allMatching.length}
+                                </span>
+                              )}
                               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
                             <AnimatePresence>
@@ -1058,6 +1087,31 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                     </div>
                                   ) : (
                                   <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                                    {/* Submission picker for recurring resources */}
+                                    {isRecurring && allMatching.length > 1 && (
+                                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mt-1 mb-1">
+                                        {allMatching.map((sub, i) => {
+                                          const isSel = sub.id === submission.id
+                                          const dt = sub.submitted_at || sub.created_at
+                                          const label = new Date(dt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+                                          return (
+                                            <button
+                                              key={sub.id}
+                                              onClick={() => setSelectedSubmissionByShareId(prev => ({ ...prev, [resource.id]: sub.id }))}
+                                              className={`shrink-0 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                                                isSel
+                                                  ? 'bg-violet-600 text-white'
+                                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                              }`}
+                                              title={new Date(dt).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                                            >
+                                              <span className="opacity-60 mr-1">#{allMatching.length - i}</span>
+                                              {label}
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
                                     {questionBlocks.length > 0 ? questionBlocks.map((block, idx) => {
                                       const response = responses[block.id]
                                       const hasResponse = response !== undefined && response !== null && response !== ''
