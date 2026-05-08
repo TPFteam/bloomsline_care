@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/browser-client'
 
 const BUCKET_NAME = 'resource-media'
+const RESPONSES_BUCKET = 'resource-responses'
 
 // Get browser supabase client for storage operations
 const getSupabase = () => createClient()
@@ -68,6 +69,62 @@ export async function uploadResourceFile(
 
   return {
     url: urlData.publicUrl,
+    path: data.path,
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+  }
+}
+
+/**
+ * Upload a patient response file (audio / video / file answer block) to the
+ * `resource-responses` bucket. Folder convention is
+ *   {member_user_id}/{resource_id}/{timestamp}-{filename}
+ * so the storage RLS can authorize practitioner reads via foldername[2].
+ *
+ * Does NOT use getPublicUrl — the bucket is private. Callers should request
+ * a signed URL or rely on supabase-js to fetch via the SDK.
+ */
+export async function uploadResponseFile(
+  file: File,
+  userId: string,
+  resourceId: string,
+): Promise<UploadResult> {
+  const timestamp = Date.now()
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const filePath = `${userId}/${resourceId}/${timestamp}-${sanitizedName}`
+
+  let contentType = file.type
+  if (contentType === 'audio/ogg') contentType = 'audio/mpeg'
+  if (contentType === 'video/quicktime') contentType = 'video/mp4'
+
+  const supabase = getSupabase()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await supabase.auth.refreshSession()
+  }
+
+  const { data, error } = await supabase.storage
+    .from(RESPONSES_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType,
+    })
+
+  if (error) {
+    console.error('Response upload error:', error)
+    throw new Error(`Failed to upload response file: ${error.message}`)
+  }
+
+  // Bucket is private — return a 1-day signed URL. Callers that need a
+  // longer-lived link should re-sign on demand.
+  const { data: signed } = await supabase.storage
+    .from(RESPONSES_BUCKET)
+    .createSignedUrl(data.path, 60 * 60 * 24)
+
+  return {
+    url: signed?.signedUrl || '',
     path: data.path,
     fileName: file.name,
     fileSize: file.size,
