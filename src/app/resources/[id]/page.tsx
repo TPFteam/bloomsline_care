@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { analytics } from '@/lib/analytics/events'
@@ -343,6 +343,11 @@ export default function ResourceDetailPage() {
   const [downloadingMemberId, setDownloadingMemberId] = useState<string | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
+  // When the practitioner arrives via a notification deep-link
+  // (?submission=<id>), auto-open the review modal for that submission once
+  // the submissions list has loaded. The ref makes sure we only do it once
+  // per navigation so re-renders don't keep re-opening the modal.
+  const autoOpenedSubmissionRef = useRef<string | null>(null)
   const [savingNotes, setSavingNotes] = useState(false)
   const [copied, setCopied] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
@@ -559,6 +564,25 @@ export default function ResourceDetailPage() {
       setLoadingSubmissions(false)
     }
   }
+
+  // Notification deep-link: open the review modal for a specific submission
+  // when the URL is `/resources/{id}?submission={responseId}`. Runs once
+  // per submission id; the ref prevents re-opens after the practitioner
+  // closes the modal during the same session.
+  useEffect(() => {
+    const submissionParam = searchParams.get('submission')
+    if (!submissionParam) return
+    if (autoOpenedSubmissionRef.current === submissionParam) return
+    if (loadingSubmissions) return
+    if (submissions.length === 0) return
+
+    const target = submissions.find(s => s.id === submissionParam)
+    if (target) {
+      autoOpenedSubmissionRef.current = submissionParam
+      setSelectedSubmission({ ...target, status: target.status as 'draft' | 'submitted' | 'reviewed' })
+      setReviewNotes(target.practitioner_notes || '')
+    }
+  }, [searchParams, submissions, loadingSubmissions])
 
   const handleSaveReviewNotes = async () => {
     if (!selectedSubmission) return

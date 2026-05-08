@@ -133,6 +133,23 @@ export function NotificationBell({ className = '' }: NotificationBellProps) {
       if (url === '/bookings' && notification.entity_id && notification.entity_type === 'booking') {
         url = `/bookings?highlight=${notification.entity_id}`
       }
+      // Legacy fix-up: old `resource_submitted` notifications were stored
+      // with a URL pointing at /resources/[id]/responses/[id] — a route
+      // that never existed. Rewrite to the resource detail page with the
+      // submission id as a query param so the review modal opens directly.
+      if (
+        notification.type === 'resource_submitted' &&
+        /^\/resources\/[^/]+\/responses\//.test(url) &&
+        notification.metadata &&
+        typeof notification.metadata === 'object' &&
+        'resourceId' in notification.metadata &&
+        notification.metadata.resourceId
+      ) {
+        const meta = notification.metadata as { resourceId: string; responseId?: string }
+        url = meta.responseId
+          ? `/resources/${meta.resourceId}?submission=${meta.responseId}`
+          : `/resources/${meta.resourceId}`
+      }
       if (url.startsWith('/') && !url.startsWith('//')) {
         router.push(url)
         setIsOpen(false)

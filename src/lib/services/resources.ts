@@ -841,6 +841,15 @@ export async function deleteSubmission(id: string): Promise<void> {
 export async function getMemberSubmissions(memberId: string): Promise<ResourceSubmission[]> {
   const supabase = createClient()
 
+  // Defense-in-depth: explicitly pin to the current practitioner so a
+  // browser-side query can't return another practitioner's data even if
+  // RLS were ever misconfigured. The practitioner who owns the member
+  // is also the only one who has a useful answer here.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return []
+  }
+
   const { data, error } = await supabase
     .from('resource_responses')
     .select(`
@@ -848,6 +857,7 @@ export async function getMemberSubmissions(memberId: string): Promise<ResourceSu
       resource:resources(id, title, type, category)
     `)
     .eq('member_id', memberId)
+    .eq('practitioner_id', user.id)
     .order('submitted_at', { ascending: false })
 
   if (error) {

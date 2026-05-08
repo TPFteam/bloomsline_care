@@ -337,7 +337,10 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : locale === 'es'
           ? `${m.memberName} envió "${m.resourceTitle}"`
           : `${m.memberName} submitted "${m.resourceTitle}"`,
-    actionUrl: (m) => `/resources/${m.resourceId}/responses/${m.responseId}`,
+    // Open the specific response in the review modal directly on the
+    // resource detail page. Previous URL (/resources/[id]/responses/[id])
+    // pointed at a route that never existed.
+    actionUrl: (m) => `/resources/${m.resourceId}?submission=${m.responseId}`,
     emailSubject: (m, locale) =>
       locale === 'fr'
         ? `${m.memberName} a soumis ${m.resourceTitle}`
