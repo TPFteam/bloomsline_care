@@ -1752,8 +1752,12 @@ function CreateWorksheetContent() {
       const existingResourceId = editId || autoSaveDraftId
 
       if (existingResourceId) {
-        // Update existing resource (either editing or updating auto-saved draft)
+        // Update existing resource (either editing or updating auto-saved draft).
+        // We include `type` here so a resource that was originally saved as
+        // psychoeducation but now contains interactive blocks gets promoted
+        // to worksheet on the next save (and vice versa).
         await updateResource(existingResourceId, {
+          type: detectedResourceType as any,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1924,8 +1928,11 @@ function CreateWorksheetContent() {
       }
 
       if (saveToId) {
-        // Update existing resource
+        // Update existing resource — include `type` so the auto-save also
+        // promotes/demotes the resource as the practitioner adds or removes
+        // interactive blocks.
         await updateResource(saveToId, {
+          type: detectedResourceType as any,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
