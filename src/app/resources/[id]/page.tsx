@@ -2936,79 +2936,114 @@ export default function ResourceDetailPage() {
                                 </span>
                               )}
 
-                              {/* View button for submissions */}
-                              {!isPsychoeducation && submission && (
-                                isRecurringResource && submissionCount > 1 ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const latest = memberSubmissions
-                                        .filter(s => s.status === 'submitted' || s.status === 'reviewed')
-                                        .sort((a, b) => new Date(b.submitted_at || b.created_at).getTime() - new Date(a.submitted_at || a.created_at).getTime())[0]
-                                      if (latest) {
-                                        setSelectedSubmission({ ...latest, status: latest.status as 'draft' | 'submitted' | 'reviewed' })
-                                        setReviewNotes(latest.practitioner_notes || '')
-                                      }
-                                    }}
-                                    className="rounded-lg"
-                                  >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    {locale === 'fr' ? 'Voir' : 'View'}
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const effectiveStatus = (submission.status === 'draft' && shared.completed_at) ? 'submitted' : submission.status
-                                      setSelectedSubmission({ ...submission, status: effectiveStatus as 'draft' | 'submitted' | 'reviewed' })
-                                      setReviewNotes(submission.practitioner_notes || '')
-                                    }}
-                                    className="rounded-lg"
-                                  >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    {locale === 'fr' ? 'Voir' : 'View'}
-                                  </Button>
+                              {/* View button for submissions — gated on submitted/reviewed status.
+                                  Drafts are kept private to the patient until they explicitly submit. */}
+                              {!isPsychoeducation && submission && (() => {
+                                const submitted = submission.status === 'submitted' || submission.status === 'reviewed'
+                                const onLockedClick = () =>
+                                  toast.message(locale === 'fr'
+                                    ? 'L\'exercice est encore en cours — le patient ne l\'a pas encore soumis.'
+                                    : 'The exercise is still in progress — the patient hasn\'t submitted it yet.')
+                                if (isRecurringResource && submissionCount > 1) {
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const latest = memberSubmissions
+                                          .filter(s => s.status === 'submitted' || s.status === 'reviewed')
+                                          .sort((a, b) => new Date(b.submitted_at || b.created_at).getTime() - new Date(a.submitted_at || a.created_at).getTime())[0]
+                                        if (latest) {
+                                          setSelectedSubmission({ ...latest, status: latest.status as 'draft' | 'submitted' | 'reviewed' })
+                                          setReviewNotes(latest.practitioner_notes || '')
+                                        }
+                                      }}
+                                      className="rounded-lg"
+                                    >
+                                      <Eye className="w-4 h-4 mr-1" />
+                                      {locale === 'fr' ? 'Voir' : 'View'}
+                                    </Button>
+                                  )
+                                }
+                                return (
+                                  <span className="relative inline-flex group">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (!submitted) { onLockedClick(); return }
+                                        setSelectedSubmission({ ...submission, status: submission.status as 'draft' | 'submitted' | 'reviewed' })
+                                        setReviewNotes(submission.practitioner_notes || '')
+                                      }}
+                                      disabled={!submitted}
+                                      className="rounded-lg disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                    >
+                                      <Eye className="w-4 h-4 mr-1" />
+                                      {locale === 'fr' ? 'Voir' : 'View'}
+                                    </Button>
+                                    {!submitted && (
+                                      <span className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg z-50">
+                                        {locale === 'fr' ? 'Le patient n\'a pas encore soumis sa réponse' : 'The patient has not submitted the response yet'}
+                                        <span className="absolute top-full right-3.5 border-4 border-transparent border-t-gray-900" />
+                                      </span>
+                                    )}
+                                  </span>
                                 )
-                              )}
+                              })()}
 
-                              {/* Download PDF — only when a real response exists (not psychoeducation) */}
-                              {!isPsychoeducation && submission && resource && (
-                                <button
-                                  type="button"
-                                  onClick={async (e) => {
-                                    e.stopPropagation()
-                                    if (downloadingMemberId) return
-                                    setDownloadingMemberId(shared.member_id)
-                                    try {
-                                      const { data: { user } } = await supabase.auth.getUser()
-                                      if (!user) throw new Error('Not signed in')
-                                      await downloadResourceSubmissionPDF({
-                                        supabase,
-                                        resourceId: resource.id,
-                                        memberId: shared.member_id,
-                                        practitionerId: user.id,
-                                        locale: locale as 'en' | 'fr' | 'es',
-                                      })
-                                    } catch (err) {
-                                      console.error('Error downloading PDF:', err)
-                                      toast.error(locale === 'fr' ? 'Échec du téléchargement' : 'Download failed')
-                                    } finally {
-                                      setDownloadingMemberId(null)
-                                    }
-                                  }}
-                                  disabled={downloadingMemberId === shared.member_id}
-                                  className="p-2 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
-                                  title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
-                                >
-                                  {downloadingMemberId === shared.member_id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Download className="w-4 h-4" />
-                                  )}
-                                </button>
-                              )}
+                              {/* Download PDF — only when a submitted response exists (not psychoeducation).
+                                  Disabled with explanatory toast for drafts. */}
+                              {!isPsychoeducation && submission && resource && (() => {
+                                const submitted = submission.status === 'submitted' || submission.status === 'reviewed'
+                                return (
+                                  <span className="relative inline-flex group">
+                                    <button
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.stopPropagation()
+                                        if (!submitted) {
+                                          toast.message(locale === 'fr'
+                                            ? 'L\'exercice est encore en cours — le patient ne l\'a pas encore soumis.'
+                                            : 'The exercise is still in progress — the patient hasn\'t submitted it yet.')
+                                          return
+                                        }
+                                        if (downloadingMemberId) return
+                                        setDownloadingMemberId(shared.member_id)
+                                        try {
+                                          const { data: { user } } = await supabase.auth.getUser()
+                                          if (!user) throw new Error('Not signed in')
+                                          await downloadResourceSubmissionPDF({
+                                            supabase,
+                                            resourceId: resource.id,
+                                            memberId: shared.member_id,
+                                            practitionerId: user.id,
+                                            locale: locale as 'en' | 'fr' | 'es',
+                                          })
+                                        } catch (err) {
+                                          console.error('Error downloading PDF:', err)
+                                          toast.error(locale === 'fr' ? 'Échec du téléchargement' : 'Download failed')
+                                        } finally {
+                                          setDownloadingMemberId(null)
+                                        }
+                                      }}
+                                      disabled={downloadingMemberId === shared.member_id || !submitted}
+                                      className="p-2 rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                    >
+                                      {downloadingMemberId === shared.member_id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <Download className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                    {!submitted && (
+                                      <span className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg z-50">
+                                        {locale === 'fr' ? 'Le patient n\'a pas encore soumis sa réponse' : 'The patient has not submitted the response yet'}
+                                        <span className="absolute top-full right-3.5 border-4 border-transparent border-t-gray-900" />
+                                      </span>
+                                    )}
+                                  </span>
+                                )
+                              })()}
 
                               {/* Delete response — only available when a response actually exists */}
                               {!isPsychoeducation && submission && (

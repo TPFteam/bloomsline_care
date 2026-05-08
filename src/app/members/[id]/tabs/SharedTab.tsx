@@ -547,6 +547,20 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           .from('member_shared_resources')
           .update({ completed_at: null, viewed_at: null })
           .eq('id', deleteAction.shareRowId)
+
+        // Optimistic local-state updates so the UI flips instantly:
+        //   - Drop the deleted submission(s) from `submissions` (this is what
+        //     the response table reads from — without this it keeps rendering).
+        //   - Reset the share row's progress markers to pending.
+        //   - Collapse the expanded "View Responses" panel for this share.
+        setSubmissions(prev => prev.filter(s =>
+          !(s.member_id === deleteAction.memberId && s.resource_id === deleteAction.resourceId)
+        ))
+        setSharedLibraryResources(prev => prev.map(r =>
+          r.id === deleteAction.shareRowId ? { ...r, completed_at: null, viewed_at: null } : r
+        ))
+        if (expandedResponseId === deleteAction.shareRowId) setExpandedResponseId(null)
+
         toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
       } else {
         // Story share — just remove the share row
@@ -555,10 +569,15 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           .delete()
           .eq('id', deleteAction.shareRowId)
         if (error) throw error
+        // Optimistic local-state update for story shares
+        setSharedResources(prev => prev.filter(r => r.id !== deleteAction.shareRowId))
         toast.success(locale === 'fr' ? 'Partage retiré' : 'Share removed')
       }
       setDeleteAction(null)
+      // Re-fetch to reconcile in case anything diverged (and refresh both
+      // shares + submissions — the original code only refetched shares).
       fetchData()
+      fetchSubmissions()
     } catch (error) {
       console.error('Error performing delete:', error)
       toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
@@ -933,21 +952,40 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                               <ExternalLink className="w-4 h-4" />
                             </Button>
                           </Link>
-                          {/* Download + Delete — only when a response exists */}
-                          {submissions.some(s => s.resource_id === resource.resource_id) && (
+                          {/* Download + Delete — only when a response exists.
+                              Download is gated to submitted/reviewed responses only — drafts are private to the patient. */}
+                          {submissions.some(s => s.resource_id === resource.resource_id) && (() => {
+                            const sub = submissions.find(s => s.resource_id === resource.resource_id)
+                            const isSubmitted = !!sub && (sub.status === 'submitted' || sub.status === 'reviewed')
+                            return (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownloadResponse(resource.member_id, resource.resource_id, resource.practitioner_id, resource.id)}
-                                disabled={downloadingId === resource.id}
-                                className="text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0 disabled:opacity-50"
-                                title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
-                              >
-                                {downloadingId === resource.id
-                                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                                  : <Download className="w-4 h-4" />}
-                              </Button>
+                              <span className="relative inline-flex group">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!isSubmitted) {
+                                      toast.message(locale === 'fr'
+                                        ? 'L\'exercice est encore en cours — le patient ne l\'a pas encore soumis.'
+                                        : 'The exercise is still in progress — the patient hasn\'t submitted it yet.')
+                                      return
+                                    }
+                                    handleDownloadResponse(resource.member_id, resource.resource_id, resource.practitioner_id, resource.id)
+                                  }}
+                                  disabled={downloadingId === resource.id || !isSubmitted}
+                                  className="text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0 disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                >
+                                  {downloadingId === resource.id
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <Download className="w-4 h-4" />}
+                                </Button>
+                                {!isSubmitted && (
+                                  <span className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg z-50">
+                                    {locale === 'fr' ? 'Le patient n\'a pas encore soumis sa réponse' : 'The patient has not submitted the response yet'}
+                                    <span className="absolute top-full right-3.5 border-4 border-transparent border-t-gray-900" />
+                                  </span>
+                                )}
+                              </span>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -964,7 +1002,8 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </>
-                          )}
+                            )
+                          })()}
                         </div>
                       </div>
 
@@ -974,6 +1013,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                         const isInteractive = ['worksheet', 'exercise', 'assessment', 'table'].includes(resource.resource.type)
                         if (!isInteractive || !submission) return null
 
+                        const isSubmitted = submission.status === 'submitted' || submission.status === 'reviewed'
                         const isExpanded = expandedResponseId === resource.id
                         const blocks = (submission.resource?.blocks || []) as ResourceBlock[]
                         const questionBlocks = blocks.filter(b =>
@@ -1001,6 +1041,18 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                   transition={{ duration: 0.2 }}
                                   className="overflow-hidden"
                                 >
+                                  {!isSubmitted ? (
+                                    <div className="mt-3 border-t border-gray-100 pt-3">
+                                      <div className="flex items-start gap-2.5 rounded-xl bg-amber-50/60 border border-amber-100 px-3 py-2.5">
+                                        <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                          {locale === 'fr'
+                                            ? 'Le patient n\'a pas encore soumis ses réponses. Vous pourrez les consulter dès qu\'il aura terminé.'
+                                            : 'The patient hasn\'t submitted their responses yet. You\'ll be able to view them once they\'re done.'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ) : (
                                   <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
                                     {questionBlocks.length > 0 ? questionBlocks.map((block, idx) => {
                                       const response = responses[block.id]
@@ -1048,6 +1100,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                       <p className="text-xs text-gray-400 text-center py-2">{locale === 'fr' ? 'Aucune question' : 'No questions'}</p>
                                     )}
                                   </div>
+                                  )}
                                 </motion.div>
                               )}
                             </AnimatePresence>

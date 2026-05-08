@@ -2001,12 +2001,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       autoFocus
                       milestones={milestones}
                       noteTypes={snEditorNoteTypes}
-                      lockedTypes={effectiveDefaultTags as unknown as string[]}
+                      lockedTypes={fixedNoteTypes as unknown as string[]}
                       onAddType={handleEditorAddType}
                       onRenameType={handleEditorRenameType}
                       onDeleteType={handleEditorDeleteType}
                       getTagNoteCount={getTagNoteCount}
-                      maxTypes={7}
+                      maxTypes={Math.max(7, snEditorNoteTypes.length)}
                       memberName={member?.first_name}
                       attachments={snAttachments}
                       onAttachmentsChange={setSnAttachments}
@@ -2085,6 +2085,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     autoFocus
                     milestones={milestones}
                     noteTypes={snEditorNoteTypes}
+                    lockedTypes={fixedNoteTypes as unknown as string[]}
+                    onAddType={handleEditorAddType}
+                    onRenameType={handleEditorRenameType}
+                    onDeleteType={handleEditorDeleteType}
+                    getTagNoteCount={getTagNoteCount}
+                    maxTypes={Math.max(7, snEditorNoteTypes.length)}
                     memberName={member?.first_name}
                     attachments={snAttachments}
                     onAttachmentsChange={setSnAttachments}
