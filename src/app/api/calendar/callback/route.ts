@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server-client';
+import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/security/rate-limit';
 import { encryptToken } from '@/lib/security/encryption';
+import { registerCalendarWatch } from '@/lib/services/calendar-watch';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET!;
@@ -114,6 +115,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(
         new URL('/bookings?tab=settings&calendar_error=save_failed', request.url)
       );
+    }
+
+    // Register a Google push-notification (watch) channel so changes made
+    // directly inside Google Calendar reconcile back into our DB. Failure here
+    // is non-fatal — the connection still works, just without two-way sync.
+    try {
+      const adminClient = createAdminClient();
+      await registerCalendarWatch(
+        { userId: user.id, accessToken: tokens.access_token, calendarId: 'primary' },
+        adminClient,
+      );
+    } catch (watchErr) {
+      console.warn('[calendar-callback] watch registration failed (non-fatal):', watchErr);
     }
 
     return NextResponse.redirect(

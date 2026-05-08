@@ -127,6 +127,9 @@ export async function POST(
         practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
         practitionerEmail: practUser?.email,
         practitionerPhone: practUser?.phone,
+        // Series anchor: Google creates one recurring event for the entire series.
+        // Children siblings have recurrence_rule = NULL and inherit the same google_event_id below.
+        recurrenceRule: booking.recurrence_rule || null,
       });
 
       // Backdated session: create the event for the practitioner's historical record
@@ -153,6 +156,16 @@ export async function POST(
           .from('bookings')
           .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
           .eq('id', id);
+
+        // Series anchor: propagate google_event_id + meet_link to every sibling
+        // so cancel/reschedule on any occurrence can find the parent Google event.
+        if (booking.series_id && booking.recurrence_rule) {
+          await adminSupabase
+            .from('bookings')
+            .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+            .eq('series_id', booking.series_id)
+            .neq('id', id);
+        }
 
         await adminSupabase
           .from('calendar_connections')

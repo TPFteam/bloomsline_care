@@ -73,6 +73,10 @@ export interface CalendarEventParams {
   practitionerGoogleMapsUrl?: string | null
   practitionerEmail?: string | null
   practitionerPhone?: string | null
+  /** Optional iCalendar RRULE for recurring series (e.g. "RRULE:FREQ=WEEKLY;COUNT=12").
+   *  When set, Google creates a single recurring event so the patient receives
+   *  one invite for the whole series, with per-occurrence reminders. */
+  recurrenceRule?: string | null
 }
 
 export function buildCalendarEvent(params: CalendarEventParams) {
@@ -94,6 +98,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     practitionerGoogleMapsUrl,
     practitionerEmail,
     practitionerPhone,
+    recurrenceRule,
   } = params
 
   const isInPerson = sessionFormat === 'in_person'
@@ -190,6 +195,11 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     reminders: {
       useDefault: true,
     },
+  }
+
+  if (recurrenceRule) {
+    // Google expects an array of RRULE / EXDATE / RDATE strings
+    event.recurrence = [recurrenceRule]
   }
 
   if (isInPerson) {

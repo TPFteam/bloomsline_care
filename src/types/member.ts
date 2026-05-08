@@ -142,6 +142,21 @@ export interface Session {
   // AI-generated session preparation briefing
   preparation: SessionPreparation | null
 
+  // Recurring series — set when this session is part of a recurring booking.
+  // Anchor row carries `recurrence_rule`, children leave it null and inherit
+  // the same `series_id`. `series_position` is 1-indexed.
+  series_id?: string | null
+  series_parent_id?: string | null
+  series_position?: number | null
+  series_total?: number | null
+  recurrence_rule?: string | null
+  /** True if this single occurrence has been moved/edited away from the
+   *  series rule (Google "exception" instance reflected back via webhook). */
+  detached_from_series?: boolean | null
+  /** Patient's last known calendar response — surfaced as a badge before the
+   *  day-of so the practitioner notices a decline early. */
+  attendee_status?: 'accepted' | 'declined' | 'tentative' | 'needs_action' | null
+
   // Metadata
   created_at: string
   updated_at: string

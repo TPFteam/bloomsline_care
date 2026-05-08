@@ -24,6 +24,9 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const { newSlotStart, newSlotEnd, reason } = body;
+    // For series bookings: 'this' moves only this occurrence (creates an
+    // exception instance on Google); 'following' is not yet supported in v1.
+    const seriesScope: 'this' | 'following' = body.series_scope === 'following' ? 'following' : 'this';
 
     if (!newSlotStart || !newSlotEnd) {
       return NextResponse.json({ error: 'New slot start and end are required' }, { status: 400 });
@@ -59,6 +62,86 @@ export async function POST(
     const ownSendUpdates = calSettings?.send_own_calendar_emails !== false ? 'all' : 'none';
 
     const isFutureBooking = new Date(booking.start_time).getTime() > Date.now();
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Series-aware reschedule
+    // ────────────────────────────────────────────────────────────────────────
+    // For a row that's part of a recurring series, "reschedule this occurrence"
+    // means updating the row in place and letting Google create an exception
+    // instance — never cancel-and-recreate (which would orphan it from the
+    // series and spam the patient with separate cancel + invite emails).
+    if (booking.series_id && seriesScope === 'this') {
+      const newDuration = Math.round((new Date(newSlotEnd).getTime() - new Date(newSlotStart).getTime()) / 60000);
+
+      // Move our DB rows in place. Mark detached so the UI can show "moved
+      // from series" if it ever cares to.
+      const updateNow = new Date().toISOString();
+      await adminSupabase
+        .from('bookings')
+        .update({
+          start_time: newSlotStart,
+          end_time: newSlotEnd,
+          detached_from_series: true,
+          updated_at: updateNow,
+        })
+        .eq('id', id);
+
+      await adminSupabase
+        .from('sessions')
+        .update({
+          scheduled_at: newSlotStart,
+          duration_minutes: newDuration,
+          detached_from_series: true,
+          updated_at: updateNow,
+        })
+        .eq('practitioner_id', user.id)
+        .eq('member_id', booking.member_id)
+        .eq('scheduled_at', booking.start_time)
+        .in('status', ['scheduled', 'confirmed']);
+
+      // Move the specific Google instance — PATCH on the instance ID, not the
+      // parent. Google emits one "your appointment was moved" notification.
+      if (booking.google_event_id && isFutureBooking) {
+        const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
+        if (googleAuth) {
+          const startUtc = new Date(booking.start_time);
+          const yyyy = startUtc.getUTCFullYear();
+          const mm = String(startUtc.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(startUtc.getUTCDate()).padStart(2, '0');
+          const hh = String(startUtc.getUTCHours()).padStart(2, '0');
+          const mi = String(startUtc.getUTCMinutes()).padStart(2, '0');
+          const ss = String(startUtc.getUTCSeconds()).padStart(2, '0');
+          const instanceId = `${booking.google_event_id}_${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
+          const instanceUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${instanceId}`;
+
+          try {
+            await fetch(`${instanceUrl}?sendUpdates=${ownSendUpdates}`, {
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${googleAuth.accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                start: { dateTime: newSlotStart, timeZone: booking.timezone },
+                end: { dateTime: newSlotEnd, timeZone: booking.timezone },
+              }),
+            });
+          } catch (err) {
+            console.error('Failed to move Google instance:', err);
+          }
+        }
+      }
+
+      return NextResponse.json({ success: true, newBookingId: id, seriesOccurrenceMoved: true });
+    }
+
+    // 'following' scope on a series isn't supported in v1 — practitioners
+    // should cancel-this-and-following then book a new series at the new time.
+    if (booking.series_id && seriesScope === 'following') {
+      return NextResponse.json({
+        error: 'Rescheduling all following occurrences is not supported. Cancel them and create a new series at the new time.',
+      }, { status: 400 });
+    }
 
     // Format dates for notifications
     const formatDate = (dateStr: string) =>

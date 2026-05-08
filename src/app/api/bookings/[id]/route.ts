@@ -28,6 +28,11 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const { status, practitioner_notes } = body;
+    // Optional: scope of the cancel for a series booking.
+    //   'this'      = only this occurrence (DB row + the matching Google instance)
+    //   'following' = this occurrence and every later sibling in the same series
+    // Defaults to 'this' so existing single-booking flows keep working.
+    const seriesScope: 'this' | 'following' = body.series_scope === 'following' ? 'following' : 'this';
 
     // Validate status
     const validStatuses = ['confirmed', 'cancelled', 'completed', 'no_show'];
@@ -278,12 +283,15 @@ export async function PATCH(
       }
     }
 
-    // If cancelling and there's a Google event:
-    // 1. Update the event description with the cancellation reason (sendUpdates=none)
-    // 2. Delete the event (sendUpdates=all) → Google sends the cancellation email
-    //    which now includes the reason in the description.
-    // No separate Bloomsline email — Google's notification is sufficient.
-    // Backdated bookings: skip calendar deletion entirely (historical record only)
+    // If cancelling and there's a Google event, propagate to Google.
+    // Three behaviours:
+    //   - Single booking (no series_id): delete the event entirely.
+    //   - Series + scope='this': cancel the specific instance only (parent +
+    //     siblings stay intact in the patient's calendar).
+    //   - Series + scope='following': cancel this and every later sibling in
+    //     the DB, and update Google by either deleting the parent (if this is
+    //     the anchor) or shortening the parent RRULE with UNTIL.
+    // Backdated bookings: skip calendar mutations entirely (historical only).
     if (status === 'cancelled' && booking.google_event_id && !isBackdatedBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
       if (googleAuth) {
@@ -312,25 +320,123 @@ export async function PATCH(
             ? (isFr ? `\n\n❌ Séance annulée — Raison : ${reasonLabel}` : `\n\n❌ Session cancelled — Reason: ${reasonLabel}`)
             : (isFr ? '\n\n❌ Séance annulée' : '\n\n❌ Session cancelled');
 
-          // 1. Update description with reason (no notification yet)
-          const eventRes = await fetch(`${calendarUrl}`, { headers: authHeaders });
-          if (eventRes.ok) {
-            const event = await eventRes.json();
-            await fetch(`${calendarUrl}?sendUpdates=none`, {
+          const isSeries = !!booking.series_id;
+          const isAnchor = booking.series_position === 1;
+
+          if (!isSeries) {
+            // ── Single booking: existing flow ───────────────────────────────
+            // 1. Update description with reason (no notification yet)
+            const eventRes = await fetch(`${calendarUrl}`, { headers: authHeaders });
+            if (eventRes.ok) {
+              const event = await eventRes.json();
+              await fetch(`${calendarUrl}?sendUpdates=none`, {
+                method: 'PATCH',
+                headers: authHeaders,
+                body: JSON.stringify({ description: (event.description || '') + cancelNote }),
+              });
+            }
+            // 2. Delete event → Google sends cancellation email with updated description
+            await fetch(`${calendarUrl}?sendUpdates=all`, {
+              method: 'DELETE',
+              headers: authHeaders,
+            });
+          } else if (seriesScope === 'this') {
+            // ── Series, single occurrence ──────────────────────────────────
+            // Compute the Google "instance ID": parent event id + "_" + UTC start in compact iCal form
+            // Format: YYYYMMDDTHHMMSSZ (e.g. 20260508T090000Z)
+            const startUtc = new Date(booking.start_time);
+            const yyyy = startUtc.getUTCFullYear();
+            const mm = String(startUtc.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(startUtc.getUTCDate()).padStart(2, '0');
+            const hh = String(startUtc.getUTCHours()).padStart(2, '0');
+            const mi = String(startUtc.getUTCMinutes()).padStart(2, '0');
+            const ss = String(startUtc.getUTCSeconds()).padStart(2, '0');
+            const instanceId = `${booking.google_event_id}_${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
+            const instanceUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${instanceId}`;
+
+            // PATCH with status:cancelled — the patient receives a cancellation
+            // notification only for this single occurrence; the rest of the
+            // series stays in their calendar.
+            await fetch(`${instanceUrl}?sendUpdates=all`, {
               method: 'PATCH',
               headers: authHeaders,
-              body: JSON.stringify({ description: (event.description || '') + cancelNote }),
+              body: JSON.stringify({ status: 'cancelled', description: undefined }),
             });
+          } else {
+            // ── Series, this and following ─────────────────────────────────
+            if (isAnchor) {
+              // Killing from the anchor = killing the whole series → delete parent.
+              const eventRes = await fetch(`${calendarUrl}`, { headers: authHeaders });
+              if (eventRes.ok) {
+                const event = await eventRes.json();
+                await fetch(`${calendarUrl}?sendUpdates=none`, {
+                  method: 'PATCH',
+                  headers: authHeaders,
+                  body: JSON.stringify({ description: (event.description || '') + cancelNote }),
+                });
+              }
+              await fetch(`${calendarUrl}?sendUpdates=all`, {
+                method: 'DELETE',
+                headers: authHeaders,
+              });
+            } else {
+              // Shorten the parent RRULE with UNTIL = (this start - 1 second).
+              // Past occurrences stay; future ones (this and onward) disappear.
+              const eventRes = await fetch(calendarUrl, { headers: authHeaders });
+              if (eventRes.ok) {
+                const event = await eventRes.json();
+                if (Array.isArray(event.recurrence) && event.recurrence.length > 0) {
+                  const until = new Date(new Date(booking.start_time).getTime() - 1000);
+                  const u = until;
+                  const untilStr = `${u.getUTCFullYear()}${String(u.getUTCMonth() + 1).padStart(2, '0')}${String(u.getUTCDate()).padStart(2, '0')}T${String(u.getUTCHours()).padStart(2, '0')}${String(u.getUTCMinutes()).padStart(2, '0')}${String(u.getUTCSeconds()).padStart(2, '0')}Z`;
+                  const newRecurrence = event.recurrence.map((rule: string) => {
+                    if (!rule.startsWith('RRULE:')) return rule;
+                    let r = rule
+                      .replace(/(^RRULE:|;)COUNT=\d+(?=;|$)/g, (m) => m.startsWith('RRULE:') ? 'RRULE:' : '')
+                      .replace(/(^RRULE:|;)UNTIL=[^;]+(?=;|$)/g, (m) => m.startsWith('RRULE:') ? 'RRULE:' : '');
+                    r = r.replace(/RRULE:;/, 'RRULE:').replace(/;;+/g, ';').replace(/;$/, '');
+                    return r + ';UNTIL=' + untilStr;
+                  });
+                  await fetch(`${calendarUrl}?sendUpdates=all`, {
+                    method: 'PATCH',
+                    headers: authHeaders,
+                    body: JSON.stringify({ recurrence: newRecurrence }),
+                  });
+                }
+              }
+            }
           }
-
-          // 2. Delete event → Google sends cancellation email with updated description
-          await fetch(`${calendarUrl}?sendUpdates=all`, {
-            method: 'DELETE',
-            headers: authHeaders,
-          });
         } catch (err) {
           console.error('Failed to update/delete calendar event:', err);
         }
+      }
+    }
+
+    // Series + scope='following': cancel every later sibling in our DB so the
+    // practitioner's session list reflects the same state Google will show.
+    if (status === 'cancelled' && booking.series_id && seriesScope === 'following') {
+      try {
+        await adminSupabase
+          .from('bookings')
+          .update({
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString(),
+            cancelled_by: 'practitioner',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('series_id', booking.series_id)
+          .gte('start_time', booking.start_time)
+          .neq('id', booking.id)
+          .neq('status', 'cancelled');
+        await adminSupabase
+          .from('sessions')
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('series_id', booking.series_id)
+          .gte('scheduled_at', booking.start_time)
+          .in('status', ['scheduled', 'confirmed']);
+      } catch (err) {
+        console.warn('Could not cancel following series rows:', err);
       }
     }
 

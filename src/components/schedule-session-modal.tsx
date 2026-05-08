@@ -15,6 +15,7 @@ import { format, startOfDay } from 'date-fns'
 import { fr as frLocale, es as esLocale } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
 import type { Member } from '@/types/member'
+import { expandRecurrence, buildRRuleString, validateSeriesAvailability } from '@/lib/recurrence'
 
 interface SessionType {
   id: string
@@ -39,6 +40,9 @@ interface RescheduleBooking {
   session_format?: string
   start_time: string
   end_time: string
+  /** Set when the booking is part of a recurring series. Reschedule moves
+   *  only this occurrence; the rest of the series stays untouched. */
+  series_id?: string | null
 }
 
 interface ScheduleSessionModalProps {
@@ -126,6 +130,14 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[]>([])
   const [quickLoading, setQuickLoading] = useState(false)
   const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
+
+  // Recurring series state — only meaningful in calendar mode, single-booking creation
+  // (not reschedule). Hidden from the UI when reschedule is in progress.
+  const [recurEnabled, setRecurEnabled] = useState(false)
+  const [recurFrequency, setRecurFrequency] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>('WEEKLY')
+  const [recurCount, setRecurCount] = useState<number>(8)
+  const [seriesConflicts, setSeriesConflicts] = useState<{ date: Date; reason: 'booked' | 'override_blocked' }[]>([])
+  const [seriesPreview, setSeriesPreview] = useState<Date[]>([])
 
   const dayNameToNumber: Record<string, number> = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
@@ -389,6 +401,50 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       .finally(() => setQuickLoading(false))
   }, [dateViewMode, userId, selectedSessionType])
 
+  // Recompute the recurring-series preview + run a conflict check whenever the
+  // anchor time, frequency, or count changes. We debounce by holding the
+  // expansion in a ref so re-renders during typing don't refire the DB call.
+  useEffect(() => {
+    // Only meaningful when the practitioner has opted in, on a calendar
+    // booking (not manual, not reschedule), with a concrete time picked.
+    if (!recurEnabled || isReschedule || scheduleMode !== 'calendar' || !userId) {
+      setSeriesPreview([])
+      setSeriesConflicts([])
+      return
+    }
+    if (!selectedTime || !selectedSessionType) return
+
+    const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+    const [hh, mm] = selectedTime.split(':').map(Number)
+    const localDate = new Date(selectedDate)
+    localDate.setHours(hh || 0, mm || 0, 0, 0)
+    // Build an anchor UTC Date from the local wall-clock time + practitioner timezone
+    const localStr = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`
+    const refUtc = Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), hh, mm, 0)
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    }).formatToParts(new Date(refUtc))
+    const get = (t: string) => parseInt(parts.find(p => p.type === t)?.value || '0')
+    const tzMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'))
+    const offsetMs = tzMs - refUtc
+    const anchorUtc = new Date(refUtc - offsetMs)
+    void localStr  // keep variable for clarity; not used after build
+
+    const dates = expandRecurrence(anchorUtc, tz, { frequency: recurFrequency, count: recurCount })
+    setSeriesPreview(dates)
+
+    let cancelled = false
+    validateSeriesAvailability(supabase, userId, dates, selectedSessionType.duration, tz)
+      .then(res => {
+        if (!cancelled) setSeriesConflicts(res.conflicts)
+      })
+      .catch(() => {
+        if (!cancelled) setSeriesConflicts([])
+      })
+    return () => { cancelled = true }
+  }, [recurEnabled, recurFrequency, recurCount, selectedDate, selectedTime, selectedSessionType, practitionerTz, scheduleMode, isReschedule, userId, supabase])
+
   const handleBookSession = async () => {
     // Reschedule mode: call the reschedule API instead of creating fresh
     if (isReschedule && rescheduleData && selectedTime) {
@@ -420,12 +476,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             newSlotStart: startTime.toISOString(),
             newSlotEnd: endTime.toISOString(),
             reason: notes || undefined,
+            // Series rows always move just this occurrence; cancel-and-rebook
+            // a new series is the path for "all future".
+            series_scope: rescheduleData.series_id ? 'this' : undefined,
           }),
         })
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Failed to reschedule')
 
-        toast.success(locale === 'fr' ? 'Séance reprogrammée' : 'Session rescheduled')
+        toast.success(rescheduleData.series_id
+          ? (locale === 'fr' ? 'Cette séance a été déplacée. Le reste de la série reste planifié.' : 'This session was moved. The rest of the series stays scheduled.')
+          : (locale === 'fr' ? 'Séance reprogrammée' : 'Session rescheduled'))
         onSuccess?.()
         onClose()
       } catch (err) {
@@ -577,87 +638,206 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         analytics.sessionScheduled({ format: manualFormat, duration: manualDuration })
       } else {
         // Calendar mode: create booking first, then session (avoids orphan sessions)
-
-        // 1. Create booking entry (source of truth)
         // Patient-level override: members.session_price wins over session-type rate.
         const calendarPrice = selectedMember.session_price ?? selectedSessionType!.price ?? null
-        const bookingData = {
-          practitioner_id: userId,
-          client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
-          client_email: selectedMember.email || '',
-          client_phone: selectedMember.phone || null,
-          session_type: selectedSessionType!.id,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          notes: notes || null,
-          session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'video',
-          status: 'confirmed',
-          member_id: selectedMember.id,
-          price: calendarPrice,
-        }
+        const tzForBooking = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const sessionFormatStr = selectedSessionFormat === 'in_person' ? 'in_person' : 'video'
+        const sessionEnum = toSessionEnum(selectedSessionType!.id) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other'
 
-        console.log('Creating booking with data:', bookingData)
+        // Branch: recurring series vs single booking
+        if (recurEnabled && seriesPreview.length > 1) {
+          // Block if any occurrence conflicts (the preview effect already populated seriesConflicts)
+          if (seriesConflicts.length > 0) {
+            toast.error(locale === 'fr'
+              ? `${seriesConflicts.length} conflit(s) dans la série. Résolvez-les avant de planifier.`
+              : `${seriesConflicts.length} conflict(s) in the series. Resolve them before scheduling.`)
+            setLoading(false)
+            return
+          }
 
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert(bookingData)
-          .select()
-          .single()
+          const seriesId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `series_${Date.now()}_${Math.random().toString(36).slice(2)}`
+          const total = seriesPreview.length
+          const rrule = buildRRuleString({ frequency: recurFrequency, count: total })
 
-        if (error) {
-          console.error('Supabase error code:', error.code)
-          console.error('Supabase error message:', error.message)
-          console.error('Supabase error details:', error.details)
-          console.error('Supabase error hint:', error.hint)
-          throw new Error(error.message || 'Failed to create booking')
-        }
+          // Build all booking rows. Anchor (position 1) carries recurrence_rule.
+          const bookingsRows = seriesPreview.map((occStart, idx) => {
+            const occEnd = new Date(occStart.getTime() + durationToUse * 60_000)
+            return {
+              practitioner_id: userId,
+              client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
+              client_email: selectedMember.email || '',
+              client_phone: selectedMember.phone || null,
+              session_type: selectedSessionType!.id,
+              start_time: occStart.toISOString(),
+              end_time: occEnd.toISOString(),
+              timezone: tzForBooking,
+              notes: notes || null,
+              session_format: sessionFormatStr,
+              status: 'confirmed',
+              member_id: selectedMember.id,
+              price: calendarPrice,
+              series_id: seriesId,
+              series_position: idx + 1,
+              series_total: total,
+              recurrence_rule: idx === 0 ? rrule : null,
+            }
+          })
 
-        console.log('Booking created:', data)
+          const { data: insertedBookings, error: bookingsErr } = await supabase
+            .from('bookings')
+            .insert(bookingsRows)
+            .select('id, start_time')
+            .order('start_time', { ascending: true })
 
-        // 2. Create session entry (for member tracking — only after booking succeeds)
-        try {
-          await supabase.from('sessions').insert({
+          if (bookingsErr) {
+            console.error('Series booking insert error:', bookingsErr)
+            throw new Error(bookingsErr.message || 'Failed to create recurring series')
+          }
+
+          const anchorBooking = (insertedBookings || [])[0]
+          // Set series_parent_id on every row to point at the anchor (so Phase 2/3
+          // can find the parent quickly without sorting).
+          if (anchorBooking?.id && (insertedBookings?.length || 0) > 0) {
+            await supabase
+              .from('bookings')
+              .update({ series_parent_id: anchorBooking.id })
+              .eq('series_id', seriesId)
+          }
+
+          // Mirror into sessions table for member-tracking. Same series fields.
+          const sessionsRows = seriesPreview.map((occStart, idx) => ({
             practitioner_id: userId,
             member_id: selectedMember.id,
-            session_type: toSessionEnum(selectedSessionType!.id) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
+            session_type: sessionEnum,
             session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
-            scheduled_at: startTime.toISOString(),
+            scheduled_at: occStart.toISOString(),
             duration_minutes: durationToUse,
             status: 'scheduled',
             notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
             price: calendarPrice,
-          })
-        } catch (sessionErr) {
-          console.warn('Could not create session entry:', sessionErr)
-        }
-
-        // Sync to Google Calendar via API
-        if (data?.id) {
+            series_id: seriesId,
+            series_parent_id: anchorBooking?.id || null,
+            series_position: idx + 1,
+            series_total: total,
+            recurrence_rule: idx === 0 ? rrule : null,
+          }))
           try {
-            const syncResponse = await fetch(`/api/bookings/${data.id}/sync-calendar`, {
-              method: 'POST',
-            })
+            await supabase.from('sessions').insert(sessionsRows)
+          } catch (sessionErr) {
+            console.warn('Could not create session series entries:', sessionErr)
+          }
 
-            if (syncResponse.ok) {
-              const syncResult = await syncResponse.json()
-              if (syncResult.calendarSynced) {
-                toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name} and added to calendar`)
+          // Sync ONLY the anchor booking — Google creates one recurring event,
+          // the sync API propagates google_event_id to all siblings.
+          if (anchorBooking?.id) {
+            try {
+              const syncResponse = await fetch(`/api/bookings/${anchorBooking.id}/sync-calendar`, { method: 'POST' })
+              if (syncResponse.ok) {
+                const syncResult = await syncResponse.json()
+                if (syncResult.calendarSynced) {
+                  toast.success(locale === 'fr'
+                    ? `Série de ${total} séances planifiée pour ${selectedMember.first_name} ${selectedMember.last_name} et ajoutée au calendrier`
+                    : `Series of ${total} sessions scheduled with ${selectedMember.first_name} ${selectedMember.last_name} and added to calendar`)
+                } else {
+                  toast.success(locale === 'fr'
+                    ? `Série de ${total} séances planifiée pour ${selectedMember.first_name} ${selectedMember.last_name}`
+                    : `Series of ${total} sessions scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
+                }
+              } else {
+                toast.success(locale === 'fr'
+                  ? `Série de ${total} séances planifiée`
+                  : `Series of ${total} sessions scheduled`)
+              }
+            } catch (syncError) {
+              console.error('Calendar sync error:', syncError)
+              toast.success(locale === 'fr'
+                ? `Série planifiée — sync calendrier échouée`
+                : `Series scheduled — calendar sync failed`)
+            }
+          }
+          analytics.sessionScheduled({ format: sessionFormatStr, duration: durationToUse })
+        } else {
+          // Single booking — original path
+
+          // 1. Create booking entry (source of truth)
+          const bookingData = {
+            practitioner_id: userId,
+            client_name: `${selectedMember.first_name} ${selectedMember.last_name}`,
+            client_email: selectedMember.email || '',
+            client_phone: selectedMember.phone || null,
+            session_type: selectedSessionType!.id,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            timezone: tzForBooking,
+            notes: notes || null,
+            session_format: sessionFormatStr,
+            status: 'confirmed',
+            member_id: selectedMember.id,
+            price: calendarPrice,
+          }
+
+          console.log('Creating booking with data:', bookingData)
+
+          const { data, error } = await supabase
+            .from('bookings')
+            .insert(bookingData)
+            .select()
+            .single()
+
+          if (error) {
+            console.error('Supabase error code:', error.code)
+            console.error('Supabase error message:', error.message)
+            console.error('Supabase error details:', error.details)
+            console.error('Supabase error hint:', error.hint)
+            throw new Error(error.message || 'Failed to create booking')
+          }
+
+          console.log('Booking created:', data)
+
+          // 2. Create session entry (for member tracking — only after booking succeeds)
+          try {
+            await supabase.from('sessions').insert({
+              practitioner_id: userId,
+              member_id: selectedMember.id,
+              session_type: sessionEnum,
+              session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
+              scheduled_at: startTime.toISOString(),
+              duration_minutes: durationToUse,
+              status: 'scheduled',
+              notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
+              price: calendarPrice,
+            })
+          } catch (sessionErr) {
+            console.warn('Could not create session entry:', sessionErr)
+          }
+
+          // Sync to Google Calendar via API
+          if (data?.id) {
+            try {
+              const syncResponse = await fetch(`/api/bookings/${data.id}/sync-calendar`, {
+                method: 'POST',
+              })
+
+              if (syncResponse.ok) {
+                const syncResult = await syncResponse.json()
+                if (syncResult.calendarSynced) {
+                  toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name} and added to calendar`)
+                } else {
+                  toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
+                  if (syncResult.calendarError) {
+                    console.warn('Calendar sync warning:', syncResult.calendarError)
+                  }
+                }
               } else {
                 toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
-                if (syncResult.calendarError) {
-                  console.warn('Calendar sync warning:', syncResult.calendarError)
-                }
               }
-            } else {
+            } catch (syncError) {
+              console.error('Calendar sync error:', syncError)
               toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
             }
-          } catch (syncError) {
-            console.error('Calendar sync error:', syncError)
+          } else {
             toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
           }
-        } else {
-          toast.success(`Session scheduled with ${selectedMember.first_name} ${selectedMember.last_name}`)
         }
       }
 
@@ -1388,6 +1568,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </span>
                   </div>
                 )}
+                {/* Series notice: only this occurrence moves; the rest stays */}
+                {isReschedule && rescheduleData?.series_id && (
+                  <div className="flex items-start gap-2 bg-violet-50 border border-violet-200 rounded-xl px-3 py-2.5 text-xs text-violet-700">
+                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      {locale === 'fr'
+                        ? 'Cette séance fait partie d\'une série récurrente. Seule cette occurrence sera déplacée — les autres restent planifiées.'
+                        : 'This session is part of a recurring series. Only this occurrence will move — the rest stays scheduled.'}
+                    </span>
+                  </div>
+                )}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-lavender-400 to-lavender-600 flex items-center justify-center text-white font-medium">
@@ -1462,6 +1653,123 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     )}
                   </div>
                 </div>
+
+                {/* Recurring series — only for new calendar bookings (not reschedule, not manual) */}
+                {!isReschedule && scheduleMode === 'calendar' && (
+                  <div className="rounded-xl border border-gray-200 bg-white">
+                    <button
+                      type="button"
+                      onClick={() => setRecurEnabled(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-900">
+                          {locale === 'fr' ? 'Faire une série récurrente' : locale === 'es' ? 'Hacer una serie recurrente' : 'Make this a recurring series'}
+                        </span>
+                      </div>
+                      <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${recurEnabled ? 'bg-teal-500' : 'bg-gray-200'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${recurEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </span>
+                    </button>
+                    {recurEnabled && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3">
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {locale === 'fr' ? 'Fréquence' : locale === 'es' ? 'Frecuencia' : 'Frequency'}
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {([
+                              { val: 'WEEKLY' as const, en: 'Weekly', fr: 'Chaque semaine', es: 'Semanal' },
+                              { val: 'BIWEEKLY' as const, en: 'Every 2 weeks', fr: 'Toutes les 2 semaines', es: 'Cada 2 semanas' },
+                              { val: 'MONTHLY' as const, en: 'Monthly', fr: 'Chaque mois', es: 'Mensual' },
+                            ]).map(opt => (
+                              <button
+                                key={opt.val}
+                                type="button"
+                                onClick={() => setRecurFrequency(opt.val)}
+                                className={`px-2.5 py-2 text-xs rounded-lg border transition-colors ${
+                                  recurFrequency === opt.val
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-medium'
+                                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                                }`}
+                              >
+                                {locale === 'fr' ? opt.fr : locale === 'es' ? opt.es : opt.en}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5 block">
+                            {locale === 'fr' ? 'Nombre de séances' : locale === 'es' ? 'Número de sesiones' : 'Number of sessions'}
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {[4, 6, 8, 12].map(n => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setRecurCount(n)}
+                                className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                                  recurCount === n
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-medium'
+                                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                                }`}
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {seriesPreview.length > 0 && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1.5">
+                              {locale === 'fr'
+                                ? `Aperçu (${seriesPreview.length} séances)`
+                                : `Preview (${seriesPreview.length} sessions)`}
+                              {seriesConflicts.length > 0 && (
+                                <span className="text-red-600 ml-2 font-medium">
+                                  · {seriesConflicts.length} {locale === 'fr' ? 'conflit(s)' : 'conflict(s)'}
+                                </span>
+                              )}
+                            </p>
+                            <div className="rounded-lg bg-gray-50 max-h-40 overflow-y-auto divide-y divide-gray-100 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+                              {seriesPreview.map((d, i) => {
+                                const conflict = seriesConflicts.find(c => c.date.getTime() === d.getTime())
+                                return (
+                                  <div key={d.toISOString()} className="px-3 py-1.5 flex items-center justify-between text-xs">
+                                    <span className="text-gray-700">
+                                      <span className="text-gray-400 mr-2">{i + 1}.</span>
+                                      {d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: practitionerTz || undefined })}
+                                      {' · '}
+                                      {d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: locale !== 'fr', timeZone: practitionerTz || undefined })}
+                                    </span>
+                                    {conflict && (
+                                      <span className="text-red-600 font-medium">
+                                        {conflict.reason === 'booked'
+                                          ? (locale === 'fr' ? 'Déjà réservé' : 'Already booked')
+                                          : (locale === 'fr' ? 'Jour bloqué' : 'Day blocked')}
+                                      </span>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {seriesConflicts.length > 0 && (
+                          <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+                            <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                            <p className="text-xs text-red-700 leading-snug">
+                              {locale === 'fr'
+                                ? `Résolvez les conflits avant de planifier la série, ou réduisez le nombre de séances.`
+                                : `Resolve the conflicts before scheduling the series, or reduce the count.`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">

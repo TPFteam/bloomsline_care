@@ -186,6 +186,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
+  // For series cancel: 'this' (just this occurrence) or 'following' (this + all later siblings)
+  const [cancelScope, setCancelScope] = useState<'this' | 'following'>('this')
   const [confirmReason, setConfirmReason] = useState('')
   const [confirmNotes, setConfirmNotes] = useState('')
 
@@ -276,12 +278,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       // Start with defaults — depends on the practitioner's legacy flag
       const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
-      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
+      let types: { type: string; label: string }[] = baseDefaults.map(nt => ({
         type: nt,
         label: noteTypeLabels?.[nt] || nt,
       }))
 
-      // Fetch custom note types
+      // Fetch custom note types and any _hidden: markers
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase
@@ -291,10 +293,16 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           .order('created_at')
 
         if (data) {
+          const hidden = new Set<string>()
           for (const d of data) {
-            if (!types.some(existing => existing.type === d.type_name)) {
+            if (d.type_name.startsWith('_hidden:')) {
+              hidden.add(d.type_name.slice('_hidden:'.length))
+            } else if (!types.some(existing => existing.type === d.type_name)) {
               types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
             }
+          }
+          if (hidden.size > 0) {
+            types = types.filter(t => !hidden.has(t.type))
           }
         }
       }
@@ -303,6 +311,94 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
     buildNoteTypes()
   }, [supabase, t, usesLegacyDefaults])
+
+  // All notes for this member — used by tag-management handlers (count usage,
+  // unwrap inline <mark> on tag delete).
+  const [allMemberNotes, setAllMemberNotes] = useState<{ id: string; content: string; note_type: string | null }[]>([])
+  const refreshAllMemberNotes = async () => {
+    const { data } = await supabase
+      .from('progress_notes')
+      .select('id, content, note_type')
+      .eq('member_id', memberId)
+    if (data) setAllMemberNotes(data as unknown as { id: string; content: string; note_type: string | null }[])
+  }
+  useEffect(() => { refreshAllMemberNotes() }, [memberId, supabase])
+
+  // Tag management — same semantics as NotesTab so practitioners can edit
+  // tags from any editor surface.
+  const handleEditorAddType = async (typeName: string) => {
+    const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+    const label = noteTypeLabels?.[typeName] || typeName.replace(/_/g, ' ')
+    setEditorNoteTypes(prev => prev.some(nt => nt.type === typeName) ? prev : [...prev, { type: typeName, label }])
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('custom_note_types').upsert(
+      { practitioner_id: user.id, type_name: typeName },
+      { onConflict: 'practitioner_id,type_name' }
+    )
+  }
+
+  const handleEditorRenameType = async (oldName: string, newName: string) => {
+    const val = newName.trim().toLowerCase().replace(/\s+/g, '_')
+    if (!val || val === oldName) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('custom_note_types').update({ type_name: val }).eq('practitioner_id', user.id).eq('type_name', oldName)
+    await supabase.from('progress_notes').update({ note_type: val }).eq('practitioner_id', user.id).eq('note_type', oldName)
+    const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+    const label = noteTypeLabels?.[val] || val.replace(/_/g, ' ')
+    setEditorNoteTypes(prev => prev.map(nt => nt.type === oldName ? { type: val, label } : nt))
+    refreshAllMemberNotes()
+    onSessionsUpdate()
+    toast.success(locale === 'fr' ? 'Étiquette renommée' : 'Tag renamed')
+  }
+
+  const DELETABLE_DEFAULTS = ['general', 'symptome', 'transfert', 'contre_transfert', 'ajustement_envisage']
+  const handleEditorDeleteType = async (typeName: string, reassignTo: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Reassign notes whose note_type matches
+    await supabase.from('progress_notes').update({ note_type: reassignTo }).eq('practitioner_id', user.id).eq('note_type', typeName)
+
+    // Unwrap inline <mark data-tag="typeName"> from any note's content
+    const notesWithInlineTag = allMemberNotes.filter(n => n.content?.includes(`data-tag="${typeName}"`))
+    for (const note of notesWithInlineTag) {
+      let updated = note.content
+      try {
+        const doc = new DOMParser().parseFromString(note.content, 'text/html')
+        doc.querySelectorAll(`mark[data-tag="${typeName}"]`).forEach(mark => {
+          const parent = mark.parentNode
+          if (parent) {
+            while (mark.firstChild) parent.insertBefore(mark.firstChild, mark)
+            parent.removeChild(mark)
+          }
+        })
+        updated = doc.body.innerHTML
+      } catch { /* ignore */ }
+      if (updated !== note.content) {
+        await supabase.from('progress_notes').update({ content: updated }).eq('id', note.id)
+      }
+    }
+
+    if (DELETABLE_DEFAULTS.includes(typeName)) {
+      // Hide a deletable default via _hidden: marker
+      await supabase.from('custom_note_types').upsert(
+        { practitioner_id: user.id, type_name: `_hidden:${typeName}` },
+        { onConflict: 'practitioner_id,type_name' }
+      )
+    } else {
+      await supabase.from('custom_note_types').delete().eq('practitioner_id', user.id).eq('type_name', typeName)
+    }
+
+    setEditorNoteTypes(prev => prev.filter(nt => nt.type !== typeName))
+    refreshAllMemberNotes()
+    onSessionsUpdate()
+    toast.success(locale === 'fr' ? 'Étiquette supprimée' : 'Tag deleted')
+  }
+
+  const getTagNoteCount = (typeName: string): number =>
+    allMemberNotes.filter(n => n.note_type === typeName || n.content?.includes(`data-tag="${typeName}"`)).length
 
   // Fetch notes for all sessions
   useEffect(() => {
@@ -484,7 +580,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
-  const handleUpdateStatus = async (sessionId: string, newStatus: SessionStatus, reason?: string, notes?: string) => {
+  const handleUpdateStatus = async (sessionId: string, newStatus: SessionStatus, reason?: string, notes?: string, seriesScope?: 'this' | 'following') => {
     try {
       const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
       if (reason) updateData.cancellation_reason = reason
@@ -497,8 +593,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (error) throw error
 
       // When cancelling, also cancel the matching booking so the patient
-      // gets a cancellation email + Google Calendar event is removed.
-      // The booking PATCH endpoint handles both of those.
+      // gets a cancellation email + Google Calendar event is updated.
+      // The booking PATCH endpoint handles both of those (and propagates to
+      // sibling rows when series_scope='following').
       if (newStatus === 'cancelled') {
         try {
           // Find the session to get its scheduled_at for matching
@@ -520,6 +617,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 body: JSON.stringify({
                   status: 'cancelled',
                   practitioner_notes: reason || undefined,
+                  series_scope: seriesScope || 'this',
                 }),
               })
             }
@@ -1095,7 +1193,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         }`} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-gray-900 text-sm">
                             {t.members.sessionTypes[session.session_type]}
                           </p>
@@ -1103,6 +1201,25 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
                               <Check className="w-3 h-3" />
                               {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+                            </span>
+                          )}
+                          {session.series_id && session.series_position && session.series_total && (
+                            <span className="px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Série récurrente' : 'Recurring series'}>
+                              <RefreshCw className="w-3 h-3" />
+                              {locale === 'fr'
+                                ? `Séance ${session.series_position}/${session.series_total}`
+                                : `Session ${session.series_position}/${session.series_total}`}
+                            </span>
+                          )}
+                          {session.attendee_status === 'declined' && (
+                            <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Le patient a refusé l\'invitation' : 'Patient declined the invite'}>
+                              <X className="w-3 h-3" />
+                              {locale === 'fr' ? 'Refusé' : 'Declined'}
+                            </span>
+                          )}
+                          {session.attendee_status === 'tentative' && (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Réponse provisoire du patient' : 'Patient marked as tentative'}>
+                              {locale === 'fr' ? 'Provisoire' : 'Tentative'}
                             </span>
                           )}
                         </div>
@@ -1207,6 +1324,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                   session_format: session.session_format,
                                   start_time: session.scheduled_at,
                                   end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
+                                  series_id: session.series_id,
                                 } : {
                                   id: session.id,
                                   practitioner_id: session.practitioner_id,
@@ -1217,6 +1335,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                   session_format: session.session_format,
                                   start_time: session.scheduled_at,
                                   end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
+                                  series_id: session.series_id,
                                 })
                               }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -1238,6 +1357,20 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               <XCircle className="w-4 h-4 text-orange-500" />
                               {locale === 'fr' ? 'Annuler la séance' : 'Cancel session'}
                             </button>
+                            {/* Skip-this-week shortcut — only on series occurrences. Cancels just
+                                this one with a templated reason, no modal, no per-week friction. */}
+                            {session.series_id && (
+                              <button
+                                onClick={async () => {
+                                  setActionMenuId(null)
+                                  await handleUpdateStatus(session.id, 'cancelled' as SessionStatus, 'rescheduled', undefined, 'this')
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Calendar className="w-4 h-4 text-violet-500" />
+                                {locale === 'fr' ? 'Sauter cette semaine' : 'Skip this week'}
+                              </button>
+                            )}
                             <button
                               onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'no_show' }) }}
                               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -1286,7 +1419,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           autoFocus
                           milestones={milestones}
                           noteTypes={editorNoteTypes}
-                          lockedTypes={effectiveDefaultTags as unknown as string[]}
+                          lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                          onAddType={handleEditorAddType}
+                          onRenameType={handleEditorRenameType}
+                          onDeleteType={handleEditorDeleteType}
+                          getTagNoteCount={getTagNoteCount}
+                          maxTypes={Math.max(7, editorNoteTypes.length)}
                           memberName={member?.first_name}
                         />
                         <div className="flex items-center justify-end gap-2 px-3 py-2">
@@ -1516,7 +1654,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             autoFocus
                             milestones={milestones}
                             noteTypes={editorNoteTypes}
-                            lockedTypes={effectiveDefaultTags as unknown as string[]}
+                            lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                            onAddType={handleEditorAddType}
+                            onRenameType={handleEditorRenameType}
+                            onDeleteType={handleEditorDeleteType}
+                            getTagNoteCount={getTagNoteCount}
+                            maxTypes={Math.max(7, editorNoteTypes.length)}
                             memberName={member?.first_name}
                           />
                           <div className="flex items-center justify-end gap-2 px-3 py-2">
@@ -1631,8 +1774,18 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       </motion.div>
 
       {/* Confirmation Modal */}
-      {confirmAction && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes('') }}>
+      {confirmAction && (() => {
+        const targetSession = sessions.find(s => s.id === confirmAction.sessionId)
+        const isSeries = !!(targetSession?.series_id)
+        const remainingInSeries = isSeries
+          ? sessions.filter(s =>
+              s.series_id === targetSession!.series_id &&
+              new Date(s.scheduled_at).getTime() >= new Date(targetSession!.scheduled_at).getTime() &&
+              s.status !== 'cancelled'
+            ).length
+          : 0
+        return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes(''); setCancelScope('this') }}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
               {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Marquer comme terminée ?' : 'Mark as completed?') :
@@ -1640,6 +1793,49 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Marquer comme absent ?' : 'Mark as no show?') :
                (locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?')}
             </h3>
+
+            {/* Series scope picker — only when cancelling a session that belongs to a recurring series */}
+            {confirmAction.action === 'cancel' && isSeries && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {locale === 'fr' ? 'Portée de l\'annulation' : 'Cancel scope'}
+                </label>
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCancelScope('this')}
+                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      cancelScope === 'this'
+                        ? 'border-teal-500 bg-teal-50 text-teal-800'
+                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="font-medium">{locale === 'fr' ? 'Uniquement cette séance' : 'Only this session'}</span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      {locale === 'fr' ? 'Les autres séances de la série restent planifiées.' : 'The rest of the series stays scheduled.'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCancelScope('following')}
+                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      cancelScope === 'following'
+                        ? 'border-red-500 bg-red-50 text-red-800'
+                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="font-medium">
+                      {locale === 'fr'
+                        ? `Cette séance et toutes les suivantes (${remainingInSeries})`
+                        : `This and all following (${remainingInSeries})`}
+                    </span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      {locale === 'fr' ? 'Les séances passées de la série restent intactes.' : 'Past sessions in the series stay intact.'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Reason dropdown for cancel/no_show */}
             {(confirmAction.action === 'cancel' || confirmAction.action === 'no_show') && (
@@ -1701,7 +1897,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             )}
 
             <div className="flex gap-3 justify-end mt-6">
-              <Button variant="outline" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes('') }} className="rounded-xl">
+              <Button variant="outline" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes(''); setCancelScope('this') }} className="rounded-xl">
                 {locale === 'fr' ? 'Retour' : 'Back'}
               </Button>
               <Button
@@ -1712,24 +1908,30 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   } else if (status) {
                     const reason = confirmReason || undefined
                     const notes = confirmNotes || undefined
-                    await handleUpdateStatus(confirmAction.sessionId, status as SessionStatus, reason, notes)
+                    const scope = (confirmAction.action === 'cancel' && isSeries) ? cancelScope : undefined
+                    await handleUpdateStatus(confirmAction.sessionId, status as SessionStatus, reason, notes, scope)
                   }
                   setConfirmAction(null)
                   setConfirmReason('')
                   setConfirmNotes('')
+                  setCancelScope('this')
                 }}
                 disabled={confirmAction.action === 'cancel' && !confirmReason}
-                className={`rounded-xl ${confirmAction.action === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`rounded-xl ${confirmAction.action === 'delete' || (confirmAction.action === 'cancel' && isSeries && cancelScope === 'following') ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
-                 confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler la séance' : 'Cancel session') :
-                 confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
+                 confirmAction.action === 'cancel'
+                   ? (isSeries && cancelScope === 'following'
+                       ? (locale === 'fr' ? `Annuler ${remainingInSeries} séances` : `Cancel ${remainingInSeries} sessions`)
+                       : (locale === 'fr' ? 'Annuler la séance' : 'Cancel session'))
+                 : confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
                  (locale === 'fr' ? 'Supprimer' : 'Delete')}
               </Button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Edit Session Modal (shared component) */}
       <EditSessionModal
