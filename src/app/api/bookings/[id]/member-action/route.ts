@@ -111,6 +111,19 @@ export async function POST(
       return NextResponse.json({ error: 'Rescheduling by patient is not enabled. Please contact your practitioner.' }, { status: 403 });
     }
 
+    // Series safety guard: this booking belongs to a recurring series.
+    // The current cancel/reschedule paths target the *parent* google_event_id,
+    // which would silently delete the entire series for everyone. Until the
+    // member-action route is taught to operate per-occurrence (Phase 5), we
+    // block the action and route the patient to their practitioner.
+    if (booking.series_id) {
+      return NextResponse.json({
+        error: action === 'cancel'
+          ? 'This session is part of a recurring series. Please contact your practitioner to cancel.'
+          : 'This session is part of a recurring series. Please contact your practitioner to reschedule.',
+      }, { status: 403 });
+    }
+
     // Get practitioner info for emails
     const { data: practitioner } = await adminSupabase
       .from('users')

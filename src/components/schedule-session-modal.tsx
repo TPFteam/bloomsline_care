@@ -16,6 +16,7 @@ import { fr as frLocale, es as esLocale } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
 import type { Member } from '@/types/member'
 import { expandRecurrence, buildRRuleString, validateSeriesAvailability } from '@/lib/recurrence'
+import { getHolidayName } from '@/lib/holidays'
 
 interface SessionType {
   id: string
@@ -1720,6 +1721,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                             ))}
                           </div>
                         </div>
+                        {/* Pricing lock-in hint — each occurrence captures today's rate. */}
+                        <p className="text-[11px] text-gray-500 italic leading-snug">
+                          {locale === 'fr'
+                            ? 'Chaque séance verrouille le tarif actuel. Une mise à jour ultérieure du tarif n\'affectera pas cette série.'
+                            : 'Each session locks in today\'s rate. Future rate changes won\'t affect this series.'}
+                        </p>
                         {seriesPreview.length > 0 && (
                           <div>
                             <p className="text-xs text-gray-500 mb-1.5">
@@ -1735,6 +1742,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                             <div className="rounded-lg bg-gray-50 max-h-40 overflow-y-auto divide-y divide-gray-100 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
                               {seriesPreview.map((d, i) => {
                                 const conflict = seriesConflicts.find(c => c.date.getTime() === d.getTime())
+                                const tzForHoliday = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
+                                const holiday = getHolidayName(d, tzForHoliday, locale)
                                 return (
                                   <div key={d.toISOString()} className="px-3 py-1.5 flex items-center justify-between text-xs">
                                     <span className="text-gray-700">
@@ -1743,13 +1752,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                                       {' · '}
                                       {d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: locale !== 'fr', timeZone: practitionerTz || undefined })}
                                     </span>
-                                    {conflict && (
+                                    {conflict ? (
                                       <span className="text-red-600 font-medium">
                                         {conflict.reason === 'booked'
                                           ? (locale === 'fr' ? 'Déjà réservé' : 'Already booked')
                                           : (locale === 'fr' ? 'Jour bloqué' : 'Day blocked')}
                                       </span>
-                                    )}
+                                    ) : holiday ? (
+                                      <span className="text-amber-600 font-medium" title={holiday}>
+                                        {locale === 'fr' ? `Jour férié · ${holiday}` : `Holiday · ${holiday}`}
+                                      </span>
+                                    ) : null}
                                   </div>
                                 )
                               })}

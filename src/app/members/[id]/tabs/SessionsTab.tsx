@@ -40,6 +40,7 @@ import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { EditSessionModal } from '@/components/EditSessionModal'
+import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
@@ -188,6 +189,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
   // For series cancel: 'this' (just this occurrence) or 'following' (this + all later siblings)
   const [cancelScope, setCancelScope] = useState<'this' | 'following'>('this')
+  // Series detail drawer: when set, shows all occurrences for this series_id
+  const [viewingSeriesId, setViewingSeriesId] = useState<string | null>(null)
   const [confirmReason, setConfirmReason] = useState('')
   const [confirmNotes, setConfirmNotes] = useState('')
 
@@ -596,21 +599,22 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       // gets a cancellation email + Google Calendar event is updated.
       // The booking PATCH endpoint handles both of those (and propagates to
       // sibling rows when series_scope='following').
+      let cancelledBookingId: string | null = null
+      const sessionRow = sessions.find(s => s.id === sessionId)
       if (newStatus === 'cancelled') {
         try {
-          // Find the session to get its scheduled_at for matching
-          const session = sessions.find(s => s.id === sessionId)
-          if (session) {
+          if (sessionRow) {
             // Find the matching booking by member + start time
             const { data: matchingBooking } = await supabase
               .from('bookings')
               .select('id, status')
               .eq('member_id', memberId)
-              .eq('start_time', session.scheduled_at)
+              .eq('start_time', sessionRow.scheduled_at)
               .neq('status', 'cancelled')
               .maybeSingle()
 
             if (matchingBooking) {
+              cancelledBookingId = matchingBooking.id
               await fetch(`/api/bookings/${matchingBooking.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -628,7 +632,39 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         }
       }
 
-      toast.success(t.members.success.sessionUpdated)
+      // Undo affordance for series-occurrence cancels (scope='this'). The
+      // restore endpoint flips DB rows back and PATCHes the Google instance
+      // to confirmed. We don't offer undo for 'following' scope — restoring
+      // a multi-row series cancel correctly is more involved (recreating
+      // RRULE state) and out of v1 scope.
+      const showUndo =
+        newStatus === 'cancelled' &&
+        sessionRow?.series_id &&
+        (seriesScope === 'this' || seriesScope === undefined) &&
+        cancelledBookingId
+      if (showUndo) {
+        toast.success(
+          locale === 'fr' ? 'Séance annulée' : 'Session cancelled',
+          {
+            duration: 8000,
+            action: {
+              label: locale === 'fr' ? 'Annuler' : 'Undo',
+              onClick: async () => {
+                try {
+                  const r = await fetch(`/api/bookings/${cancelledBookingId}/restore`, { method: 'POST' })
+                  if (!r.ok) throw new Error('restore failed')
+                  toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
+                  onSessionsUpdate()
+                } catch {
+                  toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
+                }
+              },
+            },
+          }
+        )
+      } else {
+        toast.success(t.members.success.sessionUpdated)
+      }
       onSessionsUpdate()
     } catch (error) {
       console.error('Error updating session:', error)
@@ -1204,12 +1240,17 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             </span>
                           )}
                           {session.series_id && session.series_position && session.series_total && (
-                            <span className="px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Série récurrente' : 'Recurring series'}>
+                            <button
+                              type="button"
+                              onClick={() => setViewingSeriesId(session.series_id!)}
+                              className="px-2 py-0.5 rounded-md bg-violet-100 hover:bg-violet-200 text-violet-700 text-xs font-medium flex items-center gap-1 transition-colors"
+                              title={locale === 'fr' ? 'Voir la série' : 'View series'}
+                            >
                               <RefreshCw className="w-3 h-3" />
                               {locale === 'fr'
                                 ? `Séance ${session.series_position}/${session.series_total}`
                                 : `Session ${session.series_position}/${session.series_total}`}
-                            </span>
+                            </button>
                           )}
                           {session.attendee_status === 'declined' && (
                             <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Le patient a refusé l\'invitation' : 'Patient declined the invite'}>
@@ -1938,6 +1979,15 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         session={editingSession}
         onClose={handleCancelEdit}
         onSave={onSessionsUpdate}
+      />
+
+      {/* Series detail drawer — opens from the violet "Session N/Y" badge */}
+      <SeriesDetailDrawer
+        isOpen={!!viewingSeriesId}
+        onClose={() => setViewingSeriesId(null)}
+        sessions={viewingSeriesId ? sessions.filter(s => s.series_id === viewingSeriesId) : []}
+        memberName={`${member.first_name} ${member.last_name}`}
+        locale={locale as 'en' | 'fr' | 'es'}
       />
 
       {/* Schedule Session Modal */}

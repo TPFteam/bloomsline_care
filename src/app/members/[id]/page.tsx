@@ -201,6 +201,41 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
       // Update local state
       setMember({ ...member, status: newStatus })
 
+      // Lifecycle hook: when a member becomes inactive, cancel their future
+      // recurring-series occurrences. The relationship has paused/ended, so
+      // those slots shouldn't keep blocking the practitioner's availability.
+      // We mark them cancelled directly rather than calling the booking
+      // cancel API to avoid spamming the patient with notifications now that
+      // the relationship is over (sendUpdates=none in spirit).
+      if (newStatus === 'inactive') {
+        try {
+          const nowIso = new Date().toISOString()
+          await supabase
+            .from('bookings')
+            .update({
+              status: 'cancelled',
+              cancelled_at: nowIso,
+              cancelled_by: 'practitioner',
+              cancellation_reason: 'Member set to inactive — series cleanup',
+              updated_at: nowIso,
+            })
+            .eq('member_id', member.id)
+            .gte('start_time', nowIso)
+            .not('series_id', 'is', null)
+            .neq('status', 'cancelled')
+
+          await supabase
+            .from('sessions')
+            .update({ status: 'cancelled', updated_at: nowIso })
+            .eq('member_id', member.id)
+            .gte('scheduled_at', nowIso)
+            .not('series_id', 'is', null)
+            .in('status', ['scheduled', 'confirmed'])
+        } catch (cleanupErr) {
+          console.warn('Series cleanup on inactive failed:', cleanupErr)
+        }
+      }
+
       toast.success(
         locale === 'fr'
           ? `Statut changé en ${newStatus === 'active' ? 'Actif' : 'Inactif'}`
