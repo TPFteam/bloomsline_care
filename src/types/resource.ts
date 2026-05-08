@@ -517,6 +517,9 @@ export interface CreateResourceDTO {
 }
 
 export interface UpdateResourceDTO {
+  /** Allowed on update so the editor can auto-promote a psychoeducation
+   *  resource to a worksheet when interactive blocks are added. */
+  type?: ResourceType
   title?: string
   description?: string
   category?: string

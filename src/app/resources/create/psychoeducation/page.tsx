@@ -55,6 +55,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { createResource, getResourceById, updateResource } from '@/lib/services/resources'
+import { deriveResourceType } from '@/lib/resources/derive-type'
 import { uploadResourceFile, validateFile, formatFileSize } from '@/lib/services/resource-storage'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -1094,9 +1095,15 @@ function CreatePsychoeducationContent() {
 
       let savedResourceId: string | null = null
 
+      // Auto-derive the resource type from the actual block content. If the
+      // practitioner has added any interactive blocks, the resource flips to
+      // `worksheet`; otherwise it stays psychoeducation.
+      const derivedType = deriveResourceType(resourceBlocks)
+
       if (existingResourceId) {
         // Update existing resource (either editing or updating auto-saved draft)
         await updateResource(existingResourceId, {
+          type: derivedType,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1111,7 +1118,7 @@ function CreatePsychoeducationContent() {
       } else {
         // Create new resource
         const newResource = await createResource({
-          type: 'psychoeducation',
+          type: derivedType,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1323,8 +1330,13 @@ function CreatePsychoeducationContent() {
         }, 0) / 200)),
       }
 
+      // Auto-derive type on auto-save too, so a worksheet doesn't sit in
+      // draft as 'psychoeducation' until the practitioner hits manual save.
+      const derivedAutoType = deriveResourceType(resourceBlocks)
+
       if (saveToId) {
         await updateResource(saveToId, {
+          type: derivedAutoType,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,
@@ -1335,7 +1347,7 @@ function CreatePsychoeducationContent() {
         })
       } else {
         const newResource = await createResource({
-          type: 'psychoeducation',
+          type: derivedAutoType,
           title,
           description: description || undefined,
           category: selectedCategory || undefined,

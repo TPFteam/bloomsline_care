@@ -43,6 +43,7 @@ import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
+import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import {
   getCalendarConnection,
@@ -997,6 +998,29 @@ export default function BookingsPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Unlinked Google events — only when Google is connected */}
+              {calendarConnection && (
+                <div className="mb-4">
+                  <UnclaimedGoogleEventsCard
+                    sessionTypes={(sessionTypes || []) as { id: string; name: string; duration?: number; price?: number | null }[]}
+                    locale={locale as 'en' | 'fr' | 'es'}
+                    onClaimed={async () => {
+                      // Refetch bookings inline so the newly claimed event
+                      // appears in the list immediately.
+                      const sb = createClient()
+                      const { data: { user: u } } = await sb.auth.getUser()
+                      if (!u) return
+                      const { data } = await sb
+                        .from('bookings')
+                        .select('*')
+                        .eq('practitioner_id', u.id)
+                        .order('start_time', { ascending: true })
+                      if (data) setBookings(data as typeof bookings)
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Calendar View */}
               {bookingView === 'calendar' ? (
