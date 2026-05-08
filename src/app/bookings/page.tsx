@@ -27,6 +27,7 @@ import {
   Video,
   Building2,
   SlidersHorizontal,
+  Code2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -41,6 +42,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
+import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import {
   getCalendarConnection,
@@ -201,7 +203,7 @@ export default function BookingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences'>('availability')
+  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences' | 'embed'>('availability')
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -687,6 +689,7 @@ export default function BookingsPage() {
       hour_aligned_slots: (bookingSettings as any)?.hour_aligned_slots ?? false,
       currency: bookingSettings?.currency ?? 'EUR',
       send_own_calendar_emails: (bookingSettings as any)?.send_own_calendar_emails ?? true,
+      booking_page_language: bookingSettings?.booking_page_language ?? null,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -1238,6 +1241,7 @@ export default function BookingsPage() {
                   { key: 'availability' as const, label: locale === 'fr' ? 'Disponibilités' : 'Availability', icon: Calendar },
                   { key: 'sessions' as const, label: locale === 'fr' ? 'Séances' : 'Sessions', icon: Clock },
                   { key: 'preferences' as const, label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: SlidersHorizontal },
+                  { key: 'embed' as const, label: locale === 'fr' ? 'Intégrer' : 'Embed', icon: Code2 },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -1473,7 +1477,7 @@ export default function BookingsPage() {
                       {locale === 'fr' ? 'Votre lien de réservation' : 'Your Booking Link'}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="flex-1 bg-white border rounded-lg px-4 py-2.5 font-mono text-sm text-gray-700 truncate">
                         bloomsline.com/practitioner/{practitionerSlug}/book
@@ -1485,9 +1489,49 @@ export default function BookingsPage() {
                         <Button variant="outline"><ExternalLink className="w-4 h-4 mr-2" />{locale === 'fr' ? 'Aperçu' : 'Preview'}</Button>
                       </Link>
                     </div>
+
+                    {/* Public page language — independent from dashboard UI language */}
+                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {locale === 'fr' ? 'Langue de la page publique' : 'Public page language'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {locale === 'fr'
+                            ? 'Indépendante de la langue de votre tableau de bord.'
+                            : 'Independent from your dashboard UI language.'}
+                        </p>
+                      </div>
+                      <select
+                        value={bookingSettings?.booking_page_language ?? 'en'}
+                        onChange={async (e) => {
+                          const next = e.target.value as 'en' | 'fr'
+                          const prev = bookingSettings?.booking_page_language ?? 'en'
+                          setBookingSettings((s) => ({ ...s!, booking_page_language: next }))
+                          if (!userId) return
+                          const saved = await saveBookingSettings({
+                            ...(bookingSettings as any),
+                            user_id: userId,
+                            booking_page_language: next,
+                          })
+                          if (saved) {
+                            setBookingSettings(saved)
+                            toast.success(locale === 'fr' ? 'Langue mise à jour' : 'Language updated')
+                          } else {
+                            setBookingSettings((s) => ({ ...s!, booking_page_language: prev }))
+                            toast.error(locale === 'fr' ? 'Échec de la mise à jour' : 'Failed to update')
+                          }
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-white"
+                      >
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                      </select>
+                    </div>
                   </CardContent>
                 </Card>
               )}
+
               {/* Availability Schedule — only for native booking */}
               {!bookingSettings?.external_booking_url && (
               <Card>
@@ -2019,6 +2063,29 @@ export default function BookingsPage() {
                 </CardContent>
               </Card>
               </>)}
+
+              {/* ─── Embed tab ─── */}
+              {settingsTab === 'embed' && (
+                bookingSettings?.external_booking_url || !practitionerSlug || !bookingSettings?.booking_page_enabled ? (
+                  <Card className="border-gray-200 bg-white">
+                    <CardContent className="py-8 text-center">
+                      <Code2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        {locale === 'fr'
+                          ? 'L\'intégration n\'est disponible que lorsque la page de réservation Bloomsline est activée.'
+                          : 'Embedding is only available when the Bloomsline booking page is enabled.'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {locale === 'fr'
+                          ? 'Activez la page de réservation dans Préférences pour générer un code à intégrer.'
+                          : 'Enable the booking page in Preferences to generate an embed snippet.'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <EmbedSnippetCard slug={practitionerSlug} locale={locale as 'en' | 'fr' | 'es'} />
+                )
+              )}
             </div>
           )}
           </div>

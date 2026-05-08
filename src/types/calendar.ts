@@ -59,6 +59,7 @@ export interface BookingSettings {
   max_advance_days: number;
   session_types: SessionType[];
   booking_page_enabled: boolean;
+  booking_page_language?: 'en' | 'fr' | null;
   require_approval: boolean;
   cancellation_policy: string | null;
   booking_instructions: string | null;

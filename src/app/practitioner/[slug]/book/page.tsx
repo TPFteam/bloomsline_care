@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video } from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import { PhoneInput } from '@/components/ui/phone-input'
@@ -36,13 +36,13 @@ interface PractitionerInfo {
   dayFormats?: Record<string, string[]>
 }
 
-type Step = 'service' | 'format' | 'datetime' | 'details' | 'confirm'
+type Step = 'schedule' | 'details'
 
-const STEP_ORDER: Step[] = ['service', 'format', 'datetime', 'details', 'confirm']
+const STEP_ORDER: Step[] = ['schedule', 'details']
 
 const STEP_LABELS: Record<string, Record<Step, string>> = {
-  en: { service: 'Session', format: 'Format', datetime: 'Date & Time', details: 'Details', confirm: 'Confirm' },
-  fr: { service: 'Séance', format: 'Format', datetime: 'Date & Heure', details: 'Détails', confirm: 'Confirmer' },
+  en: { schedule: 'Schedule', details: 'Your details' },
+  fr: { schedule: 'Planifier', details: 'Vos coordonnées' },
 }
 
 const t = (locale: string, translations: Record<string, string>) =>
@@ -72,7 +72,17 @@ const SPECIALTY_FR: Record<string, string> = {
 
 export default function BookingPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const slug = params.slug as string
+
+  // Embed mode: ?embed=1 (and optional ?primary=#hex for accent override).
+  // When embedded, we drop the Bloomsline header + sidebar + background gradient
+  // so the booking flow blends into the host site, and post heights to the parent
+  // window so a JS-aware embed snippet can auto-resize the iframe.
+  const embedMode = searchParams.get('embed') === '1'
+  const primaryColorOverride = searchParams.get('primary') // e.g. "#4A9A86"
+  const hideSidebar = embedMode || searchParams.get('hideSidebar') === '1'
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   // State
   const [practitioner, setPractitioner] = useState<PractitionerInfo | null>(null)
@@ -80,7 +90,7 @@ export default function BookingPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Booking flow state
-  const [currentStep, setCurrentStep] = useState<Step>('service')
+  const [currentStep, setCurrentStep] = useState<Step>('schedule')
   const [selectedService, setSelectedService] = useState<SessionType | null>(null)
   const [selectedFormat, setSelectedFormat] = useState<'in_person' | 'video' | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -115,8 +125,36 @@ export default function BookingPage() {
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // Locale from practitioner's preferred language
-  const locale = practitioner?.user?.preferred_language === 'fr' ? 'fr' : 'en'
+  // Locale: prefer the dedicated booking-page setting; fall back to the
+  // practitioner's dashboard language so existing pages keep working.
+  const locale = (() => {
+    const explicit = (practitioner as any)?.settings?.booking_page_language as string | null | undefined
+    if (explicit === 'fr') return 'fr'
+    if (explicit === 'en') return 'en'
+    return practitioner?.user?.preferred_language === 'fr' ? 'fr' : 'en'
+  })()
+
+  // Pick the service name in the active locale, falling back to default name.
+  // Mirrors the practitioner-side getSessionTypeName() helper in bookings/page.tsx
+  // so built-in service IDs / English-only names still translate to French.
+  const lockedNameFr: Record<string, string> = {
+    initial: 'Consultation initiale',
+    follow_up: 'Séance de suivi',
+    check_in: 'Point de situation',
+    'Initial Consultation': 'Consultation initiale',
+    'Follow-up Session': 'Séance de suivi',
+    'Follow-up': 'Séance de suivi',
+    'Check-in': 'Point de situation',
+  }
+  const getServiceName = (svc: { id?: string; name: string; name_fr?: string } | null | undefined) => {
+    if (!svc) return ''
+    if (locale === 'fr') {
+      if (svc.name_fr && svc.name_fr.trim()) return svc.name_fr
+      if (svc.id && lockedNameFr[svc.id]) return lockedNameFr[svc.id]
+      if (svc.name && lockedNameFr[svc.name]) return lockedNameFr[svc.name]
+    }
+    return svc.name
+  }
 
   // Load practitioner info via API route (bypasses RLS for user data)
   useEffect(() => {
@@ -140,6 +178,15 @@ export default function BookingPage() {
 
         console.log('[book] activeDays:', info.activeDays, 'dayFormats:', info.dayFormats, 'availableFormats:', info.availableFormats)
         setPractitioner(info as PractitionerInfo)
+
+        // Auto-pick when there's only one option for service or format —
+        // no reason to make the patient click a single-option list.
+        const services = (info.settings?.session_types || []) as SessionType[]
+        if (services.length === 1) setSelectedService(services[0])
+        const formats: string[] = info.availableFormats || []
+        if (formats.length === 1) {
+          setSelectedFormat(formats[0] === 'in_person' ? 'in_person' : 'video')
+        }
       } catch {
         setError('Failed to load practitioner information.')
       } finally {
@@ -149,6 +196,31 @@ export default function BookingPage() {
 
     loadPractitioner()
   }, [slug])
+
+  // Embed mode: continuously report the document body height to the parent
+  // window via postMessage so a JS-aware embed snippet can auto-resize the
+  // iframe to fit the content. ResizeObserver fires whenever the booking
+  // form's height changes (step change, calendar expand, error, etc.).
+  useEffect(() => {
+    if (!embedMode || typeof window === 'undefined') return
+    const post = () => {
+      const h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+      )
+      try {
+        window.parent.postMessage({ type: 'bloomsline:embed:height', height: h }, '*')
+      } catch { /* parent blocked — ignore */ }
+    }
+    post()
+    const ro = new ResizeObserver(() => post())
+    ro.observe(document.body)
+    const interval = window.setInterval(post, 1000)
+    return () => {
+      ro.disconnect()
+      window.clearInterval(interval)
+    }
+  }, [embedMode])
 
   // Load available slots when date changes
   useEffect(() => {
@@ -416,19 +488,16 @@ export default function BookingPage() {
   // Validation
   const canProceed = () => {
     switch (currentStep) {
-      case 'service':
-        return !!selectedService
-      case 'format':
-        return !!selectedFormat
-      case 'datetime':
-        return !!selectedDate && !!selectedSlot
-      case 'details':
+      case 'schedule':
+        // Need service + format + a picked slot. Service/format may be auto-picked
+        // when the practitioner only offers one of each.
+        return !!selectedService && !!selectedFormat && !!selectedDate && !!selectedSlot
+      case 'details': {
         const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail.trim())
         const baseValid = clientName.trim() !== '' && emailValid
         if (selectedService?.notesRequired && !notes.trim()) return false
         return baseValid
-      case 'confirm':
-        return true
+      }
       default:
         return false
     }
@@ -518,7 +587,7 @@ export default function BookingPage() {
                     <Calendar className="w-4.5 h-4.5 text-teal-500" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{selectedService?.name}</p>
+                    <p className="font-medium text-gray-900">{getServiceName(selectedService)}</p>
                     <p className="text-sm text-gray-500">{selectedService?.duration} minutes</p>
                   </div>
                 </div>
@@ -558,27 +627,86 @@ export default function BookingPage() {
   const sessionTypes = practitioner.settings.session_types as SessionType[]
   const currentStepIndex = STEP_ORDER.indexOf(currentStep)
 
+  // Validate the primary color override (only accept #RGB or #RRGGBB to avoid CSS injection)
+  const validPrimary = primaryColorOverride && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(primaryColorOverride)
+    ? primaryColorOverride
+    : null
+
+  // Convert hex to "r, g, b" for use in rgba()
+  const hexToRgbTriplet = (hex: string): string | null => {
+    let h = hex.replace('#', '')
+    if (h.length === 3) h = h.split('').map(c => c + c).join('')
+    if (h.length !== 6) return null
+    const r = parseInt(h.slice(0, 2), 16)
+    const g = parseInt(h.slice(2, 4), 16)
+    const b = parseInt(h.slice(4, 6), 16)
+    if ([r, g, b].some(n => Number.isNaN(n))) return null
+    return `${r}, ${g}, ${b}`
+  }
+  const rgbTriplet = validPrimary ? hexToRgbTriplet(validPrimary) : null
+
+  // CSS overrides — when an embed primary color is set, remap the booking page's
+  // teal accent classes to the practitioner's chosen color. Light shades (50/100)
+  // become tinted with the same color at low opacity for a cohesive feel.
+  const brandOverrideCss = embedMode && validPrimary && rgbTriplet
+    ? `
+        .bg-teal-50,
+        .from-teal-50,
+        .to-teal-50 { background-color: rgba(${rgbTriplet}, 0.06) !important; }
+        .bg-teal-100,
+        .from-teal-100,
+        .to-teal-100 { background-color: rgba(${rgbTriplet}, 0.12) !important; }
+        .bg-teal-200 { background-color: rgba(${rgbTriplet}, 0.20) !important; }
+        .bg-teal-500,
+        .bg-teal-600,
+        .bg-teal-700 { background-color: ${validPrimary} !important; }
+        .hover\\:bg-teal-600:hover,
+        .hover\\:bg-teal-700:hover { background-color: ${validPrimary} !important; filter: brightness(0.92); }
+        .text-teal-500,
+        .text-teal-600,
+        .text-teal-700 { color: ${validPrimary} !important; }
+        .hover\\:text-teal-600:hover,
+        .hover\\:text-teal-700:hover { color: ${validPrimary} !important; filter: brightness(0.92); }
+        .border-teal-200,
+        .border-teal-300,
+        .border-teal-400,
+        .border-teal-500,
+        .border-teal-600 { border-color: ${validPrimary} !important; }
+        .ring-teal-500 { --tw-ring-color: ${validPrimary} !important; }
+        .focus\\:ring-teal-500:focus { --tw-ring-color: ${validPrimary} !important; }
+      `
+    : null
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-100 via-white to-teal-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href={`/practitioner/${slug}`}>
-              <Logo size="md" showText />
-            </Link>
+    <div
+      ref={containerRef}
+      className={embedMode
+        ? 'min-h-0 bg-transparent'
+        : 'min-h-screen bg-gradient-to-br from-teal-100 via-white to-teal-50'
+      }
+    >
+      {brandOverrideCss && <style dangerouslySetInnerHTML={{ __html: brandOverrideCss }} />}
+      {/* Header — hidden in embed mode (host site provides its own chrome) */}
+      {!embedMode && (
+        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <Link href={`/practitioner/${slug}`}>
+                <Logo size="md" showText />
+              </Link>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className={`container mx-auto ${embedMode ? 'px-3 py-4' : 'px-4 sm:px-6 lg:px-8 py-8'} max-w-6xl`}>
+        <div className={`flex flex-col ${hideSidebar ? '' : 'lg:flex-row'} gap-8`}>
 
-          {/* Left Sidebar — Practitioner Info (desktop only) */}
+          {/* Left Sidebar — Practitioner Info (desktop only, hidden in embed by default) */}
           <motion.aside
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="hidden lg:block lg:w-80 shrink-0"
+            className={`${hideSidebar ? 'hidden' : 'hidden lg:block lg:w-80 shrink-0'}`}
           >
             <div className="lg:sticky lg:top-24">
               <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-gray-200/50 border border-white/60 overflow-hidden">
@@ -782,130 +910,87 @@ export default function BookingPage() {
             {/* Step Header */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {currentStep === 'service' && t(locale, { en: 'Choose a Session', fr: 'Choisir une séance' })}
-                {currentStep === 'format' && t(locale, { en: 'Session Format', fr: 'Format de séance' })}
-                {currentStep === 'datetime' && t(locale, { en: 'Choose Date & Time', fr: 'Choisir la date et l\'heure' })}
+                {currentStep === 'schedule' && t(locale, { en: 'Schedule your session', fr: 'Planifiez votre séance' })}
                 {currentStep === 'details' && t(locale, { en: 'Your Details', fr: 'Vos coordonnées' })}
-                {currentStep === 'confirm' && t(locale, { en: 'Confirm Booking', fr: 'Confirmer la réservation' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                {currentStep === 'service' && t(locale, { en: 'Choose the type of session you\'d like to book', fr: 'Choisissez le type de séance que vous souhaitez réserver' })}
-                {currentStep === 'format' && t(locale, { en: 'How would you like to attend?', fr: 'Comment souhaitez-vous consulter ?' })}
-                {currentStep === 'datetime' && t(locale, { en: 'Pick an available time that works for you', fr: 'Sélectionnez un créneau qui vous convient' })}
+                {currentStep === 'schedule' && t(locale, { en: 'Pick an available time that works for you', fr: 'Choisissez un créneau qui vous convient' })}
                 {currentStep === 'details' && t(locale, { en: 'We\'ll use this to confirm your appointment', fr: 'Ces informations serviront à confirmer votre rendez-vous' })}
-                {currentStep === 'confirm' && t(locale, { en: 'Review everything before confirming', fr: 'Vérifiez les détails avant de confirmer' })}
               </p>
             </div>
 
-            {/* Service Selection */}
-            {currentStep === 'service' && (
-              <div className="space-y-3">
-                {sessionTypes.map((service, i) => (
-                  <motion.button
-                    key={service.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => setSelectedService(service)}
-                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
-                      selectedService?.id === service.id
-                        ? 'border-teal-500 bg-teal-50/50 shadow-md shadow-teal-100/50'
-                        : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          selectedService?.id === service.id
-                            ? 'bg-teal-100'
-                            : 'bg-gray-50'
-                        }`}>
-                          <Clock className={`w-5 h-5 ${
-                            selectedService?.id === service.id
-                              ? 'text-teal-500'
-                              : 'text-gray-400'
-                          }`} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{service.name}</p>
-                          <p className="text-sm text-gray-500">{service.duration} {locale === 'fr' ? 'minutes' : 'minutes'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          selectedService?.id === service.id
-                            ? 'border-teal-500 bg-teal-500'
-                            : 'border-gray-300'
-                        }`}>
-                          {selectedService?.id === service.id && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
+            {/* ─── Schedule step: service chips + format chips + calendar/slots ─── */}
+            {currentStep === 'schedule' && sessionTypes.length > 1 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {t(locale, { en: 'Session', fr: 'Séance' })}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {sessionTypes.map((service) => {
+                    const isActive = selectedService?.id === service.id
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        onClick={() => setSelectedService(service)}
+                        className={`px-3.5 py-2 rounded-xl border text-sm transition-all ${
+                          isActive
+                            ? 'border-teal-500 bg-teal-50/50 text-teal-700 shadow-sm shadow-teal-100/50'
+                            : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="font-medium">{getServiceName(service)}</span>
+                        <span className={`ml-2 ${isActive ? 'text-teal-600' : 'text-gray-400'}`}>
+                          · {service.duration} {locale === 'fr' ? 'min' : 'min'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Format Selection */}
-            {currentStep === 'format' && (
-              <div className="space-y-3">
-                {(!practitioner?.availableFormats || practitioner.availableFormats.includes('in_person')) && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0 }}
-                    onClick={() => setSelectedFormat('in_person')}
-                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
-                      selectedFormat === 'in_person'
-                        ? 'border-teal-500 bg-teal-50/50 shadow-md shadow-teal-100/50'
-                        : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-                        <Building2 className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{t(locale, { en: 'In person', fr: 'En personne' })}</p>
-                        <p className="text-sm text-gray-500">
-                          {practitioner.profile.address
-                            ? [practitioner.profile.address, practitioner.profile.city, practitioner.profile.country].filter(Boolean).join(', ')
-                            : t(locale, { en: 'At the practitioner\'s office', fr: 'Au cabinet du praticien' })}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.button>
-                )}
-                {(!practitioner?.availableFormats || practitioner.availableFormats.includes('video')) && (
-                  <motion.button
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    onClick={() => setSelectedFormat('video')}
-                    className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
-                      selectedFormat === 'video'
-                        ? 'border-teal-500 bg-teal-50/50 shadow-md shadow-teal-100/50'
-                        : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-                        <Video className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{t(locale, { en: 'Video call', fr: 'Vidéo' })}</p>
-                        <p className="text-sm text-gray-500">{t(locale, { en: 'Remote session via video', fr: 'Séance à distance par vidéo' })}</p>
-                      </div>
-                    </div>
-                  </motion.button>
-                )}
-              </div>
-            )}
+            {currentStep === 'schedule' && (() => {
+              const showInPerson = !practitioner?.availableFormats || practitioner.availableFormats.includes('in_person')
+              const showVideo = !practitioner?.availableFormats || practitioner.availableFormats.includes('video')
+              if (!showInPerson || !showVideo) return null  // single-format → no toggle
+              return (
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    {t(locale, { en: 'Format', fr: 'Format' })}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFormat('in_person')}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm transition-all ${
+                        selectedFormat === 'in_person'
+                          ? 'border-teal-500 bg-teal-50/50 text-teal-700 shadow-sm shadow-teal-100/50'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span className="font-medium">{t(locale, { en: 'In person', fr: 'En personne' })}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFormat('video')}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm transition-all ${
+                        selectedFormat === 'video'
+                          ? 'border-teal-500 bg-teal-50/50 text-teal-700 shadow-sm shadow-teal-100/50'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Video className="w-4 h-4" />
+                      <span className="font-medium">{t(locale, { en: 'Video', fr: 'Vidéo' })}</span>
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
 
-            {/* Date & Time Selection */}
-            {currentStep === 'datetime' && (
+            {/* Date & Time Selection — only when service + format are chosen */}
+            {currentStep === 'schedule' && selectedService && selectedFormat && (
               <div className="space-y-6">
                 {/* View toggle */}
                 <div className="flex bg-gray-100 rounded-lg p-1">
@@ -994,71 +1079,116 @@ export default function BookingPage() {
                 )}
 
                 {/* Calendar view */}
-                {dateViewMode === 'calendar' && (<>
-                <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <button
-                      onClick={() =>
-                        setCurrentMonth(
-                          new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
-                        )
-                      }
-                      className="p-2 hover:bg-white rounded-xl transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h3 className="font-semibold text-gray-900">
-                      {currentMonth.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </h3>
-                    <button
-                      onClick={() =>
-                        setCurrentMonth(
-                          new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
-                        )
-                      }
-                      className="p-2 hover:bg-white rounded-xl transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-center">
-                    {(locale === 'fr' ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((day) => (
-                      <div key={day} className="p-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                        {day}
-                      </div>
-                    ))}
-                    {getDaysInMonth(currentMonth).map((date, index) => (
-                      <div key={index}>
-                        {date ? (
+                {dateViewMode === 'calendar' && (
+                <div className="md:grid md:grid-cols-[minmax(0,1fr)_240px] md:gap-8 md:items-start">
+                {/* Minimal Motion-style calendar */}
+                {(() => {
+                  const todayKey = (() => {
+                    const t = new Date()
+                    return `${t.getFullYear()}-${t.getMonth()}-${t.getDate()}`
+                  })()
+                  const monthLabel = currentMonth.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' })
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  const isViewingCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()
+                  const daysShort = locale === 'fr' ? ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+                  return (
+                    <div className="px-1">
+                      {/* Month header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-base font-semibold text-gray-900 capitalize">{monthLabel}</h3>
+                        <div className="flex items-center gap-1">
+                          {!isViewingCurrentMonth && (
+                            <button
+                              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                              aria-label="Previous month"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => setSelectedDate(date)}
-                            disabled={isDateDisabled(date)}
-                            className={`w-full aspect-square flex items-center justify-center text-sm rounded-xl transition-all ${
-                              selectedDate?.toDateString() === date.toDateString()
-                                ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white font-semibold shadow-md shadow-teal-200/50'
-                                : isDateDisabled(date)
-                                ? 'text-gray-300 cursor-not-allowed'
-                                : 'text-gray-700 hover:bg-white hover:shadow-sm font-medium'
-                            }`}
+                            onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                            aria-label="Next month"
                           >
-                            {date.getDate()}
+                            <ChevronRight className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <div className="aspect-square" />
-                        )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+
+                      {/* Day-of-week row — small, light */}
+                      <div className="grid grid-cols-7 mb-1">
+                        {daysShort.map((d) => (
+                          <div key={d} className="text-[11px] text-gray-400 text-center py-1">
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Days — circular markers, tight rows */}
+                      <div className="grid grid-cols-7 gap-y-1.5">
+                        {getDaysInMonth(currentMonth).map((date, index) => {
+                          if (!date) return <div key={index} className="h-9" />
+                          const isSelected = selectedDate?.toDateString() === date.toDateString()
+                          const disabled = isDateDisabled(date)
+                          const isToday = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` === todayKey
+                          return (
+                            <div key={index} className="flex justify-center items-center h-9">
+                              <button
+                                onClick={() => setSelectedDate(date)}
+                                disabled={disabled}
+                                className={`relative w-9 h-9 flex items-center justify-center text-sm rounded-full transition-all ${
+                                  isSelected
+                                    ? 'bg-teal-600 text-white font-semibold'
+                                    : disabled
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'text-gray-800 bg-teal-50 hover:bg-teal-100'
+                                }`}
+                              >
+                                {date.getDate()}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Time zone footer (desktop) */}
+                      {practitionerTimezone && (
+                        <div className="hidden md:block mt-6">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">
+                            {locale === 'fr' ? 'Fuseau horaire' : 'Time zone'}
+                          </p>
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white">
+                            <Globe className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span className="text-sm text-gray-600 truncate">
+                              {getShortTzName(clientTimezone)}
+                              {getTzCity(clientTimezone) && (
+                                <span className="font-medium text-gray-900 ml-1">{getTzCity(clientTimezone)}</span>
+                              )}
+                            </span>
+                            <span className="ml-auto text-xs text-gray-400 tabular-nums">
+                              {new Date().toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { timeZone: clientTimezone, hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr' })}
+                            </span>
+                          </div>
+                          {!isSameTimezone && (
+                            <p className="text-[11px] text-gray-500 mt-1.5 leading-snug">
+                              {locale === 'fr'
+                                ? `Le praticien est en ${getShortTzName(practitionerTimezone)}${getTzCity(practitionerTimezone) ? ` — ${getTzCity(practitionerTimezone)}` : ''}.`
+                                : `Practitioner is in ${getShortTzName(practitionerTimezone)}${getTzCity(practitionerTimezone) ? ` — ${getTzCity(practitionerTimezone)}` : ''}.`}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {/* Time Slots */}
                 {selectedDate && (
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">
-                      {locale === 'fr' ? `Créneaux disponibles pour le ${formatDateShort(selectedDate)}` : `Available times for ${formatDateShort(selectedDate)}`}
+                  <div className="mt-6 md:mt-0 md:border-l md:border-gray-100 md:pl-6">
+                    <h4 className="font-medium text-gray-900 mb-3 text-sm capitalize">
+                      {formatDateShort(selectedDate)}
                     </h4>
                     {isLoadingSlots ? (
                       <div className="flex items-center justify-center py-10">
@@ -1075,7 +1205,7 @@ export default function BookingPage() {
                     ) : (
                       <>
                         {practitionerTimezone && (
-                          <div className={`flex items-start gap-2.5 p-3 rounded-xl text-sm mb-4 ${
+                          <div className={`flex md:hidden items-start gap-2.5 p-3 rounded-xl text-sm mb-4 ${
                             isSameTimezone ? 'bg-gray-50 text-gray-600 border border-gray-100' : 'bg-blue-50/80 text-blue-700 border border-blue-100'
                           }`}>
                             <Info className="w-4 h-4 mt-0.5 shrink-0" />
@@ -1091,25 +1221,25 @@ export default function BookingPage() {
                             </p>
                           </div>
                         )}
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 md:grid-cols-1 gap-2 md:max-h-[420px] md:overflow-y-auto md:pr-1 md:[scrollbar-width:thin] md:[scrollbar-color:#e5e7eb_transparent] md:[&::-webkit-scrollbar]:w-1 md:[&::-webkit-scrollbar-track]:bg-transparent md:[&::-webkit-scrollbar-thumb]:bg-gray-200 md:[&::-webkit-scrollbar-thumb]:rounded-full md:hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
                           {availableSlots.map((slot) => (
                             <button
                               key={slot.slot_start}
                               onClick={() => setSelectedSlot(slot)}
-                              className={`p-3 text-sm rounded-xl border-2 transition-all ${
+                              className={`px-3 py-2.5 text-sm rounded-lg border transition-all md:text-center ${
                                 selectedSlot?.slot_start === slot.slot_start
-                                  ? 'border-teal-500 bg-teal-50/50 text-teal-700 shadow-md shadow-teal-100/50 font-medium'
-                                  : 'border-gray-100 hover:border-gray-200 hover:shadow-sm text-gray-700'
+                                  ? 'border-teal-500 bg-teal-50 text-teal-700 font-medium'
+                                  : 'border-gray-200 hover:border-teal-400 hover:text-teal-600 text-gray-700'
                               }`}
                             >
                               <span>
                                 {formatTime(slot.slot_start)}
                                 {isSameTimezone && practitionerTimezone && (
-                                  <span className="text-xs text-gray-400 ml-1">{getShortTzName(clientTimezone)}</span>
+                                  <span className="text-xs text-gray-400 ml-1 md:hidden">{getShortTzName(clientTimezone)}</span>
                                 )}
                               </span>
                               {!isSameTimezone && practitionerTimezone && (
-                                <span className="block text-xs text-gray-400 mt-0.5">
+                                <span className="block text-[11px] text-gray-400 mt-0.5">
                                   {formatTimeInZone(slot.slot_start, practitionerTimezone)} {getShortTzName(practitionerTimezone)}
                                 </span>
                               )}
@@ -1120,13 +1250,44 @@ export default function BookingPage() {
                     )}
                   </div>
                 )}
-                </>)}
+                </div>
+                )}
               </div>
             )}
 
             {/* Client Details */}
             {currentStep === 'details' && (
               <div className="space-y-5">
+                {/* Appointment summary — read-only at top of details */}
+                {selectedService && selectedFormat && selectedSlot && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('schedule')}
+                    className="w-full text-left rounded-xl bg-teal-50/40 border border-teal-100 px-4 py-3 hover:bg-teal-50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-700 flex-wrap">
+                        <span className="font-medium text-gray-900">{getServiceName(selectedService)}</span>
+                        <span className="text-gray-400">·</span>
+                        <span>{selectedService.duration} {locale === 'fr' ? 'min' : 'min'}</span>
+                        <span className="text-gray-400">·</span>
+                        <span className="inline-flex items-center gap-1">
+                          {selectedFormat === 'video' ? <Video className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
+                          {selectedFormat === 'video' ? t(locale, { en: 'Video', fr: 'Vidéo' }) : t(locale, { en: 'In person', fr: 'En personne' })}
+                        </span>
+                        <span className="text-gray-400">·</span>
+                        <span className="font-medium text-teal-700">
+                          {new Date(selectedSlot.slot_start).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          {' '}{formatTime(selectedSlot.slot_start)}
+                        </span>
+                      </div>
+                      <span className="text-xs text-teal-600 group-hover:text-teal-700 font-medium shrink-0">
+                        {locale === 'fr' ? 'Modifier' : 'Edit'}
+                      </span>
+                    </div>
+                  </button>
+                )}
+
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <User className="w-4 h-4 text-gray-400" />
@@ -1183,96 +1344,22 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* Confirmation */}
-            {currentStep === 'confirm' && (
-              <div className="space-y-6">
-                <div className="bg-gray-50/80 rounded-xl p-5 space-y-4 border border-gray-100">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
-                      <Calendar className="w-4.5 h-4.5 text-teal-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{selectedService?.name}</p>
-                      <p className="text-sm text-gray-500">{selectedService?.duration} minutes</p>
-                    </div>
-                  </div>
-                  {selectedFormat && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
-                        {selectedFormat === 'video' ? <Video className="w-4.5 h-4.5 text-teal-500" /> : <Building2 className="w-4.5 h-4.5 text-teal-500" />}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {selectedFormat === 'video'
-                            ? t(locale, { en: 'Video call', fr: 'Vidéo' })
-                            : t(locale, { en: 'In person', fr: 'En personne' })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
-                      <Clock className="w-4.5 h-4.5 text-teal-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {selectedDate && formatDate(selectedDate)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {selectedSlot && formatTime(selectedSlot.slot_start)}
-                        {practitionerTimezone && (
-                          <> {getShortTzName(clientTimezone)}</>
-                        )}
-                      </p>
-                      {!isSameTimezone && practitionerTimezone && selectedSlot && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {formatTimeInZone(selectedSlot.slot_start, practitionerTimezone)} {getShortTzName(practitionerTimezone)} {locale === 'fr' ? 'pour le praticien' : 'for practitioner'}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                      <User className="w-4.5 h-4.5 text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{clientName}</p>
-                      <p className="text-sm text-gray-500">{clientEmail}</p>
-                      {clientPhone && (
-                        <p className="text-sm text-gray-500">{clientPhone}</p>
-                      )}
-                    </div>
-                  </div>
-                  {notes && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                        <FileText className="w-4.5 h-4.5 text-amber-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">{notes}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {bookingError && (
-                  <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm">
-                    {bookingError}
-                  </div>
-                )}
-
-                {practitioner.settings.cancellation_policy && (
-                  <div className="text-sm text-gray-500 bg-gray-50/50 rounded-xl p-4 border border-gray-100">
-                    <p className="font-medium text-gray-700 mb-1">{locale === 'fr' ? 'Politique d\'annulation' : 'Cancellation Policy'}</p>
-                    <p>{practitioner.settings.cancellation_policy}</p>
-                  </div>
-                )}
+            {/* Booking error + cancellation policy — shown on the details step */}
+            {currentStep === 'details' && bookingError && (
+              <div className="mt-4 bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm">
+                {bookingError}
+              </div>
+            )}
+            {currentStep === 'details' && practitioner.settings.cancellation_policy && (
+              <div className="mt-4 text-sm text-gray-500 bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                <p className="font-medium text-gray-700 mb-1">{locale === 'fr' ? 'Politique d\'annulation' : 'Cancellation Policy'}</p>
+                <p>{practitioner.settings.cancellation_policy}</p>
               </div>
             )}
 
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
-              {currentStep !== 'service' ? (
+              {currentStep !== 'schedule' ? (
                 <Button variant="outline" onClick={goBack} className="rounded-xl">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Retour' : 'Back'}
@@ -1281,11 +1368,11 @@ export default function BookingPage() {
                 <div />
               )}
 
-              {currentStep === 'confirm' ? (
+              {currentStep === 'details' ? (
                 <Button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-200/50"
+                  disabled={isSubmitting || !canProceed()}
+                  className="bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-xl shadow-lg shadow-teal-200/50 disabled:opacity-50 disabled:shadow-none"
                 >
                   {isSubmitting ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -1311,18 +1398,22 @@ export default function BookingPage() {
 
         </div>
 
-        {/* Footer */}
+        {/* Footer — minimal "powered by" line; opens in new tab when embedded */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-center mt-10 py-6"
+          className={embedMode ? 'text-center mt-6 py-3' : 'text-center mt-10 py-6'}
         >
-          <p className="text-sm text-gray-400">
+          <p className="text-xs text-gray-400">
             {locale === 'fr' ? 'Propulsé par' : 'Powered by'}{' '}
-            <Link href="/" className="text-teal-500 hover:text-teal-600 font-medium">
-              Bloomsline Care
-            </Link>
+            <a
+              href="https://bloomsline.com"
+              {...(embedMode ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              className="text-teal-500 hover:text-teal-600 font-medium"
+            >
+              Bloomsline
+            </a>
           </p>
         </motion.div>
       </div>
