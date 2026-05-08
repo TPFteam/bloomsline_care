@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import DOMPurify from 'isomorphic-dompurify'
 import {
   FileText,
   Download,
@@ -789,8 +790,16 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
           result.value = result.value.replace(/<p>/g, '<p style="margin:0.75em 0">')
           // Open all links in new tab
           result.value = result.value.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
-          setDocxHtml(result.value)
-          setDocxContent(result.value)
+          // Sanitize before render — a patient could upload a crafted .docx
+          // whose mammoth-converted HTML carries event handlers or
+          // <iframe src="javascript:..."> that would execute in the
+          // practitioner's browser. Strip all script-bearing constructs.
+          const safeHtml = DOMPurify.sanitize(result.value, {
+            FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
+            FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onchange', 'onsubmit'],
+          })
+          setDocxHtml(safeHtml)
+          setDocxContent(safeHtml)
         } catch (err) {
           console.error('DOCX conversion error:', err)
         } finally {

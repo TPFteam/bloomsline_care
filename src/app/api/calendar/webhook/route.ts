@@ -47,8 +47,9 @@ export async function POST(request: NextRequest) {
   const resourceState = request.headers.get('x-goog-resource-state')
 
   if (!channelId) {
-    // Google requires a 200 even on rejection; otherwise it retries.
-    return NextResponse.json({ ok: true })
+    // Missing the channel id header — likely not from Google. Reject with
+    // 401 so curious scanners stop hitting us; Google never omits this.
+    return NextResponse.json({ error: 'Missing channel' }, { status: 401 })
   }
 
   // Initial 'sync' ping is sent right after watch registration — nothing to do.
@@ -66,13 +67,15 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!channel || !channel.active) {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ error: 'Unknown channel' }, { status: 401 })
   }
 
-  // Cheap verification: token field must match the practitioner we recorded.
-  if (channelToken && channelToken !== channel.user_id) {
-    console.warn('[calendar-webhook] channel token mismatch — ignoring ping')
-    return NextResponse.json({ ok: true })
+  // Verification: token MUST be present AND match the recorded practitioner.
+  // Treating a missing token as valid was a forgery vector — anyone who knew
+  // a channel id could spoof reconciliation events.
+  if (!channelToken || channelToken !== channel.user_id) {
+    console.warn('[calendar-webhook] channel token missing or mismatched — rejecting')
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const auth = await getValidGoogleToken(channel.user_id, supabase)

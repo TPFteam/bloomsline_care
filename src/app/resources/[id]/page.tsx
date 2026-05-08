@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { analytics } from '@/lib/analytics/events'
@@ -2172,7 +2173,7 @@ export default function ResourceDetailPage() {
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
                     {resource.description && (
-                      <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof resource.description === 'string' ? resource.description : '' }} />
+                      <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(typeof resource.description === 'string' ? resource.description : '') }} />
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -2414,7 +2415,7 @@ export default function ResourceDetailPage() {
                 <div className="flex-1 min-w-0">
                   <h1 className="text-2xl font-bold text-gray-900 mb-1">{typeof resource.title === 'string' ? resource.title : ''}</h1>
                   {resource.description && (
-                    <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: typeof resource.description === 'string' ? resource.description : '' }} />
+                    <div className="text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(typeof resource.description === 'string' ? resource.description : '') }} />
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
