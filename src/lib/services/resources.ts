@@ -223,18 +223,22 @@ export async function updateResource(id: string, updates: UpdateResourceDTO): Pr
 export async function deleteResource(id: string): Promise<void> {
   const supabase = createClient()
 
-  // Delete dependent rows: responses → shared resources → resource
-  // First find all shared resource IDs for this resource
-  const { data: sharedRows } = await supabase
-    .from('member_shared_resources')
+  // FK shape on a `resources` row delete:
+  //   member_shared_resources.resource_id  → ON DELETE CASCADE  (wiped)
+  //   resource_assignments.resource_id     → ON DELETE CASCADE  (wiped)
+  //   resource_responses.resource_id       → ON DELETE SET NULL (preserved
+  //     for audit; the snapshot column keeps the rendered version of the
+  //     resource at submission time — see migration 20251219)
+  //
+  // We capture the response IDs first, because once the resource is gone
+  // those rows still exist but their `resource_id` is NULL — querying
+  // `resource_id = id` afterwards returns nothing. We need the IDs so we
+  // can clear notifications whose deep-link URLs would 404.
+  const { data: responseRows } = await supabase
+    .from('resource_responses')
     .select('id')
     .eq('resource_id', id)
-
-  if (sharedRows && sharedRows.length > 0) {
-    const sharedIds = sharedRows.map(r => r.id)
-    await supabase.from('resource_responses').delete().in('shared_resource_id', sharedIds)
-  }
-  await supabase.from('member_shared_resources').delete().eq('resource_id', id)
+  const responseIds = (responseRows || []).map(r => r.id as string)
 
   const { error } = await supabase
     .from('resources')
@@ -244,6 +248,35 @@ export async function deleteResource(id: string): Promise<void> {
   if (error) {
     console.error('Error deleting resource:', error)
     throw error
+  }
+
+  // Tidy notifications whose deep links point at the now-missing resource.
+  // The notifications table is decoupled from the FK graph (entity_id +
+  // entity_type are plain columns) so cascade can't reach it. Best-effort —
+  // a failure here is logged but the resource is already gone.
+  //
+  // We delete two flavours:
+  //   - entity_type='resource' : "Patient reviewed your resource", etc.
+  //   - entity_type='resource_response' : "New submission" notifications.
+  //     Even though the response rows still exist via SET NULL, the deep
+  //     link `/resources/{resourceId}?submission={responseId}` would 404
+  //     because the resource is gone, so the notification is dead in the UI.
+  try {
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('entity_type', 'resource')
+      .eq('entity_id', id)
+
+    if (responseIds.length > 0) {
+      await supabase
+        .from('notifications')
+        .delete()
+        .eq('entity_type', 'resource_response')
+        .in('entity_id', responseIds)
+    }
+  } catch (err) {
+    console.warn('Resource deleted, but notification cleanup failed:', err)
   }
 }
 

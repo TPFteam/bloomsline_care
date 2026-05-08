@@ -30,6 +30,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
+import { getSubmissionBlocks } from '@/lib/resources/render-blocks'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1015,7 +1016,10 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
                         const isSubmitted = submission.status === 'submitted' || submission.status === 'reviewed'
                         const isExpanded = expandedResponseId === resource.id
-                        const blocks = (submission.resource?.blocks || []) as ResourceBlock[]
+                        // Render against resource_snapshot when available so
+                        // edits made to the resource after submission don't
+                        // reorder/hide the patient's answers.
+                        const blocks = getSubmissionBlocks(submission, submission.resource)
                         const questionBlocks = blocks.filter(b =>
                           ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
                            'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise'].includes(b.type)

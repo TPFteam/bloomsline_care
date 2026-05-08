@@ -65,6 +65,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
+import { getSubmissionBlocks } from '@/lib/resources/render-blocks'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
@@ -506,6 +507,16 @@ export default function ResourceDetailPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not signed in')
 
+      // Capture response IDs first so we can clean up linked notifications
+      // afterwards — FK cascade doesn't reach the notifications table.
+      const { data: priorResponses } = await supabase
+        .from('resource_responses')
+        .select('id')
+        .eq('member_id', deleteResponseConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+      const priorResponseIds = (priorResponses || []).map(r => r.id as string)
+
       // Delete only the patient's response — the share/assignment stays so they can re-submit
       const { error } = await supabase
         .from('resource_responses')
@@ -523,6 +534,20 @@ export default function ResourceDetailPage() {
         .eq('member_id', deleteResponseConfirm.memberId)
         .eq('resource_id', resource.id)
         .eq('practitioner_id', user.id)
+
+      // Clear the "new submission" notification(s) for this response so the
+      // bell doesn't keep linking to a row that no longer exists.
+      if (priorResponseIds.length > 0) {
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('entity_type', 'resource_response')
+            .in('entity_id', priorResponseIds)
+        } catch (err) {
+          console.warn('Notification cleanup after response delete failed:', err)
+        }
+      }
 
       toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
       setDeleteResponseConfirm(null)
@@ -3210,8 +3235,12 @@ export default function ResourceDetailPage() {
                   </h4>
                   <div className="space-y-3">
                     {(() => {
-                      // Get question blocks from resource
-                      const blocks = (resource?.blocks || []) as ResourceBlock[]
+                      // Render against the resource_snapshot captured at
+                      // submission time when present, so practitioner edits
+                      // made after this submission don't reorder or hide
+                      // answers. Falls back to the live resource for older
+                      // submissions that pre-date the snapshot column.
+                      const blocks = getSubmissionBlocks(selectedSubmission, resource)
                       const questionBlocks = blocks.filter(b =>
                         ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
                          'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise',

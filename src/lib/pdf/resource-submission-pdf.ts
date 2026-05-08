@@ -23,6 +23,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Resource, ResourceBlock } from '@/types/resource'
+import { getSubmissionBlocks } from '@/lib/resources/render-blocks'
 
 type Locale = 'en' | 'fr' | 'es'
 
@@ -126,13 +127,16 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
 
 function renderSubmissionBlock(
   resource: Resource,
-  responses: Record<string, unknown>,
+  submission: { responses: Record<string, unknown>; resource_snapshot?: { blocks?: unknown } | null },
   index: number,
   totalCount: number,
   submittedAt: string | null,
   locale: Locale,
 ): string {
-  const blocks = (resource.blocks || []) as ResourceBlock[]
+  const responses = submission.responses
+  // Render against the resource snapshot captured at submission time so
+  // edits made after the patient submitted don't reorder or hide answers.
+  const blocks = getSubmissionBlocks(submission, resource)
   const questionBlocks = blocks.filter(b => (QUESTION_TYPES as readonly string[]).includes(b.type))
 
   const submissionLabel = totalCount > 1
@@ -173,7 +177,7 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
     supabase.from('resources').select('*').eq('id', resourceId).maybeSingle(),
     supabase
       .from('resource_responses')
-      .select('id, responses, status, submitted_at, created_at, practitioner_notes')
+      .select('id, responses, status, submitted_at, created_at, practitioner_notes, resource_snapshot')
       .eq('resource_id', resourceId)
       .eq('member_id', memberId)
       .eq('practitioner_id', practitionerId)
@@ -191,6 +195,7 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
     submitted_at: string | null
     created_at: string
     practitioner_notes: string | null
+    resource_snapshot: { blocks?: unknown } | null
   }>
   const member = memberRes.data as { first_name: string; last_name: string } | null
   const practitioner = practitionerRes.data as { full_name: string | null; avatar_url: string | null } | null
@@ -206,7 +211,14 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
   const practitionerInitials = getInitials(practitionerName)
 
   const submissionsHtml = submissions.map((s, i) =>
-    renderSubmissionBlock(resource, s.responses || {}, i, submissions.length, s.submitted_at || s.created_at, locale)
+    renderSubmissionBlock(
+      resource,
+      { responses: s.responses || {}, resource_snapshot: s.resource_snapshot },
+      i,
+      submissions.length,
+      s.submitted_at || s.created_at,
+      locale,
+    )
   ).join('')
 
   // Practitioner notes — combine across submissions if multiple
