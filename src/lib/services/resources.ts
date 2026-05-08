@@ -537,6 +537,30 @@ export async function createResponse(response: CreateResponseDTO): Promise<Resou
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
+  // Double-submit guard: a patient on a slow connection can tap "Submit"
+  // twice and create two identical response rows. If we're inserting a
+  // submitted row and there's already one for this (member, resource,
+  // practitioner) within the last 10 seconds, return the existing row
+  // instead of creating a duplicate. Drafts are intentionally not
+  // deduped — the auto-save flow can legitimately create one quickly.
+  if (response.status === 'submitted') {
+    const tenSecondsAgo = new Date(Date.now() - 10_000).toISOString()
+    const { data: recent } = await supabase
+      .from('resource_responses')
+      .select('*')
+      .eq('member_id', response.member_id)
+      .eq('resource_id', response.resource_id)
+      .eq('practitioner_id', user.id)
+      .eq('status', 'submitted')
+      .gte('submitted_at', tenSecondsAgo)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (recent) {
+      return recent as ResourceResponse
+    }
+  }
+
   const { data, error } = await supabase
     .from('resource_responses')
     .insert({
@@ -597,13 +621,32 @@ export async function updateResponse(
 ): Promise<ResourceResponse> {
   const supabase = createClient()
 
+  // Read the current row so we can detect a real status transition. If a
+  // patient double-taps Submit on an already-submitted row, we want to
+  // skip re-firing the notification and avoid bumping submitted_at.
+  let priorStatus: string | null = null
+  if (updates.status === 'submitted') {
+    const { data: prior } = await supabase
+      .from('resource_responses')
+      .select('status')
+      .eq('id', id)
+      .maybeSingle()
+    priorStatus = prior?.status ?? null
+  }
+  const isFirstSubmit = updates.status === 'submitted' && priorStatus !== 'submitted' && priorStatus !== 'reviewed'
+
   const updateData: Record<string, unknown> = {
     ...updates,
     updated_at: new Date().toISOString(),
   }
 
-  if (updates.status === 'submitted') {
+  // Only stamp submitted_at on the actual draft → submitted transition.
+  if (isFirstSubmit) {
     updateData.submitted_at = new Date().toISOString()
+  } else if (updates.status === 'submitted') {
+    // Already submitted (or reviewed) — don't overwrite the original
+    // submission timestamp, and don't bump it via the spread above.
+    delete updateData.status
   }
 
   const { data, error } = await supabase
@@ -618,8 +661,10 @@ export async function updateResponse(
     throw error
   }
 
-  // Notify practitioner when a resource response is submitted
-  if (updates.status === 'submitted' && data.member_id && data.resource_id) {
+  // Notify practitioner ONLY on the genuine first submission. This avoids
+  // a second notification when the patient (or a retry) calls submit on
+  // an already-submitted row.
+  if (isFirstSubmit && data.member_id && data.resource_id) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
