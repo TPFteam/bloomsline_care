@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 
 /**
  * Auto-recover from stale-chunk 404s after a Vercel deploy.
@@ -24,13 +25,39 @@ import { useEffect } from 'react'
 export function ChunkLoadGuard() {
   useEffect(() => {
     const RELOAD_KEY = '__bl_chunk_reload_at'
+    const NOTICE_KEY = '__bl_post_reload_notice'
     const LOCKOUT_MS = 30_000
+
+    // After a reload triggered by us, show a one-time toast so the
+    // practitioner understands they didn't just hit a glitch — the app
+    // updated underneath them. Cleared immediately so a manual refresh
+    // doesn't replay the message.
+    try {
+      if (sessionStorage.getItem(NOTICE_KEY)) {
+        sessionStorage.removeItem(NOTICE_KEY)
+        // Detect locale from the same cookie/storage the i18n provider
+        // uses, then pick the matching message. Falls back to English.
+        const locale =
+          (typeof document !== 'undefined' &&
+            document.cookie.match(/(?:^|; )locale=([^;]+)/)?.[1]) ||
+          (typeof localStorage !== 'undefined' &&
+            localStorage.getItem('locale')) ||
+          'en'
+        const messages: Record<string, string> = {
+          fr: 'Bloomsline a été mis à jour. Page rechargée.',
+          es: 'Bloomsline se actualizó. Página recargada.',
+          en: 'Bloomsline was updated. Refreshed to the latest version.',
+        }
+        toast.info(messages[locale] ?? messages.en, { duration: 4000 })
+      }
+    } catch { /* storage blocked — silent */ }
 
     const tryReload = () => {
       try {
         const last = sessionStorage.getItem(RELOAD_KEY)
         if (last && Date.now() - parseInt(last, 10) < LOCKOUT_MS) return
         sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+        sessionStorage.setItem(NOTICE_KEY, '1')
       } catch { /* sessionStorage unavailable — still reload */ }
       window.location.reload()
     }
