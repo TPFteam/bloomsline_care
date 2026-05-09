@@ -4,6 +4,62 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ZoomIn, ZoomOut, Download, RotateCcw } from 'lucide-react'
 import type { ContentBlock } from '@/types/story'
+import { useSignedUrl } from '@/hooks/use-signed-storage-url'
+
+// Renders a single story media item with a fresh signed URL.
+// Public story pages run in an unauthenticated browser context, so this
+// component intentionally falls back to whatever URL is on the row when
+// signing fails (eg. anonymous viewers without storage RLS access).
+function StoryMediaRender({
+  item, lightbox, allImageUrls, caption,
+}: {
+  item: { url?: string; path?: string; fileType?: string; alt?: string; fileName?: string }
+  lightbox: (input: { url: string; caption?: string; index: number; total: number; allImages: string[] }) => void
+  allImageUrls: string[]
+  caption?: string
+}) {
+  const signed = useSignedUrl('story-media', item.path ?? item.url)
+  const uri = signed || item.url || ''
+  if (!uri) return null
+  if (item.fileType === 'image') {
+    return (
+      <div className="relative rounded-xl overflow-hidden shadow-lg group cursor-pointer"
+           onClick={() => lightbox({
+             url: uri,
+             caption,
+             index: allImageUrls.indexOf(item.url || ''),
+             total: allImageUrls.length,
+             allImages: allImageUrls,
+           })}>
+        <img src={uri} alt={item.alt || 'Story image'} className="w-full h-auto transition-transform duration-300 group-hover:scale-105" />
+        <div className="absolute inset-0 group-hover:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3 shadow-lg">
+            <ZoomIn className="w-6 h-6 text-gray-700" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+  if (item.fileType === 'video') {
+    return (
+      <div className="relative rounded-xl overflow-hidden shadow-lg group">
+        <video src={uri} controls controlsList="nodownload" className="w-full h-auto bg-black" preload="metadata">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    )
+  }
+  if (item.fileType === 'audio') {
+    return (
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-lg">
+        <audio src={uri} controls controlsList="nodownload" className="w-full" preload="metadata">
+          Your browser does not support the audio tag.
+        </audio>
+      </div>
+    )
+  }
+  return null
+}
 
 interface BlockRendererProps {
   blocks: ContentBlock[]
@@ -284,17 +340,26 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
           </ListTag>
         )
 
-      case 'media':
+      case 'media': {
         // Handle both old format (single url/fileType) and new format (items array)
         const mediaItems = block.content.items || (block.content.url ? [{
           url: block.content.url,
+          path: block.content.path,
           fileType: block.content.fileType,
           fileName: block.content.fileName,
           alt: block.content.alt
         }] : [])
 
-        // Get all image URLs for gallery navigation
-        const allImageUrls = mediaItems.filter((i: any) => i.fileType === 'image').map((i: any) => i.url)
+        // Build the list of source URLs for gallery navigation. We use the
+        // raw url (legacy field) here since the lightbox keys off it; the
+        // signed URL substitution happens inside StoryMediaRender per-image.
+        const allImageUrls = mediaItems.filter((i: any) => i.fileType === 'image').map((i: any) => i.url || '')
+
+        const openLightbox = (input: { url: string; caption?: string; index: number; total: number; allImages: string[] }) => {
+          setZoomLevel(1)
+          setPosition({ x: 0, y: 0 })
+          setLightboxImage(input)
+        }
 
         return (
           <figure className="my-8">
@@ -302,61 +367,12 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
               <div className={`grid gap-4 ${mediaItems.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {mediaItems.map((item: any, index: number) => (
                   <div key={index}>
-                    {item.fileType === 'image' && (
-                      <div className="relative rounded-xl overflow-hidden shadow-lg group cursor-pointer"
-                           onClick={() => {
-                             const imageIndex = allImageUrls.indexOf(item.url)
-                             setZoomLevel(1)
-                             setPosition({ x: 0, y: 0 })
-                             setLightboxImage({
-                               url: item.url,
-                               caption: block.content.caption,
-                               index: imageIndex,
-                               total: allImageUrls.length,
-                               allImages: allImageUrls
-                             })
-                           }}>
-                        <img
-                          src={item.url}
-                          alt={item.alt || 'Story image'}
-                          className="w-full h-auto transition-transform duration-300 group-hover:scale-105"
-                        />
-                        {/* Zoom overlay - only shows on hover */}
-                        <div className="absolute inset-0 group-hover:bg-black/20 transition-all flex items-center justify-center pointer-events-none">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded-full p-3 shadow-lg">
-                            <ZoomIn className="w-6 h-6 text-gray-700" />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {item.fileType === 'video' && (
-                      <div className="relative rounded-xl overflow-hidden shadow-lg group">
-                        <video
-                          src={item.url}
-                          controls
-                          controlsList="nodownload"
-                          className="w-full h-auto bg-black"
-                          preload="metadata"
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      </div>
-                    )}
-
-                    {item.fileType === 'audio' && (
-                      <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 shadow-lg">
-                        <audio
-                          src={item.url}
-                          controls
-                          controlsList="nodownload"
-                          className="w-full"
-                          preload="metadata"
-                        >
-                          Your browser does not support the audio tag.
-                        </audio>
-                      </div>
-                    )}
+                    <StoryMediaRender
+                      item={item}
+                      lightbox={openLightbox}
+                      allImageUrls={allImageUrls}
+                      caption={block.content.caption}
+                    />
                   </div>
                 ))}
               </div>
@@ -369,6 +385,7 @@ export function BlockRenderer({ blocks }: BlockRendererProps) {
             )}
           </figure>
         )
+      }
 
       case 'quote':
         return (

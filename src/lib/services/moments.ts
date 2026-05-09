@@ -10,8 +10,15 @@ export interface Moment {
   id: string
   user_id: string
   type: MomentType
+  /** @deprecated Prefer `media_path` and sign on render. Will be dropped
+   *  in a follow-up migration once nothing reads it. */
   media_url: string | null
+  /** Storage path inside `moments_media`. Render code should call
+   *  createSignedUrl on this and use the result for <img>. */
+  media_path: string | null
+  /** @deprecated See media_url. */
   thumbnail_url: string | null
+  thumbnail_path: string | null
   text_content: string | null
   caption: string | null
   moods: string[]
@@ -43,7 +50,7 @@ async function uploadMomentMedia(
   momentId: string,
   file: File | Blob,
   fileType: 'media' | 'thumbnail'
-): Promise<string | null> {
+): Promise<{ url: string | null; path: string | null }> {
   const supabase = createClient()
 
   // Determine file extension based on mime type
@@ -69,16 +76,17 @@ async function uploadMomentMedia(
 
   if (error) {
     console.error('Error uploading moment media:', error)
-    return null
+    return { url: null, path: null }
   }
 
-  // Bucket is now private (post-20260509 migration). Issue a long-lived
-  // signed URL. Renderers that hit a 403 after expiry can re-sign via path.
+  // Bucket is now private. Issue a 1-year signed URL alongside the path.
+  // The path goes into media_path (the new source-of-truth) and the URL
+  // into media_url for legacy renderers during the migration window.
   const { data: signed } = await supabase.storage
     .from('moments_media')
     .createSignedUrl(filePath, 60 * 60 * 24 * 365)
 
-  return signed?.signedUrl || null
+  return { url: signed?.signedUrl || null, path: filePath }
 }
 
 // ============================================
@@ -103,16 +111,21 @@ export async function createMoment(input: CreateMomentInput): Promise<Moment | n
 
   // Upload media if present
   let mediaUrl: string | null = null
+  let mediaPath: string | null = null
   let mimeType: string | null = null
   let fileSizeBytes: number | null = null
 
   if (input.mediaFile) {
-    mediaUrl = await uploadMomentMedia(user.id, momentId, input.mediaFile, 'media')
+    const upload = await uploadMomentMedia(user.id, momentId, input.mediaFile, 'media')
+    mediaUrl = upload.url
+    mediaPath = upload.path
     mimeType = input.mediaFile.type || null
     fileSizeBytes = input.mediaFile.size || null
   }
 
-  // Insert moment record
+  // Insert moment record. Both columns are written:
+  //   - media_path (new source of truth — render code signs this on demand)
+  //   - media_url  (kept for backward compatibility during migration)
   const { data, error } = await supabase
     .from('moments')
     .insert({
@@ -120,6 +133,7 @@ export async function createMoment(input: CreateMomentInput): Promise<Moment | n
       user_id: user.id,
       type: input.type,
       media_url: mediaUrl,
+      media_path: mediaPath,
       text_content: input.textContent || null,
       caption: input.caption || null,
       moods: input.moods,

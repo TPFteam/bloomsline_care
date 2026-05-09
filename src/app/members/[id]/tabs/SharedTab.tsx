@@ -44,6 +44,7 @@ import {
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { useSignedUrl } from '@/hooks/use-signed-storage-url'
 import type { SharedResourceWithStory, Member } from '@/types/member'
 import type { Resource, ResourceResponse, ResourceBlock } from '@/types/resource'
 
@@ -113,6 +114,23 @@ const resourceTypeIcons: Record<string, React.ElementType> = {
   exercise: Puzzle,
   psychoeducation: BookOpen,
   table: Table2,
+}
+
+// Render-time helper for story media items. Prefers `path` (signed at view time
+// via storage RLS) and falls back to URL during the migration window.
+function SharedStoryMediaItem({ item }: { item: { url?: string; path?: string; fileType?: string; fileName?: string } }) {
+  const signed = useSignedUrl('story-media', item.path ?? item.url)
+  const uri = signed || ''
+  if (!uri) return null
+  const isImage = item.fileType === 'image' || (item.url || '').match(/\.(jpg|jpeg|png|gif|webp)$/i)
+  if (isImage) {
+    return <img src={uri} alt="" className="rounded-lg object-cover w-full" />
+  }
+  return (
+    <a href={uri} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">
+      {item.fileName || uri}
+    </a>
+  )
 }
 
 // Resource type config
@@ -1450,9 +1468,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   return (
                     <div key={i} className="grid grid-cols-2 gap-2">
                       {items.map((m: any, j: number) => (
-                        m.fileType === 'image' || m.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-                          ? <img key={j} src={m.url} alt="" className="rounded-lg object-cover w-full" />
-                          : <a key={j} href={m.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 underline">{m.fileName || m.url}</a>
+                        <SharedStoryMediaItem key={j} item={m} />
                       ))}
                     </div>
                   )

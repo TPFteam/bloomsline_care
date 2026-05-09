@@ -50,6 +50,13 @@ DROP POLICY IF EXISTS "Users can view own moments media" ON storage.objects;
 -- =====================================================
 -- 4. Replacement SELECT policies
 -- =====================================================
+-- Drop-then-create so this migration is fully idempotent. Earlier runs
+-- created these without the anon-published-stories policy below; running
+-- this file again picks up the addition cleanly.
+
+DROP POLICY IF EXISTS "Authorized users can read story-media" ON storage.objects;
+DROP POLICY IF EXISTS "Authorized users can read moments-media" ON storage.objects;
+DROP POLICY IF EXISTS "Anon can read story-media for published stories" ON storage.objects;
 
 CREATE POLICY "Authorized users can read story-media"
   ON storage.objects FOR SELECT
@@ -68,6 +75,25 @@ CREATE POLICY "Authorized users can read story-media"
         WHERE ss.practitioner_id = auth.uid()
           AND m.user_id::text = (storage.foldername(name))[1]
       )
+    )
+  );
+
+-- Anonymous reads on PUBLISHED stories. The /stories/[slug] page is
+-- intentionally public so members can share story links externally; before
+-- this lockdown, those pages worked because the bucket itself was public.
+-- We restore that read path narrowly: only files referenced by media_paths
+-- on a published story row are anonymously readable. Unpublished or
+-- unreferenced files stay locked.
+CREATE POLICY "Anon can read story-media for published stories"
+  ON storage.objects FOR SELECT
+  TO anon
+  USING (
+    bucket_id = 'story-media'
+    AND EXISTS (
+      SELECT 1
+      FROM public.stories s
+      WHERE s.published = true
+        AND s.media_paths ? storage.objects.name
     )
   );
 

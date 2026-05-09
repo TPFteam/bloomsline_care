@@ -127,11 +127,14 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
         .createSignedUrl(fileName, 60 * 60 * 24 * 365)
       const publicUrl = signed?.signedUrl || ''
 
-      // Update block with file type info - add to items array
+      // Update block with file type info - add to items array.
+      // We persist BOTH `url` (legacy) and `path` (new source of truth) on
+      // each item; render code prefers path and signs at view time.
       const block = blocks.find(b => b.id === blockId)
       if (block && block.type === 'media') {
         const newItem = {
           url: publicUrl,
+          path: fileName,
           fileType,
           fileName: file.name,
           alt: file.name
