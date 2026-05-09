@@ -1952,13 +1952,15 @@ export default function ResourceDetailPage() {
                           <div key={blockId}>
                             {(block as any).mediaFile?.url ? (
                               <div
-                                className="group relative w-full max-h-[360px] bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
+                                className="group relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
                                 onClick={() => setLightbox({ url: (block as any).mediaFile.url, type: 'video' })}
                               >
                                 <video
                                   src={(block as any).mediaFile.url}
-                                  className="w-full max-h-[360px] object-cover"
+                                  className="w-full h-full object-cover"
+                                  preload="metadata"
                                   muted
+                                  playsInline
                                 />
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                                   <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
