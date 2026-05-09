@@ -2236,11 +2236,25 @@ function CreateWorksheetContent() {
             <label className="block text-gray-900 font-medium mb-3">{block.content}</label>
             <div className="space-y-2">
               {block.choices?.map((choice: string, index: number) => {
-                const isSelected = isTestMode && testResponses[block.id] === index
+                // When allowMultiple is set the response is an array of
+                // indices; otherwise it's a single index. Same pattern as
+                // checklist, just reuses the existing toggle helper.
+                const allowMultiple = !!block.allowMultiple
+                const response = testResponses[block.id]
+                const isSelected = isTestMode && (
+                  allowMultiple
+                    ? Array.isArray(response) && response.includes(index)
+                    : response === index
+                )
+                const onPick = () => {
+                  if (!isTestMode || testSubmitted) return
+                  if (allowMultiple) toggleTestChecklistItem(block.id, index)
+                  else updateTestResponse(block.id, index)
+                }
                 return (
                   <button
                     key={index}
-                    onClick={() => isTestMode && !testSubmitted && updateTestResponse(block.id, index)}
+                    onClick={onPick}
                     disabled={!isTestMode || testSubmitted}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                       isSelected
@@ -2248,11 +2262,23 @@ function CreateWorksheetContent() {
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     } ${testSubmitted && isTestMode ? 'cursor-not-allowed opacity-80' : ''}`}
                   >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
-                    }`}>
-                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                    </div>
+                    {allowMultiple ? (
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
+                      }`}>
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
+                      }`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    )}
                     <span className="text-gray-700">{choice}</span>
                   </button>
                 )

@@ -292,7 +292,7 @@ export function BlockRenderer({
       return (
         <MultipleChoiceBlock
           block={block}
-          value={value as number | undefined}
+          value={value as number | number[] | undefined}
           onChange={onChange}
           disabled={disabled}
           locale={locale}
@@ -472,15 +472,38 @@ function MultipleChoiceBlock({
   locale,
 }: {
   block: ResourceBlock
-  value: number | undefined
-  onChange: (value: number) => void
+  // When allowMultiple is set the response is an array of indices and the
+  // UI renders checkboxes; otherwise it's a single index and we render
+  // radio-style buttons. Both shapes are stored as JSONB so the round-trip
+  // through the DB is fine.
+  value: number | number[] | undefined
+  onChange: (value: number | number[]) => void
   disabled: boolean
   locale: string
 }) {
+  const allowMultiple = 'allowMultiple' in block && !!(block as { allowMultiple?: boolean }).allowMultiple
+
   // Support both 'options' and 'choices' field names
   const options: (string | { label: string })[] =
     ('options' in block && Array.isArray(block.options)) ? block.options :
     ('choices' in block && Array.isArray(block.choices)) ? block.choices : []
+
+  const isSelectedAt = (index: number) =>
+    allowMultiple
+      ? Array.isArray(value) && value.includes(index)
+      : value === index
+
+  const onPick = (index: number) => {
+    if (!allowMultiple) {
+      onChange(index)
+      return
+    }
+    const current = Array.isArray(value) ? value : []
+    const next = current.includes(index)
+      ? current.filter(i => i !== index)
+      : [...current, index]
+    onChange(next)
+  }
 
   return (
     <div>
@@ -498,14 +521,14 @@ function MultipleChoiceBlock({
         <div className="space-y-2">
           {options.map((option, index) => {
             const label = typeof option === 'string' ? option : option.label
-            const isSelected = value === index
+            const isSelected = isSelectedAt(index)
 
             return (
               <motion.button
                 key={index}
                 type="button"
                 disabled={disabled}
-                onClick={() => onChange(index)}
+                onClick={() => onPick(index)}
                 whileHover={!disabled ? { scale: 1.01, y: -1 } : {}}
                 whileTap={!disabled ? { scale: 0.99 } : {}}
                 className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all duration-200 flex items-center gap-3 ${
@@ -514,11 +537,23 @@ function MultipleChoiceBlock({
                     : 'border-gray-100 hover:border-gray-200 bg-gray-50/50 hover:bg-white'
                 } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                  isSelected ? 'border-teal-500 bg-teal-500 scale-110' : 'border-gray-300'
-                }`}>
-                  {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                </div>
+                {allowMultiple ? (
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    isSelected ? 'border-teal-500 bg-teal-500 scale-110' : 'border-gray-300'
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    isSelected ? 'border-teal-500 bg-teal-500 scale-110' : 'border-gray-300'
+                  }`}>
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                  </div>
+                )}
                 <span className={`text-[15px] ${isSelected ? 'text-teal-700 font-medium' : 'text-gray-600'}`}>
                   {label || `Option ${index + 1}`}
                 </span>
