@@ -70,6 +70,7 @@ import { getSubmissionBlocks } from '@/lib/resources/render-blocks'
 import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
+import { MemberFeedbackIcon, feedbackLabel } from '@/components/resources/MemberFeedbackIcon'
 import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -2489,8 +2490,8 @@ export default function ResourceDetailPage() {
                   {isOwner && (
                     <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
                       {resource.status === 'published'
-                        ? (locale === 'fr' ? 'Publié' : 'Published')
-                        : (locale === 'fr' ? 'Brouillon' : 'Draft')
+                        ? (locale === 'fr' ? 'Prêt à être envoyé' : 'Ready to share')
+                        : (locale === 'fr' ? 'À modifier plus tard' : 'Edit later')
                       }
                     </Badge>
                   )}
@@ -2726,9 +2727,9 @@ export default function ResourceDetailPage() {
                     </p>
                     <Badge className={resource.status === 'published' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 border' : 'bg-amber-50 text-amber-700 border-amber-200 border'}>
                       {resource.status === 'published'
-                        ? (locale === 'fr' ? 'Publié' : 'Published')
+                        ? (locale === 'fr' ? 'Prêt à être envoyé' : 'Ready to share')
                         : resource.status === 'draft'
-                        ? (locale === 'fr' ? 'Brouillon' : 'Draft')
+                        ? (locale === 'fr' ? 'À modifier plus tard' : 'Edit later')
                         : (locale === 'fr' ? 'Archivé' : 'Archived')
                       }
                     </Badge>
@@ -3038,6 +3039,14 @@ export default function ResourceDetailPage() {
                                     {submission.scores.total}/{submission.scores.maxScore}
                                   </p>
                                 </div>
+                              )}
+
+                              {submission?.member_feedback && (
+                                <MemberFeedbackIcon
+                                  feedback={submission.member_feedback}
+                                  pill
+                                  title={feedbackLabel(submission.member_feedback, locale)}
+                                />
                               )}
 
                               {statusBadge}

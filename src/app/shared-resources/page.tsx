@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
+import { MemberFeedbackIcon, feedbackLabel, type MemberFeedback } from '@/components/resources/MemberFeedbackIcon'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import {
   AlertDialog,
@@ -52,6 +53,7 @@ interface SharedRecord {
   response_submitted_at: string | null
   last_reminder_at: string | null
   group_id: string | null
+  member_feedback: MemberFeedback
 }
 
 export default function SharedResourcesPage() {
@@ -91,6 +93,7 @@ export default function SharedResourcesPage() {
         shared_at,
         last_reminder_at,
         group_id,
+        member_feedback,
         resources(title, type),
         members!inner(first_name, last_name, deleted_at)
       `)
@@ -106,12 +109,16 @@ export default function SharedResourcesPage() {
     const resourceMemberPairs = activeShared.map(s => ({ resource_id: s.resource_id, member_id: s.member_id }))
     const { data: responses } = await supabase
       .from('resource_responses')
-      .select('resource_id, member_id, status, submitted_at')
+      .select('resource_id, member_id, status, submitted_at, member_feedback')
       .eq('practitioner_id', authUser.id)
 
-    const responseMap = new Map<string, { status: string; submitted_at: string | null }>()
+    const responseMap = new Map<string, { status: string; submitted_at: string | null; member_feedback: MemberFeedback }>()
     responses?.forEach(r => {
-      responseMap.set(`${r.resource_id}|${r.member_id}`, { status: r.status, submitted_at: r.submitted_at })
+      responseMap.set(`${r.resource_id}|${r.member_id}`, {
+        status: r.status,
+        submitted_at: r.submitted_at,
+        member_feedback: (r.member_feedback as MemberFeedback) ?? null,
+      })
     })
 
     const enriched: SharedRecord[] = activeShared.map((s: any) => {
@@ -129,6 +136,10 @@ export default function SharedResourcesPage() {
         response_submitted_at: resp?.submitted_at || null,
         last_reminder_at: s.last_reminder_at || null,
         group_id: (s as any).group_id || null,
+        // Prefer the response-row feedback (more up-to-date), fall back
+        // to the share-row column for shared resources without a
+        // resource_responses entry yet.
+        member_feedback: (resp?.member_feedback ?? (s.member_feedback as MemberFeedback)) ?? null,
       }
     })
 
@@ -563,6 +574,15 @@ export default function SharedResourcesPage() {
                             <div className={`flex items-center px-5 py-2.5 hover:bg-gray-50 transition-colors group ${expandedResponse === record.id ? 'bg-gray-50' : ''}`}>
                               <FileText className="w-4 h-4 text-gray-300 shrink-0 mr-3" />
                               <p className="text-sm text-gray-700 truncate flex-1 min-w-0 mr-3">{record.resource_title}</p>
+                              {record.member_feedback && (
+                                <span className="shrink-0 mr-2">
+                                  <MemberFeedbackIcon
+                                    feedback={record.member_feedback}
+                                    pill
+                                    title={feedbackLabel(record.member_feedback, locale)}
+                                  />
+                                </span>
+                              )}
                               <span className={`inline-flex items-center justify-center w-24 px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 mr-3 ${badge.bg} ${badge.text}`}>
                                 {badge.label}
                               </span>

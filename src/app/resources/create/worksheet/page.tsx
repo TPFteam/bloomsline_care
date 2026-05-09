@@ -86,6 +86,7 @@ import type { ResourceBlock, WorksheetSettings, ScoringRange, WorksheetQuestion,
 import type { ResourceCategory } from '@/types/library'
 import { toast } from 'sonner'
 import DescriptionEditor from '@/components/resources/DescriptionEditor'
+import { ResourcePreview } from '@/components/resources/preview/ResourcePreview'
 
 // Hide the visibility picker (Private / Public / Share-via-external-link)
 // in the publish flow until the Digital Library + public-link sharing
@@ -350,9 +351,12 @@ const blockTypes: BlockTypeOption[] = [
 ]
 
 const allCategories: ResourceCategory[] = [
-  'emotions', 'emotional_regulation', 'self_confidence', 'self_esteem',
-  'relationships', 'communication', 'stress', 'anxiety', 'burnout',
-  'decision_making', 'behavior', 'habits', 'psychoeducation', 'reflection', 'action'
+  'emotions', 'thoughts_beliefs', 'self_compassion', 'acceptance',
+  'mindfulness', 'self_identity', 'stress_anxiety', 'depression',
+  'sleep', 'mental_health_conditions', 'trauma_violence', 'grief',
+  'relationships', 'family_couple', 'communication', 'sexuality',
+  'body_food', 'addictions', 'habits_actions', 'discrimination',
+  'life_transitions', 'work_finances'
 ]
 
 // Default Likert scales for scored worksheets
@@ -1152,6 +1156,7 @@ function CreateWorksheetContent() {
       setShowTemplateWarningDialog(true)
       return
     }
+    setDetailsStep(1)
     setStep('details')
   }
 
@@ -1242,6 +1247,20 @@ function CreateWorksheetContent() {
     setExpandedBlock(newBlock.id)
     setShowBlockPicker(false)
     markAsModified()
+    // Auto-flip Reading → Interactive the first time an interactive
+    // block is added. Practitioners shouldn't be able to leave a
+    // Reading-mode resource sitting on questions that demand patient
+    // input — the patient app would never collect them.
+    if (resourceMode === 'reading' && INTERACTIVE_TYPES.has(type)) {
+      setResourceMode('interactive')
+      toast.message(
+        locale === 'fr'
+          ? 'Mode interactif activé — ce support recueille désormais les réponses du patient.'
+          : locale === 'es'
+            ? 'Modo interactivo activado — este recurso ahora recopila respuestas del paciente.'
+            : 'Switched to Interactive — this resource now collects patient input.'
+      )
+    }
   }
 
   // Apply likert preset to a block
@@ -5228,7 +5247,7 @@ function CreateWorksheetContent() {
           )}
 
           {/* Step 2: Build Worksheet */}
-          {step === 'build' && (
+          {(step === 'build' || step === 'details') && (
             <motion.div
               key="build"
               initial={{ opacity: 0, y: 20 }}
@@ -5276,144 +5295,9 @@ function CreateWorksheetContent() {
                     {locale === 'fr' ? 'Retour' : 'Back'}
                   </Button>
                 </motion.div>
-                <div className="flex items-center gap-2">
-                  {/* Auto-save Status Indicator */}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
-                    {autoSaveStatus === 'saving' && (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
-                        <span className="text-xs text-blue-600 font-medium">
-                          {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'saved' && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-xs text-emerald-600 font-medium">
-                          {locale === 'fr' ? 'Enregistré' : 'Saved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'error' && (
-                      <>
-                        <CloudOff className="w-3.5 h-3.5 text-red-500" />
-                        <span className="text-xs text-red-600 font-medium">
-                          {locale === 'fr' ? 'Erreur' : 'Error'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && hasUnsavedChanges && (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
-                        </span>
-                      </>
-                    )}
-                    {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
-                      <>
-                        <Cloud className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  {/* View Mode Toggle */}
-                  <div className="flex items-center bg-white/80 backdrop-blur-xl rounded-xl p-1 border border-white/60 shadow-sm">
-                    <button
-                      onClick={() => { setViewMode('edit'); resetTestMode() }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        viewMode === 'edit'
-                          ? 'bg-gray-900 text-white shadow-md'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      {locale === 'fr' ? 'Modifier' : 'Edit'}
-                    </button>
-                    <button
-                      onClick={() => { setViewMode('preview'); resetTestMode() }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                        viewMode === 'preview'
-                          ? 'bg-gray-900 text-white shadow-md'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      {locale === 'fr' ? 'Aperçu' : 'Preview'}
-                    </button>
-                    <button
-                      onClick={() => { setViewMode('test'); resetTestMode() }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                        viewMode === 'test'
-                          ? 'bg-gray-900 text-white shadow-md'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <UserCheck className="w-3.5 h-3.5" />
-                      {locale === 'fr' ? 'Tester' : 'Try it Out'}
-                    </button>
-                  </div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Button
-                      size="sm"
-                      onClick={handleContinueToDetails}
-                      disabled={!canProceedToDetails}
-                      className="bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl"
-                    >
-                      {locale === 'fr' ? 'Continuer' : 'Continue'}
-                    </Button>
-                  </motion.div>
-                </div>
+                {/* Autosave + Continue moved to the sidebar (above the
+                    preview phone) so the editor header stays minimal. */}
               </motion.div>
-
-              {/* Step Indicator for Build */}
-              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
-                <div className="flex items-center justify-center gap-3">
-                  {/* Step 1: Build */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
-                      1
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
-                      {locale === 'fr' ? 'Contenu' : 'Build'}
-                    </span>
-                  </div>
-
-                  <div className="w-6 h-0.5 bg-gray-200" />
-
-                  {/* Step 2: Details */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
-                      2
-                    </div>
-                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
-                      {locale === 'fr' ? 'Détails' : 'Details'}
-                    </span>
-                  </div>
-
-                  <div className="w-6 h-0.5 bg-gray-200" />
-
-                  {/* Step 3: Publish */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-200 text-gray-500">
-                      3
-                    </div>
-                    <span className="text-sm font-medium text-gray-400 hidden sm:inline">
-                      {locale === 'fr' ? 'Publier' : 'Publish'}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Content */}
@@ -5423,38 +5307,64 @@ function CreateWorksheetContent() {
                     <>
                       {/* Title Input */}
                       {/* Resource mode toggle */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        {(() => {
+                          // Lecture is locked once any interactive block
+                          // exists — switching back would silently strip
+                          // patient inputs from the patient view.
+                          const hasInteractive = blocks.some(b => INTERACTIVE_TYPES.has(b.type))
+                          const lockReading = hasInteractive
+                          return (
+                        <div className="relative group">
                         <button
-                          onClick={() => setResourceMode('reading')}
-                          className={`flex flex-col items-center gap-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                          onClick={() => { if (!lockReading) setResourceMode('reading') }}
+                          aria-disabled={lockReading}
+                          className={`w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all ${
                             resourceMode === 'reading'
                               ? 'border-teal-500 bg-teal-50'
                               : 'border-gray-150 bg-white hover:border-gray-200'
-                          }`}
+                          } ${lockReading ? 'opacity-60 cursor-not-allowed' : ''}`}
                         >
-                          <BookOpen className={`w-5 h-5 ${resourceMode === 'reading' ? 'text-teal-600' : 'text-gray-400'}`} />
-                          <span className={`text-sm font-semibold ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
-                            {locale === 'fr' ? 'Lecture' : 'Reading'}
-                          </span>
-                          <span className={`text-[11px] ${resourceMode === 'reading' ? 'text-teal-500' : 'text-gray-400'}`}>
-                            {locale === 'fr' ? 'Guides, fiches, théorie' : 'Guides, sheets, theory'}
-                          </span>
+                          <BookOpen className={`w-4 h-4 flex-shrink-0 ${resourceMode === 'reading' ? 'text-teal-600' : 'text-gray-400'}`} />
+                          <div className="text-left">
+                            <div className={`text-sm font-semibold leading-tight ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Lecture' : 'Reading'}
+                            </div>
+                            <div className={`text-[11px] leading-tight ${resourceMode === 'reading' ? 'text-teal-500' : 'text-gray-400'}`}>
+                              {locale === 'fr' ? 'Guides, fiches, théorie' : 'Guides, sheets, theory'}
+                            </div>
+                          </div>
                         </button>
+                        {lockReading && (
+                          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-64 px-3 py-2 bg-gray-900 text-white text-[11px] leading-snug rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none z-50">
+                            {locale === 'fr'
+                              ? 'Ce document contient des éléments qui nécessitent une réponse du patient. Supprimez-les pour revenir au mode Lecture.'
+                              : locale === 'es'
+                                ? 'Este documento tiene elementos que requieren respuesta del paciente. Elimínalos para volver al modo Lectura.'
+                                : 'This document has elements that need patient submission. Delete them to switch back to Reading mode.'}
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                          </div>
+                        )}
+                        </div>
+                          )
+                        })()}
                         <button
                           onClick={() => setResourceMode('interactive')}
-                          className={`flex flex-col items-center gap-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                          className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all ${
                             resourceMode === 'interactive'
                               ? 'border-teal-500 bg-teal-50'
                               : 'border-gray-150 bg-white hover:border-gray-200'
                           }`}
                         >
-                          <PenLine className={`w-5 h-5 ${resourceMode === 'interactive' ? 'text-teal-600' : 'text-gray-400'}`} />
-                          <span className={`text-sm font-semibold ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
-                            {locale === 'fr' ? 'Interactif' : 'Interactive'}
-                          </span>
-                          <span className={`text-[11px] ${resourceMode === 'interactive' ? 'text-teal-500' : 'text-gray-400'}`}>
-                            {locale === 'fr' ? 'Questions, exercices' : 'Questions, exercises'}
-                          </span>
+                          <PenLine className={`w-4 h-4 flex-shrink-0 ${resourceMode === 'interactive' ? 'text-teal-600' : 'text-gray-400'}`} />
+                          <div className="text-left">
+                            <div className={`text-sm font-semibold leading-tight ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
+                              {locale === 'fr' ? 'Interactif' : 'Interactive'}
+                            </div>
+                            <div className={`text-[11px] leading-tight ${resourceMode === 'interactive' ? 'text-teal-500' : 'text-gray-400'}`}>
+                              {locale === 'fr' ? 'Questions, exercices' : 'Questions, exercises'}
+                            </div>
+                          </div>
                         </button>
                       </div>
 
@@ -5888,65 +5798,139 @@ function CreateWorksheetContent() {
                   )}
                 </div>
 
-                {/* Sidebar */}
-                <div className="space-y-4">
-                  {/* Tips */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-gradient-to-br from-amber-50 via-orange-50/50 to-yellow-50/30 rounded-[1.5rem] border-2 border-amber-200/60 p-5 shadow-lg shadow-amber-100/30"
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100/80 flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-                          <Lightbulb className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                      <h3 className="font-semibold text-gray-900">
-                        {locale === 'fr' ? 'Conseils' : 'Tips'}
-                      </h3>
+                {/* Sidebar — autosave status + Continue + live preview.
+                    The autosave pill and Continue button sit above the
+                    preview phone (moved here from the editor header so
+                    the header stays minimal). The preview itself auto-
+                    detects interactive vs reading mode and lets the
+                    practitioner walk through their own worksheet. */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 justify-between">
+                    {/* Auto-save status indicator */}
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-sm">
+                      {autoSaveStatus === 'saving' && (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+                          <span className="text-xs text-blue-600 font-medium">
+                            {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-xs text-emerald-600 font-medium">
+                            {locale === 'fr' ? 'Enregistré' : 'Saved'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <>
+                          <CloudOff className="w-3.5 h-3.5 text-red-500" />
+                          <span className="text-xs text-red-600 font-medium">
+                            {locale === 'fr' ? 'Erreur' : 'Error'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && hasUnsavedChanges && (
+                        <>
+                          <div className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Non enregistré' : 'Unsaved'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && !hasUnsavedChanges && lastSavedAt && (
+                        <>
+                          <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Tout est enregistré' : 'All saved'}
+                          </span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && !hasUnsavedChanges && !lastSavedAt && (
+                        <>
+                          <Cloud className="w-3.5 h-3.5 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    <ul className="space-y-2 text-sm text-gray-700">
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
-                        {locale === 'fr' ? 'Glissez les étapes pour les réorganiser' : 'Drag blocks to reorder them'}
-                      </li>
-                    </ul>
-                  </motion.div>
-
-                  {/* Block Count */}
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white/90 backdrop-blur-xl rounded-[1.25rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5"
-                  >
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-gray-900">{blocks.length}</p>
-                      <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'étape(s) ajoutée(s)' : 'blocks added'}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      {/* Quick save when editing an already-published
+                          resource so practitioners can make a content
+                          tweak without walking through the 3-step flow. */}
+                      {isEditMode && saveAs === 'published' && (
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button
+                            size="sm"
+                            onClick={handleSave}
+                            disabled={!canProceedToDetails || isSaving}
+                            className="bg-emerald-600 hover:bg-emerald-700 shadow-lg rounded-xl"
+                          >
+                            {isSaving ? (
+                              <>
+                                <span className="w-3.5 h-3.5 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />
+                                {locale === 'fr' ? 'Enregistrement...' : 'Saving...'}
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-3.5 h-3.5 mr-1.5" />
+                                {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                              </>
+                            )}
+                          </Button>
+                        </motion.div>
+                      )}
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          size="sm"
+                          variant={isEditMode && saveAs === 'published' ? 'outline' : 'default'}
+                          onClick={handleContinueToDetails}
+                          disabled={!canProceedToDetails}
+                          className={
+                            isEditMode && saveAs === 'published'
+                              ? 'rounded-xl'
+                              : 'bg-gray-900 hover:bg-gray-800 shadow-lg rounded-xl'
+                          }
+                        >
+                          {isEditMode && saveAs === 'published'
+                            ? (locale === 'fr' ? 'Détails' : 'Details')
+                            : (locale === 'fr' ? 'Continuer' : 'Continue')
+                          }
+                        </Button>
+                      </motion.div>
                     </div>
-                  </motion.div>
+                  </div>
+                  <ResourcePreview blocks={blocks} title={title} />
                 </div>
               </div>
               </>}
             </motion.div>
           )}
 
-          {/* Step 3: Details */}
+          {/* Step 3: Details — rendered as a modal over the builder so
+              the editor + preview stay visible behind. Click the
+              backdrop to dismiss. */}
           {step === 'details' && (
+            <div
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm overflow-y-auto"
+              onClick={(e) => { if (e.target === e.currentTarget) setStep('build') }}
+            >
             <motion.div
               key="details"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.97 }}
+              className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6"
             >
-              {/* Header */}
+              {/* Floating back button — outer modal chrome removed so
+                  the inner section cards are the only visible "popup". */}
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between mb-6"
+                className="flex items-center justify-start mb-4"
               >
                 <motion.div whileHover={{ x: -4 }} className="inline-block">
                   <Button
@@ -5959,7 +5943,7 @@ function CreateWorksheetContent() {
                         setDetailsStep(1)
                       }
                     }}
-                    className="rounded-xl hover:bg-white/80"
+                    className="rounded-xl bg-white/90 hover:bg-white shadow-sm"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     {detailsStep === 1
@@ -5968,82 +5952,9 @@ function CreateWorksheetContent() {
                     }
                   </Button>
                 </motion.div>
-                <Button variant="outline" size="sm" className="rounded-xl">
-                  <Eye className="w-4 h-4 mr-2" />
-                  {locale === 'fr' ? 'Aperçu' : 'Preview'}
-                </Button>
               </motion.div>
 
-              {/* Title Card */}
-              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-5 mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center shadow-lg ">
-                    <FileText className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-                    <p className="text-sm text-gray-500">
-                      {blocks.length} {locale === 'fr' ? 'blocs' : 'blocks'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step Indicator */}
-              <div className="bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-lg shadow-gray-200/40 border border-white/60 p-4 mb-6">
-                <div className="flex items-center justify-center gap-3">
-                  {/* Step 1: Build (completed) */}
-                  <button
-                    onClick={() => setStep('build')}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-gray-900 text-white">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 hidden sm:inline">
-                      {locale === 'fr' ? 'Contenu' : 'Build'}
-                    </span>
-                  </button>
-
-                  <div className="w-6 h-0.5 bg-gray-900" />
-
-                  {/* Step 2: Details */}
-                  <button
-                    onClick={() => setDetailsStep(1)}
-                    className="flex items-center gap-2"
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 1 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {detailsStep > 1 ? <CheckCircle2 className="w-4 h-4" /> : '2'}
-                    </div>
-                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 1 ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Détails' : 'Details'}
-                    </span>
-                  </button>
-
-                  <div className={`w-6 h-0.5 ${detailsStep > 1 ? 'bg-blue-500' : 'bg-gray-200'}`} />
-
-                  {/* Step 3: Publish */}
-                  <button
-                    onClick={() => {
-                      if (description.trim() && selectedCategory) {
-                        setDetailsStep(3)
-                      }
-                    }}
-                    className={`flex items-center gap-2 ${!(description.trim() && selectedCategory) ? 'cursor-not-allowed opacity-50' : ''}`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                      detailsStep >= 3 ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      3
-                    </div>
-                    <span className={`text-sm font-medium hidden sm:inline ${detailsStep >= 3 ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {locale === 'fr' ? 'Publier' : 'Publish'}
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <div>
 
               {/* Step 1: Details */}
               {detailsStep === 1 && (
@@ -6620,7 +6531,9 @@ function CreateWorksheetContent() {
                 </div>
                 </motion.div>
               )}
+              </div>
             </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

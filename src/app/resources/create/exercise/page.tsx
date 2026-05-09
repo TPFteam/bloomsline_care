@@ -112,9 +112,12 @@ const stepTypes: StepTypeOption[] = [
 ]
 
 const allCategories: ResourceCategory[] = [
-  'emotions', 'emotional_regulation', 'self_confidence', 'self_esteem',
-  'relationships', 'communication', 'stress', 'anxiety', 'burnout',
-  'decision_making', 'behavior', 'habits', 'psychoeducation', 'reflection', 'action'
+  'emotions', 'thoughts_beliefs', 'self_compassion', 'acceptance',
+  'mindfulness', 'self_identity', 'stress_anxiety', 'depression',
+  'sleep', 'mental_health_conditions', 'trauma_violence', 'grief',
+  'relationships', 'family_couple', 'communication', 'sexuality',
+  'body_food', 'addictions', 'habits_actions', 'discrimination',
+  'life_transitions', 'work_finances'
 ]
 
 // Breathing presets
@@ -1023,7 +1026,7 @@ export default function CreateExercisePage() {
                       <>
                         <Cloud className="w-3.5 h-3.5 text-gray-400" />
                         <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                          {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                         </span>
                       </>
                     )}
@@ -1309,7 +1312,7 @@ export default function CreateExercisePage() {
                       <>
                         <Cloud className="w-3.5 h-3.5 text-gray-400" />
                         <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                          {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                         </span>
                       </>
                     )}

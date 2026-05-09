@@ -675,7 +675,6 @@ export default function MyResourcesPage() {
                       { value: 'recent_edited', label: locale === 'fr' ? 'Récemment modifié' : 'Recently edited' },
                       { value: 'recent_created', label: locale === 'fr' ? 'Récemment créé' : 'Recently created' },
                       { value: 'title_asc', label: locale === 'fr' ? 'Titre A-Z' : 'Title A-Z' },
-                      { value: 'title_desc', label: locale === 'fr' ? 'Titre Z-A' : 'Title Z-A' },
                     ].map((item) => (
                       <button
                         key={item.value}
@@ -720,8 +719,8 @@ export default function MyResourcesPage() {
                       <div className="space-y-1">
                         {[
                           { value: 'all', label: locale === 'fr' ? 'Tous' : 'All' },
-                          { value: 'draft', label: locale === 'fr' ? 'Brouillon' : 'Draft' },
-                          { value: 'published', label: locale === 'fr' ? 'Publié' : 'Published' },
+                          { value: 'draft', label: locale === 'fr' ? 'À modifier plus tard' : 'Edit later' },
+                          { value: 'published', label: locale === 'fr' ? 'Prêt à être envoyé' : 'Ready to share' },
                         ].map((item) => (
                           <button
                             key={item.value}

@@ -12,12 +12,35 @@ export type ResourceType =
   | 'template'        // Session templates, forms
 
 export type ResourceCategory =
+  // Current taxonomy (kept in sync with `allCategories` in the resource creators)
   | 'emotions'
+  | 'thoughts_beliefs'
+  | 'self_compassion'
+  | 'acceptance'
+  | 'mindfulness'
+  | 'self_identity'
+  | 'stress_anxiety'
+  | 'depression'
+  | 'sleep'
+  | 'mental_health_conditions'
+  | 'trauma_violence'
+  | 'grief'
+  | 'relationships'
+  | 'family_couple'
+  | 'communication'
+  | 'sexuality'
+  | 'body_food'
+  | 'addictions'
+  | 'habits_actions'
+  | 'discrimination'
+  | 'life_transitions'
+  | 'work_finances'
+  // Legacy keys — retained so historical resources still render their
+  // category label even after the taxonomy was reshaped. Do NOT add to
+  // the picker; only used for back-compat reads.
   | 'emotional_regulation'
   | 'self_confidence'
   | 'self_esteem'
-  | 'relationships'
-  | 'communication'
   | 'stress'
   | 'anxiety'
   | 'burnout'
@@ -27,12 +50,8 @@ export type ResourceCategory =
   | 'psychoeducation'
   | 'reflection'
   | 'action'
-  // Legacy
   | 'general'
-  | 'depression'
-  | 'mindfulness'
   | 'coping_skills'
-  | 'grief'
   | 'trauma'
   | 'children'
   | 'teens'
@@ -301,12 +320,33 @@ export function getResourceTypeColor(type: ResourceType): string {
 
 export function getCategoryColor(category: ResourceCategory): string {
   const colors: Record<string, string> = {
+    // Current taxonomy
     emotions: 'rose',
+    thoughts_beliefs: 'violet',
+    self_compassion: 'pink',
+    acceptance: 'teal',
+    mindfulness: 'teal',
+    self_identity: 'amber',
+    stress_anxiety: 'orange',
+    depression: 'indigo',
+    sleep: 'blue',
+    mental_health_conditions: 'purple',
+    trauma_violence: 'red',
+    grief: 'slate',
+    relationships: 'pink',
+    family_couple: 'rose',
+    communication: 'cyan',
+    sexuality: 'fuchsia',
+    body_food: 'lime',
+    addictions: 'red',
+    habits_actions: 'emerald',
+    discrimination: 'amber',
+    life_transitions: 'sky',
+    work_finances: 'gray',
+    // Legacy
     emotional_regulation: 'violet',
     self_confidence: 'amber',
     self_esteem: 'amber',
-    relationships: 'pink',
-    communication: 'cyan',
     stress: 'orange',
     anxiety: 'blue',
     burnout: 'red',
@@ -317,10 +357,7 @@ export function getCategoryColor(category: ResourceCategory): string {
     reflection: 'teal',
     action: 'green',
     general: 'neutral',
-    depression: 'indigo',
-    mindfulness: 'teal',
     coping_skills: 'emerald',
-    grief: 'slate',
     trauma: 'purple',
     children: 'yellow',
     teens: 'lime',

@@ -89,6 +89,7 @@ const noteTypeColors: Record<string, { bg: string; text: string; border: string 
   contre_transfert:    { bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-l-pink-400' },
   ajustement_envisage: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-l-emerald-400' },
   milestone:           { bg: 'bg-green-50',   text: 'text-green-700',   border: 'border-l-green-400' },
+  __has_quote__:       { bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-l-sky-400' },
 }
 // Follows TAG_COLOR_PALETTE indices 7+ for custom types
 const extraColorPool = [
@@ -394,6 +395,30 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   useEffect(() => {
     fetchAllNotes()
   }, [memberId])
+
+  // One-shot orphan cleanup: notes whose session_id points at a session
+  // that no longer exists were left dangling by an earlier delete-session
+  // flow that didn't cascade. We surface them as standalone notes by
+  // nulling out session_id. Re-runs whenever notes/sessions change but is
+  // a no-op when there's nothing to clean.
+  useEffect(() => {
+    if (!allNotes.length || !sessions) return
+    const validSessionIds = new Set(sessions.map(s => s.id))
+    const orphans = allNotes.filter(n => n.session_id && !validSessionIds.has(n.session_id))
+    if (orphans.length === 0) return
+    const orphanIds = orphans.map(n => n.id)
+    ;(async () => {
+      const { error } = await supabase
+        .from('progress_notes')
+        .update({ session_id: null })
+        .in('id', orphanIds)
+      if (error) {
+        console.warn('Could not detach orphan notes:', error)
+        return
+      }
+      setAllNotes(prev => prev.map(n => orphanIds.includes(n.id) ? { ...n, session_id: null } : n))
+    })()
+  }, [allNotes, sessions])
 
   // Fetch milestone comments and merge as virtual notes for Browse
   const [milestoneComments, setMilestoneComments] = useState<ProgressNote[]>([])
@@ -1305,16 +1330,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
     if (typeFilters.size > 0) {
       const wantsNoTag = typeFilters.has('__no_tag__')
-      const tagFilters = [...typeFilters].filter(tf => tf !== '__no_tag__')
+      const wantsQuote = typeFilters.has('__has_quote__')
+      const tagFilters = [...typeFilters].filter(tf => tf !== '__no_tag__' && tf !== '__has_quote__')
       const hasInlineTag = allNoteTypes.some(t2 => note.content.includes(`data-tag="${t2}"`))
       const hasExplicitType = note.note_type !== 'general' && allNoteTypes.includes(note.note_type)
       const hasAnyTag = hasInlineTag || hasExplicitType
       const matchesNoTag = wantsNoTag && !hasAnyTag
+      // Patient quotes render as <mark data-verbatim="...">. Two creation
+      // paths exist: (a) wrapping selected text — has data-verbatim only;
+      // (b) live annotation — adds data-verbatim-type="said". A third
+      // form (data-verbatim-type="mention") is just a name highlight, NOT
+      // a quote, so we must exclude it. We pull every <mark> with
+      // data-verbatim and accept any that isn't tagged as a mention.
+      const matchesQuote = wantsQuote && (() => {
+        const marks = note.content.match(/<mark\b[^>]*data-verbatim=[^>]*>/gi) ?? []
+        return marks.some(m => !/data-verbatim-type=["']mention["']/i.test(m))
+      })()
       const matchesTagFilter = tagFilters.length > 0 && (
         tagFilters.some(tag => note.note_type === tag) ||
         tagFilters.some(tag => note.content.includes(`data-tag="${tag}"`))
       )
-      conditions.push(matchesNoTag || matchesTagFilter)
+      conditions.push(matchesNoTag || matchesQuote || matchesTagFilter)
     }
     if (browseSessionFilters.length > 0) {
       conditions.push(!!(note.session_id && browseSessionFilters.includes(note.session_id)))
@@ -2158,6 +2194,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   >
                     {locale === 'fr' ? 'Sans tag' : 'No tag'}
                   </button>
+                  <button
+                    onClick={() => setTypeFilters(prev => { const next = new Set(prev); if (next.has('__has_quote__')) next.delete('__has_quote__'); else next.add('__has_quote__'); return next })}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${typeFilters.has('__has_quote__') ? 'bg-sky-100 text-sky-700 ring-1 ring-sky-400 ring-opacity-40' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    {locale === 'fr' ? 'Citations' : locale === 'es' ? 'Citas' : 'Quotes'}
+                  </button>
                 </div>
               </div>
               {/* Goals filter — hidden for now */}
@@ -2219,11 +2261,23 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
               ) : (
                 <div className="divide-y divide-gray-100">
                   {(() => {
-                    const activeTypes = [...typeFilters].filter(tf => tf !== '__no_tag__')
+                    const activeTypes = [...typeFilters].filter(tf => tf !== '__no_tag__' && tf !== '__has_quote__')
+                    const quoteFilterOn = typeFilters.has('__has_quote__')
+                    const quoteLabel = locale === 'fr' ? 'Citation' : locale === 'es' ? 'Cita' : 'Quote'
                     // When filtering by tag, explode each note into one row per matching tag
                     const rows: { note: typeof obsFilteredNotes[0]; tag: { type: string; label: string } | null; tagContent: string }[] = []
                     for (const note of obsFilteredNotes) {
-                      if (activeTypes.length > 0) {
+                      if (quoteFilterOn && activeTypes.length === 0) {
+                        // Citations filter only — render one row per real
+                        // patient quote (skip mention-type marks).
+                        const markRegex = /<mark\b[^>]*data-verbatim=[^>]*>([\s\S]*?)<\/mark>/gi
+                        let m
+                        while ((m = markRegex.exec(note.content)) !== null) {
+                          if (/data-verbatim-type=["']mention["']/i.test(m[0])) continue
+                          const text = stripHtml(m[1]).replace(/​/g, '').trim()
+                          if (text) rows.push({ note, tag: { type: '__has_quote__', label: quoteLabel }, tagContent: text })
+                        }
+                      } else if (activeTypes.length > 0) {
                         for (const v of activeTypes) {
                           const tagRegex = new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"[^>]*>(.*?)</mark>`, 'gis')
                           let m
@@ -2290,7 +2344,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                                 {tag && tagColors && (
                                   <span className={`inline-flex items-center px-1 py-0 rounded text-[9px] font-semibold flex-shrink-0 ${tagColors.bg} ${tagColors.text}`}>{tag.label}</span>
                                 )}
-                                <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed min-w-0">{tagContent}</p>
+                                <p className={`text-xs line-clamp-1 leading-relaxed min-w-0 ${tag?.type === '__has_quote__' ? 'text-sky-800 italic' : 'text-gray-500'}`}>
+                                  {tag?.type === '__has_quote__' ? `"${tagContent}"` : tagContent}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -2816,7 +2872,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                   <h3 className="text-base font-semibold text-gray-900 mb-2">{selectedNote.title}</h3>
                 )}
                 {(() => {
-                  const activeTags = [...typeFilters].filter(t => t !== '__no_tag__')
+                  const activeTags = [...typeFilters].filter(t => t !== '__no_tag__' && t !== '__has_quote__')
                   if (activeTags.length > 0) {
                     // Inject highlight styles: dim all text, make matching marks pop
                     const highlightCss = `

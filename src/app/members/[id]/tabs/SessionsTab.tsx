@@ -187,6 +187,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
+  // Modal that asks the practitioner what to do with notes attached to a
+  // session they're about to delete. We branch the delete flow through
+  // here only when the count > 0; otherwise the session is deleted directly.
+  const [notesPrompt, setNotesPrompt] = useState<{ sessionId: string; count: number } | null>(null)
   // For series cancel: 'this' (just this occurrence) or 'following' (this + all later siblings)
   const [cancelScope, setCancelScope] = useState<'this' | 'following'>('this')
   // Series detail drawer: when set, shows all occurrences for this series_id
@@ -736,9 +740,53 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   }
 
   const handleDeleteSession = async (sessionId: string) => {
+    // Before deleting, find out if any notes are linked to this session
+    // so we can ask the practitioner whether to keep them (detach) or
+    // delete them too. If none, fall straight through to the deletion.
     try {
-      // Look up session data before deleting so we can find the matching booking
+      const { count, error: countErr } = await supabase
+        .from('progress_notes')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', sessionId)
+      if (countErr) throw countErr
+      if ((count ?? 0) > 0) {
+        setNotesPrompt({ sessionId, count: count ?? 0 })
+        return
+      }
+    } catch (err) {
+      console.warn('Could not count notes for session, deleting without prompt:', err)
+    }
+    await deleteSessionAndNotes(sessionId, 'no_notes')
+  }
+
+  /**
+   * Performs the actual deletion. `noteAction` controls what happens
+   * to notes whose session_id points at this session:
+   *   - 'no_notes'    — there were no linked notes to begin with
+   *   - 'keep'        — null out their session_id so they survive as
+   *                     standalone notes in Observations
+   *   - 'delete'      — hard-delete the notes alongside the session
+   */
+  const deleteSessionAndNotes = async (
+    sessionId: string,
+    noteAction: 'no_notes' | 'keep' | 'delete',
+  ) => {
+    try {
       const session = sessions.find(s => s.id === sessionId)
+
+      if (noteAction === 'keep') {
+        const { error: updErr } = await supabase
+          .from('progress_notes')
+          .update({ session_id: null })
+          .eq('session_id', sessionId)
+        if (updErr) throw updErr
+      } else if (noteAction === 'delete') {
+        const { error: delNotesErr } = await supabase
+          .from('progress_notes')
+          .delete()
+          .eq('session_id', sessionId)
+        if (delNotesErr) throw delNotesErr
+      }
 
       const { error } = await supabase
         .from('sessions')
@@ -774,8 +822,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         }
       }
 
-      toast.success(locale === 'fr' ? 'Séance supprimée' : 'Session deleted')
+      const successMsg = noteAction === 'delete'
+        ? (locale === 'fr' ? 'Séance et notes supprimées' : 'Session and notes deleted')
+        : noteAction === 'keep'
+          ? (locale === 'fr' ? 'Séance supprimée, notes conservées' : 'Session deleted, notes kept')
+          : (locale === 'fr' ? 'Séance supprimée' : 'Session deleted')
+      toast.success(successMsg)
       setDeletingSessionId(null)
+      setNotesPrompt(null)
       onSessionsUpdate()
     } catch (error) {
       console.error('Error deleting session:', error)
@@ -1973,6 +2027,83 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </div>
         )
       })()}
+
+      {/* Notes-decision modal — surfaces only when deleting a session
+          that has linked progress_notes. "Keep notes" is the primary
+          (recoverable) action; "Delete notes" is destructive. */}
+      {notesPrompt && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setNotesPrompt(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button — replaces the previous "Retour" footer
+                button which used to overflow on narrow widths. */}
+            <button
+              type="button"
+              onClick={() => setNotesPrompt(null)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label={locale === 'fr' ? 'Fermer' : locale === 'es' ? 'Cerrar' : 'Close'}
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-start gap-3 mb-3 pr-8">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <StickyNote className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {locale === 'fr'
+                    ? (notesPrompt.count > 1
+                        ? `${notesPrompt.count} notes sont liées à cette séance`
+                        : 'Une note est liée à cette séance')
+                    : locale === 'es'
+                      ? (notesPrompt.count > 1
+                          ? `${notesPrompt.count} notas están vinculadas a esta sesión`
+                          : 'Una nota está vinculada a esta sesión')
+                      : (notesPrompt.count > 1
+                          ? `${notesPrompt.count} notes are linked to this session`
+                          : 'A note is linked to this session')}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {locale === 'fr'
+                    ? (notesPrompt.count > 1
+                        ? 'Souhaitez-vous également supprimer les notes liées à cette séance ?'
+                        : 'Souhaitez-vous également supprimer la note liée à cette séance ?')
+                    : locale === 'es'
+                      ? (notesPrompt.count > 1
+                          ? '¿Deseas eliminar también las notas vinculadas a esta sesión?'
+                          : '¿Deseas eliminar también la nota vinculada a esta sesión?')
+                      : (notesPrompt.count > 1
+                          ? 'Do you also want to delete the notes linked to this session?'
+                          : 'Do you also want to delete the note linked to this session?')}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end mt-5">
+              <Button
+                variant="outline"
+                onClick={() => deleteSessionAndNotes(notesPrompt.sessionId, 'delete')}
+                className="rounded-xl text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
+              </Button>
+              <Button
+                onClick={() => deleteSessionAndNotes(notesPrompt.sessionId, 'keep')}
+                className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                {locale === 'fr' ? 'Conserver' : locale === 'es' ? 'Conservar' : 'Keep'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Session Modal (shared component) */}
       <EditSessionModal

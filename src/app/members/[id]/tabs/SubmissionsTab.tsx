@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
+import { MemberFeedbackIcon, feedbackLabel } from '@/components/resources/MemberFeedbackIcon'
 import type { Member } from '@/types/member'
 import type { Resource, ResourceBlock, ResourceResponse } from '@/types/resource'
 
@@ -301,6 +302,13 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
                             <StatusIcon className="w-3 h-3 mr-1" />
                             {statusConfig.label}
                           </Badge>
+                          {(submission as any).member_feedback && (
+                            <MemberFeedbackIcon
+                              feedback={(submission as any).member_feedback}
+                              pill
+                              title={feedbackLabel((submission as any).member_feedback, locale)}
+                            />
+                          )}
                           {submission.submitted_at && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />

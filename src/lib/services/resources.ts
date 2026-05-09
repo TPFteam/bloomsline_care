@@ -744,6 +744,10 @@ export interface ResourceSubmission {
   reviewed_at?: string
   practitioner_notes?: string
   time_spent_seconds?: number
+  // Patient-provided post-submission mood (set in mobile app right
+  // before submitting). Surfaced everywhere we render a response so the
+  // practitioner can see how the exercise felt to the patient.
+  member_feedback?: 'negative' | 'neutral' | 'positive' | null
   created_at: string
   updated_at: string
   // Resource snapshot for data preservation (stored at submission time)

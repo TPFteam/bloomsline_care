@@ -564,8 +564,8 @@ export function getResourceTypeLabel(type: ResourceType | 'assessment', locale: 
 
 export function getStatusLabel(status: ResourceStatus, locale: string = 'en'): string {
   const labels: Record<ResourceStatus, Record<string, string>> = {
-    draft: { en: 'Draft', fr: 'Brouillon' },
-    published: { en: 'Published', fr: 'Publié' },
+    draft: { en: 'Edit later', fr: 'À modifier plus tard' },
+    published: { en: 'Ready to share', fr: 'Prêt à être envoyé' },
     archived: { en: 'Archived', fr: 'Archivé' },
   }
   return labels[status]?.[locale] ?? labels[status]?.['en'] ?? ''

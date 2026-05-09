@@ -54,9 +54,12 @@ interface TableColumn {
 }
 
 const allCategories: ResourceCategory[] = [
-  'emotions', 'emotional_regulation', 'self_confidence', 'self_esteem',
-  'relationships', 'communication', 'stress', 'anxiety', 'burnout',
-  'decision_making', 'behavior', 'habits', 'psychoeducation', 'reflection', 'action'
+  'emotions', 'thoughts_beliefs', 'self_compassion', 'acceptance',
+  'mindfulness', 'self_identity', 'stress_anxiety', 'depression',
+  'sleep', 'mental_health_conditions', 'trauma_violence', 'grief',
+  'relationships', 'family_couple', 'communication', 'sexuality',
+  'body_food', 'addictions', 'habits_actions', 'discrimination',
+  'life_transitions', 'work_finances'
 ]
 
 const generateId = () => Math.random().toString(36).substring(2, 9)
@@ -856,7 +859,7 @@ function CreateTableExerciseContent() {
                       <>
                         <Cloud className="w-3.5 h-3.5 text-gray-400" />
                         <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                          {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                         </span>
                       </>
                     )}
@@ -1605,7 +1608,7 @@ function CreateTableExerciseContent() {
                               <FileText className={`w-4 h-4 ${saveAs === 'draft' ? 'text-amber-700' : 'text-gray-500'}`} />
                             </div>
                             <span className={`font-medium ${saveAs === 'draft' ? 'text-amber-900' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                              {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500">

@@ -80,8 +80,8 @@ const typeLabels: Record<string, { en: string; fr: string; es: string }> = {
 }
 
 const statusLabels: Record<string, { en: string; fr: string; es: string }> = {
-  draft: { en: 'Draft', fr: 'Brouillon', es: 'Borrador' },
-  published: { en: 'Published', fr: 'Publié', es: 'Publicado' },
+  draft: { en: 'Edit later', fr: 'À modifier plus tard', es: 'Editar más tarde' },
+  published: { en: 'Ready to share', fr: 'Prêt à être envoyé', es: 'Listo para compartir' },
   archived: { en: 'Archived', fr: 'Archivé', es: 'Archivado' },
 }
 
