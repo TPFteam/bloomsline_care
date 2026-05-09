@@ -584,8 +584,9 @@ function CreateWorksheetContent() {
           const path = `${authUser.id}/pdf-imports/${timestamp}-original-${sanitizedName}`
           const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, file)
           if (!uploadErr) {
-            const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
-            originalPdfUrl = urlData.publicUrl
+            // Bucket is private — getPublicUrl 400s. Mint a 1-year signed URL.
+            const { data: signed } = await sb.storage.from('resource-media').createSignedUrl(path, 60 * 60 * 24 * 365)
+            originalPdfUrl = signed?.signedUrl || ''
           }
         } catch (uploadErr) {
           console.warn('[pdf-import] Could not upload PDF to storage:', uploadErr)
@@ -634,8 +635,9 @@ function CreateWorksheetContent() {
           const path = `${authUser.id}/pdf-imports/${timestamp}-${rangeSuffix}-${sanitizedName}`
           const { error: uploadErr } = await sb.storage.from('resource-media').upload(path, blob)
           if (uploadErr) return originalPdfUrl
-          const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
-          return urlData.publicUrl
+          // Bucket is private — sign instead of getPublicUrl().
+          const { data: signed } = await sb.storage.from('resource-media').createSignedUrl(path, 60 * 60 * 24 * 365)
+          return signed?.signedUrl || originalPdfUrl
         } catch {
           return originalPdfUrl
         }
@@ -801,7 +803,9 @@ function CreateWorksheetContent() {
           console.warn('[pdf-split] Upload failed:', uploadErr)
           continue
         }
-        const { data: urlData } = sb.storage.from('resource-media').getPublicUrl(path)
+        // Bucket is private — sign instead of getPublicUrl().
+        const { data: signed } = await sb.storage.from('resource-media').createSignedUrl(path, 60 * 60 * 24 * 365)
+        const signedUrl = signed?.signedUrl || ''
 
         const label = range.from === range.to
           ? `Page ${range.from}`
@@ -811,7 +815,7 @@ function CreateWorksheetContent() {
           id: `pdf-${timestamp}-${range.from}`,
           type: 'pdf_document' as any,
           content: label,
-          mediaFile: urlData.publicUrl,
+          mediaFile: signedUrl,
           originalPdfUrl: sourceUrl,
           fileName: block.fileName || 'document.pdf',
           pageRange: Array.from({ length: range.to - range.from + 1 }, (_, j) => range.from + j),

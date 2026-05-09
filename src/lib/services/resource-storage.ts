@@ -62,13 +62,16 @@ export async function uploadResourceFile(
     throw new Error(`Failed to upload file: ${error.message}`)
   }
 
-  // Get public URL
-  const { data: urlData } = supabase.storage
+  // The bucket is private (see 20260508_resource_security_hardening.sql).
+  // getPublicUrl() returns an /object/public/... URL that 400s on private
+  // buckets, so we mint a long-lived signed URL instead. Renderers that
+  // hit a 403 after expiry can re-sign via the path field.
+  const { data: signed } = await supabase.storage
     .from(BUCKET_NAME)
-    .getPublicUrl(data.path)
+    .createSignedUrl(data.path, 60 * 60 * 24 * 365) // 1 year
 
   return {
-    url: urlData.publicUrl,
+    url: signed?.signedUrl || '',
     path: data.path,
     fileName: file.name,
     fileSize: file.size,
