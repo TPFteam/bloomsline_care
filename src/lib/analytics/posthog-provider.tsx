@@ -3,6 +3,7 @@
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useEffect, useState, useCallback } from 'react'
+import { sanitizePostHogProperties } from './scrub'
 
 const COOKIE_CONSENT_KEY = 'bloomsline-cookie-consent'
 
@@ -25,6 +26,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         persistence: 'localStorage',
         disable_session_recording: false,
         autocapture: true,
+        // Redact known PII (emails, names, free-text content) on every
+        // event before it's POSTed to /ingest. See scrub.ts for the rules.
+        sanitize_properties: sanitizePostHogProperties,
       })
       setIsInitialized(true)
     }
