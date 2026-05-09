@@ -12,6 +12,7 @@ import { PostHogIdentify } from "@/lib/analytics/posthog-identify";
 import { FloatingNotesProvider } from "@/lib/floating-notes/context";
 import { FloatingNotesPanel } from "@/components/notes/FloatingNotesPanel";
 import { SessionGuard } from "@/components/auth/session-guard";
+import { ChunkLoadGuard } from "@/components/system/chunk-load-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ChunkLoadGuard />
         <PostHogProvider>
           <PostHogIdentify />
           <ThemeProvider>

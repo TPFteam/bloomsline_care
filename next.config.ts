@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Vercel Skew Protection: tag every static asset URL with the
+  // deployment ID so Vercel's edge routes old clients back to the
+  // matching old deploy instead of 404'ing on stale chunk hashes.
+  // Vercel auto-injects VERCEL_DEPLOYMENT_ID at build time. When the
+  // env var is absent (local dev), the field is undefined and Next
+  // simply skips the deployment-ID stamping — no breakage either way.
+  // The Skew Protection toggle in Vercel project settings must also
+  // be on for the routing layer to honour the header.
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   async headers() {
     return [
       // Public booking pages + embed loader script: allow embedding from any
