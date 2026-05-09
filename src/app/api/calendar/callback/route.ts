@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const stateFromUrl = searchParams.get('state');
 
   if (error) {
     return NextResponse.redirect(
@@ -32,6 +33,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL('/bookings?tab=settings&calendar_error=no_code', request.url)
     );
+  }
+
+  // CSRF check: the `state` value in the URL must match the value we set
+  // as an httpOnly cookie when initiating the flow at /api/calendar/google.
+  // A missing cookie or mismatch means this callback wasn't initiated by
+  // this browser session — likely an attacker trying to attach their own
+  // Google account to the victim's Bloomsline session.
+  const stateFromCookie = request.cookies.get('bloom_oauth_state')?.value;
+  if (!stateFromUrl || !stateFromCookie || stateFromUrl !== stateFromCookie) {
+    const redirect = NextResponse.redirect(
+      new URL('/bookings?tab=settings&calendar_error=invalid_state', request.url)
+    );
+    // Clear the (now-suspect) cookie so the next attempt starts clean.
+    redirect.cookies.delete('bloom_oauth_state');
+    return redirect;
   }
 
   try {
@@ -130,9 +146,12 @@ export async function GET(request: NextRequest) {
       console.warn('[calendar-callback] watch registration failed (non-fatal):', watchErr);
     }
 
-    return NextResponse.redirect(
+    const redirect = NextResponse.redirect(
       new URL('/bookings?tab=settings&calendar_connected=true', request.url)
     );
+    // Burn the state cookie so a captured callback URL can't be replayed.
+    redirect.cookies.delete('bloom_oauth_state');
+    return redirect;
   } catch (err) {
     console.error('Calendar callback error:', err);
     return NextResponse.redirect(
