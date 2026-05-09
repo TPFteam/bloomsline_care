@@ -244,7 +244,7 @@ const blockTypes: BlockTypeOption[] = [
     type: 'multiple_choice',
     icon: CircleDot,
     label: { en: 'Multiple Choice', fr: 'Choix multiple' },
-    description: { en: 'Select one or more options', fr: 'Sélectionner une ou plusieurs options' },
+    description: { en: 'Member picks an answer from options (e.g. "Which symptoms did you notice?")', fr: 'Le membre choisit une réponse parmi des options (ex : « Quels symptômes avez-vous remarqués ? »)' },
   },
   {
     type: 'yes_no',
@@ -255,8 +255,8 @@ const blockTypes: BlockTypeOption[] = [
   {
     type: 'checklist',
     icon: CheckSquare,
-    label: { en: 'Checklist', fr: 'Cases à cocher' },
-    description: { en: 'List of items to check off', fr: 'Liste d\'éléments à cocher' },
+    label: { en: 'Action Checklist', fr: 'Liste d\'actions' },
+    description: { en: 'Tasks for the member to tick off (e.g. daily self-care, between-session homework)', fr: 'Tâches que le membre coche au fur et à mesure (ex : auto-soin quotidien, devoirs entre séances)' },
   },
   {
     type: 'scale',
