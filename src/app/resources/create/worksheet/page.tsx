@@ -64,6 +64,7 @@ import {
   PenLine,
   Scissors,
   Table2,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -133,6 +134,8 @@ interface WorksheetBlock {
   // For video - support URL embed
   videoUrl?: string
   videoType?: 'upload' | 'youtube' | 'vimeo'
+  // For link blocks
+  linkUrl?: string
   // For response blocks (video_response, audio_response, file_response)
   responseRequired?: boolean
   responseMaxDuration?: number // in seconds for video/audio
@@ -2652,6 +2655,28 @@ function CreateWorksheetContent() {
         {/* Divider */}
         {block.type === 'divider' && (
           <hr className="border-t border-gray-200 my-4" />
+        )}
+
+        {/* Link */}
+        {block.type === 'link' && block.linkUrl && (
+          <a
+            href={block.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-4 bg-gray-50 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-teal-50 text-teal-600 flex-shrink-0">
+                <LinkIcon className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                {block.content && (
+                  <p className="font-medium text-gray-900 truncate">{block.content}</p>
+                )}
+                <p className="text-xs text-gray-500 truncate">{block.linkUrl}</p>
+              </div>
+            </div>
+          </a>
         )}
 
         {/* Video Response */}
