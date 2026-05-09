@@ -35,7 +35,12 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-const PUBLIC_URL_PATTERN = /\/storage\/v1\/object\/public\/resource-media\/([^?#"\s]+)/g
+// Walk the entire JSON tree as a single string. Avoids any structural
+// assumption about where the URL lives (mediaFile.url, settings.cover, a
+// data-URI inside an HTML rich-text block, etc.) — if the substring is
+// anywhere in the stringified blob, we'll find it.
+const PUBLIC_URL_PATTERN = /https?:\/\/[^"'\s]+\/storage\/v1\/object\/public\/resource-media\/[^"'\s]+/g
+const PATH_EXTRACT_RE = /\/storage\/v1\/object\/public\/resource-media\/([^?#"\s]+)/
 
 interface UrlMatch {
   match: string
@@ -43,26 +48,20 @@ interface UrlMatch {
 }
 
 function findPublicUrls(input: unknown): UrlMatch[] {
+  const text = typeof input === 'string' ? input : JSON.stringify(input ?? null)
   const matches: UrlMatch[] = []
   const seen = new Set<string>()
-  const walk = (val: unknown) => {
-    if (typeof val === 'string') {
-      let m: RegExpExecArray | null
-      const re = new RegExp(PUBLIC_URL_PATTERN.source, 'g')
-      while ((m = re.exec(val)) !== null) {
-        if (seen.has(m[0])) continue
-        seen.add(m[0])
-        let path = m[1]
-        try { path = decodeURIComponent(path) } catch { /* keep raw */ }
-        matches.push({ match: m[0], path })
-      }
-    } else if (Array.isArray(val)) {
-      for (const v of val) walk(v)
-    } else if (val && typeof val === 'object') {
-      for (const v of Object.values(val as Record<string, unknown>)) walk(v)
-    }
+  let m: RegExpExecArray | null
+  PUBLIC_URL_PATTERN.lastIndex = 0
+  while ((m = PUBLIC_URL_PATTERN.exec(text)) !== null) {
+    if (seen.has(m[0])) continue
+    seen.add(m[0])
+    const pm = m[0].match(PATH_EXTRACT_RE)
+    if (!pm) continue
+    let path = pm[1]
+    try { path = decodeURIComponent(path) } catch { /* keep raw */ }
+    matches.push({ match: m[0], path })
   }
-  walk(input)
   return matches
 }
 
@@ -77,21 +76,17 @@ async function signOne(path: string): Promise<string | null> {
   return data.signedUrl
 }
 
+// Rewrite by stringify → string-replace → parse. Same robustness story as
+// the URL finder: doesn't matter where in the tree the URL is, as long as
+// it appears in the JSON text we'll swap it.
 function rewriteValueDeep(val: unknown, replacements: Map<string, string>): unknown {
-  if (typeof val === 'string') {
-    let out = val
-    for (const [pub, signed] of replacements) {
-      if (out.includes(pub)) out = out.split(pub).join(signed)
-    }
-    return out
+  if (replacements.size === 0) return val
+  let text = typeof val === 'string' ? val : JSON.stringify(val ?? null)
+  for (const [pub, signed] of replacements) {
+    if (text.includes(pub)) text = text.split(pub).join(signed)
   }
-  if (Array.isArray(val)) return val.map(v => rewriteValueDeep(v, replacements))
-  if (val && typeof val === 'object') {
-    const next: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(val as Record<string, unknown>)) next[k] = rewriteValueDeep(v, replacements)
-    return next
-  }
-  return val
+  if (typeof val === 'string') return text
+  try { return JSON.parse(text) } catch { return val }
 }
 
 let scanned = 0
@@ -119,7 +114,16 @@ async function main() {
     for (const row of data as Array<{ id: string; title: string; blocks: unknown }>) {
       scanned++
       const matches = findPublicUrls(row.blocks)
-      if (matches.length === 0) continue
+      if (matches.length === 0) {
+        // Diagnostic: show a tiny sample so we can confirm what arrived from
+        // the DB. If the URL is in the data but the regex misses, we'll see
+        // it here. If `blocks` is null/empty, the issue is upstream.
+        const text = typeof row.blocks === 'string' ? row.blocks : JSON.stringify(row.blocks ?? null)
+        const hasMagic = text.includes('resource-media')
+        const sample = text.length > 160 ? text.slice(0, 160) + '…' : text
+        console.log(`  resources#${row.id} (${row.title}) :: no matches | hasMagic=${hasMagic} | sample=${sample}`)
+        continue
+      }
 
       const replacements = new Map<string, string>()
       for (const m of matches) {
