@@ -41,6 +41,12 @@ import { toast } from 'sonner'
 import type { ResourceCategory } from '@/types/library'
 import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
+// Hide the visibility picker (Private / Public / Share-via-external-link)
+// in the publish flow until the Digital Library + public-link sharing
+// features ship. Underlying state + save logic stay in place; new
+// resources default to 'private'. Flip to true to expose it.
+const SHOW_VISIBILITY_PICKER = false
+
 interface TableColumn {
   id: string
   header: string
@@ -1634,8 +1640,9 @@ function CreateTableExerciseContent() {
                       </div>
                     </div>
 
-                    {/* Visibility - only show when publishing */}
-                    {saveAs === 'published' && (
+                    {/* Visibility — hidden until Public + external-link
+                        features ship. See SHOW_VISIBILITY_PICKER. */}
+                    {saveAs === 'published' && SHOW_VISIBILITY_PICKER && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}

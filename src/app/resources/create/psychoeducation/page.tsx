@@ -64,6 +64,13 @@ import type { ResourceCategory } from '@/types/library'
 import type { ResourceBlock, PsychoeducationSettings, Resource } from '@/types/resource'
 import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
+// Hide the visibility picker (Private / Public / Share-via-external-link)
+// in the publish flow until the Digital Library + public-link sharing
+// features ship. The underlying state and save logic are untouched —
+// new resources just default to 'private', the right behaviour for the
+// assign-to-members workflow we have today. Flip to true to expose it.
+const SHOW_VISIBILITY_PICKER = false
+
 interface SimpleMember {
   id: string
   first_name: string
@@ -3224,8 +3231,9 @@ function CreatePsychoeducationContent() {
                       </div>
                     </div>
 
-                    {/* Visibility - only show when publishing */}
-                    {saveAs === 'published' && (
+                    {/* Visibility — hidden until Public + external-link
+                        features ship. See SHOW_VISIBILITY_PICKER. */}
+                    {saveAs === 'published' && SHOW_VISIBILITY_PICKER && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}

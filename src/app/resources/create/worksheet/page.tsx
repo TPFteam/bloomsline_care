@@ -87,6 +87,15 @@ import type { ResourceCategory } from '@/types/library'
 import { toast } from 'sonner'
 import DescriptionEditor from '@/components/resources/DescriptionEditor'
 
+// Hide the visibility picker (Private / Public / Share-via-external-link)
+// in the publish flow until the Digital Library + public-link sharing
+// features ship. The underlying state, save logic, and shared-resource
+// rendering all stay wired — every new resource just defaults to
+// `visibility: 'private'` (set in the createResource call) which is the
+// correct behaviour for the assign-to-members workflow we have today.
+// Flip to true to expose the picker again.
+const SHOW_VISIBILITY_PICKER = false
+
 // Block types for worksheet
 // Content blocks: heading, paragraph, image, divider, quote, tip (practitioner adds content)
 // Response blocks: prompt, checklist, scale, multiple_choice, yes_no, mood, date, time, slider, video_response, audio_response, file_response (member responds)
@@ -6405,8 +6414,11 @@ function CreateWorksheetContent() {
                       </div>
                     </div>
 
-                    {/* Visibility - only show when publishing */}
-                    {saveAs === 'published' && (
+                    {/* Visibility - only show when publishing AND the
+                        SHOW_VISIBILITY_PICKER flag is on. Hidden today
+                        because Public + external-link sharing aren't
+                        live yet. */}
+                    {saveAs === 'published' && SHOW_VISIBILITY_PICKER && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
