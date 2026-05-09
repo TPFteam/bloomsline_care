@@ -72,12 +72,13 @@ async function uploadMomentMedia(
     return null
   }
 
-  // Get public URL
-  const { data: urlData } = supabase.storage
+  // Bucket is now private (post-20260509 migration). Issue a long-lived
+  // signed URL. Renderers that hit a 403 after expiry can re-sign via path.
+  const { data: signed } = await supabase.storage
     .from('moments_media')
-    .getPublicUrl(filePath)
+    .createSignedUrl(filePath, 60 * 60 * 24 * 365)
 
-  return urlData.publicUrl
+  return signed?.signedUrl || null
 }
 
 // ============================================

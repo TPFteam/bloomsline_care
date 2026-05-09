@@ -120,10 +120,12 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
 
       if (error) throw error
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Bucket is now private (post-20260509 migration). Issue a long-lived
+      // signed URL.
+      const { data: signed } = await supabase.storage
         .from('story-media')
-        .getPublicUrl(fileName)
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365)
+      const publicUrl = signed?.signedUrl || ''
 
       // Update block with file type info - add to items array
       const block = blocks.find(b => b.id === blockId)
