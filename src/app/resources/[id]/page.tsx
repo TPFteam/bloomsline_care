@@ -1403,6 +1403,67 @@ export default function ResourceDetailPage() {
                       )
                     }
 
+                    if (blockType === 'video') {
+                      const videoUrl = (block as any).mediaFile?.url
+                      const videoCaption = (block as any).content || (block as any).caption
+                      return (
+                        <div key={blockId}>
+                          {videoCaption && (
+                            <p className="text-gray-600 mb-2">{videoCaption}</p>
+                          )}
+                          {videoUrl ? (
+                            <div
+                              className="group relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
+                              onClick={() => setLightbox({ url: videoUrl, type: 'video' })}
+                            >
+                              <video
+                                src={videoUrl}
+                                className="w-full h-full object-cover"
+                                preload="metadata"
+                                muted
+                                playsInline
+                              />
+                              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                                  <span className="text-gray-900 text-lg ml-1">▶</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                              {locale === 'fr' ? 'Vidéo' : 'Video'}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+
+                    if (blockType === 'link') {
+                      const linkUrl = (block as any).linkUrl as string | undefined
+                      if (!linkUrl) return null
+                      return (
+                        <a
+                          key={blockId}
+                          href={linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-4 bg-gray-50 border border-gray-200 rounded-xl hover:border-gray-300 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-teal-50 text-teal-600 flex-shrink-0">
+                              <ExternalLink className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {blockContent && (
+                                <p className="font-medium text-gray-900 truncate">{blockContent}</p>
+                              )}
+                              <p className="text-xs text-gray-500 truncate">{linkUrl}</p>
+                            </div>
+                          </div>
+                        </a>
+                      )
+                    }
+
                     if (blockType === 'pdf_document') {
                       const pdfUrl = (block as any).mediaFile || (block as any).pdfUrl || (block as any).url || ''
                       const pdfFileName = (block as any).fileName || (block as any).pdfFileName || ''
