@@ -184,6 +184,8 @@ interface WorksheetBlock {
   matrixItems?: string[] // Items to rate (e.g., "Mother", "Father", "Sister")
   matrixScaleMax?: number // Maximum rating value (e.g., 5 or 10)
   matrixScaleLabels?: { min: string; max: string } // Labels for min/max (e.g., "Not at all", "Completely")
+  // For key_points (bullet list)
+  points?: string[]
 }
 
 interface BlockTypeOption {
@@ -230,6 +232,12 @@ const blockTypes: BlockTypeOption[] = [
     icon: Info,
     label: { en: 'Tip Box', fr: 'Encadré explicatif' },
     description: { en: 'Important tips or notes', fr: 'Conseils ou notes importantes' },
+  },
+  {
+    type: 'key_points',
+    icon: List,
+    label: { en: 'Bullet List', fr: 'Liste à puces' },
+    description: { en: 'A short bulleted list of key points', fr: 'Une courte liste de points clés' },
   },
   {
     type: 'video',
@@ -878,7 +886,7 @@ function CreateWorksheetContent() {
   const [resourceMode, setResourceMode] = useState<'reading' | 'interactive'>('interactive')
 
   // Reading-only block types (content that patients read, not fill)
-  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link'])
+  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link', 'key_points'])
   const isBlockAllowed = (blockType: string) => {
     if (resourceMode === 'interactive') return true
     return READING_BLOCKS.has(blockType)
@@ -1088,6 +1096,10 @@ function CreateWorksheetContent() {
               maxValue: block.maxValue,
               scoring: block.scoring,
               required: block.required,
+              // Bullet list (key_points)
+              points: Array.isArray(block.points)
+                ? block.points.map((p: any) => typeof p === 'string' ? p : (p as Record<string, string>)?.[locale] || '')
+                : undefined,
             }))
             setBlocks(loadedBlocks)
           }
@@ -1193,6 +1205,7 @@ function CreateWorksheetContent() {
       ...(type === 'file' && { mediaCaption: '' }),
       ...(type === 'quote' && { style: 'default' as const }),
       ...(type === 'tip' && { style: 'info' as const }),
+      ...(type === 'key_points' && { points: [''] }),
       // New response blocks
       ...(type === 'multiple_choice' && {
         choices: ['', ''],
@@ -1743,6 +1756,10 @@ function CreateWorksheetContent() {
           return { ...baseBlock, items: (block as any).items, correctOrder: (block as any).correctOrder, required: block.required } as ResourceBlock
         }
 
+        if (block.type === 'key_points') {
+          return { ...baseBlock, type: 'key_points' as const, points: block.points ?? [] } as ResourceBlock
+        }
+
         // Default: heading, paragraph, quote, tip, divider
         return baseBlock as ResourceBlock
       })
@@ -1932,6 +1949,9 @@ function CreateWorksheetContent() {
         if (block.type === 'link') {
           return { ...baseBlock, type: 'link' as const, linkUrl: (block as any).linkUrl } as ResourceBlock
         }
+        if (block.type === 'key_points') {
+          return { ...baseBlock, type: 'key_points' as const, points: block.points ?? [] } as ResourceBlock
+        }
         return baseBlock as ResourceBlock
       })
 
@@ -2118,6 +2138,15 @@ function CreateWorksheetContent() {
         {/* Paragraph/Instructions */}
         {block.type === 'paragraph' && (
           <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{block.content}</p>
+        )}
+
+        {/* Bullet List */}
+        {block.type === 'key_points' && (
+          <ul className="list-disc pl-5 space-y-1 text-gray-700">
+            {(block.points ?? []).filter(p => p.trim() !== '').map((pt, i) => (
+              <li key={i} className="leading-relaxed">{pt}</li>
+            ))}
+          </ul>
         )}
 
         {/* Long Text */}
@@ -3000,6 +3029,69 @@ function CreateWorksheetContent() {
                       rows={2}
                       className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                     />
+                  </div>
+                )}
+
+                {/* Bullet List (key_points) */}
+                {block.type === 'key_points' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {locale === 'fr' ? 'Liste à puces' : 'Bullet list'}
+                    </label>
+                    <div className="space-y-1.5">
+                      {(block.points ?? ['']).map((pt, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+                          <input
+                            type="text"
+                            value={pt}
+                            onChange={(e) => {
+                              const next = [...(block.points ?? [])]
+                              next[i] = e.target.value
+                              updateBlock(block.id, { points: next })
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                const next = [...(block.points ?? [])]
+                                next.splice(i + 1, 0, '')
+                                updateBlock(block.id, { points: next })
+                              }
+                              if (e.key === 'Backspace' && pt === '' && (block.points?.length ?? 0) > 1) {
+                                e.preventDefault()
+                                const next = [...(block.points ?? [])]
+                                next.splice(i, 1)
+                                updateBlock(block.id, { points: next })
+                              }
+                            }}
+                            placeholder={locale === 'fr' ? `Point ${i + 1}` : `Point ${i + 1}`}
+                            className="flex-1 px-3 py-1.5 bg-gray-50/80 border border-gray-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent text-sm"
+                          />
+                          {(block.points?.length ?? 0) > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...(block.points ?? [])]
+                                next.splice(i, 1)
+                                updateBlock(block.id, { points: next })
+                              }}
+                              className="p-1 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              aria-label={locale === 'fr' ? 'Supprimer ce point' : 'Remove this point'}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateBlock(block.id, { points: [...(block.points ?? []), ''] })}
+                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {locale === 'fr' ? 'Ajouter un point' : 'Add a point'}
+                    </button>
                   </div>
                 )}
 
@@ -5449,7 +5541,7 @@ function CreateWorksheetContent() {
                                     {locale === 'fr' ? 'Contenu' : 'Content'}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'image', 'tip', 'video', 'link'].includes(bt.type)).map((bt) => {
+                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'key_points', 'image', 'tip', 'video', 'link'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button
