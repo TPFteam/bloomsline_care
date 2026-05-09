@@ -1894,6 +1894,16 @@ function CreateWorksheetContent() {
         if (block.type === 'ordering') {
           return { ...baseBlock, items: (block as any).items, correctOrder: (block as any).correctOrder, required: block.required } as ResourceBlock
         }
+        // Mirrors the corresponding case in handleSave. Missing entries
+        // here cause autosave to silently strip type-specific fields off
+        // the block (e.g. table_exercise without these two lines drops
+        // its columns + exampleRow on the next idle save).
+        if (block.type === 'table_exercise') {
+          return { ...baseBlock, type: 'table_exercise' as const, columns: (block as any).columns, exampleRow: (block as any).exampleRow } as ResourceBlock
+        }
+        if (block.type === 'link') {
+          return { ...baseBlock, type: 'link' as const, linkUrl: (block as any).linkUrl } as ResourceBlock
+        }
         return baseBlock as ResourceBlock
       })
 
