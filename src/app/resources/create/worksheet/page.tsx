@@ -6382,9 +6382,6 @@ function CreateWorksheetContent() {
                               {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Visible uniquement par vous' : 'Only you can see it'}
-                          </p>
                         </motion.button>
 
                         <motion.button
@@ -6407,11 +6404,29 @@ function CreateWorksheetContent() {
                               {locale === 'fr' ? 'Prêt à être partagé' : 'Ready to share'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Vous pouvez l\'attribuer à vos patients' : 'You can assign it to members'}
-                          </p>
                         </motion.button>
                       </div>
+
+                      {/* Reassurance once "Ready to share" is picked.
+                          Replaces the visibility picker (hidden under
+                          SHOW_VISIBILITY_PICKER) so the practitioner
+                          still gets a clear answer to "wait, who sees
+                          this when I publish?" */}
+                      {saveAs === 'published' && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-3 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100"
+                        >
+                          <Info className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-emerald-800 leading-relaxed">
+                            {locale === 'fr'
+                              ? 'Une fois publiée, cette ressource ne sera visible que par les patients avec qui vous la partagerez.'
+                              : 'Once published, this resource will only be visible to the members you share it with.'}
+                          </p>
+                        </motion.div>
+                      )}
                     </div>
 
                     {/* Visibility - only show when publishing AND the
@@ -6594,7 +6609,7 @@ function CreateWorksheetContent() {
                           <>
                             <Save className="w-4 h-4 mr-2" />
                             {saveAs === 'published'
-                              ? (locale === 'fr' ? 'Publier l\'exercice' : 'Publish Worksheet')
+                              ? (locale === 'fr' ? 'Créer l\'exercice' : 'Create the exercise')
                               : (locale === 'fr' ? 'Enregistrer le brouillon' : 'Save Draft')
                             }
                           </>
