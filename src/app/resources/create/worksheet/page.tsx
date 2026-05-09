@@ -6370,11 +6370,11 @@ function CreateWorksheetContent() {
                               <FileText className={`w-4 h-4 ${saveAs === 'draft' ? 'text-amber-700' : 'text-gray-500'}`} />
                             </div>
                             <span className={`font-medium ${saveAs === 'draft' ? 'text-amber-900' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Brouillon' : 'Draft'}
+                              {locale === 'fr' ? 'À modifier plus tard' : 'Edit later'}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Enregistrer et modifier plus tard' : 'Save to edit later'}
+                            {locale === 'fr' ? 'Visible uniquement par vous' : 'Only you can see it'}
                           </p>
                         </motion.button>
 
@@ -6395,11 +6395,11 @@ function CreateWorksheetContent() {
                               <CheckCircle2 className={`w-4 h-4 ${saveAs === 'published' ? 'text-emerald-700' : 'text-gray-500'}`} />
                             </div>
                             <span className={`font-medium ${saveAs === 'published' ? 'text-emerald-900' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Publier' : 'Publish'}
+                              {locale === 'fr' ? 'Prêt à être partagé' : 'Ready to share'}
                             </span>
                           </div>
                           <p className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Prêt à être attribué aux patients' : 'Ready to assign to members'}
+                            {locale === 'fr' ? 'Vous pouvez l\'attribuer à vos patients' : 'You can assign it to members'}
                           </p>
                         </motion.button>
                       </div>
