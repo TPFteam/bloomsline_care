@@ -26,6 +26,8 @@ import {
   Clock,
   Bell,
   Download,
+  MoreVertical,
+  Link2Off,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { MemberFeedbackIcon, feedbackLabel } from '@/components/resources/MemberFeedbackIcon'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -138,7 +142,7 @@ const resourceTypeConfig: Record<string, { bg: string; text: string; iconBg: str
   worksheet: { bg: 'bg-blue-50', text: 'text-blue-700', iconBg: 'bg-blue-100' },
   assessment: { bg: 'bg-purple-50', text: 'text-purple-700', iconBg: 'bg-purple-100' },
   exercise: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
-  psychoeducation: { bg: 'bg-amber-50', text: 'text-amber-700', iconBg: 'bg-amber-100' },
+  psychoeducation: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
   table: { bg: 'bg-emerald-50', text: 'text-emerald-700', iconBg: 'bg-emerald-100' },
 }
 
@@ -526,11 +530,16 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
     }
   }
 
-  // Two distinct actions:
-  //   - Library/worksheet resources: delete only the patient's *response* (share stays active)
-  //   - Story shares: unshare the story (no responses on stories)
+  // Three distinct actions:
+  //   - `response` — delete only the patient's response. Share stays
+  //     active so they can re-submit.
+  //   - `unshare`  — remove the share AND cascade the response. Patient
+  //     loses access entirely. Matches the "Remove resource" path on
+  //     the resource detail page.
+  //   - `story`    — unshare a story (stories don't have responses).
   type DeleteAction =
     | { kind: 'response'; shareRowId: string; memberId: string; resourceId: string; practitionerId: string; title?: string }
+    | { kind: 'unshare'; shareRowId: string; memberId: string; resourceId: string; practitionerId: string; title?: string }
     | { kind: 'story'; shareRowId: string; title?: string }
   const [deleteAction, setDeleteAction] = useState<DeleteAction | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -587,6 +596,49 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
         if (expandedResponseId === deleteAction.shareRowId) setExpandedResponseId(null)
 
         toast.success(locale === 'fr' ? 'Réponse supprimée' : 'Response deleted')
+      } else if (deleteAction.kind === 'unshare') {
+        // Hard unshare — cascade the response, drop the share row,
+        // and clear bell notifications that pointed at the response.
+        const { data: priorResponses } = await supabase
+          .from('resource_responses')
+          .select('id')
+          .eq('member_id', deleteAction.memberId)
+          .eq('resource_id', deleteAction.resourceId)
+          .eq('practitioner_id', deleteAction.practitionerId)
+        const priorResponseIds = (priorResponses || []).map(r => r.id as string)
+
+        await supabase
+          .from('resource_responses')
+          .delete()
+          .eq('member_id', deleteAction.memberId)
+          .eq('resource_id', deleteAction.resourceId)
+          .eq('practitioner_id', deleteAction.practitionerId)
+
+        const { error: shareErr } = await supabase
+          .from('member_shared_resources')
+          .delete()
+          .eq('id', deleteAction.shareRowId)
+        if (shareErr) throw shareErr
+
+        if (priorResponseIds.length > 0) {
+          try {
+            await supabase
+              .from('notifications')
+              .delete()
+              .eq('entity_type', 'resource_response')
+              .in('entity_id', priorResponseIds)
+          } catch (err) {
+            console.warn('Notification cleanup after unshare failed:', err)
+          }
+        }
+
+        setSubmissions(prev => prev.filter(s =>
+          !(s.member_id === deleteAction.memberId && s.resource_id === deleteAction.resourceId)
+        ))
+        setSharedLibraryResources(prev => prev.filter(r => r.id !== deleteAction.shareRowId))
+        if (expandedResponseId === deleteAction.shareRowId) setExpandedResponseId(null)
+
+        toast.success(locale === 'fr' ? 'Support retiré' : 'Resource removed')
       } else {
         // Story share — just remove the share row
         const { error } = await supabase
@@ -977,56 +1029,114 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                               <ExternalLink className="w-4 h-4" />
                             </Button>
                           </Link>
-                          {/* Download + Delete — only when a response exists.
-                              Download is gated to submitted/reviewed responses only — drafts are private to the patient. */}
-                          {submissions.some(s => s.resource_id === resource.resource_id) && (() => {
+                          {(() => {
                             const sub = submissions.find(s => s.resource_id === resource.resource_id)
+                            const hasResponse = !!sub
                             const isSubmitted = !!sub && (sub.status === 'submitted' || sub.status === 'reviewed')
+                            const memberFeedback = (sub as any)?.member_feedback as 'positive' | 'neutral' | 'negative' | null | undefined
                             return (
-                            <>
-                              <span className="relative inline-flex group">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (!isSubmitted) {
-                                      toast.message(locale === 'fr'
-                                        ? 'L\'exercice est encore en cours — le patient ne l\'a pas encore soumis.'
-                                        : 'The exercise is still in progress — the patient hasn\'t submitted it yet.')
-                                      return
-                                    }
-                                    handleDownloadResponse(resource.member_id, resource.resource_id, resource.practitioner_id, resource.id)
-                                  }}
-                                  disabled={downloadingId === resource.id || !isSubmitted}
-                                  className="text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0 disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
-                                >
-                                  {downloadingId === resource.id
-                                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                                    : <Download className="w-4 h-4" />}
-                                </Button>
-                                {!isSubmitted && (
-                                  <span className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg z-50">
-                                    {locale === 'fr' ? 'Le patient n\'a pas encore soumis sa réponse' : 'The patient has not submitted the response yet'}
-                                    <span className="absolute top-full right-3.5 border-4 border-transparent border-t-gray-900" />
+                              <>
+                                {/* Patient feedback emoji — surfaces the
+                                    mood the patient picked when submitting. */}
+                                {memberFeedback && (
+                                  <MemberFeedbackIcon
+                                    feedback={memberFeedback}
+                                    pill
+                                    title={feedbackLabel(memberFeedback, locale)}
+                                  />
+                                )}
+
+                                {/* Download — only when a submitted response exists. */}
+                                {hasResponse && (
+                                  <span className="relative inline-flex group">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (!isSubmitted) {
+                                          toast.message(locale === 'fr'
+                                            ? 'L\'exercice est encore en cours — le patient ne l\'a pas encore soumis.'
+                                            : 'The exercise is still in progress — the patient hasn\'t submitted it yet.')
+                                          return
+                                        }
+                                        handleDownloadResponse(resource.member_id, resource.resource_id, resource.practitioner_id, resource.id)
+                                      }}
+                                      disabled={downloadingId === resource.id || !isSubmitted}
+                                      className="text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors h-9 w-9 p-0 disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
+                                    >
+                                      {downloadingId === resource.id
+                                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                                        : <Download className="w-4 h-4" />}
+                                    </Button>
+                                    {!isSubmitted && (
+                                      <span className="absolute bottom-full right-0 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-lg z-50">
+                                        {locale === 'fr' ? 'Le patient n\'a pas encore soumis sa réponse' : 'The patient has not submitted the response yet'}
+                                        <span className="absolute top-full right-3.5 border-4 border-transparent border-t-gray-900" />
+                                      </span>
+                                    )}
                                   </span>
                                 )}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUnshareLibraryResource(resource.id, {
-                                  title: resource.resource.title,
-                                  hasResponse: true,
-                                  memberId: resource.member_id,
-                                  resourceId: resource.resource_id,
-                                  practitionerId: resource.practitioner_id,
-                                })}
-                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors h-9 w-9 p-0"
-                                title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
+
+                                {/* Overflow menu — always available so the
+                                    practitioner can remove a share even before
+                                    the patient submits. Mirrors the resource
+                                    detail page menu: Delete response (amber,
+                                    only with response) + Remove resource (red,
+                                    only when not yet submitted/reviewed). */}
+                                {(() => {
+                                  const canRemoveResource = !isSubmitted
+                                  if (!hasResponse && !canRemoveResource) return null
+                                  return (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors h-9 w-9 p-0"
+                                          aria-label={locale === 'fr' ? 'Plus d\'options' : 'More options'}
+                                        >
+                                          <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="w-56">
+                                        {hasResponse && (
+                                          <DropdownMenuItem
+                                            onClick={() => setDeleteAction({
+                                              kind: 'response',
+                                              shareRowId: resource.id,
+                                              memberId: resource.member_id,
+                                              resourceId: resource.resource_id,
+                                              practitionerId: resource.practitioner_id,
+                                              title: resource.resource.title,
+                                            })}
+                                            className="text-amber-700 focus:text-amber-800 focus:bg-amber-50"
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2 text-amber-600" />
+                                            {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                          </DropdownMenuItem>
+                                        )}
+                                        {hasResponse && canRemoveResource && <DropdownMenuSeparator />}
+                                        {canRemoveResource && (
+                                          <DropdownMenuItem
+                                            onClick={() => setDeleteAction({
+                                              kind: 'unshare',
+                                              shareRowId: resource.id,
+                                              memberId: resource.member_id,
+                                              resourceId: resource.resource_id,
+                                              practitionerId: resource.practitioner_id,
+                                              title: resource.resource.title,
+                                            })}
+                                            className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                          >
+                                            <Link2Off className="w-4 h-4 mr-2" />
+                                            {locale === 'fr' ? 'Retirer le support' : 'Remove resource'}
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  )
+                                })()}
+                              </>
                             )
                           })()}
                         </div>
@@ -1656,7 +1766,9 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
             <AlertDialogTitle>
               {deleteAction?.kind === 'response'
                 ? (locale === 'fr' ? 'Supprimer la réponse ?' : 'Delete this response?')
-                : (locale === 'fr' ? 'Retirer le partage ?' : 'Remove this share?')}
+                : deleteAction?.kind === 'unshare'
+                  ? (locale === 'fr' ? 'Retirer ce support ?' : 'Remove this resource?')
+                  : (locale === 'fr' ? 'Retirer le partage ?' : 'Remove this share?')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
@@ -1665,6 +1777,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   return locale === 'fr'
                     ? `Cela supprimera définitivement la réponse de ce patient à ${titleStr}. Le partage reste actif — ils pourront soumettre une nouvelle réponse. Cette action est irréversible.`
                     : `This will permanently delete this patient's response to ${titleStr}. The share stays active — they can submit a new response. This cannot be undone.`
+                }
+                if (deleteAction?.kind === 'unshare') {
+                  return locale === 'fr'
+                    ? `Ce patient n'aura plus accès à ${titleStr}. Toute réponse existante sera également supprimée. Cette action est irréversible.`
+                    : `This patient will lose access to ${titleStr}. Any existing response will also be deleted. This cannot be undone.`
                 }
                 return locale === 'fr'
                   ? `Cela retirera ${titleStr} de ce patient.`
@@ -1685,7 +1802,9 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
                 : deleteAction?.kind === 'response'
                   ? (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')
-                  : (locale === 'fr' ? 'Supprimer' : 'Delete')}
+                  : deleteAction?.kind === 'unshare'
+                    ? (locale === 'fr' ? 'Retirer le support' : 'Remove resource')
+                    : (locale === 'fr' ? 'Supprimer' : 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -60,9 +60,12 @@ const resourceTypeStyles: Record<string, {
     labelColor: 'text-emerald-600',
   },
   psychoeducation: {
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-    labelColor: 'text-purple-600',
+    // Picked up the emerald palette from the now-retired `table` type
+    // so the card retains the warm green clinicians had associated
+    // with it. Worksheets get the distinct emerald-700 row instead.
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600',
+    labelColor: 'text-emerald-600',
   },
   table: {
     iconBg: 'bg-emerald-100',

@@ -913,10 +913,18 @@ function CreateWorksheetContent() {
     return READING_BLOCKS.has(blockType)
   }
 
-  // Auto-detect resource type from blocks
+  // Auto-detect resource type from blocks.
+  //
+  // We classify into just TWO storage-level types:
+  //   * 'psychoeducation' — purely reading content (no questions or
+  //     tables, no patient input expected).
+  //   * 'worksheet'       — anything interactive, including
+  //     table_exercise blocks. The UI labels worksheets as
+  //     "Exercice" / "Exercise" — we no longer surface 'table' as
+  //     its own type, since a table-with-prompts is a worksheet in
+  //     spirit and clinicians don't care about the sub-type.
   const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise'])
   const detectedResourceType = (() => {
-    if (blocks.some(b => b.type === 'table_exercise')) return 'table'
     if (blocks.some(b => INTERACTIVE_TYPES.has(b.type))) return 'worksheet'
     return 'psychoeducation'
   })()

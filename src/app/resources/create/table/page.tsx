@@ -526,7 +526,10 @@ function CreateTableExerciseContent() {
           .insert({
             ...resourceData,
             practitioner_id: user.id,
-            type: 'table',
+            // Storage-level type was unified to 'worksheet' — tables
+            // are worksheets in spirit (they collect patient input)
+            // and we no longer surface a separate 'table' resource type.
+            type: 'worksheet',
           })
 
         if (error) throw error
@@ -605,7 +608,10 @@ function CreateTableExerciseContent() {
           .insert({
             ...resourceData,
             practitioner_id: user.id,
-            type: 'table',
+            // Storage-level type was unified to 'worksheet' — tables
+            // are worksheets in spirit (they collect patient input)
+            // and we no longer surface a separate 'table' resource type.
+            type: 'worksheet',
           })
           .select('id')
           .single()

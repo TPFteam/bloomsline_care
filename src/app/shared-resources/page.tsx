@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   Trash2,
   Download,
+  Link2Off,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
@@ -295,6 +296,11 @@ export default function SharedResourcesPage() {
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const [confirmRemind, setConfirmRemind] = useState<SharedRecord | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<SharedRecord | null>(null)
+  // "Remove resource" — wipes the share AND cascades the response, so
+  // the patient loses access entirely. Distinct from deleteConfirm
+  // (which only wipes the response and keeps the share active).
+  const [unshareConfirm, setUnshareConfirm] = useState<SharedRecord | null>(null)
+  const [unsharing, setUnsharing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
@@ -353,6 +359,66 @@ export default function SharedResourcesPage() {
       toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  // Hard unshare — removes the patient's access to the resource and
+  // any response they may have submitted. Mirrors the same cascade we
+  // do on the resource detail page so all three surfaces behave
+  // identically. Cleans up bell notifications that referenced the
+  // soon-to-be-deleted response.
+  const handleUnshareResource = async () => {
+    if (!unshareConfirm) return
+    setUnsharing(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not signed in')
+
+      // Capture response ids first for the notification cleanup pass.
+      const { data: priorResponses } = await supabase
+        .from('resource_responses')
+        .select('id')
+        .eq('member_id', unshareConfirm.member_id)
+        .eq('resource_id', unshareConfirm.resource_id)
+        .eq('practitioner_id', user.id)
+      const priorResponseIds = (priorResponses || []).map(r => r.id as string)
+
+      // 1. Cascade the responses (a hidden resource shouldn't carry orphan answers).
+      await supabase
+        .from('resource_responses')
+        .delete()
+        .eq('member_id', unshareConfirm.member_id)
+        .eq('resource_id', unshareConfirm.resource_id)
+        .eq('practitioner_id', user.id)
+
+      // 2. Drop the share assignment itself.
+      const { error: shareErr } = await supabase
+        .from('member_shared_resources')
+        .delete()
+        .eq('id', unshareConfirm.id)
+      if (shareErr) throw shareErr
+
+      // 3. Clear bell notifications referencing the gone response.
+      if (priorResponseIds.length > 0) {
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('entity_type', 'resource_response')
+            .in('entity_id', priorResponseIds)
+        } catch (err) {
+          console.warn('Notification cleanup after unshare failed:', err)
+        }
+      }
+
+      setRecords(prev => prev.filter(r => r.id !== unshareConfirm.id))
+      toast.success(locale === 'fr' ? 'Support retiré' : 'Resource removed')
+      setUnshareConfirm(null)
+    } catch (err) {
+      console.error('Error unsharing resource:', err)
+      toast.error(locale === 'fr' ? 'Échec du retrait' : 'Failed to remove')
+    } finally {
+      setUnsharing(false)
     }
   }
 
@@ -664,10 +730,27 @@ export default function SharedResourcesPage() {
                                           </button>
                                           <button
                                             onClick={() => { setExpandedResource(null); setDeleteConfirm(record) }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-700 hover:bg-amber-50"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5 text-amber-600" />
+                                            {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                          </button>
+                                        </>
+                                      )}
+                                      {/* Remove resource — wipes the share + cascades the
+                                          response. Hidden once a submission is submitted/
+                                          reviewed so completed patient data can't be
+                                          accidentally wiped via cascade. The practitioner
+                                          would have to explicitly Delete response first. */}
+                                      {(record.response_status !== 'submitted' && record.response_status !== 'reviewed') && (
+                                        <>
+                                          <div className="border-t border-gray-100 my-1" />
+                                          <button
+                                            onClick={() => { setExpandedResource(null); setUnshareConfirm(record) }}
                                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                                           >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                            {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                            <Link2Off className="w-3.5 h-3.5" />
+                                            {locale === 'fr' ? 'Retirer le support' : 'Remove resource'}
                                           </button>
                                         </>
                                       )}
@@ -1103,6 +1186,45 @@ export default function SharedResourcesPage() {
               {deleting
                 ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
                 : (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unshare confirmation — destructive: removes the share and
+          cascades any response, so the patient loses access entirely. */}
+      <AlertDialog
+        open={!!unshareConfirm}
+        onOpenChange={(open) => { if (!open) setUnshareConfirm(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr' ? 'Retirer ce support ?' : 'Remove this resource?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const memberName = unshareConfirm
+                  ? `${unshareConfirm.member_first_name} ${unshareConfirm.member_last_name}`.trim()
+                  : ''
+                return locale === 'fr'
+                  ? `${memberName} n'aura plus accès à "${unshareConfirm?.resource_title}". Toute réponse existante sera également supprimée. Cette action est irréversible.`
+                  : `${memberName} will lose access to "${unshareConfirm?.resource_title}". Any existing response will also be deleted. This cannot be undone.`
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unsharing}>
+              {locale === 'fr' ? 'Annuler' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleUnshareResource() }}
+              disabled={unsharing}
+              className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+            >
+              {unsharing
+                ? (locale === 'fr' ? 'Retrait...' : 'Removing...')
+                : (locale === 'fr' ? 'Retirer le support' : 'Remove resource')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -60,7 +60,7 @@ const resourceTypeStyles: Record<string, { bg: string; color: string }> = {
   worksheet: { bg: 'bg-blue-50', color: 'text-blue-600' },
   assessment: { bg: 'bg-violet-50', color: 'text-violet-600' },
   exercise: { bg: 'bg-emerald-50', color: 'text-emerald-600' },
-  psychoeducation: { bg: 'bg-purple-50', color: 'text-purple-600' },
+  psychoeducation: { bg: 'bg-emerald-50', color: 'text-emerald-600' },
   table: { bg: 'bg-emerald-50', color: 'text-emerald-600' },
 }
 

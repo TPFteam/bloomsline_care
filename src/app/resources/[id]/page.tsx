@@ -51,6 +51,7 @@ import {
   Heart,
   MoreVertical,
   Link2Off,
+  Bell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
@@ -73,6 +74,7 @@ import { useLanguage, lt } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { getResourceById, deleteResource, getResourceSubmissions, updateSubmission, type ResourceSubmission } from '@/lib/services/resources'
 import { MemberFeedbackIcon, feedbackLabel } from '@/components/resources/MemberFeedbackIcon'
+import { notifyResourceShared, sendResourceSharedEmail } from '@/lib/notifications'
 import { removeResourceFromAllCollections, isResourceSaved } from '@/lib/services/collections'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -349,6 +351,9 @@ export default function ResourceDetailPage() {
   // The patient loses access to the resource entirely.
   const [unshareConfirm, setUnshareConfirm] = useState<{ memberId: string; memberName: string } | null>(null)
   const [unsharing, setUnsharing] = useState(false)
+  // Track which member's share row is currently sending a reminder so
+  // we can show a spinner on its Bell icon and disable double-clicks.
+  const [sendingReminderTo, setSendingReminderTo] = useState<string | null>(null)
   const [downloadingMemberId, setDownloadingMemberId] = useState<string | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
@@ -575,6 +580,86 @@ export default function ResourceDetailPage() {
    * any related notifications so deep-links to the deleted submission
    * don't 404.
    */
+  /**
+   * Re-send the "{practitioner} shared a resource with you" email +
+   * in-app notification for a member who hasn't yet responded to this
+   * resource. Mirrors handleRemind on /shared-resources so behaviour is
+   * identical across all three surfaces.
+   */
+  const handleSendReminder = async (
+    memberId: string,
+    memberName: string,
+    shareRowId: string,
+  ) => {
+    if (!resource) return
+    setSendingReminderTo(memberId)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('Not authenticated')
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('full_name')
+        .eq('id', authUser.id)
+        .single()
+      const practName = profile?.full_name || ''
+
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('user_id, email')
+        .eq('id', memberId)
+        .single()
+
+      const resourceTitle = typeof resource.title === 'string'
+        ? resource.title
+        : (resource.title as Record<string, string>)?.[locale] || 'Resource'
+
+      if (memberData?.user_id) {
+        await notifyResourceShared(supabase, {
+          memberId,
+          memberUserId: memberData.user_id,
+          resourceId: resource.id,
+          resourceTitle,
+          resourceType: resource.type,
+          practitionerName: practName,
+          memberEmail: memberData.email || undefined,
+        })
+      } else if (memberData?.email) {
+        await sendResourceSharedEmail({
+          memberEmail: memberData.email,
+          resourceTitle,
+          resourceType: resource.type,
+          practitionerName: practName,
+          resourceId: resource.id,
+        })
+      }
+
+      // Persist + optimistic local update so the Bell hides / "Reminded"
+      // marker shows immediately without a refetch.
+      const now = new Date().toISOString()
+      await supabase
+        .from('member_shared_resources')
+        .update({ last_reminder_at: now })
+        .eq('id', shareRowId)
+      setSharedMembers(prev => prev.map(s =>
+        s.member_id === memberId ? { ...(s as any), last_reminder_at: now } as any : s
+      ))
+
+      toast.success(
+        locale === 'fr'
+          ? `Rappel envoyé à ${memberName}`
+          : locale === 'es'
+            ? `Recordatorio enviado a ${memberName}`
+            : `Reminder sent to ${memberName}`
+      )
+    } catch (err) {
+      console.error('Send reminder failed:', err)
+      toast.error(locale === 'fr' ? 'Échec de l\'envoi' : 'Failed to send')
+    } finally {
+      setSendingReminderTo(null)
+    }
+  }
+
   const confirmUnshareResource = async () => {
     if (!unshareConfirm || !resource) return
     setUnsharing(true)
@@ -642,10 +727,12 @@ export default function ResourceDetailPage() {
           const { data } = await supabase
             .from('member_shared_resources')
             .select(`
+              id,
               member_id,
               shared_at,
               viewed_at,
               completed_at,
+              last_reminder_at,
               member:members(id, first_name, last_name, avatar_url)
             `)
             .eq('resource_id', resourceId)
@@ -3127,6 +3214,45 @@ export default function ResourceDetailPage() {
                                   {submissionCount}
                                 </span>
                               )}
+
+                              {/* Send-reminder Bell — only when the patient
+                                  hasn't responded yet AND the last reminder
+                                  is null or >24h old. Throttle matches
+                                  /shared-resources so practitioners can't
+                                  spam the patient by bouncing between pages. */}
+                              {!isPsychoeducation && !submission && (() => {
+                                const lastReminder = (shared as any).last_reminder_at
+                                  ? new Date((shared as any).last_reminder_at)
+                                  : null
+                                const canRemind = !lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24
+                                if (canRemind) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSendReminder(
+                                        shared.member_id,
+                                        `${shared.member?.first_name || ''} ${shared.member?.last_name || ''}`.trim() || (locale === 'fr' ? 'ce patient' : 'this patient'),
+                                        (shared as any).id || '',
+                                      )}
+                                      disabled={sendingReminderTo === shared.member_id}
+                                      className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                                      title={locale === 'fr' ? 'Rappeler' : 'Send reminder'}
+                                    >
+                                      {sendingReminderTo === shared.member_id
+                                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                                        : <Bell className="w-4 h-4" />}
+                                    </button>
+                                  )
+                                }
+                                return (
+                                  <span
+                                    className="text-[10px] text-emerald-600"
+                                    title={lastReminder!.toLocaleString()}
+                                  >
+                                    {locale === 'fr' ? 'Rappelé' : 'Reminded'}
+                                  </span>
+                                )
+                              })()}
 
                               {/* View button for submissions — gated on submitted/reviewed status.
                                   Drafts are kept private to the patient until they explicitly submit. */}
