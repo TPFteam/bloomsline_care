@@ -71,6 +71,10 @@ export default function AdminPractitionersPage() {
   const [clearing, setClearing] = useState(false)
   const [selectedResources, setSelectedResources] = useState<Set<string>>(new Set())
   const [showTransferModal, setShowTransferModal] = useState(false)
+  // Language the "X resources transferred" recipient email is sent in.
+  // Defaults to French because most Bloomsline practitioners are FR;
+  // admin can override per transfer at the confirm step.
+  const [emailLanguage, setEmailLanguage] = useState<'fr' | 'en' | 'es'>('fr')
   const [practitionerAccounts, setPractitionerAccounts] = useState<PractitionerAccount[]>([])
   const [transferSearch, setTransferSearch] = useState('')
   const [transferring, setTransferring] = useState(false)
@@ -260,6 +264,7 @@ export default function AdminPractitionersPage() {
         body: JSON.stringify({
           resource_ids: Array.from(selectedResources),
           new_practitioner_id: newPractitionerId,
+          email_locale: emailLanguage,
         }),
       })
 
@@ -964,6 +969,37 @@ export default function AdminPractitionersPage() {
                     ? `Transférer ${selectedResources.size} ressource(s) à ${confirmTarget.full_name} ?`
                     : `Transfer ${selectedResources.size} resource(s) to ${confirmTarget.full_name}?`}
                 </p>
+
+                {/* Email language picker — controls only the recipient
+                    "X resources added to your account" email, not the
+                    DB transfer itself. Defaults to French. */}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] uppercase tracking-wide font-medium text-gray-400">
+                    {locale === 'fr' ? "Langue de l'e-mail" : 'Email language'}
+                  </span>
+                  <div className="flex items-center bg-white rounded-lg p-0.5 border border-gray-200">
+                    {([
+                      { value: 'fr' as const, label: 'FR' },
+                      { value: 'en' as const, label: 'EN' },
+                      { value: 'es' as const, label: 'ES' },
+                    ]).map(({ value, label }) => {
+                      const active = emailLanguage === value
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setEmailLanguage(value)}
+                          className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold transition-all ${
+                            active ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-800'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => setConfirmTarget(null)}

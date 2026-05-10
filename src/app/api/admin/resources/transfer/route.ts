@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { resource_ids, new_practitioner_id } = await request.json()
+    const { resource_ids, new_practitioner_id, email_locale } = await request.json()
 
     if (!resource_ids || !Array.isArray(resource_ids) || resource_ids.length === 0) {
       return NextResponse.json({ error: 'resource_ids is required (array)' }, { status: 400 })
@@ -50,20 +50,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Target practitioner not found' }, { status: 404 })
     }
 
-    // Try to pull locale opportunistically. If the column doesn't exist
-    // (or the row has none) we just default to 'en' for the email below.
-    let recipientLocale: 'en' | 'fr' | 'es' = 'en'
-    try {
-      const { data: localeRow } = await adminClient
-        .from('users')
-        .select('locale')
-        .eq('id', new_practitioner_id)
-        .maybeSingle()
-      const raw = (localeRow as any)?.locale as string | undefined
-      if (raw === 'fr' || raw === 'es') recipientLocale = raw
-    } catch {
-      // Column likely doesn't exist on this deployment — silently fall
-      // back to English. Not worth surfacing to the admin user.
+    // Email language resolution priority:
+    //   1. `email_locale` from the request body (admin's per-transfer choice)
+    //   2. `users.locale` on the recipient row (if column exists)
+    //   3. 'fr' fallback — most Bloomsline practitioners are French
+    let recipientLocale: 'en' | 'fr' | 'es' = 'fr'
+    if (email_locale === 'fr' || email_locale === 'en' || email_locale === 'es') {
+      recipientLocale = email_locale
+    } else {
+      try {
+        const { data: localeRow } = await adminClient
+          .from('users')
+          .select('locale')
+          .eq('id', new_practitioner_id)
+          .maybeSingle()
+        const raw = (localeRow as any)?.locale as string | undefined
+        if (raw === 'fr' || raw === 'en' || raw === 'es') recipientLocale = raw
+      } catch {
+        // Column likely doesn't exist on this deployment — keep the FR default.
+      }
     }
 
     // Update practitioner_id on all selected resources
