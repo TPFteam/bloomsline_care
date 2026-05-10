@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server-client'
 import { ADMIN_USER_IDS } from '@/lib/admin'
+import { sendEmail } from '@/lib/email'
+import { resourcesTransferredTemplate } from '@/lib/email/templates'
 
 async function getAuthUserId(request: NextRequest): Promise<string | null> {
   const authHeader = request.headers.get('authorization')
@@ -34,10 +36,12 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Verify target practitioner exists
+    // Verify target practitioner exists. Pull email + locale too so we
+    // can fire off the "X resources transferred to your account" email
+    // after the DB update succeeds.
     const { data: targetUser, error: userError } = await adminClient
       .from('users')
-      .select('id, full_name')
+      .select('id, full_name, email, locale')
       .eq('id', new_practitioner_id)
       .single()
 
@@ -63,10 +67,49 @@ export async function POST(request: NextRequest) {
       .update({ practitioner_id: new_practitioner_id })
       .in('resource_id', resource_ids)
 
+    const transferredCount = updated?.length || 0
+
+    // Notify the recipient. Best-effort — a failure here doesn't undo
+    // the transfer; the practitioner can still see the resources in
+    // their library, they just won't have the heads-up email.
+    if (transferredCount > 0 && targetUser.email) {
+      try {
+        const rawLocale = (targetUser as any).locale as string | undefined
+        const locale: 'en' | 'fr' | 'es' =
+          rawLocale === 'fr' || rawLocale === 'es' ? rawLocale : 'en'
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bloomsline.com'
+        const subject = locale === 'fr'
+          ? (transferredCount === 1
+              ? '1 ressource ajoutée à votre compte Bloomsline'
+              : `${transferredCount} ressources ajoutées à votre compte Bloomsline`)
+          : locale === 'es'
+            ? (transferredCount === 1
+                ? '1 recurso añadido a tu cuenta Bloomsline'
+                : `${transferredCount} recursos añadidos a tu cuenta Bloomsline`)
+            : (transferredCount === 1
+                ? '1 resource added to your Bloomsline account'
+                : `${transferredCount} resources added to your Bloomsline account`)
+
+        await sendEmail({
+          to: targetUser.email,
+          subject,
+          htmlBody: resourcesTransferredTemplate({
+            practitionerName: targetUser.full_name || '',
+            count: transferredCount,
+            locale,
+            viewUrl: `${appUrl}/resources`,
+          }),
+          tag: 'resources-transferred',
+        })
+      } catch (emailErr) {
+        console.warn('Resources transferred — recipient email send failed:', emailErr)
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      transferred: updated?.length || 0,
-      message: `${updated?.length || 0} resource(s) transferred to ${targetUser.full_name}`,
+      transferred: transferredCount,
+      message: `${transferredCount} resource(s) transferred to ${targetUser.full_name}`,
     })
   } catch (error) {
     console.error('Error transferring resources:', error)

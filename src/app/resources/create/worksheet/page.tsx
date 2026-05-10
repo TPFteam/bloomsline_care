@@ -695,7 +695,7 @@ function CreateWorksheetContent() {
             originalPdfUrl,
             fileName: file.name,
           } as any])
-          setResourceMode('reading')
+          // resourceMode is derived from blocks now; no setter needed.
         }
         toast.info(
           locale === 'fr'
@@ -775,7 +775,7 @@ function CreateWorksheetContent() {
         }
 
         setBlocks(prev => [...prev, ...interleavedBlocks])
-        setResourceMode(totalQuestions > 0 ? 'interactive' : 'reading')
+        // resourceMode is derived from blocks; no setter needed.
         toast.success(
           locale === 'fr'
             ? `${totalQuestions} questions extraites du PDF`
@@ -897,7 +897,14 @@ function CreateWorksheetContent() {
 
   // UI state
   const [showBlockPicker, setShowBlockPicker] = useState(false)
-  const [resourceMode, setResourceMode] = useState<'reading' | 'interactive'>('interactive')
+  // Reading vs Interactive is no longer a user-toggled mode — it's
+  // derived from the blocks themselves. Adding any interactive block
+  // (prompt, multiple_choice, etc.) flips the resource into Interactive;
+  // removing them all flips it back to Reading. The two pills below the
+  // header are presentational only, with reciprocal tooltips that
+  // explain how to move between modes.
+  const INTERACTIVE_TYPES_REF = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise'])
+  const resourceMode: 'reading' | 'interactive' = blocks.some(b => INTERACTIVE_TYPES_REF.has(b.type)) ? 'interactive' : 'reading'
 
   // Reading-only block types (content that patients read, not fill)
   const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link', 'key_points', 'spacer'])
@@ -1279,12 +1286,11 @@ function CreateWorksheetContent() {
     setExpandedBlock(newBlock.id)
     setShowBlockPicker(false)
     markAsModified()
-    // Auto-flip Reading → Interactive the first time an interactive
-    // block is added. Practitioners shouldn't be able to leave a
-    // Reading-mode resource sitting on questions that demand patient
-    // input — the patient app would never collect them.
+    // The first time an interactive block is added, the derived
+    // resourceMode flips Reading → Interactive on the next render — show
+    // a small toast so the practitioner sees it happen rather than
+    // wondering why the pill changed.
     if (resourceMode === 'reading' && INTERACTIVE_TYPES.has(type)) {
-      setResourceMode('interactive')
       toast.message(
         locale === 'fr'
           ? 'Mode interactif activé — ce support recueille désormais les réponses du patient.'
@@ -5508,66 +5514,65 @@ function CreateWorksheetContent() {
                   {viewMode === 'edit' && (
                     <>
                       {/* Title Input */}
-                      {/* Resource mode toggle */}
+                      {/* Resource type pills — read-only indicators of
+                          a derived state. The active mode is computed
+                          from the blocks; the inactive pill carries a
+                          tooltip explaining how to reach the other mode. */}
                       <div className="grid grid-cols-2 gap-2">
-                        {(() => {
-                          // Lecture is locked once any interactive block
-                          // exists — switching back would silently strip
-                          // patient inputs from the patient view.
-                          const hasInteractive = blocks.some(b => INTERACTIVE_TYPES.has(b.type))
-                          const lockReading = hasInteractive
-                          return (
-                        <div className="relative group">
-                        <button
-                          onClick={() => { if (!lockReading) setResourceMode('reading') }}
-                          aria-disabled={lockReading}
-                          className={`w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all ${
-                            resourceMode === 'reading'
-                              ? 'border-teal-500 bg-teal-50'
-                              : 'border-gray-150 bg-white hover:border-gray-200'
-                          } ${lockReading ? 'opacity-60 cursor-not-allowed' : ''}`}
-                        >
-                          <BookOpen className={`w-4 h-4 flex-shrink-0 ${resourceMode === 'reading' ? 'text-teal-600' : 'text-gray-400'}`} />
-                          <div className="text-left">
-                            <div className={`text-sm font-semibold leading-tight ${resourceMode === 'reading' ? 'text-teal-700' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Lecture' : 'Reading'}
-                            </div>
-                            <div className={`text-[11px] leading-tight ${resourceMode === 'reading' ? 'text-teal-500' : 'text-gray-400'}`}>
-                              {locale === 'fr' ? 'Guides, fiches, théorie' : 'Guides, sheets, theory'}
-                            </div>
-                          </div>
-                        </button>
-                        {lockReading && (
-                          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-64 px-3 py-2 bg-gray-900 text-white text-[11px] leading-snug rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none z-50">
-                            {locale === 'fr'
+                        {([
+                          {
+                            mode: 'reading' as const,
+                            Icon: BookOpen,
+                            title: locale === 'fr' ? 'Lecture' : locale === 'es' ? 'Lectura' : 'Reading',
+                            sub: locale === 'fr' ? 'Guides, fiches, théorie' : locale === 'es' ? 'Guías, fichas, teoría' : 'Guides, sheets, theory',
+                            inactiveTip: locale === 'fr'
                               ? 'Ce document contient des éléments qui nécessitent une réponse du patient. Supprimez-les pour revenir au mode Lecture.'
                               : locale === 'es'
                                 ? 'Este documento tiene elementos que requieren respuesta del paciente. Elimínalos para volver al modo Lectura.'
-                                : 'This document has elements that need patient submission. Delete them to switch back to Reading mode.'}
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
-                          </div>
-                        )}
-                        </div>
+                                : 'This document has elements that need patient submission. Delete them to switch back to Reading mode.',
+                          },
+                          {
+                            mode: 'interactive' as const,
+                            Icon: PenLine,
+                            title: locale === 'fr' ? 'Interactif' : locale === 'es' ? 'Interactivo' : 'Interactive',
+                            sub: locale === 'fr' ? 'Questions, exercices' : locale === 'es' ? 'Preguntas, ejercicios' : 'Questions, exercises',
+                            inactiveTip: locale === 'fr'
+                              ? 'Ajoutez un élément interactif (question, choix multiple, échelle…) pour passer en mode Interactif.'
+                              : locale === 'es'
+                                ? 'Añade un elemento interactivo (pregunta, opción múltiple, escala…) para pasar al modo Interactivo.'
+                                : 'Add an interactive element (a question, multiple choice, scale…) to switch to Interactive mode.',
+                          },
+                        ]).map(({ mode, Icon, title, sub, inactiveTip }) => {
+                          const isActive = resourceMode === mode
+                          return (
+                            <div key={mode} className="relative group">
+                              <div
+                                aria-disabled={!isActive}
+                                className={`w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all ${
+                                  isActive
+                                    ? 'border-teal-500 bg-teal-50 cursor-default'
+                                    : 'border-gray-150 bg-white opacity-70 cursor-not-allowed'
+                                }`}
+                              >
+                                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-teal-600' : 'text-gray-400'}`} />
+                                <div className="text-left">
+                                  <div className={`text-sm font-semibold leading-tight ${isActive ? 'text-teal-700' : 'text-gray-700'}`}>
+                                    {title}
+                                  </div>
+                                  <div className={`text-[11px] leading-tight ${isActive ? 'text-teal-500' : 'text-gray-400'}`}>
+                                    {sub}
+                                  </div>
+                                </div>
+                              </div>
+                              {!isActive && (
+                                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-64 px-3 py-2 bg-gray-900 text-white text-[11px] leading-snug rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none z-50">
+                                  {inactiveTip}
+                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-900" />
+                                </div>
+                              )}
+                            </div>
                           )
-                        })()}
-                        <button
-                          onClick={() => setResourceMode('interactive')}
-                          className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border-2 transition-all ${
-                            resourceMode === 'interactive'
-                              ? 'border-teal-500 bg-teal-50'
-                              : 'border-gray-150 bg-white hover:border-gray-200'
-                          }`}
-                        >
-                          <PenLine className={`w-4 h-4 flex-shrink-0 ${resourceMode === 'interactive' ? 'text-teal-600' : 'text-gray-400'}`} />
-                          <div className="text-left">
-                            <div className={`text-sm font-semibold leading-tight ${resourceMode === 'interactive' ? 'text-teal-700' : 'text-gray-700'}`}>
-                              {locale === 'fr' ? 'Interactif' : 'Interactive'}
-                            </div>
-                            <div className={`text-[11px] leading-tight ${resourceMode === 'interactive' ? 'text-teal-500' : 'text-gray-400'}`}>
-                              {locale === 'fr' ? 'Questions, exercices' : 'Questions, exercises'}
-                            </div>
-                          </div>
-                        </button>
+                        })}
                       </div>
 
                       {/* Title */}
@@ -5688,8 +5693,12 @@ function CreateWorksheetContent() {
                                 </div>
                               </div>
 
-                              {/* Questions Row — hidden in reading mode */}
-                              {resourceMode === 'interactive' && (<>
+                              {/* Questions / Scales / Media — always
+                                  available in the picker. Adding any of
+                                  these auto-promotes the document into
+                                  Interactive mode (resourceMode is
+                                  derived from the blocks). */}
+                              <>
                               {/* Questions Row */}
                               <div className="flex items-start gap-6 py-3 border-b border-gray-100">
                                 <div className="flex-1">
@@ -5801,7 +5810,7 @@ function CreateWorksheetContent() {
                                   </div>
                                 </div>
                               </div>
-                              </>)}
+                              </>
                             </motion.div>
                           )}
                         </AnimatePresence>

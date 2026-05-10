@@ -116,6 +116,74 @@ export function resourceSharedTemplate({
   return wrapInLayout(content, false)
 }
 
+/**
+ * Notifies a practitioner that the Bloomsline team has transferred N
+ * resources to their account (admin → admin/resources/transfer flow).
+ * Deliberately dry: just count + a CTA to /resources, no admin name,
+ * no per-resource list. Triggered from the admin transfer route after
+ * the DB update succeeds; failure is logged and ignored.
+ */
+export function resourcesTransferredTemplate({
+  practitionerName,
+  count,
+  locale,
+  viewUrl,
+}: {
+  practitionerName: string
+  count: number
+  locale: 'en' | 'fr' | 'es'
+  viewUrl: string
+}) {
+  const copy = {
+    en: {
+      hi: `Hi ${practitionerName},`,
+      body: count === 1
+        ? 'The Bloomsline team has transferred 1 resource to your account.'
+        : `The Bloomsline team has transferred ${count} resources to your account.`,
+      tail: 'You can find them in your library now.',
+      cta: 'View resources',
+    },
+    fr: {
+      hi: `Bonjour ${practitionerName},`,
+      body: count === 1
+        ? 'L\'équipe Bloomsline vient de transférer 1 ressource sur votre compte.'
+        : `L'équipe Bloomsline vient de transférer ${count} ressources sur votre compte.`,
+      tail: 'Vous les retrouverez dans votre bibliothèque dès maintenant.',
+      cta: 'Voir les ressources',
+    },
+    es: {
+      hi: `Hola ${practitionerName},`,
+      body: count === 1
+        ? 'El equipo de Bloomsline ha transferido 1 recurso a tu cuenta.'
+        : `El equipo de Bloomsline ha transferido ${count} recursos a tu cuenta.`,
+      tail: 'Ya puedes encontrarlos en tu biblioteca.',
+      cta: 'Ver recursos',
+    },
+  }[locale]
+
+  const content = `
+    <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #333;">
+      ${copy.hi}
+    </h2>
+
+    <p style="margin: 0 0 12px 0; color: #555;">
+      ${copy.body}
+    </p>
+
+    <p style="margin: 0 0 24px 0; color: #555;">
+      ${copy.tail}
+    </p>
+
+    <div style="text-align: center; margin-top: 32px;">
+      <a href="${viewUrl}" style="${buttonStyle}">
+        ${copy.cta}
+      </a>
+    </div>
+  `
+
+  return wrapInLayout(content, false)
+}
+
 // Welcome email for new clients
 export function welcomeClientTemplate({
   clientName,
