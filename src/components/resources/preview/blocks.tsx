@@ -15,6 +15,7 @@
  * fall back to a generic placeholder. Easy to extend later.
  */
 
+import { useEffect, useRef, useState } from 'react'
 import { CheckSquare, Circle as RadioOff, CheckCircle2, Lightbulb, Quote as QuoteIcon, ExternalLink, Star } from 'lucide-react'
 
 /** Block types that lead into a question (no response expected). */
@@ -377,38 +378,9 @@ export function RenderQuestionBlock({ block, value, onChange, color }: RenderBlo
         </div>
       )
 
-    case 'table_exercise': {
-      const cols = block.columns || []
-      return (
-        <div className="space-y-2">
-          {block.content && (
-            <label className="block text-[14px] font-semibold text-gray-900">{block.content}</label>
-          )}
-          <div className="border border-gray-200 rounded-xl overflow-hidden text-[11px]">
-            <div className="bg-gray-100 grid" style={{ gridTemplateColumns: `repeat(${Math.max(1, cols.length)}, 1fr)` }}>
-              {cols.map((col: any, i: number) => (
-                <div key={i} className="p-2 font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">{col.header}</div>
-              ))}
-            </div>
-            <div className="grid bg-white" style={{ gridTemplateColumns: `repeat(${Math.max(1, cols.length)}, 1fr)` }}>
-              {cols.map((col: any, i: number) => (
-                <input
-                  key={i}
-                  type="text"
-                  value={(value?.[0]?.[col.id]) || ''}
-                  onChange={(e) => {
-                    const row0 = { ...(value?.[0] || {}), [col.id]: e.target.value }
-                    onChange?.([row0])
-                  }}
-                  placeholder="…"
-                  className="p-2 outline-none border-r border-gray-200 last:border-r-0 text-[11px]"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    }
+    case 'table_exercise':
+      return <TableExerciseRender block={block} value={value} onChange={onChange} />
+
 
     default:
       return (
@@ -417,4 +389,110 @@ export function RenderQuestionBlock({ block, value, onChange, color }: RenderBlo
         </div>
       )
   }
+}
+
+/**
+ * Table-exercise renderer with a custom always-visible scrollbar at
+ * the bottom. The native scrollbar (especially on macOS / iOS) hides
+ * itself at rest, hiding the swipe affordance the patient needs to
+ * realize there are more columns. We hide the native bar entirely and
+ * draw our own thin track + thumb whose width and offset are computed
+ * from the live scroll state.
+ */
+function TableExerciseRender({ block, value, onChange }: { block: any; value?: any; onChange?: (v: any) => void }) {
+  const cols = (block.columns || []) as Array<{ id: string; header: string }>
+  const exampleRow = block.exampleRow as Record<string, string> | undefined
+  const hasExample = !!exampleRow && cols.some(c => exampleRow[c.id])
+  const gridTemplateColumns = `repeat(${Math.max(1, cols.length)}, minmax(96px, 1fr))`
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  // thumbPct: portion of the track the thumb fills (= clientWidth / scrollWidth)
+  // leftPct:  thumb's offset from the left edge of the track (in %)
+  // overflowing: whether the table is wide enough to scroll at all
+  const [scrollState, setScrollState] = useState({ thumbPct: 100, leftPct: 0, overflowing: false })
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const update = () => {
+      const visible = el.clientWidth
+      const total = el.scrollWidth
+      const overflowing = total > visible + 1
+      const thumbPct = overflowing ? Math.max(15, (visible / total) * 100) : 100
+      const leftPct = overflowing
+        ? (el.scrollLeft / Math.max(1, total - visible)) * (100 - thumbPct)
+        : 0
+      setScrollState({ thumbPct, leftPct, overflowing })
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [cols.length])
+
+  return (
+    <div className="space-y-2">
+      {block.content && (
+        <label className="block text-[14px] font-semibold text-gray-900">{block.content}</label>
+      )}
+      <div className="relative border border-gray-200 rounded-xl overflow-hidden text-[11px]">
+        {/* Native scrollbar hidden — our custom one (below) replaces it
+            so the affordance is visible at rest, not just during scroll. */}
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-2.5"
+        >
+          <div style={{ minWidth: 'max-content' }}>
+            <div className="bg-gray-100 grid" style={{ gridTemplateColumns }}>
+              {cols.map((col, i) => (
+                <div key={i} className="p-2 font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">{col.header}</div>
+              ))}
+            </div>
+            {hasExample && (
+              <div className="grid bg-white border-t border-gray-100" style={{ gridTemplateColumns }}>
+                {cols.map((col, i) => {
+                  const ex = exampleRow?.[col.id]
+                  return (
+                    <div key={i} className="p-2 italic text-gray-400 leading-snug border-r border-gray-200 last:border-r-0">
+                      {ex ? `Ex. : ${ex}` : ''}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div className="grid bg-white border-t border-gray-100" style={{ gridTemplateColumns }}>
+              {cols.map((col, i) => (
+                <div key={i} className="min-w-0 border-r border-gray-200 last:border-r-0">
+                  <input
+                    type="text"
+                    value={value?.[0]?.[col.id] || ''}
+                    onChange={(e) => {
+                      const row0 = { ...(value?.[0] || {}), [col.id]: e.target.value }
+                      onChange?.([row0])
+                    }}
+                    placeholder="…"
+                    className="w-full min-w-0 p-2 outline-none text-[11px] bg-transparent"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Custom always-visible scrollbar. Track shows even when the
+            table fits (as a subtle hint), thumb only when overflowing. */}
+        <div className="absolute left-2 right-2 bottom-1 h-1 bg-gray-100 rounded-full pointer-events-none">
+          {scrollState.overflowing && (
+            <div
+              className="absolute top-0 h-1 bg-gray-400 rounded-full transition-[left] duration-75"
+              style={{ left: `${scrollState.leftPct}%`, width: `${scrollState.thumbPct}%` }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }

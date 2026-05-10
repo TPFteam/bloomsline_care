@@ -1002,7 +1002,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   navigator.clipboard.writeText(member.email!)
                   toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
                 }}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
               >
                 <Copy className="w-4 h-4" />
               </button>
@@ -1026,7 +1026,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   navigator.clipboard.writeText(member.phone!)
                   toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
                 }}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
               >
                 <Copy className="w-4 h-4" />
               </button>
@@ -1150,7 +1150,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                       setPriceVisible(true)
                       setEditingPrice(true)
                     }}
-                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all shrink-0"
                     title={locale === 'fr' ? 'Modifier' : 'Edit'}
                   >
                     <Edit3 className="w-4 h-4" />
@@ -1181,13 +1181,13 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => { navigator.clipboard.writeText(c.value); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteContact(i)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1846,7 +1846,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                 >
                   {/* Three-dot menu */}
                   <div
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <DropdownMenu>
@@ -1905,7 +1905,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   >
                     {/* Three-dot menu — hidden until card hover */}
                     <div
-                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <DropdownMenu>
@@ -2265,7 +2265,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                         navigator.clipboard.writeText(member.emergency_contact.phone!)
                         toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
                       }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -2289,7 +2289,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                         navigator.clipboard.writeText(member.emergency_contact.email!)
                         toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
                       }}
-                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
