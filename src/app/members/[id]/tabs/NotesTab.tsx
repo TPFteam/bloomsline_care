@@ -259,8 +259,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const effectiveDefaultTags: readonly string[] = usesLegacyDefaults
     ? defaultNoteTypes
     : fixedNoteTypes
-  const visibleDefaults = effectiveDefaultTags.filter(t => !hiddenDefaults.includes(t))
-  const allNoteTypes = [...visibleDefaults, ...customNoteTypes]
+  // Browse TYPES filter mirrors the editor's tag picker: every default
+  // tag the practitioner has access to shows up here, regardless of
+  // `_hidden:*` markers. The editor never strips them either, so the
+  // two surfaces stay in sync — a tag visible while writing is also
+  // filterable while browsing. Dedupe because `custom_note_types` can
+  // legitimately contain a row whose name already exists as a default
+  // (e.g. a default got duplicated by a past rename/add flow).
+  const allNoteTypes = Array.from(new Set([...effectiveDefaultTags, ...customNoteTypes]))
 
   // ==============================
   // NOTEPAD MODE STATE
@@ -2314,12 +2320,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           className={`w-full text-left px-4 py-3 transition-colors ${note.milestone_id ? 'cursor-default' : 'hover:bg-gray-50/50 cursor-pointer'}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-16 pt-0.5">
-                              <p className="text-[11px] text-gray-400 tabular-nums leading-tight">
-                                {new Date(note.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}
-                              </p>
-                              <p className="text-[10px] text-gray-300 tabular-nums">{formatNoteTime(note.created_at)}</p>
-                            </div>
+                            {/* Last-edited date column removed — the
+                                inline "Suivi · {session date}" pill is
+                                what practitioners actually anchor on,
+                                and the two side-by-side dates were
+                                confusing. */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 mb-0.5">
                                 {note.session_id && (
