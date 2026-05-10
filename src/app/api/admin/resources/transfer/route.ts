@@ -36,17 +36,34 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Verify target practitioner exists. Pull email + locale too so we
-    // can fire off the "X resources transferred to your account" email
-    // after the DB update succeeds.
+    // Verify target practitioner exists. We look up email separately so
+    // a missing/optional `locale` column on `users` never blocks the
+    // transfer itself — the email-out is best-effort, the DB ownership
+    // change is the contract.
     const { data: targetUser, error: userError } = await adminClient
       .from('users')
-      .select('id, full_name, email, locale')
+      .select('id, full_name, email')
       .eq('id', new_practitioner_id)
       .single()
 
     if (userError || !targetUser) {
       return NextResponse.json({ error: 'Target practitioner not found' }, { status: 404 })
+    }
+
+    // Try to pull locale opportunistically. If the column doesn't exist
+    // (or the row has none) we just default to 'en' for the email below.
+    let recipientLocale: 'en' | 'fr' | 'es' = 'en'
+    try {
+      const { data: localeRow } = await adminClient
+        .from('users')
+        .select('locale')
+        .eq('id', new_practitioner_id)
+        .maybeSingle()
+      const raw = (localeRow as any)?.locale as string | undefined
+      if (raw === 'fr' || raw === 'es') recipientLocale = raw
+    } catch {
+      // Column likely doesn't exist on this deployment — silently fall
+      // back to English. Not worth surfacing to the admin user.
     }
 
     // Update practitioner_id on all selected resources
@@ -74,9 +91,7 @@ export async function POST(request: NextRequest) {
     // their library, they just won't have the heads-up email.
     if (transferredCount > 0 && targetUser.email) {
       try {
-        const rawLocale = (targetUser as any).locale as string | undefined
-        const locale: 'en' | 'fr' | 'es' =
-          rawLocale === 'fr' || rawLocale === 'es' ? rawLocale : 'en'
+        const locale = recipientLocale
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bloomsline.com'
         const subject = locale === 'fr'
           ? (transferredCount === 1
