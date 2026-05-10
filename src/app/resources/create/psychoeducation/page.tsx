@@ -541,11 +541,13 @@ function CreatePsychoeducationContent() {
     setStep('details')
   }
 
-  // Handle going back to resource creation page (discard current resource)
+  // Handle going back. When editing an existing resource, the back
+  // button should land on the resource preview page; only fresh
+  // creates fall back to /resources/create or /dashboard.
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
-    // Navigate back to resource creation page
-    router.push(templateParam ? '/dashboard' : '/resources/create')
+    const fallback = templateParam ? '/dashboard' : '/resources/create'
+    router.push(editId ? `/resources/${editId}` : fallback)
   }
 
   // Helper to mark content as modified (call this in any edit handler)
@@ -2513,7 +2515,7 @@ function CreatePsychoeducationContent() {
                     </motion.div>
                   </Link>
                 ) : (
-                  <Link href={templateParam ? '/dashboard' : '/resources/create'}>
+                  <Link href={editId ? `/resources/${editId}` : (templateParam ? '/dashboard' : '/resources/create')}>
                     <motion.div whileHover={{ x: -4 }} className="inline-block">
                       <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                         <ArrowLeft className="w-4 h-4 mr-2" />

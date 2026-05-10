@@ -15,6 +15,7 @@ function getInitials(name: string): string {
 function getResourceTemplate(params: {
   memberName: string
   practitionerName: string
+  practitionerAvatarUrl: string | null
   resourceTitle: string
   // resourceType is intentionally accepted but ignored — the email
   // copy is now generic ("a resource" / "une ressource") so a worksheet,
@@ -24,10 +25,18 @@ function getResourceTemplate(params: {
   ctaUrl: string
   lang: 'en' | 'fr'
 }) {
-  const { memberName, practitionerName, resourceTitle, ctaUrl, lang } = params
+  const { memberName, practitionerName, practitionerAvatarUrl, resourceTitle, ctaUrl, lang } = params
   const accentColor = '#4A9A86'
+  const practitionerInitials = getInitials(practitionerName)
 
   const typeLabel = lang === 'fr' ? 'ressource' : 'resource'
+
+  // Practitioner badge — photo if we have one on file, otherwise the
+  // initials inside a teal-gradient circle. Mirrors the welcome
+  // template so returning members see the same human touch.
+  const practitionerCircle = practitionerAvatarUrl
+    ? `<div style="width:64px;height:64px;border-radius:50%;border:3px solid white;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);display:inline-block;"><img src="${practitionerAvatarUrl}" alt="${practitionerName}" style="width:100%;height:100%;object-fit:cover;" /></div>`
+    : `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${accentColor},#5AB39C);display:inline-flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.1);"><span style="color:white;font-weight:700;font-size:20px;">${practitionerInitials}</span></div>`
 
   const c = lang === 'fr' ? {
     subject: `${practitionerName} a partagé "${resourceTitle}" avec vous`,
@@ -57,6 +66,13 @@ function getResourceTemplate(params: {
             <span style="font-size:24px;font-weight:500;color:#1F2227;">blooms</span><span style="font-size:24px;font-weight:300;color:${accentColor};">line</span>
           </div>
           <div style="color:#333;line-height:1.7;">
+            <!-- Practitioner badge — gives the email a face the
+                 patient recognizes from session, not just a logo. -->
+            <div style="text-align:center;margin-bottom:12px;">
+              ${practitionerCircle}
+            </div>
+            <p style="margin:0 0 20px;text-align:center;font-weight:600;color:#1F2227;font-size:15px;">${practitionerName}</p>
+
             <p style="margin:0 0 16px;font-weight:500;">${c.greeting}</p>
             <p style="margin:0 0 16px;color:#555;">${c.intro}</p>
             <div style="background:#f8f8f8;border-radius:12px;padding:20px;margin-bottom:24px;border-left:4px solid ${accentColor};">
@@ -322,6 +338,7 @@ serve(async (req) => {
       const result = getResourceTemplate({
         memberName,
         practitionerName,
+        practitionerAvatarUrl: practitioner?.avatar_url || null,
         resourceTitle,
         resourceType: resource.type || 'psychoeducation',
         resourceId: resource_id,

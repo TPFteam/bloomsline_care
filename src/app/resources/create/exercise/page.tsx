@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import {
   ArrowLeft,
@@ -194,6 +194,11 @@ const exerciseTemplates = [
 export default function CreateExercisePage() {
   const { t, locale } = useLanguage()
   const router = useRouter()
+  // Read the autosave-driven `?edit=ID` so the Back button can return
+  // to the existing resource's preview page instead of dropping the
+  // practitioner on the templates picker.
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('edit')
 
   // Step state
   const [step, setStep] = useState<'template' | 'build' | 'details'>('template')
@@ -288,11 +293,12 @@ export default function CreateExercisePage() {
     setStep('details')
   }
 
-  // Handle going back to resource creation page (discard current resource)
+  // Handle going back. When editing an existing resource, the back
+  // button should return to its preview page; only fresh creates
+  // fall back to /resources/create.
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
-    // Navigate back to resource creation page
-    router.push('/resources/create')
+    router.push(editId ? `/resources/${editId}` : '/resources/create')
   }
 
   // Add new step
@@ -878,7 +884,7 @@ export default function CreateExercisePage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center justify-between mb-8"
               >
-                <Link href="/resources/create">
+                <Link href={editId ? `/resources/${editId}` : '/resources/create'}>
                   <motion.div whileHover={{ x: -4 }} className="inline-block">
                     <Button variant="ghost" size="sm" className="rounded-xl hover:bg-white/80">
                       <ArrowLeft className="w-4 h-4 mr-2" />

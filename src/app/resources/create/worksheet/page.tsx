@@ -1196,11 +1196,12 @@ function CreateWorksheetContent() {
     setStep('details')
   }
 
-  // Handle going back to resource creation page (discard current resource)
+  // Handle going back. When editing an existing resource we should
+  // return to its preview page, not the template chooser. Only fresh
+  // (no editId) flows go back to /resources/create.
   const handleGoBackToTemplates = () => {
     setShowTemplateWarningDialog(false)
-    // Navigate back to resource creation page
-    router.push('/resources/create')
+    router.push(editId ? `/resources/${editId}` : '/resources/create')
   }
 
   // Default mood options - nature/wellness themed
@@ -1247,6 +1248,13 @@ function CreateWorksheetContent() {
       ...(type === 'list_input' && { listMinItems: 1, listMaxItems: 10, listItemPlaceholder: '' }),
       // Scoring question types (likert, numeric, slider)
       ...(type === 'likert' && {
+        // Default new Likert blocks to the 0-10 rating variant — the
+        // pure-Likert option was removed from the picker, so we land
+        // practitioners on one of the two remaining variants instead
+        // of an invisible "default" mode they can't see selected.
+        scaleType: 'rating' as const,
+        scaleMin: 0,
+        scaleMax: 10,
         scaleLabels: preset[locale] ?? preset['en'],
         scaleRange: (preset[locale] ?? preset['en']).length,
         scoring: (preset[locale] ?? preset['en']).reduce((acc, _, i) => ({ ...acc, [i.toString()]: i }), {}),
@@ -4654,17 +4662,6 @@ function CreateWorksheetContent() {
                       </label>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => updateBlock(block.id, { scaleType: 'likert' })}
-                          className={`flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors flex items-center justify-center gap-2 ${
-                            (!block.scaleType || block.scaleType === 'likert')
-                              ? 'border-amber-400 bg-amber-50 text-amber-700'
-                              : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <SlidersHorizontal className="w-4 h-4" />
-                          {locale === 'fr' ? 'Échelle' : 'Likert'}
-                        </button>
-                        <button
                           onClick={() => updateBlock(block.id, { scaleType: 'rating' })}
                           className={`flex-1 px-3 py-2.5 text-sm font-medium rounded-xl border transition-colors flex items-center justify-center gap-2 ${
                             block.scaleType === 'rating'
@@ -5497,7 +5494,7 @@ function CreateWorksheetContent() {
                     variant="ghost"
                     size="sm"
                     className="rounded-xl hover:bg-white/80"
-                    onClick={() => router.push('/resources/create')}
+                    onClick={() => router.push(editId ? `/resources/${editId}` : '/resources/create')}
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     {locale === 'fr' ? 'Retour' : 'Back'}
@@ -5750,7 +5747,7 @@ function CreateWorksheetContent() {
                                     {locale === 'fr' ? 'Échelles' : 'Scales'}
                                   </p>
                                   <div className="flex gap-1">
-                                    {blockTypes.filter(bt => ['likert', 'matrix_rating'].includes(bt.type)).map((bt) => {
+                                    {blockTypes.filter(bt => ['likert'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button
