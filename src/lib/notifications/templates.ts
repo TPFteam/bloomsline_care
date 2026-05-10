@@ -28,10 +28,10 @@ const templates: Record<NotificationType, NotificationTemplate> = {
     actionUrl: (m) => `/resources/${m.resourceId}`,
     emailSubject: (m, locale) =>
       locale === 'fr'
-        ? `Votre praticien(ne), ${m.practitionerName}, a partagé "${m.resourceTitle}" avec vous`
+        ? `${m.practitionerName} a partagé "${m.resourceTitle}" avec vous`
         : locale === 'es'
-          ? `Tu profesional, ${m.practitionerName}, compartió "${m.resourceTitle}" contigo`
-          : `Your practitioner, ${m.practitionerName}, shared "${m.resourceTitle}" with you`,
+          ? `${m.practitionerName} compartió "${m.resourceTitle}" contigo`
+          : `${m.practitionerName} shared "${m.resourceTitle}" with you`,
   },
 
   resource_assigned: {

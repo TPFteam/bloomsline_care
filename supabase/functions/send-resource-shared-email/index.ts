@@ -16,33 +16,31 @@ function getResourceTemplate(params: {
   memberName: string
   practitionerName: string
   resourceTitle: string
-  resourceType: string
+  // resourceType is intentionally accepted but ignored — the email
+  // copy is now generic ("a resource" / "une ressource") so a worksheet,
+  // tableau, exercice, psychoed, etc. all produce the same wording.
+  resourceType?: string
   resourceId: string
   ctaUrl: string
   lang: 'en' | 'fr'
 }) {
-  const { memberName, practitionerName, resourceTitle, resourceType, ctaUrl, lang } = params
+  const { memberName, practitionerName, resourceTitle, ctaUrl, lang } = params
   const accentColor = '#4A9A86'
 
-  const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'worksheet', fr: 'fiche de travail' },
-    exercise: { en: 'exercise', fr: 'exercice' },
-    psychoeducation: { en: 'resource', fr: 'ressource' },
-    assessment: { en: 'assessment', fr: 'évaluation' },
-    table: { en: 'table', fr: 'tableau' },
-  }
-  const typeLabel = typeLabels[resourceType]?.[lang] || (lang === 'fr' ? 'ressource' : 'resource')
+  const typeLabel = lang === 'fr' ? 'ressource' : 'resource'
 
   const c = lang === 'fr' ? {
-    subject: `${practitionerName} vous a partagé une ${typeLabel}`,
+    subject: `${practitionerName} a partagé "${resourceTitle}" avec vous`,
     greeting: `Bonjour ${memberName},`,
-    intro: `${practitionerName} vous a partagé une nouvelle ${typeLabel} :`,
+    intro: `${practitionerName} a partagé une ressource avec vous :`,
+    tail: `Prenez un moment quand vous êtes prêt(e) — elle est là pour vous.`,
     cta: 'Voir la ressource',
     footerSub: 'Accompagner votre parcours vers le bien-être',
   } : {
-    subject: `${practitionerName} shared a ${typeLabel} with you`,
+    subject: `${practitionerName} shared "${resourceTitle}" with you`,
     greeting: `Hi ${memberName},`,
-    intro: `${practitionerName} shared a new ${typeLabel} with you:`,
+    intro: `${practitionerName} shared a resource with you:`,
+    tail: `Take a moment when you're ready — it's there for you.`,
     cta: 'View Resource',
     footerSub: 'Supporting your journey to wellbeing',
   }
@@ -65,6 +63,7 @@ function getResourceTemplate(params: {
               <p style="margin:0;font-weight:600;color:#333;font-size:16px;">${resourceTitle}</p>
               <p style="margin:4px 0 0;color:#888;font-size:13px;text-transform:capitalize;">${typeLabel}</p>
             </div>
+            <p style="margin:0 0 24px;color:#555;">${c.tail}</p>
             <div style="text-align:center;margin-bottom:24px;">
               <a href="${ctaUrl}" style="display:inline-block;background:#1F2227;color:white;padding:14px 32px;border-radius:28px;text-decoration:none;font-weight:600;font-size:15px;">${c.cta}</a>
             </div>
@@ -90,23 +89,17 @@ function getWelcomeResourceTemplate(params: {
   practitionerName: string
   practitionerAvatarUrl: string | null
   resourceTitle: string
-  resourceType: string
+  // resourceType accepted but ignored — copy is now generic.
+  resourceType?: string
   ctaUrl: string
   lang: 'en' | 'fr'
 }) {
-  const { memberName, memberLastName, practitionerName, practitionerAvatarUrl, resourceTitle, resourceType, ctaUrl, lang } = params
+  const { memberName, memberLastName, practitionerName, practitionerAvatarUrl, resourceTitle, ctaUrl, lang } = params
   const accentColor = '#4A9A86'
   const practitionerInitials = getInitials(practitionerName)
   const memberInitials = getInitials(`${memberName} ${memberLastName}`)
 
-  const typeLabels: Record<string, { en: string; fr: string }> = {
-    worksheet: { en: 'worksheet', fr: 'fiche de travail' },
-    exercise: { en: 'exercise', fr: 'exercice' },
-    psychoeducation: { en: 'resource', fr: 'ressource' },
-    assessment: { en: 'assessment', fr: 'évaluation' },
-    table: { en: 'table', fr: 'tableau' },
-  }
-  const typeLabel = typeLabels[resourceType]?.[lang] || (lang === 'fr' ? 'ressource' : 'resource')
+  const typeLabel = lang === 'fr' ? 'ressource' : 'resource'
 
   const practitionerCircle = practitionerAvatarUrl
     ? `<div style="width:56px;height:56px;border-radius:50%;border:3px solid white;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);display:inline-block;vertical-align:middle;"><img src="${practitionerAvatarUrl}" alt="${practitionerName}" style="width:100%;height:100%;object-fit:cover;" /></div>`
@@ -115,7 +108,7 @@ function getWelcomeResourceTemplate(params: {
   const memberCircle = `<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#6B7280,#9CA3AF);display:inline-flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-left:-12px;vertical-align:middle;"><span style="color:white;font-weight:700;font-size:18px;">${memberInitials}</span></div>`
 
   const c = lang === 'fr' ? {
-    subject: `${practitionerName} vous a partagé une ${typeLabel}`,
+    subject: `${practitionerName} a partagé "${resourceTitle}" avec vous`,
     greeting: `Bonjour ${memberName},`,
     intro: `${practitionerName} souhaite vous accompagner entre vos séances avec des outils pensés pour votre bien-être.`,
     intro2: `Un espace vous attend sur Bloomsline, une app bien-être pour prendre soin de vous à votre rythme. Sans frais, sans engagement.`,
@@ -134,7 +127,7 @@ function getWelcomeResourceTemplate(params: {
     cta: 'Découvrir mon espace',
     footerSub: 'Accompagner votre parcours vers le bien-être',
   } : {
-    subject: `${practitionerName} shared a ${typeLabel} with you`,
+    subject: `${practitionerName} shared "${resourceTitle}" with you`,
     greeting: `Hi ${memberName},`,
     intro: `${practitionerName} wants to support you between sessions with tools designed for your wellbeing.`,
     intro2: `You have a space waiting for you on Bloomsline, a wellbeing app to take care of yourself at your own pace. No cost, no commitment.`,
