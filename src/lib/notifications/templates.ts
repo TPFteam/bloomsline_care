@@ -34,6 +34,35 @@ const templates: Record<NotificationType, NotificationTemplate> = {
           : `${m.practitionerName} shared "${m.resourceTitle}" with you`,
   },
 
+  response_reviewed: {
+    title: (m, locale) =>
+      locale === 'fr'
+        ? `${m.practitionerName} a relu vos réponses`
+        : locale === 'es'
+          ? `${m.practitionerName} revisó tus respuestas`
+          : `${m.practitionerName} reviewed your responses`,
+    body: (m, locale) => {
+      // Surface the practitioner's free-text note when present (truncated
+      // to keep the bell preview compact). Falls back to the resource
+      // title so even a no-comment review reads as meaningful.
+      const note = (m.practitionerNotes as string | undefined)?.trim()
+      const preview = note ? (note.length > 140 ? note.slice(0, 140) + '…' : note) : null
+      if (preview) return `"${preview}"`
+      return locale === 'fr'
+        ? `Vos réponses à "${m.resourceTitle}" ont été relues.`
+        : locale === 'es'
+          ? `Tus respuestas a "${m.resourceTitle}" han sido revisadas.`
+          : `Your responses to "${m.resourceTitle}" have been reviewed.`
+    },
+    actionUrl: (m) => `/practitioner?openResourceId=${m.resourceId}`,
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.practitionerName} a relu vos réponses à "${m.resourceTitle}"`
+        : locale === 'es'
+          ? `${m.practitionerName} revisó tus respuestas a "${m.resourceTitle}"`
+          : `${m.practitionerName} reviewed your responses to "${m.resourceTitle}"`,
+  },
+
   resource_assigned: {
     title: (m, locale) =>
       locale === 'fr' ? 'Nouvelle tâche assignée' : locale === 'es' ? 'Nueva tarea asignada' : 'New assignment',

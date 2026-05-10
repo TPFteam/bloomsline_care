@@ -5,6 +5,7 @@
 export type NotificationType =
   // B2C - Member Notifications
   | 'resource_shared'
+  | 'response_reviewed'
   | 'resource_assigned'
   | 'assignment_due_soon'
   | 'assignment_overdue'
