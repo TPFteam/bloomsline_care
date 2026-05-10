@@ -65,6 +65,10 @@ import {
   Scissors,
   Table2,
   Link as LinkIcon,
+  MoveVertical,
+  Heading1,
+  Heading2,
+  Heading3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -103,7 +107,7 @@ const SHOW_VISIBILITY_PICKER = false
 // Scoring question types: likert, numeric, matrix_rating (for scored worksheets)
 // Legacy: video, file (kept for backward compatibility)
 type BlockType =
-  | 'heading' | 'paragraph' | 'image' | 'divider' | 'quote' | 'tip'
+  | 'heading' | 'paragraph' | 'image' | 'divider' | 'quote' | 'tip' | 'spacer'
   | 'prompt' | 'checklist' | 'scale' | 'multiple_choice' | 'yes_no' | 'mood' | 'date_picker' | 'time_input' | 'list_input'
   | 'likert' | 'numeric' | 'slider' | 'matrix_rating'
   | 'video_response' | 'audio_response' | 'file_response'
@@ -186,6 +190,10 @@ interface WorksheetBlock {
   matrixScaleLabels?: { min: string; max: string } // Labels for min/max (e.g., "Not at all", "Completely")
   // For key_points (bullet list)
   points?: string[]
+  // For heading level (h1 | h2 | h3) — defaults to h2 if absent
+  headingLevel?: 'h1' | 'h2' | 'h3'
+  // For spacer block — vertical whitespace
+  spacerSize?: 'sm' | 'md' | 'lg'
 }
 
 interface BlockTypeOption {
@@ -220,6 +228,12 @@ const blockTypes: BlockTypeOption[] = [
     icon: Minus,
     label: { en: 'Divider', fr: 'Séparateur' },
     description: { en: 'Visual break between sections', fr: 'Séparation visuelle entre sections' },
+  },
+  {
+    type: 'spacer',
+    icon: MoveVertical,
+    label: { en: 'Spacer', fr: 'Espace' },
+    description: { en: 'Add vertical space between blocks', fr: 'Ajouter un espace vertical entre les blocs' },
   },
   {
     type: 'quote',
@@ -886,7 +900,7 @@ function CreateWorksheetContent() {
   const [resourceMode, setResourceMode] = useState<'reading' | 'interactive'>('interactive')
 
   // Reading-only block types (content that patients read, not fill)
-  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link', 'key_points'])
+  const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link', 'key_points', 'spacer'])
   const isBlockAllowed = (blockType: string) => {
     if (resourceMode === 'interactive') return true
     return READING_BLOCKS.has(blockType)
@@ -1100,6 +1114,9 @@ function CreateWorksheetContent() {
               points: Array.isArray(block.points)
                 ? block.points.map((p: any) => typeof p === 'string' ? p : (p as Record<string, string>)?.[locale] || '')
                 : undefined,
+              // Heading level + spacer size
+              headingLevel: block.headingLevel,
+              spacerSize: block.spacerSize,
             }))
             setBlocks(loadedBlocks)
           }
@@ -1206,6 +1223,8 @@ function CreateWorksheetContent() {
       ...(type === 'quote' && { style: 'default' as const }),
       ...(type === 'tip' && { style: 'info' as const }),
       ...(type === 'key_points' && { points: [''] }),
+      ...(type === 'heading' && { headingLevel: 'h2' as const }),
+      ...(type === 'spacer' && { spacerSize: 'md' as const }),
       // New response blocks
       ...(type === 'multiple_choice' && {
         choices: ['', ''],
@@ -1760,7 +1779,15 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'key_points' as const, points: block.points ?? [] } as ResourceBlock
         }
 
-        // Default: heading, paragraph, quote, tip, divider
+        if (block.type === 'heading') {
+          return { ...baseBlock, type: 'heading' as const, headingLevel: block.headingLevel ?? 'h2' } as ResourceBlock
+        }
+
+        if (block.type === 'spacer') {
+          return { ...baseBlock, type: 'spacer' as const, spacerSize: block.spacerSize ?? 'md' } as ResourceBlock
+        }
+
+        // Default: paragraph, quote, tip, divider
         return baseBlock as ResourceBlock
       })
 
@@ -1952,6 +1979,12 @@ function CreateWorksheetContent() {
         if (block.type === 'key_points') {
           return { ...baseBlock, type: 'key_points' as const, points: block.points ?? [] } as ResourceBlock
         }
+        if (block.type === 'heading') {
+          return { ...baseBlock, type: 'heading' as const, headingLevel: block.headingLevel ?? 'h2' } as ResourceBlock
+        }
+        if (block.type === 'spacer') {
+          return { ...baseBlock, type: 'spacer' as const, spacerSize: block.spacerSize ?? 'md' } as ResourceBlock
+        }
         return baseBlock as ResourceBlock
       })
 
@@ -2131,9 +2164,26 @@ function CreateWorksheetContent() {
     return (
       <div key={block.id} className="mb-6">
         {/* Heading */}
-        {block.type === 'heading' && (
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{block.content}</h2>
-        )}
+        {block.type === 'heading' && (() => {
+          const lvl = block.headingLevel ?? 'h2'
+          const cls = lvl === 'h1'
+            ? 'text-3xl font-bold text-gray-900 mb-2'
+            : lvl === 'h3'
+              ? 'text-lg font-semibold text-gray-900 mb-2'
+              : 'text-2xl font-bold text-gray-900 mb-2'
+          if (lvl === 'h1') return <h1 className={cls}>{block.content}</h1>
+          if (lvl === 'h3') return <h3 className={cls}>{block.content}</h3>
+          return <h2 className={cls}>{block.content}</h2>
+        })()}
+
+        {/* Spacer */}
+        {block.type === 'spacer' && (() => {
+          const heightClass =
+            (block.spacerSize ?? 'md') === 'sm' ? 'h-3'
+              : (block.spacerSize ?? 'md') === 'lg' ? 'h-12'
+              : 'h-6'
+          return <div className={`${heightClass} w-full`} aria-hidden />
+        })()}
 
         {/* Paragraph/Instructions */}
         {block.type === 'paragraph' && (
@@ -2992,17 +3042,77 @@ function CreateWorksheetContent() {
               <div className="p-4 space-y-4">
                 {/* Heading Block */}
                 {block.type === 'heading' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {locale === 'fr' ? 'Titre de la section' : 'Section Title'}
-                    </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {locale === 'fr' ? 'Titre de la section' : 'Section Title'}
+                      </label>
+                      {/* H1 / H2 / H3 size picker — defaults to H2 */}
+                      <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                        {([
+                          { lvl: 'h1' as const, Icon: Heading1 },
+                          { lvl: 'h2' as const, Icon: Heading2 },
+                          { lvl: 'h3' as const, Icon: Heading3 },
+                        ]).map(({ lvl, Icon }) => {
+                          const active = (block.headingLevel ?? 'h2') === lvl
+                          return (
+                            <button
+                              key={lvl}
+                              type="button"
+                              onClick={() => updateBlock(block.id, { headingLevel: lvl })}
+                              className={`p-1.5 rounded-md transition-all ${
+                                active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                              }`}
+                              aria-label={lvl.toUpperCase()}
+                              title={lvl.toUpperCase()}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                     <input
                       type="text"
                       value={block.content}
                       onChange={(e) => updateBlock(block.id, { content: e.target.value })}
                       placeholder={locale === 'fr' ? 'Entrez le titre...' : 'Enter heading...'}
-                      className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      className={`w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent ${
+                        (block.headingLevel ?? 'h2') === 'h1' ? 'text-2xl font-bold'
+                          : (block.headingLevel ?? 'h2') === 'h3' ? 'text-base font-semibold'
+                          : 'text-lg font-semibold'
+                      }`}
                     />
+                  </div>
+                )}
+
+                {/* Spacer Block — vertical-space picker */}
+                {block.type === 'spacer' && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {locale === 'fr' ? 'Hauteur de l\'espace' : 'Space height'}
+                    </label>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+                      {([
+                        { size: 'sm' as const, label: locale === 'fr' ? 'Petit' : 'Small' },
+                        { size: 'md' as const, label: locale === 'fr' ? 'Moyen' : 'Medium' },
+                        { size: 'lg' as const, label: locale === 'fr' ? 'Grand' : 'Large' },
+                      ]).map(({ size, label }) => {
+                        const active = (block.spacerSize ?? 'md') === size
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => updateBlock(block.id, { spacerSize: size })}
+                            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                              active ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -5541,7 +5651,7 @@ function CreateWorksheetContent() {
                                     {locale === 'fr' ? 'Contenu' : 'Content'}
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'key_points', 'image', 'tip', 'video', 'link'].includes(bt.type)).map((bt) => {
+                                    {blockTypes.filter(bt => ['heading', 'paragraph', 'key_points', 'image', 'divider', 'spacer', 'tip', 'video', 'link'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button
@@ -5554,7 +5664,7 @@ function CreateWorksheetContent() {
                                         </button>
                                       )
                                     })}
-                                    {showMoreContentBlocks && blockTypes.filter(bt => ['divider', 'quote'].includes(bt.type)).map((bt) => {
+                                    {showMoreContentBlocks && blockTypes.filter(bt => ['quote'].includes(bt.type)).map((bt) => {
                                       const Icon = bt.icon
                                       return (
                                         <button

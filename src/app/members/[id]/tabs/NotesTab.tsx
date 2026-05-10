@@ -33,6 +33,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Quote as QuoteIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -1335,22 +1336,23 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       const hasInlineTag = allNoteTypes.some(t2 => note.content.includes(`data-tag="${t2}"`))
       const hasExplicitType = note.note_type !== 'general' && allNoteTypes.includes(note.note_type)
       const hasAnyTag = hasInlineTag || hasExplicitType
-      const matchesNoTag = wantsNoTag && !hasAnyTag
-      // Patient quotes render as <mark data-verbatim="...">. Two creation
-      // paths exist: (a) wrapping selected text — has data-verbatim only;
-      // (b) live annotation — adds data-verbatim-type="said". A third
-      // form (data-verbatim-type="mention") is just a name highlight, NOT
-      // a quote, so we must exclude it. We pull every <mark> with
-      // data-verbatim and accept any that isn't tagged as a mention.
-      const matchesQuote = wantsQuote && (() => {
+      const noteHasQuote = (() => {
         const marks = note.content.match(/<mark\b[^>]*data-verbatim=[^>]*>/gi) ?? []
         return marks.some(m => !/data-verbatim-type=["']mention["']/i.test(m))
       })()
-      const matchesTagFilter = tagFilters.length > 0 && (
+      const noteMatchesAnyTag = tagFilters.length > 0 && (
         tagFilters.some(tag => note.note_type === tag) ||
         tagFilters.some(tag => note.content.includes(`data-tag="${tag}"`))
       )
-      conditions.push(matchesNoTag || matchesQuote || matchesTagFilter)
+      // Within the typeFilters group, each active sub-filter (tag set,
+      // citations, no-tag) must match — picking "Récurrence + Avec citation"
+      // means "notes tagged Récurrence AND containing a quote". Empty
+      // sub-filters are skipped.
+      const subChecks: boolean[] = []
+      if (tagFilters.length > 0) subChecks.push(noteMatchesAnyTag)
+      if (wantsQuote) subChecks.push(noteHasQuote)
+      if (wantsNoTag) subChecks.push(!hasAnyTag)
+      conditions.push(subChecks.length === 0 ? true : subChecks.every(Boolean))
     }
     if (browseSessionFilters.length > 0) {
       conditions.push(!!(note.session_id && browseSessionFilters.includes(note.session_id)))
@@ -2188,19 +2190,27 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       {t.members.noteTypes[type as keyof typeof t.members.noteTypes] || type}
                     </button>
                   ))}
-                  <button
-                    onClick={() => setTypeFilters(prev => { const next = new Set(prev); if (next.has('__no_tag__')) next.delete('__no_tag__'); else next.add('__no_tag__'); return next })}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${typeFilters.has('__no_tag__') ? 'bg-gray-700 text-white ring-1 ring-gray-500 ring-opacity-30' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                  >
-                    {locale === 'fr' ? 'Sans tag' : 'No tag'}
-                  </button>
-                  <button
-                    onClick={() => setTypeFilters(prev => { const next = new Set(prev); if (next.has('__has_quote__')) next.delete('__has_quote__'); else next.add('__has_quote__'); return next })}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${typeFilters.has('__has_quote__') ? 'bg-sky-100 text-sky-700 ring-1 ring-sky-400 ring-opacity-40' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                  >
-                    {locale === 'fr' ? 'Citations' : locale === 'es' ? 'Citas' : 'Quotes'}
-                  </button>
                 </div>
+              </div>
+              {/* Content filter — separate from tag filters since this is
+                  about what's INSIDE a note (a verbatim quote), not a
+                  practitioner-defined tag. Different label + icon makes
+                  it clear this isn't another tag. */}
+              <div className="flex-shrink-0">
+                <label className="block text-[10px] font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
+                  {locale === 'fr' ? 'Contenu' : locale === 'es' ? 'Contenido' : 'Content'}
+                </label>
+                <button
+                  onClick={() => setTypeFilters(prev => { const next = new Set(prev); if (next.has('__has_quote__')) next.delete('__has_quote__'); else next.add('__has_quote__'); return next })}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
+                    typeFilters.has('__has_quote__')
+                      ? 'bg-sky-50 text-sky-700 border-sky-200'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800'
+                  }`}
+                >
+                  <QuoteIcon className="w-3 h-3" />
+                  {locale === 'fr' ? 'Avec citation' : locale === 'es' ? 'Con cita' : 'With a quote'}
+                </button>
               </div>
               {/* Goals filter — hidden for now */}
               {sessions.length > 0 && (
@@ -2267,17 +2277,12 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                     // When filtering by tag, explode each note into one row per matching tag
                     const rows: { note: typeof obsFilteredNotes[0]; tag: { type: string; label: string } | null; tagContent: string }[] = []
                     for (const note of obsFilteredNotes) {
-                      if (quoteFilterOn && activeTypes.length === 0) {
-                        // Citations filter only — render one row per real
-                        // patient quote (skip mention-type marks).
-                        const markRegex = /<mark\b[^>]*data-verbatim=[^>]*>([\s\S]*?)<\/mark>/gi
-                        let m
-                        while ((m = markRegex.exec(note.content)) !== null) {
-                          if (/data-verbatim-type=["']mention["']/i.test(m[0])) continue
-                          const text = stripHtml(m[1]).replace(/​/g, '').trim()
-                          if (text) rows.push({ note, tag: { type: '__has_quote__', label: quoteLabel }, tagContent: text })
-                        }
-                      } else if (activeTypes.length > 0) {
+                      // When citations and tags are both active, run BOTH
+                      // explode paths and merge — the practitioner picked
+                      // "Récurrence + Avec citation" because they want to
+                      // see the tagged passages AND the quotes from the
+                      // surviving notes side-by-side.
+                      if (activeTypes.length > 0) {
                         for (const v of activeTypes) {
                           const tagRegex = new RegExp(`<mark[^>]*data-tag="${v}"[^>]*?data-tag-label="([^"]*)"[^>]*>(.*?)</mark>`, 'gis')
                           let m
@@ -2286,7 +2291,17 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                             if (text) rows.push({ note, tag: { type: v, label: m[1] }, tagContent: text })
                           }
                         }
-                      } else {
+                      }
+                      if (quoteFilterOn) {
+                        const markRegex = /<mark\b[^>]*data-verbatim=[^>]*>([\s\S]*?)<\/mark>/gi
+                        let m
+                        while ((m = markRegex.exec(note.content)) !== null) {
+                          if (/data-verbatim-type=["']mention["']/i.test(m[0])) continue
+                          const text = stripHtml(m[1]).replace(/​/g, '').trim()
+                          if (text) rows.push({ note, tag: { type: '__has_quote__', label: quoteLabel }, tagContent: text })
+                        }
+                      }
+                      if (activeTypes.length === 0 && !quoteFilterOn) {
                         const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
                         let derivedTag: { type: string; label: string } | null = tagMatch
                           ? { type: tagMatch[1], label: tagMatch[2] }

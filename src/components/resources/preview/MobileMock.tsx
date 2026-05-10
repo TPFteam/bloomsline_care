@@ -212,8 +212,20 @@ function MobileReadingMock({ blocks, title }: { blocks: any[]; title: string }) 
 function ReadingBlock({ block }: { block: any }) {
   const c = block.content || ''
   switch (block.type) {
-    case 'heading':
-      return <h3 className="text-[15px] font-bold text-gray-900">{c}</h3>
+    case 'heading': {
+      const lvl = block.headingLevel === 'h1' ? 'h1' : block.headingLevel === 'h3' ? 'h3' : 'h2'
+      const cls = lvl === 'h1'
+        ? 'text-[17px] font-bold text-gray-900'
+        : lvl === 'h3' ? 'text-[13px] font-semibold text-gray-900'
+        : 'text-[15px] font-bold text-gray-900'
+      if (lvl === 'h1') return <h1 className={cls}>{c}</h1>
+      if (lvl === 'h3') return <h3 className={cls}>{c}</h3>
+      return <h2 className={cls}>{c}</h2>
+    }
+    case 'spacer': {
+      const h = block.spacerSize === 'sm' ? 8 : block.spacerSize === 'lg' ? 28 : 16
+      return <div style={{ height: h }} aria-hidden />
+    }
     case 'paragraph':
       return <p className="text-[12px] text-gray-700 leading-relaxed">{c}</p>
     case 'tip':

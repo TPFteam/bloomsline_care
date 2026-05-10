@@ -4,12 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageCircle,
   User,
   Users,
   Settings,
   LogOut,
   Globe,
+  HelpCircle,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useLanguage } from '@/lib/i18n/context'
@@ -42,14 +42,21 @@ export function AppHeader({ user, leftContent, isAdmin = false }: AppHeaderProps
         {leftContent}
 
         <div className="flex items-center gap-3">
-          {/* Talk to Bloom */}
-          <button onClick={() => setShowPractitionerChat(true)}>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm text-gray-900 dark:text-gray-100 font-medium">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
-                <MessageCircle className="w-3 h-3 text-white" />
-              </div>
-              <span>{locale === 'fr' ? 'Parler à Bloom' : locale === 'es' ? 'Hablar con Bloom' : 'Talk to Bloom'}</span>
-            </div>
+          {/* Ask Bloom — minimal "search-input" styled trigger.
+              Solid teal-emerald dot on the left, placeholder-style
+              text on the right. Reads as an input rather than a
+              decorated button, so it feels lighter and more inviting. */}
+          <button
+            type="button"
+            onClick={() => setShowPractitionerChat(true)}
+            className="group flex items-center gap-2.5 pl-2.5 pr-4 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all duration-200 min-w-[180px]"
+          >
+            <span className="relative flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 shadow-sm shadow-emerald-200/60 dark:shadow-emerald-900/40">
+              <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-50 animate-ping [animation-duration:3.5s]" />
+            </span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+              {locale === 'fr' ? 'Demander à Bloom...' : locale === 'es' ? 'Pregunta a Bloom...' : 'Ask Bloom...'}
+            </span>
           </button>
 
           {/* Dark mode toggle - hidden for now */}
@@ -59,6 +66,20 @@ export function AppHeader({ user, leftContent, isAdmin = false }: AppHeaderProps
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button> */}
+
+          {/* Help & Support — replaces the floating bottom-right
+              button so it doesn't collide with row-level overflow
+              menus. Dispatches a window event that FeedbackWrapper
+              listens for and uses to open the (still-global) modal. */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('bloomsline:open-feedback'))}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            aria-label={locale === 'fr' ? 'Aide & support' : locale === 'es' ? 'Ayuda y soporte' : 'Help & support'}
+            title={locale === 'fr' ? 'Aide & support' : locale === 'es' ? 'Ayuda y soporte' : 'Help & support'}
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
 
           <NotificationBell />
 

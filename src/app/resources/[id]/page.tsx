@@ -49,9 +49,11 @@ import {
   Frown,
   Angry,
   Heart,
+  MoreVertical,
+  Link2Off,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { Download } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
@@ -343,6 +345,10 @@ export default function ResourceDetailPage() {
   // Delete response confirmation — removes the patient's submission, leaves the share intact
   const [deleteResponseConfirm, setDeleteResponseConfirm] = useState<{ memberId: string; memberName: string } | null>(null)
   const [deletingResponse, setDeletingResponse] = useState(false)
+  // Unshare confirmation — removes the share AND cascades the response.
+  // The patient loses access to the resource entirely.
+  const [unshareConfirm, setUnshareConfirm] = useState<{ memberId: string; memberName: string } | null>(null)
+  const [unsharing, setUnsharing] = useState(false)
   const [downloadingMemberId, setDownloadingMemberId] = useState<string | null>(null)
   const [selectedSubmission, setSelectedSubmission] = useState<ResourceSubmission | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
@@ -559,6 +565,70 @@ export default function ResourceDetailPage() {
       toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete')
     } finally {
       setDeletingResponse(false)
+    }
+  }
+
+  /**
+   * Hard unshare — removes the patient's access to the resource and any
+   * response they may have submitted. Used when the practitioner decides
+   * the patient should no longer see this resource at all. We also clear
+   * any related notifications so deep-links to the deleted submission
+   * don't 404.
+   */
+  const confirmUnshareResource = async () => {
+    if (!unshareConfirm || !resource) return
+    setUnsharing(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      // Capture response ids first so we can clean up notifications
+      const { data: priorResponses } = await supabase
+        .from('resource_responses')
+        .select('id')
+        .eq('member_id', unshareConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+      const priorResponseIds = (priorResponses || []).map(r => r.id as string)
+
+      // 1. Cascade — drop the responses (a hidden resource shouldn't carry orphan answers)
+      await supabase
+        .from('resource_responses')
+        .delete()
+        .eq('member_id', unshareConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+
+      // 2. The share assignment itself
+      const { error: shareErr } = await supabase
+        .from('member_shared_resources')
+        .delete()
+        .eq('member_id', unshareConfirm.memberId)
+        .eq('resource_id', resource.id)
+        .eq('practitioner_id', user.id)
+      if (shareErr) throw shareErr
+
+      // 3. Bell notifications referencing the removed response/share
+      if (priorResponseIds.length > 0) {
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('entity_type', 'resource_response')
+            .in('entity_id', priorResponseIds)
+        } catch (err) {
+          console.warn('Notification cleanup after unshare failed:', err)
+        }
+      }
+
+      toast.success(locale === 'fr' ? 'Support retiré' : locale === 'es' ? 'Recurso retirado' : 'Resource removed')
+      setUnshareConfirm(null)
+      fetchSubmissions(resource.id)
+    } catch (err) {
+      console.error('Error unsharing resource:', err)
+      toast.error(locale === 'fr' ? 'Échec du retrait' : 'Failed to remove')
+    } finally {
+      setUnsharing(false)
     }
   }
 
@@ -3167,23 +3237,74 @@ export default function ResourceDetailPage() {
                                 )
                               })()}
 
-                              {/* Delete response — only available when a response actually exists */}
-                              {!isPsychoeducation && submission && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setDeleteResponseConfirm({
-                                      memberId: shared.member_id,
-                                      memberName: `${shared.member?.first_name || ''} ${shared.member?.last_name || ''}`.trim() || (locale === 'fr' ? 'ce patient' : 'this patient'),
-                                    })
-                                  }}
-                                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                  title={locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+                              {/* Row actions — overflow menu. Two destructive
+                                  verbs, visually separated so the practitioner
+                                  can read the difference at a glance:
+                                  - "Delete response" (amber) — narrow scope,
+                                    only when a response exists; share stays.
+                                  - "Remove resource" (red, in its own section)
+                                    — wider scope, cascade-deletes the response.
+                                  Once a submission is marked submitted/reviewed
+                                  we hide "Remove resource" entirely so the
+                                  practitioner can't accidentally wipe completed
+                                  patient data. They can still delete the
+                                  response explicitly first if they really want
+                                  to undo the share. */}
+                              {(() => {
+                                const isCompleted = submission?.status === 'submitted' || submission?.status === 'reviewed'
+                                const canDeleteResponse = !isPsychoeducation && !!submission
+                                const canRemoveResource = !isCompleted
+                                if (!canDeleteResponse && !canRemoveResource) return null
+                                return (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                                        aria-label={locale === 'fr' ? 'Plus d\'options' : 'More options'}
+                                      >
+                                        <MoreVertical className="w-4 h-4" />
+                                      </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                      {canDeleteResponse && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setDeleteResponseConfirm({
+                                              memberId: shared.member_id,
+                                              memberName: `${shared.member?.first_name || ''} ${shared.member?.last_name || ''}`.trim() || (locale === 'fr' ? 'ce patient' : 'this patient'),
+                                            })
+                                          }}
+                                          className="text-amber-700 focus:text-amber-800 focus:bg-amber-50"
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2 text-amber-600" />
+                                          {locale === 'fr' ? 'Supprimer la réponse' : locale === 'es' ? 'Eliminar la respuesta' : 'Delete response'}
+                                        </DropdownMenuItem>
+                                      )}
+                                      {canDeleteResponse && canRemoveResource && (
+                                        <DropdownMenuSeparator />
+                                      )}
+                                      {canRemoveResource && (
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setUnshareConfirm({
+                                              memberId: shared.member_id,
+                                              memberName: `${shared.member?.first_name || ''} ${shared.member?.last_name || ''}`.trim() || (locale === 'fr' ? 'ce patient' : 'this patient'),
+                                            })
+                                          }}
+                                          className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                        >
+                                          <Link2Off className="w-4 h-4 mr-2" />
+                                          {locale === 'fr' ? 'Retirer le support' : locale === 'es' ? 'Retirar el recurso' : 'Remove resource'}
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )
+                              })()}
                             </div>
                           </div>
 
@@ -3519,6 +3640,42 @@ export default function ResourceDetailPage() {
                 {deletingResponse
                   ? (locale === 'fr' ? 'Suppression...' : 'Deleting...')
                   : (locale === 'fr' ? 'Supprimer la réponse' : 'Delete response')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Unshare confirmation — destructive: removes the share AND
+            cascades the response, so the patient loses access entirely. */}
+        <AlertDialog
+          open={!!unshareConfirm}
+          onOpenChange={(open) => { if (!open) setUnshareConfirm(null) }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {locale === 'fr' ? 'Retirer ce support ?' : locale === 'es' ? '¿Retirar este recurso?' : 'Remove this resource?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {locale === 'fr'
+                  ? `${unshareConfirm?.memberName} n'aura plus accès à ce support. Toute réponse existante sera également supprimée. Cette action est irréversible.`
+                  : locale === 'es'
+                    ? `${unshareConfirm?.memberName} ya no tendrá acceso a este recurso. La respuesta existente, si la hay, también se eliminará. Esta acción es irreversible.`
+                    : `${unshareConfirm?.memberName} will lose access to this resource. Any existing response will also be deleted. This cannot be undone.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={unsharing}>
+                {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); confirmUnshareResource() }}
+                disabled={unsharing}
+                className="bg-red-600 hover:bg-red-700 focus-visible:ring-red-600"
+              >
+                {unsharing
+                  ? (locale === 'fr' ? 'Retrait...' : locale === 'es' ? 'Retirando...' : 'Removing...')
+                  : (locale === 'fr' ? 'Retirer le support' : locale === 'es' ? 'Retirar el recurso' : 'Remove resource')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

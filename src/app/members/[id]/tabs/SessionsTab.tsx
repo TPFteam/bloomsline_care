@@ -278,19 +278,25 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     fetchMilestones()
   }, [memberId, supabase])
 
-  // Build note types list for inline tagging
+  // Build note types list for inline tagging.
+  // Mirrors NotesTab's `snEditorNoteTypes` builder so the two tabs show
+  // an identical tag list — the practitioner's set of available tags is
+  // a single concept, regardless of which surface they're tagging from.
   useEffect(() => {
     const buildNoteTypes = async () => {
       const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
 
       // Start with defaults — depends on the practitioner's legacy flag
       const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
-      let types: { type: string; label: string }[] = baseDefaults.map(nt => ({
+      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
         type: nt,
         label: noteTypeLabels?.[nt] || nt,
       }))
 
-      // Fetch custom note types and any _hidden: markers
+      // Append practitioner-defined custom tags (skip the `_hidden:*`
+      // markers — those are only relevant for the Observations filter
+      // pills in NotesTab, not for the inline editor picker which always
+      // exposes the full default set).
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase
@@ -300,16 +306,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           .order('created_at')
 
         if (data) {
-          const hidden = new Set<string>()
           for (const d of data) {
-            if (d.type_name.startsWith('_hidden:')) {
-              hidden.add(d.type_name.slice('_hidden:'.length))
-            } else if (!types.some(existing => existing.type === d.type_name)) {
+            if (d.type_name.startsWith('_hidden:')) continue
+            if (!types.some(existing => existing.type === d.type_name)) {
               types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
             }
-          }
-          if (hidden.size > 0) {
-            types = types.filter(t => !hidden.has(t.type))
           }
         }
       }

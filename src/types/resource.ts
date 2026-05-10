@@ -32,6 +32,7 @@ export type BlockType =
   // Worksheet-specific block types
   | 'tip'
   | 'divider'
+  | 'spacer'
   | 'multiple_choice'
   | 'yes_no'
   | 'likert'
@@ -75,6 +76,13 @@ export interface BaseBlock {
 // Specific block types
 export interface HeadingBlock extends BaseBlock {
   type: 'heading'
+  /** h1 | h2 | h3 — defaults to h2 when missing for back-compat. */
+  headingLevel?: 'h1' | 'h2' | 'h3'
+}
+
+export interface SpacerBlock extends BaseBlock {
+  type: 'spacer'
+  spacerSize?: 'sm' | 'md' | 'lg'
 }
 
 export interface ParagraphBlock extends BaseBlock {
@@ -294,6 +302,7 @@ export type ResourceBlock =
   // Worksheet-specific blocks
   | TipBlock
   | DividerBlock
+  | SpacerBlock
   | MultipleChoiceBlock
   | YesNoBlock
   | LikertBlock

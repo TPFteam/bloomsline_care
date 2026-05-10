@@ -337,6 +337,15 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
               onClick={(e) => {
                 if (!onSlotClick) return
                 if ((e.target as HTMLElement).closest('[data-event]')) return
+                // First click on a whitespace cell while the availability
+                // overlay is off just flips the overlay on. The practitioner
+                // can then see the highlighted bookable slots and click one
+                // of those to actually open the booking flow. This stops
+                // accidental bookings on hidden / non-configured slots.
+                if (!showAvailability) {
+                  setShowAvailability(true)
+                  return
+                }
                 const rect = e.currentTarget.getBoundingClientRect()
                 // Support both mouse and touch events
                 const clientY = (e as any).touches?.[0]?.clientY ?? (e as any).changedTouches?.[0]?.clientY ?? e.clientY

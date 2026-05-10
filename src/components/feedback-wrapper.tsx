@@ -18,7 +18,18 @@ const excludedPaths = [
 export function FeedbackWrapper() {
   const pathname = usePathname()
   const [user, setUser] = useState<{ email: string; name: string } | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
   const supabase = createClient()
+
+  // Listen for the trigger from AppHeader's help button. We keep the
+  // modal mounted globally (it has shared submission state) and just
+  // toggle visibility via this window event, so any page with the
+  // header can open it without prop-drilling.
+  useEffect(() => {
+    const handler = () => setIsOpen(true)
+    window.addEventListener('bloomsline:open-feedback', handler)
+    return () => window.removeEventListener('bloomsline:open-feedback', handler)
+  }, [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -59,5 +70,13 @@ export function FeedbackWrapper() {
     return null
   }
 
-  return <FeedbackButton userEmail={user.email} userName={user.name} />
+  return (
+    <FeedbackButton
+      userEmail={user.email}
+      userName={user.name}
+      showFloatingButton={false}
+      isOpen={isOpen}
+      onClose={() => setIsOpen(false)}
+    />
+  )
 }

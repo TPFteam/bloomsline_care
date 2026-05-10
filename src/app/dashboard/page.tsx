@@ -120,6 +120,17 @@ function DashboardContent() {
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [schedulePreselectedMember, setSchedulePreselectedMember] = useState<Member | null>(null)
 
+  // Resource picker — opens after a member is chosen via the
+  // "Share a resource" quick action, mirrors the Book-a-session two-step
+  // pattern. We hold the chosen member here while the user picks a
+  // resource to send.
+  const [shareTargetMember, setShareTargetMember] = useState<{ id: string; first_name: string; last_name: string } | null>(null)
+  const [showResourcePicker, setShowResourcePicker] = useState(false)
+  const [resourcePickerSearch, setResourcePickerSearch] = useState('')
+  const [resourcePickerList, setResourcePickerList] = useState<{ id: string; title: string; type: string; description: string | null; updated_at: string }[]>([])
+  const [resourcePickerLoading, setResourcePickerLoading] = useState(false)
+  const [resourcePickerSending, setResourcePickerSending] = useState<string | null>(null)
+
   // User's latest resources
   const [userResources, setUserResources] = useState<{ id: string; title: string; type: string }[]>([])
 
@@ -774,7 +785,11 @@ function DashboardContent() {
                         if (data) setMemberGroups(data)
                       })
                     } else if (action.id === 'share-resource') {
-                      router.push('/resources')
+                      // Two-step: pick member → pick resource → send.
+                      // Mirrors the Book-a-session flow.
+                      setMemberPickerAction('share')
+                      setMemberSearchQuery('')
+                      setShowMemberPicker(true)
                     } else if (action.id === 'reengage') {
                       setMemberPickerAction('reengage')
                       setMemberSearchQuery('')
@@ -1585,10 +1600,27 @@ function DashboardContent() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        onClick={() => {
+                        onClick={async () => {
                           setShowMemberPicker(false)
                           if (memberPickerAction === 'share') {
-                            router.push(`/members/${member.id}?tab=shared`)
+                            // Step 2 — open resource picker pre-loaded with this practitioner's library.
+                            setShareTargetMember({ id: member.id, first_name: member.first_name, last_name: member.last_name })
+                            setResourcePickerSearch('')
+                            setShowResourcePicker(true)
+                            setResourcePickerLoading(true)
+                            try {
+                              const { data: { user: authUser } } = await supabase.auth.getUser()
+                              if (authUser) {
+                                const { data } = await supabase
+                                  .from('resources')
+                                  .select('id, title, type, description, updated_at')
+                                  .eq('practitioner_id', authUser.id)
+                                  .order('updated_at', { ascending: false })
+                                setResourcePickerList((data ?? []) as any)
+                              }
+                            } finally {
+                              setResourcePickerLoading(false)
+                            }
                           } else if (memberPickerAction === 'reengage' || memberPickerAction === 'session') {
                             setSchedulePreselectedMember(member as unknown as Member)
                             setShowScheduleModal(true)
@@ -1619,6 +1651,156 @@ function DashboardContent() {
                       </motion.button>
                     )
                   })
+                })()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Resource picker — step 2 of the share flow. Opens after the
+          practitioner picks a member. Selecting a resource inserts a
+          row into member_shared_resources; the existing edge-function
+          webhook handles notifications + email. */}
+      <AnimatePresence>
+        {showResourcePicker && shareTargetMember && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowResourcePicker(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    {locale === 'fr' ? 'Choisir un support' : locale === 'es' ? 'Elige un recurso' : 'Pick a resource'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowResourcePicker(false)}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  {locale === 'fr'
+                    ? `À envoyer à ${shareTargetMember.first_name} ${shareTargetMember.last_name}`
+                    : locale === 'es'
+                      ? `Para enviar a ${shareTargetMember.first_name} ${shareTargetMember.last_name}`
+                      : `Sending to ${shareTargetMember.first_name} ${shareTargetMember.last_name}`}
+                </p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={resourcePickerSearch}
+                    onChange={(e) => setResourcePickerSearch(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Rechercher...' : locale === 'es' ? 'Buscar...' : 'Search...'}
+                    className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-2">
+                {resourcePickerLoading ? (
+                  <div className="py-10 flex items-center justify-center text-gray-400">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : (() => {
+                  const q = resourcePickerSearch.trim().toLowerCase()
+                  const filtered = q
+                    ? resourcePickerList.filter(r => r.title?.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q))
+                    : resourcePickerList
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-10 text-center">
+                        <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">
+                          {q
+                            ? (locale === 'fr' ? 'Aucun résultat' : locale === 'es' ? 'Sin resultados' : 'No results')
+                            : (locale === 'fr' ? 'Aucun support créé' : locale === 'es' ? 'Sin recursos' : 'No resources yet')}
+                        </p>
+                      </div>
+                    )
+                  }
+                  return filtered.map((res) => (
+                    <button
+                      key={res.id}
+                      type="button"
+                      onClick={async () => {
+                        if (resourcePickerSending) return
+                        setResourcePickerSending(res.id)
+                        try {
+                          const { data: { user: authUser } } = await supabase.auth.getUser()
+                          if (!authUser) throw new Error('Not authenticated')
+                          const { error } = await supabase
+                            .from('member_shared_resources')
+                            .insert({
+                              member_id: shareTargetMember.id,
+                              resource_id: res.id,
+                              practitioner_id: authUser.id,
+                              shared_at: new Date().toISOString(),
+                            })
+                          if (error) {
+                            if (error.code === '23505') {
+                              toast.info(
+                                locale === 'fr'
+                                  ? `Déjà partagé avec ${shareTargetMember.first_name}`
+                                  : locale === 'es'
+                                    ? `Ya compartido con ${shareTargetMember.first_name}`
+                                    : `Already shared with ${shareTargetMember.first_name}`
+                              )
+                            } else {
+                              throw error
+                            }
+                          } else {
+                            toast.success(
+                              locale === 'fr'
+                                ? `Partagé avec ${shareTargetMember.first_name}`
+                                : locale === 'es'
+                                  ? `Compartido con ${shareTargetMember.first_name}`
+                                  : `Shared with ${shareTargetMember.first_name}`
+                            )
+                          }
+                          setShowResourcePicker(false)
+                          setShareTargetMember(null)
+                        } catch (err) {
+                          console.error('Share resource failed:', err)
+                          toast.error(locale === 'fr' ? 'Erreur lors du partage' : 'Error sharing resource')
+                        } finally {
+                          setResourcePickerSending(null)
+                        }
+                      }}
+                      disabled={!!resourcePickerSending}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{res.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</p>
+                        {res.description && (
+                          <p className="text-xs text-gray-500 truncate">{res.description}</p>
+                        )}
+                      </div>
+                      {resourcePickerSending === res.id ? (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4 text-gray-300 group-hover:text-indigo-500" />
+                      )}
+                    </button>
+                  ))
                 })()}
               </div>
             </motion.div>

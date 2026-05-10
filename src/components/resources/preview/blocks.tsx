@@ -21,7 +21,7 @@ import { CheckSquare, Circle as RadioOff, CheckCircle2, Lightbulb, Quote as Quot
 export const CONTENT_TYPES = new Set([
   'heading', 'paragraph', 'quote', 'tip', 'divider', 'key_points',
   'callout', 'image', 'video', 'audio', 'link', 'pdf_document',
-  'affirmation',
+  'affirmation', 'spacer',
 ])
 
 interface RenderBlockProps {
@@ -43,8 +43,20 @@ export function RenderContextBlock({ block }: { block: any }) {
   const c = block.content || ''
 
   switch (block.type) {
-    case 'heading':
-      return <h2 className="text-lg font-bold text-white">{c}</h2>
+    case 'heading': {
+      const lvl = block.headingLevel === 'h1' ? 'h1' : block.headingLevel === 'h3' ? 'h3' : 'h2'
+      const cls = lvl === 'h1'
+        ? 'text-xl font-bold text-white'
+        : lvl === 'h3' ? 'text-sm font-semibold text-white'
+        : 'text-lg font-bold text-white'
+      if (lvl === 'h1') return <h1 className={cls}>{c}</h1>
+      if (lvl === 'h3') return <h3 className={cls}>{c}</h3>
+      return <h2 className={cls}>{c}</h2>
+    }
+    case 'spacer': {
+      const h = block.spacerSize === 'sm' ? 8 : block.spacerSize === 'lg' ? 28 : 16
+      return <div style={{ height: h }} aria-hidden />
+    }
     case 'paragraph':
       return <p className="text-[13px] text-white/90 leading-relaxed">{c}</p>
     case 'tip':
