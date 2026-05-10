@@ -397,29 +397,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     fetchAllNotes()
   }, [memberId])
 
-  // One-shot orphan cleanup: notes whose session_id points at a session
-  // that no longer exists were left dangling by an earlier delete-session
-  // flow that didn't cascade. We surface them as standalone notes by
-  // nulling out session_id. Re-runs whenever notes/sessions change but is
-  // a no-op when there's nothing to clean.
-  useEffect(() => {
-    if (!allNotes.length || !sessions) return
-    const validSessionIds = new Set(sessions.map(s => s.id))
-    const orphans = allNotes.filter(n => n.session_id && !validSessionIds.has(n.session_id))
-    if (orphans.length === 0) return
-    const orphanIds = orphans.map(n => n.id)
-    ;(async () => {
-      const { error } = await supabase
-        .from('progress_notes')
-        .update({ session_id: null })
-        .in('id', orphanIds)
-      if (error) {
-        console.warn('Could not detach orphan notes:', error)
-        return
-      }
-      setAllNotes(prev => prev.map(n => orphanIds.includes(n.id) ? { ...n, session_id: null } : n))
-    })()
-  }, [allNotes, sessions])
+  // [Removed] Auto orphan-cleanup useEffect. It originally nulled out
+  // session_id on notes pointing at sessions not in the loaded list, to
+  // surface them as standalone after a session delete. The guard
+  // (`!sessions`) treated the truthy empty array `[]` the same as
+  // "loaded with zero sessions" — so on a render where the parent's
+  // sessions fetch had not resolved yet, EVERY note's session_id got
+  // cleared. The rendering layer already tolerates a missing session
+  // (getSessionLabelShort returns '' and the pill hides), so we don't
+  // need this cleanup at all. Going-forward cascade is handled by the
+  // SessionsTab "delete session + linked notes?" prompt.
 
   // Fetch milestone comments and merge as virtual notes for Browse
   const [milestoneComments, setMilestoneComments] = useState<ProgressNote[]>([])
