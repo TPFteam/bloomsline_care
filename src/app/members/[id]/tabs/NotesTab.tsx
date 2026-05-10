@@ -304,6 +304,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const [snEditorNoteTypes, setSnEditorNoteTypes] = useState<{ type: string; label: string }[]>([])
   const [snIsEditing, setSnIsEditing] = useState(false)
   const snAutoSavedId = useRef<string | null>(null) // track autosaved note id without triggering re-render
+  // In-flight INSERT promise. Concurrent saves (autosave + manual Save,
+  // or two debounced autosaves) used to all see `snAutoSavedId.current`
+  // as null because that ref is only written AFTER the INSERT resolves —
+  // so they each fired their own INSERT and the DB ended up with
+  // duplicate rows. Now: the first creator publishes its promise here,
+  // subsequent callers await it and end up doing UPDATE on the ID it
+  // returns. Cleared in finally{} so the next session starts fresh.
+  const snCreatingPromise = useRef<Promise<string | null> | null>(null)
   const [snShowPast, setSnShowPast] = useState(false)
   const [snAttachments, setSnAttachments] = useState<{ url: string; filename: string; size: number }[]>([])
   const [snLightboxIndex, setSnLightboxIndex] = useState<number | null>(null)
@@ -1148,7 +1156,14 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
       if (!user) return
 
       const existing = snSessionSummaryNotes[sessionId]
-      const existingId = existing?.id || snAutoSavedId.current
+      let existingId = existing?.id || snAutoSavedId.current
+
+      // If an INSERT for this session is already in flight (typically
+      // from a debounced autosave), wait for it instead of starting a
+      // second INSERT. Once it resolves we'll UPDATE the row it created.
+      if (!existingId && snCreatingPromise.current) {
+        existingId = await snCreatingPromise.current
+      }
 
       if (existingId) {
         const { error } = await supabase
@@ -1163,30 +1178,38 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
           [sessionId]: { id: existingId, content: content.trim(), created_at: existing?.created_at || new Date().toISOString() },
         }))
       } else {
-        const { data, error } = await supabase
-          .from('progress_notes')
-          .insert({
-            member_id: memberId,
-            practitioner_id: user.id,
-            session_id: sessionId,
-            content: content.trim(),
-            note_type: 'session_summary',
-            is_private: true,
-            attachments: snAttachments,
-          })
-          .select('id, content, created_at')
-          .single()
-
-        if (error) throw error
-
-        setSnSessionSummaryNotes(prev => ({
-          ...prev,
-          [sessionId]: {
-            id: data.id,
-            content: data.content,
-            created_at: data.created_at,
-          },
-        }))
+        const insertPromise = (async () => {
+          const { data, error } = await supabase
+            .from('progress_notes')
+            .insert({
+              member_id: memberId,
+              practitioner_id: user.id,
+              session_id: sessionId,
+              content: content.trim(),
+              note_type: 'session_summary',
+              is_private: true,
+              attachments: snAttachments,
+            })
+            .select('id, content, created_at')
+            .single()
+          if (error) throw error
+          snAutoSavedId.current = data.id
+          setSnSessionSummaryNotes(prev => ({
+            ...prev,
+            [sessionId]: {
+              id: data.id,
+              content: data.content,
+              created_at: data.created_at,
+            },
+          }))
+          return data.id as string
+        })()
+        snCreatingPromise.current = insertPromise.catch(() => null)
+        try {
+          await insertPromise
+        } finally {
+          snCreatingPromise.current = null
+        }
       }
 
       // Also update session details if changed
@@ -1227,28 +1250,46 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
     if (!user) return
 
     const existing = snSessionSummaryNotes[selectedItemId]
-    const existingId = existing?.id || snAutoSavedId.current
+    let existingId = existing?.id || snAutoSavedId.current
+
+    // If another save (manual or autosave) is in the middle of an
+    // INSERT, wait for it and reuse the resulting id — keeps us from
+    // creating a second row for the same session.
+    if (!existingId && snCreatingPromise.current) {
+      existingId = await snCreatingPromise.current
+    }
+
     if (existingId) {
       await supabase
         .from('progress_notes')
         .update({ content: content.trim(), updated_at: new Date().toISOString() })
         .eq('id', existingId)
     } else {
-      const { data } = await supabase
-        .from('progress_notes')
-        .insert({
-          member_id: memberId,
-          practitioner_id: user.id,
-          session_id: selectedItemId,
-          content: content.trim(),
-          note_type: 'session_summary',
-          is_private: true,
-        })
-        .select('id, content, created_at')
-        .single()
-      if (data) {
-        // Store ID in ref so subsequent autosaves use UPDATE — no state change to avoid editor remount
-        snAutoSavedId.current = data.id
+      const insertPromise = (async () => {
+        const { data } = await supabase
+          .from('progress_notes')
+          .insert({
+            member_id: memberId,
+            practitioner_id: user.id,
+            session_id: selectedItemId,
+            content: content.trim(),
+            note_type: 'session_summary',
+            is_private: true,
+          })
+          .select('id, content, created_at')
+          .single()
+        if (data) {
+          // Store ID in ref so subsequent autosaves use UPDATE — no state change to avoid editor remount
+          snAutoSavedId.current = data.id
+          return data.id as string
+        }
+        return null
+      })()
+      snCreatingPromise.current = insertPromise
+      try {
+        await insertPromise
+      } finally {
+        snCreatingPromise.current = null
       }
     }
   }, [selectedItemId, snSessionSummaryNotes, memberId, supabase])
