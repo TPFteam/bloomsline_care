@@ -22,16 +22,31 @@ interface GlobalErrorProps {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
+    const payload = {
+      error_name: error.name,
+      error_message: error.message,
+      error_stack: error.stack || null,
+      error_digest: error.digest || null,
+      scope: 'global' as const,
+      url: typeof window !== 'undefined' ? window.location.href : null,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+    }
+
+    // Consent-independent error sink — captures even when PostHog isn't
+    // initialized because the user hasn't accepted cookies.
     try {
-      posthog.capture('client_error', {
-        error_name: error.name,
-        error_message: error.message,
-        error_stack: error.stack || null,
-        error_digest: error.digest || null,
-        scope: 'global',
-        url: typeof window !== 'undefined' ? window.location.href : null,
-        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      void fetch('/api/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
       })
+    } catch {
+      // network failure — nothing we can do
+    }
+
+    try {
+      posthog.capture('client_error', payload)
     } catch {
       // PostHog may not be initialized — error UI must still render.
     }

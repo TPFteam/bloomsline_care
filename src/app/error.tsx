@@ -26,22 +26,39 @@ interface ErrorPageProps {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
+    const payload = {
+      error_name: error.name,
+      error_message: error.message,
+      error_stack: error.stack || null,
+      error_digest: error.digest || null,
+      scope: 'page' as const,
+      url: typeof window !== 'undefined' ? window.location.href : null,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      // Light fingerprint for translator-extension issues; we read a known
+      // English token in the DOM and report whether it survived. If a
+      // translation tool is mutating text nodes, this will be different.
+      translate_probe_value:
+        typeof document !== 'undefined'
+          ? document.querySelector('[data-translate-probe]')?.textContent || null
+          : null,
+    }
+
+    // PostHog only initializes after cookie consent. Send to our own
+    // consent-independent endpoint as well so non-consenting users' crashes
+    // still leave a trace in Vercel logs / the client_errors table.
     try {
-      posthog.capture('client_error', {
-        error_name: error.name,
-        error_message: error.message,
-        error_stack: error.stack || null,
-        error_digest: error.digest || null,
-        url: typeof window !== 'undefined' ? window.location.href : null,
-        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-        // Light fingerprint for translator-extension issues; we read a known
-        // English token in the DOM and report whether it survived. If a
-        // translation tool is mutating text nodes, this will be different.
-        translate_probe_value:
-          typeof document !== 'undefined'
-            ? document.querySelector('[data-translate-probe]')?.textContent || null
-            : null,
+      void fetch('/api/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
       })
+    } catch {
+      // network failure — nothing we can do
+    }
+
+    try {
+      posthog.capture('client_error', payload)
     } catch {
       // PostHog may not be initialized yet — don't fail the error UI.
     }
