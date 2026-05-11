@@ -185,10 +185,10 @@ export async function GET(request: NextRequest) {
 
     const bufBefore = (bufferSettings?.buffer_before || 0) * 60 * 1000;
     const bufAfter = (bufferSettings?.buffer_after || 0) * 60 * 1000;
-    // Practitioners can opt out of min_notice (e.g. for same-day bookings), but by default
-    // the notice window they set applies to their own scheduling too — consistent with what
-    // their patients see, so their schedule stays realistic.
-    const minNoticeMs = (bufferSettings?.min_notice_hours || 0) * 60 * 60 * 1000;
+    // skipNotice=true means a practitioner is scheduling internally — the
+    // min_notice_hours rule is for patient-facing booking only, so practitioners
+    // can book same-day / next-hour slots for themselves.
+    const minNoticeMs = skipNotice ? 0 : (bufferSettings?.min_notice_hours || 0) * 60 * 60 * 1000;
 
     // Merge bookings + sessions into one conflict list
     const allConflicts = [

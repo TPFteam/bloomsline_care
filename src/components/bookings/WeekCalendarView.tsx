@@ -64,6 +64,13 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
+  const [clickHint, setClickHint] = useState<{ x: number; y: number; key: string } | null>(null)
+
+  useEffect(() => {
+    if (!clickHint) return
+    const t = setTimeout(() => setClickHint(null), 2500)
+    return () => clearTimeout(t)
+  }, [clickHint])
 
   // Fetch practitioner timezone + day formats
   useEffect(() => {
@@ -315,6 +322,17 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
       </div>
 
       {/* Time grid */}
+      <div className="relative">
+      {showAvailability && availLoading && (
+        <div className="absolute inset-x-0 top-2 z-40 pointer-events-none flex items-start justify-center">
+          <div className="bg-white shadow-md border border-gray-200 rounded-full px-3.5 py-1.5 flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+            <span className="text-[11px] font-medium text-gray-600">
+              {locale === 'fr' ? 'Chargement des disponibilités…' : 'Loading availability…'}
+            </span>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: '560px' }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -332,38 +350,49 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           return (
             <div
               key={day.toISOString()}
-              className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick ? 'cursor-pointer' : ''}`}
+              className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick && !showAvailability ? 'cursor-pointer' : ''}`}
               style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
                 if (!onSlotClick) return
                 if ((e.target as HTMLElement).closest('[data-event]')) return
-                // First click on a whitespace cell while the availability
-                // overlay is off just flips the overlay on. The practitioner
-                // can then see the highlighted bookable slots and click one
-                // of those to actually open the booking flow. This stops
-                // accidental bookings on hidden / non-configured slots.
+                // Whitespace click only reveals the availability overlay.
+                // Booking is triggered exclusively by clicking a teal slot
+                // pill — clicks on empty grid space never open the modal,
+                // so practitioners can't accidentally book non-configured
+                // times.
                 if (!showAvailability) {
                   setShowAvailability(true)
                   return
                 }
                 const rect = e.currentTarget.getBoundingClientRect()
-                // Support both mouse and touch events
-                const clientY = (e as any).touches?.[0]?.clientY ?? (e as any).changedTouches?.[0]?.clientY ?? e.clientY
-                const y = clientY - rect.top
-                if (y < 0 || isNaN(y)) return
-                const rawHour = START_HOUR + y / HOUR_HEIGHT
-                const hour = Math.floor(rawHour)
-                const minutes = Math.round((rawHour - hour) * 60 / 15) * 15
-                const adjustedMinutes = minutes === 60 ? 0 : minutes
-                const adjustedHour = minutes === 60 ? hour + 1 : hour
-                if (adjustedHour < START_HOUR || adjustedHour >= END_HOUR) return
-                const time = `${String(adjustedHour).padStart(2, '0')}:${String(adjustedMinutes).padStart(2, '0')}`
-                onSlotClick(day, time)
+                setClickHint({
+                  x: e.clientX - rect.left,
+                  y: e.clientY - rect.top,
+                  key: day.toISOString(),
+                })
               }}
             >
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                 <div key={i} className="border-b border-gray-50" style={{ height: HOUR_HEIGHT }} />
               ))}
+
+              {/* Inline hint: shown when practitioner clicks empty grid space
+                  after availability is loaded — directs them to click a slot. */}
+              {clickHint && clickHint.key === day.toISOString() && !availLoading && (
+                <div
+                  className="absolute z-40 pointer-events-none animate-in fade-in duration-150"
+                  style={{
+                    left: Math.min(Math.max(clickHint.x, 8), 240),
+                    top: clickHint.y + 8,
+                  }}
+                >
+                  <div className="bg-gray-900 text-white text-[10.5px] font-medium px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
+                    {locale === 'fr'
+                      ? 'Cliquez sur un créneau disponible'
+                      : 'Click an available slot to schedule'}
+                  </div>
+                </div>
+              )}
 
               {/* Now line */}
               {today && (() => {
@@ -598,6 +627,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             </div>
           )
         })}
+      </div>
       </div>
 
     </div>
