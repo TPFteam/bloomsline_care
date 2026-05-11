@@ -150,13 +150,15 @@ const typeConfig: Record<ResourceType | 'assessment', {
     lightBg: 'from-amber-50 to-amber-100/50',
   },
   psychoeducation: {
-    gradient: 'from-purple-400 to-purple-600',
-    bg: 'bg-purple-50',
-    text: 'text-purple-700',
-    border: 'border-purple-200',
-    iconBg: 'bg-purple-100/80',
-    glow: 'shadow-purple-200/50',
-    lightBg: 'from-purple-50 to-purple-100/50',
+    // Aligned with the emerald used everywhere else for psychoeducation
+    // — picked up the palette the retired `table` type used to wear.
+    gradient: 'from-emerald-400 to-emerald-600',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    iconBg: 'bg-emerald-100/80',
+    glow: 'shadow-emerald-200/50',
+    lightBg: 'from-emerald-50 to-emerald-100/50',
   },
   table: {
     gradient: 'from-emerald-400 to-emerald-600',

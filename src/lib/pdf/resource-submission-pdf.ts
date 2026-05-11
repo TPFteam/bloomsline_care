@@ -129,6 +129,286 @@ function extractFiles(value: unknown): Array<{ url: string; name?: string }> {
   return []
 }
 
+// ─── Helpers for resolving labels from responses ─────────────────────
+//
+// Patient responses arrive in a mix of shapes. For multiple-choice /
+// scale / likert, the stored value is usually an index (`2`) but
+// sometimes the option text directly. For matrix_rating it's a plain
+// object `{ "0": 4, "1": 3, ... }` keyed by row index. The PDF used
+// to render these raw, so a multiple-choice answer showed up as just
+// "2" instead of "Health". These helpers resolve the human-readable
+// labels uniformly.
+
+/** Try to parse a value into a non-negative integer index. Returns null otherwise. */
+function parseIndex(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return Math.floor(value)
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10)
+  }
+  // Single-row matrix shape `{"0": 4}` — older responses for mood /
+  // likert sometimes shipped wrapped this way; treat as the inner value.
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>
+    const keys = Object.keys(obj)
+    if (keys.length === 1) {
+      const inner = obj[keys[0]]
+      if (typeof inner === 'number' && Number.isFinite(inner) && inner >= 0) return Math.floor(inner)
+      if (typeof inner === 'string' && /^\d+$/.test(inner.trim())) return parseInt(inner.trim(), 10)
+    }
+  }
+  return null
+}
+
+/** Pull `choices` or `options` off a block in a backwards-compatible way. */
+function getChoiceList(block: ResourceBlock): string[] {
+  const b = block as unknown as { choices?: string[]; options?: string[] }
+  if (Array.isArray(b.choices) && b.choices.length) return b.choices
+  if (Array.isArray(b.options) && b.options.length) return b.options
+  return []
+}
+
+/**
+ * Resolve a single-choice response (index or label string) into the
+ * option's label + its index. Falls back to coerced text when the
+ * response doesn't map to a known choice.
+ */
+function resolveChoice(block: ResourceBlock, response: unknown): { label: string; index: number | null } | null {
+  const choices = getChoiceList(block)
+  const idx = parseIndex(response)
+  if (idx !== null && choices[idx] !== undefined) return { label: choices[idx], index: idx }
+  const text = coerceToText(response)
+  if (!text) return null
+  // String response: try to match against choice labels.
+  const matched = choices.indexOf(text)
+  if (matched >= 0) return { label: choices[matched], index: matched }
+  // Unknown — surface the raw text rather than a wrong index.
+  return { label: text, index: null }
+}
+
+/** Resolve checklist response (array of indices or labels) into a list of labels. */
+function resolveChecklistLabels(block: ResourceBlock, response: unknown): string[] {
+  const items = (() => {
+    const b = block as unknown as { items?: string[] }
+    return Array.isArray(b.items) ? b.items : []
+  })()
+  if (!Array.isArray(response)) return []
+  return response.map(entry => {
+    const idx = parseIndex(entry)
+    if (idx !== null && items[idx] !== undefined) return items[idx]
+    return coerceToText(entry) ?? ''
+  }).filter(Boolean)
+}
+
+/** Likert / scale label resolution. Index is mapped against scaleLabels (preferred) or numeric range. */
+function resolveLikert(block: ResourceBlock, response: unknown): { index: number | null; label: string | null; total: number } {
+  const b = block as unknown as { scaleLabels?: string[]; scaleRange?: number; scaleMin?: number; scaleMax?: number }
+  const labels = Array.isArray(b.scaleLabels) ? b.scaleLabels : []
+  const total = labels.length || b.scaleRange || (b.scaleMax !== undefined && b.scaleMin !== undefined ? b.scaleMax - b.scaleMin + 1 : 5)
+  const idx = parseIndex(response)
+  if (idx !== null) {
+    return { index: idx, label: labels[idx] ?? null, total }
+  }
+  // Maybe the value is already a label string.
+  const text = coerceToText(response)
+  if (text) {
+    const matched = labels.indexOf(text)
+    if (matched >= 0) return { index: matched, label: text, total }
+    return { index: null, label: text, total }
+  }
+  return { index: null, label: null, total }
+}
+
+/** Mood lookup against block.moodOptions. */
+function resolveMood(block: ResourceBlock, response: unknown): { emoji: string; label: string; index: number | null } | null {
+  const b = block as unknown as { moodOptions?: { emoji: string; label: string }[] }
+  const options = Array.isArray(b.moodOptions) ? b.moodOptions : []
+  const idx = parseIndex(response)
+  if (idx !== null && options[idx]) return { ...options[idx], index: idx }
+  const text = coerceToText(response)
+  if (text) {
+    const matched = options.findIndex(o => o.label === text || o.emoji === text)
+    if (matched >= 0) return { ...options[matched], index: matched }
+    return { emoji: '•', label: text, index: null }
+  }
+  return null
+}
+
+/** Render the 0..N "pill" row used by scales (likert variant 'rating', plain scale). */
+function renderPillRow(total: number, selectedIndex: number | null, startAt = 0): string {
+  const pills = Array.from({ length: total }, (_, i) => {
+    const value = startAt + i
+    const isSelected = selectedIndex === i
+    const bg = isSelected ? '#4A9A86' : 'white'
+    const color = isSelected ? 'white' : '#6b7280'
+    const border = isSelected ? '#4A9A86' : '#d1d5db'
+    return `<span style="display:inline-block;min-width:26px;text-align:center;padding:4px 8px;border:1px solid ${border};background:${bg};color:${color};border-radius:6px;font-size:11px;font-weight:${isSelected ? '600' : '500'}">${value}</span>`
+  }).join(' ')
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${pills}</div>`
+}
+
+/** Render the labeled Likert ladder. */
+function renderLikertSteps(labels: string[], selectedIndex: number | null): string {
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px">${labels.map((lab, i) => {
+    const isSelected = selectedIndex === i
+    const bg = isSelected ? '#ecfdf5' : 'white'
+    const color = isSelected ? '#065f46' : '#6b7280'
+    const border = isSelected ? '#4A9A86' : '#e5e7eb'
+    return `<span style="padding:4px 10px;border:1px solid ${border};background:${bg};color:${color};border-radius:6px;font-size:11px;font-weight:${isSelected ? '600' : '500'}">${escapeHtml(lab)}</span>`
+  }).join('')}</div>`
+}
+
+/** Render the mood-selector row as emoji + label, with the selected one ringed. */
+function renderMoodOptions(options: { emoji: string; label: string }[], selectedIndex: number | null): string {
+  return `<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start">${options.map((m, i) => {
+    const isSelected = selectedIndex === i
+    const ringColor = isSelected ? '#4A9A86' : 'transparent'
+    const textColor = isSelected ? '#065f46' : '#9ca3af'
+    return `<div style="display:flex;flex-direction:column;align-items:center;min-width:50px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:2px solid ${ringColor};font-size:18px">${escapeHtml(m.emoji)}</span>
+      <span style="font-size:10px;color:${textColor};margin-top:4px;font-weight:${isSelected ? '600' : '500'}">${escapeHtml(m.label)}</span>
+    </div>`
+  }).join('')}</div>`
+}
+
+/** Render a single yes/no answer as two pills. */
+function renderYesNo(response: unknown, locale: Locale): string {
+  const raw = coerceToText(response)?.trim().toLowerCase() || ''
+  const isYes = raw === 'yes' || raw === 'oui' || raw === 'sí' || raw === 'si' || raw === 'true' || raw === '1'
+  const isNo = raw === 'no' || raw === 'non' || raw === 'false' || raw === '0'
+  const yesLabel = locale === 'fr' ? 'Oui' : locale === 'es' ? 'Sí' : 'Yes'
+  const noLabel = locale === 'fr' ? 'Non' : locale === 'es' ? 'No' : 'No'
+  const pill = (label: string, picked: boolean) => {
+    const bg = picked ? '#4A9A86' : 'white'
+    const color = picked ? 'white' : '#9ca3af'
+    const border = picked ? '#4A9A86' : '#e5e7eb'
+    return `<span style="padding:4px 14px;border:1px solid ${border};background:${bg};color:${color};border-radius:999px;font-size:11px;font-weight:${picked ? '600' : '500'}">${label}</span>`
+  }
+  return `<div style="display:flex;gap:8px">${pill(yesLabel, isYes)}${pill(noLabel, isNo)}</div>`
+}
+
+/** Render a single-choice list with hollow / filled radios per option. */
+function renderChoiceList(block: ResourceBlock, response: unknown, multi: boolean): string {
+  const choices = getChoiceList(block)
+  if (choices.length === 0) {
+    // No options on the block — fall back to plain text.
+    const text = coerceToText(response)
+    return text ? `<div>${escapeHtml(text)}</div>` : ''
+  }
+  // Build the set of selected indices.
+  const selected = new Set<number>()
+  if (multi) {
+    if (Array.isArray(response)) {
+      for (const r of response) {
+        const idx = parseIndex(r)
+        if (idx !== null) selected.add(idx)
+        else {
+          const text = coerceToText(r)
+          if (text) {
+            const m = choices.indexOf(text)
+            if (m >= 0) selected.add(m)
+          }
+        }
+      }
+    }
+  } else {
+    const resolved = resolveChoice(block, response)
+    if (resolved?.index !== null && resolved?.index !== undefined) selected.add(resolved.index)
+  }
+  return `<div style="display:flex;flex-direction:column;gap:4px">${choices.map((c, i) => {
+    const isSelected = selected.has(i)
+    const indicator = multi
+      ? (isSelected
+          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1.5px solid #4A9A86;background:#4A9A86;color:white;border-radius:3px;font-size:10px;font-weight:700">✓</span>`
+          : `<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #d1d5db;border-radius:3px"></span>`)
+      : (isSelected
+          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border:1.5px solid #4A9A86;border-radius:50%"><span style="display:inline-block;width:7px;height:7px;background:#4A9A86;border-radius:50%"></span></span>`
+          : `<span style="display:inline-block;width:14px;height:14px;border:1.5px solid #d1d5db;border-radius:50%"></span>`)
+    const color = isSelected ? '#111827' : '#6b7280'
+    const weight = isSelected ? '600' : '500'
+    return `<div style="display:flex;align-items:center;gap:8px;color:${color};font-size:12px;font-weight:${weight}">${indicator}<span>${escapeHtml(c)}</span></div>`
+  }).join('')}</div>`
+}
+
+/** Render a matrix rating answer as a small table (row labels × scale dots, picked one filled). */
+function renderMatrix(block: ResourceBlock, response: unknown): string {
+  const b = block as unknown as { matrixItems?: string[]; matrixScaleMax?: number; matrixScaleLabels?: { min?: string; max?: string } }
+  const items = Array.isArray(b.matrixItems) ? b.matrixItems : []
+  const scaleMax = b.matrixScaleMax ?? 5
+  const obj = (response && typeof response === 'object' && !Array.isArray(response))
+    ? (response as Record<string, unknown>)
+    : null
+  if (items.length === 0 || !obj) {
+    const text = coerceToText(response)
+    return text ? `<div style="white-space:pre-wrap">${escapeHtml(text)}</div>` : ''
+  }
+  const head = `<tr><td style="padding:4px 8px;border-bottom:1px solid #e5e7eb"></td>${
+    Array.from({ length: scaleMax }, (_, i) =>
+      `<td style="padding:4px 6px;font-size:10px;color:#9ca3af;text-align:center;border-bottom:1px solid #e5e7eb">${i + 1}</td>`).join('')
+  }</tr>`
+  const body = items.map((item, rowIdx) => {
+    const picked = parseIndex(obj[String(rowIdx)])
+    return `<tr>
+      <td style="padding:4px 8px;font-size:11px;color:#374151;border-bottom:1px solid #f3f4f6">${escapeHtml(item)}</td>
+      ${Array.from({ length: scaleMax }, (_, i) => {
+        const isPicked = picked !== null && picked === i + 1
+        return `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #f3f4f6">
+          ${isPicked
+            ? `<span style="display:inline-block;width:10px;height:10px;background:#4A9A86;border-radius:50%"></span>`
+            : `<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #d1d5db;border-radius:50%"></span>`}
+        </td>`
+      }).join('')}
+    </tr>`
+  }).join('')
+  const minLabel = b.matrixScaleLabels?.min
+  const maxLabel = b.matrixScaleLabels?.max
+  const legend = (minLabel || maxLabel)
+    ? `<div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:4px;padding:0 8px">
+        <span>${minLabel ? `1 = ${escapeHtml(minLabel)}` : ''}</span>
+        <span>${maxLabel ? `${scaleMax} = ${escapeHtml(maxLabel)}` : ''}</span>
+      </div>` : ''
+  return `<table style="border-collapse:collapse;margin:4px 0"><tbody>${head}${body}</tbody></table>${legend}`
+}
+
+/** Render a slider answer as a numeric value on a horizontal bar. */
+function renderSlider(block: ResourceBlock, response: unknown): string {
+  const b = block as unknown as { sliderMin?: number; sliderMax?: number; sliderUnit?: string; sliderMinLabel?: string; sliderMaxLabel?: string }
+  const min = b.sliderMin ?? 0
+  const max = b.sliderMax ?? 100
+  const unit = b.sliderUnit ? ` ${b.sliderUnit}` : ''
+  const value = typeof response === 'number' ? response : parseIndex(response)
+  if (value === null || value === undefined) {
+    const text = coerceToText(response)
+    return text ? `<div>${escapeHtml(text)}</div>` : ''
+  }
+  const pct = max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0
+  return `<div>
+    <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:4px">${value}${escapeHtml(unit)}</div>
+    <div style="position:relative;height:6px;background:#e5e7eb;border-radius:3px;width:220px">
+      <div style="position:absolute;left:0;top:0;height:6px;width:${pct}%;background:#4A9A86;border-radius:3px"></div>
+      <div style="position:absolute;left:calc(${pct}% - 6px);top:-4px;width:14px;height:14px;background:#4A9A86;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #4A9A86"></div>
+    </div>
+    ${(b.sliderMinLabel || b.sliderMaxLabel) ? `<div style="display:flex;justify-content:space-between;width:220px;font-size:10px;color:#9ca3af;margin-top:6px">
+      <span>${escapeHtml(b.sliderMinLabel || String(min))}</span>
+      <span>${escapeHtml(b.sliderMaxLabel || String(max))}</span>
+    </div>` : ''}
+  </div>`
+}
+
+/** Format an ISO date string into a locale-friendly long date. */
+function formatDateOnly(value: string, locale: Locale): string {
+  const fmt = locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US'
+  // ISO date "2026-05-21" — parse as local date to avoid TZ shift.
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim())
+  if (m) {
+    const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]))
+    return d.toLocaleDateString(fmt, { year: 'numeric', month: 'long', day: 'numeric' })
+  }
+  const d = new Date(value)
+  if (Number.isFinite(d.getTime())) return d.toLocaleDateString(fmt, { year: 'numeric', month: 'long', day: 'numeric' })
+  return value
+}
+
 /** Render a single answer to plain HTML based on the block type. */
 function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): string {
   const notAnswered = locale === 'fr' ? 'Non renseigné' : locale === 'es' ? 'Sin respuesta' : 'Not answered'
@@ -138,27 +418,87 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
     return `<em style="color:#9ca3af">${notAnswered}</em>`
   }
 
-  // Wrap the body in a try/catch so a single weirdly-shaped response can't
-  // bring down the whole PDF render. Worst case we fall through to a
-  // "unrenderable" placeholder.
+  // Defensive try/catch so a single weirdly-shaped response can't break
+  // the whole PDF render. We fall through to a placeholder on error.
   try {
     switch (block.type) {
-      case 'prompt':
-      case 'numeric':
-      case 'slider':
-      case 'mood':
-      case 'date_picker':
-      case 'time_input':
-      case 'yes_no':
-      case 'multiple_choice':
-      case 'scale':
-      case 'likert': {
+      case 'prompt': {
         const text = coerceToText(response)
         if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
         return `<div style="white-space:pre-wrap">${escapeHtml(text)}</div>`
       }
 
-      case 'checklist':
+      case 'numeric': {
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div style="font-size:14px;font-weight:600;color:#111827">${escapeHtml(text)}</div>`
+      }
+
+      case 'date_picker': {
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div>${escapeHtml(formatDateOnly(text, locale))}</div>`
+      }
+
+      case 'time_input': {
+        const text = coerceToText(response)
+        if (!text) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        // Render the time string as-is — if the picker saved a weird
+        // value like "31:00" we surface it rather than silently mangle.
+        return `<div style="font-variant-numeric:tabular-nums">${escapeHtml(text)}</div>`
+      }
+
+      case 'yes_no':
+        return renderYesNo(response, locale)
+
+      case 'multiple_choice': {
+        const b = block as unknown as { allowMultiple?: boolean }
+        return renderChoiceList(block, response, !!b.allowMultiple)
+      }
+
+      case 'scale': {
+        // Plain numeric scale (e.g. 1..10) — no labels.
+        const b = block as unknown as { scaleMin?: number; scaleMax?: number }
+        const min = b.scaleMin ?? 1
+        const max = b.scaleMax ?? 10
+        const idx = parseIndex(response)
+        // idx here is the *value* not an index — adjust selection mapping.
+        return renderPillRow(max - min + 1, idx !== null ? idx - min : null, min)
+      }
+
+      case 'likert': {
+        const { index, label, total } = resolveLikert(block, response)
+        const b = block as unknown as { scaleLabels?: string[]; scaleType?: string; scaleMin?: number; scaleMax?: number }
+        if (Array.isArray(b.scaleLabels) && b.scaleLabels.length > 0) {
+          return renderLikertSteps(b.scaleLabels, index)
+        }
+        // No labels → numeric rating row.
+        const min = b.scaleMin ?? 0
+        return renderPillRow(total, index, min) + (label ? `<div style="font-size:11px;color:#6b7280;margin-top:4px">${escapeHtml(label)}</div>` : '')
+      }
+
+      case 'slider':
+        return renderSlider(block, response)
+
+      case 'mood': {
+        const b = block as unknown as { moodOptions?: { emoji: string; label: string }[] }
+        const options = Array.isArray(b.moodOptions) ? b.moodOptions : []
+        if (options.length > 0) {
+          const picked = resolveMood(block, response)
+          return renderMoodOptions(options, picked?.index ?? null)
+        }
+        const picked = resolveMood(block, response)
+        if (!picked) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        return `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">${escapeHtml(picked.emoji)}</span><span>${escapeHtml(picked.label)}</span></div>`
+      }
+
+      case 'matrix_rating':
+        return renderMatrix(block, response)
+
+      case 'checklist': {
+        return renderChoiceList(block, response, true)
+      }
+
       case 'list_input': {
         if (Array.isArray(response)) {
           const items = response
@@ -196,15 +536,27 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
       case 'audio_response':
       case 'file_response': {
         const files = extractFiles(response)
-        const label = locale === 'fr' ? 'Fichier soumis' : locale === 'es' ? 'Archivo enviado' : 'File submitted'
+        const kindIcon = block.type === 'video_response' ? '🎬'
+          : block.type === 'audio_response' ? '🎙️'
+          : '📎'
+        const fallback = locale === 'fr' ? 'Fichier soumis' : locale === 'es' ? 'Archivo enviado' : 'File submitted'
+        const availabilityHint = locale === 'fr'
+          ? 'Disponible dans Bloomsline'
+          : locale === 'es'
+            ? 'Disponible en Bloomsline'
+            : 'Available in Bloomsline'
         if (files.length === 0) {
-          return `<em style="color:#6b7280">[${label}]</em>`
+          return `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#f3f4f6;border-radius:6px;font-size:11px;color:#6b7280">${kindIcon} ${escapeHtml(fallback)}</div>`
         }
-        const items = files.map(f => {
-          const display = f.name || label
-          return `<li style="margin:2px 0">${escapeHtml(display)}</li>`
+        const chips = files.map(f => {
+          const display = f.name || fallback
+          return `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;color:#374151;margin:2px 0">
+            <span>${kindIcon}</span>
+            <span style="font-weight:500">${escapeHtml(display)}</span>
+            <span style="color:#9ca3af">· ${escapeHtml(availabilityHint)}</span>
+          </div>`
         }).join('')
-        return `<ul style="margin:4px 0;padding-left:20px;list-style:disc;color:#6b7280;font-size:12px">${items}</ul>`
+        return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start">${chips}</div>`
       }
 
       default: {
@@ -221,14 +573,19 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
   }
 }
 
-function renderSubmissionBlock(
+/**
+ * Build the per-submission "slices" used by the per-block paginator.
+ * Each slice is one cohesive unit that should NEVER be split across
+ * pages (one submission header, or one question + its answer).
+ */
+function buildSubmissionSlices(
   resource: Resource,
   submission: { responses: Record<string, unknown>; resource_snapshot?: { blocks?: unknown } | null },
   index: number,
   totalCount: number,
   submittedAt: string | null,
   locale: Locale,
-): string {
+): string[] {
   const responses = submission.responses
   // Render against the resource snapshot captured at submission time so
   // edits made after the patient submitted don't reorder or hide answers.
@@ -240,29 +597,41 @@ function renderSubmissionBlock(
     : ''
 
   const submittedAtLine = submittedAt
-    ? `<div style="font-size:11px;color:#6b7280;margin-bottom:14px">${escapeHtml(formatDate(submittedAt, locale))}</div>`
+    ? `<div style="font-size:11px;color:#6b7280">${escapeHtml(formatDate(submittedAt, locale))}</div>`
     : ''
 
-  const items = questionBlocks.map((block, i) => {
+  const slices: string[] = []
+
+  // Submission header slice (only when there's a label or date to show,
+  // and only for multi-submission resources OR first slice).
+  if (submissionLabel || (submittedAtLine && index === 0)) {
+    slices.push(`
+      <div style="${index > 0 ? 'border-top:1px dashed #d1d5db;padding-top:18px;margin-top:8px;' : ''}margin-bottom:12px">
+        ${submissionLabel ? `<div style="font-size:12px;font-weight:600;color:#4A9A86;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${submissionLabel}</div>` : ''}
+        ${submittedAtLine}
+      </div>
+    `)
+  }
+
+  if (questionBlocks.length === 0) {
+    slices.push(`<div style="color:#9ca3af;font-style:italic;font-size:12px">${escapeHtml(locale === 'fr' ? 'Aucune question dans cette ressource' : locale === 'es' ? 'No hay preguntas en este recurso' : 'No questions in this resource')}</div>`)
+    return slices
+  }
+
+  for (let i = 0; i < questionBlocks.length; i++) {
+    const block = questionBlocks[i]
     const question = (typeof block.content === 'string' && block.content.trim())
       ? block.content
       : `Question ${i + 1}`
     const ans = renderAnswer(block, responses[block.id], locale)
-    return `
-      <div style="margin-bottom:14px;page-break-inside:avoid">
-        <div style="font-size:13px;font-weight:600;color:#111827;margin-bottom:6px">Q${i + 1}. ${escapeHtml(question)}</div>
-        <div style="font-size:12px;color:#374151;padding-left:12px;border-left:2px solid #e5e7eb">${ans}</div>
+    slices.push(`
+      <div style="margin-bottom:22px">
+        <div style="font-size:13px;font-weight:600;color:#111827;margin-bottom:10px">Q${i + 1}. ${escapeHtml(question)}</div>
+        <div style="font-size:12px;color:#374151;padding:4px 0 4px 14px;border-left:2px solid #e5e7eb">${ans}</div>
       </div>
-    `
-  }).join('')
-
-  return `
-    <div style="margin-top:${index === 0 ? '0' : '24px'};${index > 0 ? 'border-top:1px dashed #d1d5db;padding-top:18px;' : ''}">
-      ${submissionLabel ? `<div style="font-size:12px;font-weight:600;color:#4A9A86;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${submissionLabel}</div>` : ''}
-      ${submittedAtLine}
-      ${items || `<div style="color:#9ca3af;font-style:italic;font-size:12px">${escapeHtml(locale === 'fr' ? 'Aucune question dans cette ressource' : locale === 'es' ? 'No hay preguntas en este recurso' : 'No questions in this resource')}</div>`}
-    </div>
-  `
+    `)
+  }
+  return slices
 }
 
 export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
@@ -279,7 +648,7 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
       .eq('practitioner_id', practitionerId)
       .in('status', ['submitted', 'reviewed'])
       .order('submitted_at', { ascending: true }),
-    supabase.from('members').select('first_name, last_name').eq('id', memberId).maybeSingle(),
+    supabase.from('members').select('first_name, last_name, avatar_url').eq('id', memberId).maybeSingle(),
     supabase.from('users').select('full_name, avatar_url').eq('id', practitionerId).maybeSingle(),
   ])
 
@@ -293,7 +662,7 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
     practitioner_notes: string | null
     resource_snapshot: { blocks?: unknown } | null
   }>
-  const member = memberRes.data as { first_name: string; last_name: string } | null
+  const member = memberRes.data as { first_name: string; last_name: string; avatar_url: string | null } | null
   const practitioner = practitionerRes.data as { full_name: string | null; avatar_url: string | null } | null
 
   if (!resource) throw new Error('Resource not found')
@@ -306,29 +675,15 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
   const practitionerName = practitioner?.full_name || (locale === 'fr' ? 'Praticien' : locale === 'es' ? 'Profesional' : 'Practitioner')
   const practitionerInitials = getInitials(practitionerName)
 
-  const submissionsHtml = submissions.map((s, i) =>
-    renderSubmissionBlock(
-      resource,
-      { responses: s.responses || {}, resource_snapshot: s.resource_snapshot },
-      i,
-      submissions.length,
-      s.submitted_at || s.created_at,
-      locale,
-    )
-  ).join('')
-
   // Practitioner notes — combine across submissions if multiple
   const allNotes = submissions
     .map(s => s.practitioner_notes)
     .filter((n): n is string => !!n && n.trim().length > 0)
-  const notesHtml = allNotes.length > 0
-    ? `<div style="margin-top:24px;padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
-        <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">${locale === 'fr' ? 'Notes du praticien' : locale === 'es' ? 'Notas del profesional' : 'Practitioner notes'}</div>
-        <div style="font-size:12px;color:#374151;white-space:pre-wrap">${allNotes.map(escapeHtml).join('<br><br>')}</div>
-       </div>`
-    : ''
 
-  // Practitioner avatar — try image, fall back to initials circle
+  // Practitioner avatar in the top-right (signing the document).
+  // Patient name appears as a single muted line under the title — no
+  // avatar there since it was visually loud and the filename already
+  // carries the patient's name.
   const avatarHtml = practitioner?.avatar_url
     ? `<img src="${escapeHtml(practitioner.avatar_url)}" crossorigin="anonymous" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:block" />`
     : `<div style="width:40px;height:40px;border-radius:50%;background:#4A9A86;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px">${escapeHtml(practitionerInitials)}</div>`
@@ -337,13 +692,19 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
   const submittedByLabel = locale === 'fr' ? 'Soumis par' : locale === 'es' ? 'Enviado por' : 'Submitted by'
   const today = new Date().toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US')
 
-  // A4 in mm: 210 x 297. Use 794 x 1123 px @ 96 DPI ratio for DOM.
-  const PAGE_W_PX = 794
-  const PAD_PX = 48
+  // ─── Build slice list (each = atomic, can't split across pages) ──
+  //
+  // 1. First-page header (logo + practitioner card + resource title)
+  // 2. Per submission: optional sub-header + each question card
+  // 3. Practitioner notes (if any)
+  // 4. Generated-on footer
+  //
+  // Each slice is rendered to its own canvas, measured, then placed
+  // onto the PDF page-by-page. If a slice doesn't fit on the current
+  // page, we start a new page. That's how questions never split.
 
-  const html = `
-    <div style="padding:${PAD_PX}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;background:white;width:${PAGE_W_PX}px;box-sizing:border-box">
-      <!-- Header -->
+  const headerHtml = `
+    <div data-pdf-slice="header">
       <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:2px solid #4A9A86;margin-bottom:24px">
         <div style="font-size:22px;letter-spacing:0.02em;line-height:1;white-space:nowrap">
           <span style="font-weight:500;color:#1F2227">blooms</span><span style="font-weight:300;color:#4A9A86">line</span>
@@ -356,36 +717,62 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
           </div>
         </div>
       </div>
-
-      <!-- Resource title -->
       <div style="margin-bottom:6px;font-size:22px;font-weight:700;color:#111827;line-height:1.3">${escapeHtml(resourceTitle)}</div>
-      <div style="margin-bottom:24px;font-size:12px;color:#6b7280">${escapeHtml(submittedByLabel)} <strong>${escapeHtml(memberName)}</strong></div>
-
-      <!-- Submissions -->
-      ${submissionsHtml}
-
-      <!-- Notes + footer -->
-      ${notesHtml}
-      <div style="margin-top:32px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#9ca3af">
-        <div>${escapeHtml(generatedLabel)}</div>
-        <div>${escapeHtml(today)}</div>
-      </div>
+      <div style="margin-bottom:28px;font-size:12px;color:#6b7280">${escapeHtml(submittedByLabel)} <strong style="color:#111827">${escapeHtml(memberName)}</strong></div>
     </div>
   `
 
-  // Mount off-screen
+  const submissionSlices = submissions.flatMap((s, i) =>
+    buildSubmissionSlices(
+      resource,
+      { responses: s.responses || {}, resource_snapshot: s.resource_snapshot },
+      i,
+      submissions.length,
+      s.submitted_at || s.created_at,
+      locale,
+    )
+  )
+
+  const notesHtml = allNotes.length > 0
+    ? `<div data-pdf-slice="notes" style="margin-top:18px;padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px">
+        <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">${locale === 'fr' ? 'Notes du praticien' : locale === 'es' ? 'Notas del profesional' : 'Practitioner notes'}</div>
+        <div style="font-size:12px;color:#374151;white-space:pre-wrap">${allNotes.map(escapeHtml).join('<br><br>')}</div>
+       </div>`
+    : ''
+
+  const footerHtml = `
+    <div data-pdf-slice="footer" style="margin-top:24px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#9ca3af">
+      <div>${escapeHtml(generatedLabel)}</div>
+      <div>${escapeHtml(today)}</div>
+    </div>
+  `
+
+  // A4 in mm: 210 x 297. Use 794 x 1123 px @ 96 DPI ratio for DOM.
+  const PAGE_W_PX = 794
+  const PAD_PX = 48
+  const CONTENT_W_PX = PAGE_W_PX - PAD_PX * 2
+
+  // Mount each slice in its own off-screen container, capture canvases.
+  const slicesHtml: string[] = [
+    headerHtml,
+    ...submissionSlices.map(s => `<div data-pdf-slice="block" style="margin-bottom:6px">${s}</div>`),
+    notesHtml,
+    footerHtml,
+  ].filter(Boolean)
+
   const wrapper = document.createElement('div')
   wrapper.style.position = 'fixed'
   wrapper.style.left = '-99999px'
   wrapper.style.top = '0'
-  wrapper.innerHTML = html
+  wrapper.style.width = `${CONTENT_W_PX}px`
+  wrapper.style.fontFamily = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
+  wrapper.style.color = '#111827'
+  wrapper.style.background = 'white'
+  // Put each slice in its own wrapper so html2canvas can target it.
+  wrapper.innerHTML = slicesHtml.map(html => `<div class="pdf-slice" style="width:${CONTENT_W_PX}px;background:white;box-sizing:border-box">${html}</div>`).join('')
   document.body.appendChild(wrapper)
 
   try {
-    const target = wrapper.firstElementChild as HTMLElement
-    if (!target) throw new Error('Failed to render template')
-
-    // Wait a frame so layout settles
     await new Promise(r => requestAnimationFrame(() => r(null)))
 
     const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
@@ -393,34 +780,90 @@ export async function downloadResourceSubmissionPDF(args: Args): Promise<void> {
       import('jspdf'),
     ])
 
-    const canvas = await html2canvas(target, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    })
-
     // A4 portrait, mm
     const PDF_W = 210
     const PDF_H = 297
+    const PDF_PAD = 12 // mm padding around page content
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    const imgW = PDF_W
-    const imgH = (canvas.height * imgW) / canvas.width
-    let heightLeft = imgH
-    let position = 0
+    // px-to-mm ratio. canvas.width / mm = pxPerMm. We rasterize at scale=2
+    // for crispness, then map back: imgW(mm) = canvas.width / 2 * (mm/px).
+    // Simpler: imgW(mm) = (canvas.width / scale) / 96 * 25.4
+    const canvases: HTMLCanvasElement[] = []
+    const sliceEls = Array.from(wrapper.querySelectorAll<HTMLElement>('.pdf-slice'))
+    for (const el of sliceEls) {
+      const c = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      })
+      canvases.push(c)
+    }
 
-    const imgData = canvas.toDataURL('image/png')
+    const usableHeight = PDF_H - PDF_PAD * 2
+    let yMm = PDF_PAD
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH)
-    heightLeft -= PDF_H
+    for (let i = 0; i < canvases.length; i++) {
+      const c = canvases[i]
+      const imgW = PDF_W - PDF_PAD * 2
+      const imgH = (c.height * imgW) / c.width
 
-    // Add additional pages if content overflows
-    while (heightLeft > 0) {
-      position -= PDF_H
-      pdf.addPage()
-      pdf.addImage(imgData, 'PNG', 0, position, imgW, imgH)
-      heightLeft -= PDF_H
+      // If this slice would overflow the current page, start a new page.
+      // Slices that are larger than a page on their own (rare — a massive
+      // matrix or huge prompt response) get clipped to the bottom of the
+      // page and continue on the next. We render those by splitting the
+      // canvas into stripes that DO fit.
+      if (imgH > usableHeight) {
+        // The slice itself is taller than a page — split into vertical
+        // stripes that each fit. Each stripe starts a new page if there
+        // isn't enough room left below the current y.
+        const stripePxHeight = Math.floor((usableHeight * c.width) / imgW)
+        let pxConsumed = 0
+        while (pxConsumed < c.height) {
+          const remainingPx = c.height - pxConsumed
+          const stripePx = Math.min(stripePxHeight, remainingPx)
+          const stripeMm = (stripePx * imgW) / c.width
+          if (yMm + stripeMm > PDF_H - PDF_PAD) {
+            pdf.addPage()
+            yMm = PDF_PAD
+          }
+          const tmp = document.createElement('canvas')
+          tmp.width = c.width
+          tmp.height = stripePx
+          const ctx = tmp.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(c, 0, pxConsumed, c.width, stripePx, 0, 0, c.width, stripePx)
+            pdf.addImage(tmp.toDataURL('image/png'), 'PNG', PDF_PAD, yMm, imgW, stripeMm)
+          }
+          yMm += stripeMm + 1
+          pxConsumed += stripePx
+        }
+      } else {
+        // Normal path — slice fits on a page.
+        if (yMm + imgH > PDF_H - PDF_PAD) {
+          pdf.addPage()
+          yMm = PDF_PAD
+        }
+        pdf.addImage(c.toDataURL('image/png'), 'PNG', PDF_PAD, yMm, imgW, imgH)
+        yMm += imgH + 1
+      }
+    }
+
+    // Stamp "Page X / Y" in the bottom-right corner of every page.
+    // Done after all content is placed so we know the final page count.
+    const pageCount = pdf.getNumberOfPages()
+    if (pageCount > 1) {
+      const pageLabel = locale === 'fr' ? 'Page' : locale === 'es' ? 'Página' : 'Page'
+      for (let p = 1; p <= pageCount; p++) {
+        pdf.setPage(p)
+        pdf.setFontSize(8)
+        pdf.setTextColor(156, 163, 175)
+        const label = `${pageLabel} ${p} / ${pageCount}`
+        // bottom-right, with a 6mm bottom margin
+        pdf.text(label, PDF_W - PDF_PAD, PDF_H - 6, { align: 'right' })
+      }
+      pdf.setTextColor(17, 24, 39)
     }
 
     const filename = `${safeFilename(memberName)}_${safeFilename(resourceTitle)}_${new Date().toISOString().slice(0, 10)}.pdf`

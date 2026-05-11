@@ -353,7 +353,7 @@ export function getCategoryColor(category: ResourceCategory): string {
     decision_making: 'indigo',
     behavior: 'emerald',
     habits: 'lime',
-    psychoeducation: 'purple',
+    psychoeducation: 'emerald',
     reflection: 'teal',
     action: 'green',
     general: 'neutral',

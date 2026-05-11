@@ -1158,6 +1158,11 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           .order('created_at')
         if (data) {
           for (const d of data) {
+            // Skip the `_hidden:*` markers — those track which default
+            // tags the practitioner has chosen to hide on filter pills,
+            // they're not real tags. NotesTab and SessionsTab already
+            // filter these out; ProgressTab was the outlier.
+            if (d.type_name.startsWith('_hidden:')) continue
             if (!types.some(existing => existing.type === d.type_name)) {
               types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
             }
