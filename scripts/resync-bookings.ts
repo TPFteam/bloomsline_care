@@ -35,9 +35,12 @@ if (!SUPABASE_URL || !SERVICE_ROLE) {
   process.exit(1)
 }
 
-const bookingIds = process.argv.slice(2)
+const args = process.argv.slice(2)
+const FORCE = args.includes('--force')
+const bookingIds = args.filter(a => !a.startsWith('--'))
 if (bookingIds.length === 0) {
-  console.error('Usage: tsx scripts/resync-bookings.ts <booking-id> [<booking-id> ...]')
+  console.error('Usage: tsx scripts/resync-bookings.ts [--force] <booking-id> [<booking-id> ...]')
+  console.error('  --force   also sync past-dated bookings (off by default to mirror prod behaviour)')
   process.exit(1)
 }
 
@@ -64,8 +67,9 @@ async function resyncOne(bookingId: string): Promise<{ status: 'synced' | 'skipp
     return { status: 'skipped', reason: `already synced (event_id ${booking.google_event_id})` }
   }
 
-  if (new Date(booking.start_time).getTime() < Date.now()) {
-    return { status: 'skipped', reason: 'backdated — by policy calendar sync is skipped for past sessions' }
+  const isBackdated = new Date(booking.start_time).getTime() < Date.now()
+  if (isBackdated && !FORCE) {
+    return { status: 'skipped', reason: 'backdated — pass --force to sync past sessions anyway' }
   }
 
   const googleAuth = await getValidGoogleToken(booking.practitioner_id, supabase)
@@ -114,8 +118,13 @@ async function resyncOne(bookingId: string): Promise<{ status: 'synced' | 'skipp
     recurrenceRule: booking.recurrence_rule || null,
   })
 
+  // For past sessions, never email attendees — it'd be a retroactive
+  // invite for something that already happened. Future sessions follow
+  // the normal sendUpdates=all behaviour.
+  const sendUpdates = isBackdated ? 'none' : 'all'
+
   const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}&conferenceDataVersion=1`,
     {
       method: 'POST',
       headers: {
