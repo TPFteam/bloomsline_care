@@ -59,6 +59,7 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(true)
   const [claiming, setClaiming] = useState<OrphanEvent | null>(null)
+  const [dismissing, setDismissing] = useState<OrphanEvent | null>(null)
 
   // Members list — used to populate the picker in the claim modal.
   useEffect(() => {
@@ -99,6 +100,52 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
   }, [])
 
   const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
+
+  // Confirmed dismissal — optimistically removes the row, fires the API,
+  // and shows an "Undo" toast that restores the event if clicked within
+  // ~5s. Failure on either side reverts the optimistic change.
+  const confirmDismiss = async (evt: OrphanEvent) => {
+    setDismissing(null)
+    // Snapshot for revert on failure or undo.
+    const previous = events
+    setEvents(prev => (prev || []).filter(e => e.googleEventId !== evt.googleEventId))
+
+    try {
+      const res = await fetch('/api/calendar/dismiss-google-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ googleEventId: evt.googleEventId }),
+      })
+      if (!res.ok) throw new Error('failed')
+
+      toast.success(t('Event hidden', 'Événement masqué', 'Evento ocultado'), {
+        action: {
+          label: t('Undo', 'Annuler', 'Deshacer'),
+          onClick: async () => {
+            // Optimistically restore in the original position relative to
+            // the snapshot, then call DELETE. If DELETE fails, the next
+            // refresh will reconcile.
+            setEvents(previous)
+            try {
+              await fetch('/api/calendar/dismiss-google-event', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ googleEventId: evt.googleEventId }),
+              })
+              toast.success(t('Restored', 'Restauré', 'Restaurado'))
+            } catch {
+              toast.error(t('Could not undo', 'Annulation impossible', 'No se pudo deshacer'))
+            }
+          },
+        },
+        duration: 5000,
+      })
+    } catch {
+      // Revert optimistic remove.
+      setEvents(previous)
+      toast.error(t('Failed to hide event', 'Impossible de masquer', 'No se pudo ocultar'))
+    }
+  }
 
   // Hide the entire card when there's nothing to show (no Google events
   // unclaimed) or while we're still figuring that out for the very first
@@ -185,6 +232,7 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
                         event={evt}
                         locale={locale}
                         onClaim={() => setClaiming(evt)}
+                        onDismiss={() => setDismissing(evt)}
                       />
                     ))}
                   </div>
@@ -207,6 +255,13 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
           onClaimed?.()
         }}
       />
+
+      <DismissConfirmModal
+        event={dismissing}
+        locale={locale}
+        onCancel={() => setDismissing(null)}
+        onConfirm={confirmDismiss}
+      />
     </>
   )
 }
@@ -219,10 +274,12 @@ function OrphanRow({
   event,
   locale,
   onClaim,
+  onDismiss,
 }: {
   event: OrphanEvent
   locale: 'en' | 'fr' | 'es'
   onClaim: () => void
+  onDismiss: () => void
 }) {
   const start = new Date(event.startTime)
   const dateLabel = start.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
@@ -269,6 +326,19 @@ function OrphanRow({
       >
         {t('Add to Bloomsline', 'Ajouter à Bloomsline', 'Agregar a Bloomsline')}
       </Button>
+      <button
+        type="button"
+        onClick={onDismiss}
+        title={t(
+          "Hide — don't link this event",
+          'Masquer — ne pas rattacher cet événement',
+          'Ocultar — no vincular este evento',
+        )}
+        aria-label={t('Hide event', 'Masquer l\'événement', 'Ocultar evento')}
+        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+      >
+        <X className="w-4 h-4" />
+      </button>
     </div>
   )
 }
@@ -448,6 +518,68 @@ function ClaimModal({
           >
             {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />}
             {t('Add', 'Ajouter', 'Agregar')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Dismissal confirmation modal
+// ---------------------------------------------------------------------------
+
+function DismissConfirmModal({
+  event,
+  locale,
+  onCancel,
+  onConfirm,
+}: {
+  event: OrphanEvent | null
+  locale: 'en' | 'fr' | 'es'
+  onCancel: () => void
+  onConfirm: (evt: OrphanEvent) => void
+}) {
+  const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
+
+  if (!event) return null
+
+  const start = new Date(event.startTime)
+  const dateLabel = start.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  })
+  const timeLabel = start.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    hour: '2-digit', minute: '2-digit', hour12: locale !== 'fr',
+  })
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[210] flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-semibold text-gray-900 mb-2">
+          {t('Hide this Google event?', 'Masquer cet événement Google ?', '¿Ocultar este evento de Google?')}
+        </h3>
+        <p className="text-sm text-gray-600 mb-3">
+          {t(
+            "It won't show up in this list anymore. You can undo right after.",
+            "Il n'apparaîtra plus dans cette liste. Vous pourrez annuler juste après.",
+            'Ya no aparecerá en esta lista. Podrás deshacerlo justo después.',
+          )}
+        </p>
+        <div className="rounded-xl bg-gray-50 px-3 py-2.5 mb-4 space-y-1">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {event.title || t('(no title)', '(sans titre)', '(sin título)')}
+          </p>
+          <p className="text-xs text-gray-500">{dateLabel} · {timeLabel}</p>
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={onCancel} className="rounded-lg" autoFocus>
+            {t('Cancel', 'Annuler', 'Cancelar')}
+          </Button>
+          <Button
+            onClick={() => onConfirm(event)}
+            className="rounded-lg bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            {t('Hide', 'Masquer', 'Ocultar')}
           </Button>
         </div>
       </div>

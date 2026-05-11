@@ -109,6 +109,18 @@ export async function GET() {
         .filter((id): id is string => !!id),
     )
 
+    // Events the practitioner has explicitly chosen not to claim — these
+    // must not reappear on subsequent syncs.
+    const { data: dismissedRows } = await adminSupabase
+      .from('dismissed_google_events')
+      .select('google_event_id')
+      .eq('practitioner_id', user.id)
+    const dismissedIds = new Set(
+      (dismissedRows || [])
+        .map(r => r.google_event_id as string | null)
+        .filter((id): id is string => !!id),
+    )
+
     const orphans: Array<{
       googleEventId: string
       title: string
@@ -130,6 +142,7 @@ export async function GET() {
       if (e.recurringEventId) continue // skip individual instances of a recurring series
       if (Array.isArray(e.recurrence) && e.recurrence.length > 0) continue // skip recurring parents
       if (trackedIds.has(e.id)) continue
+      if (dismissedIds.has(e.id)) continue
 
       const attendees = e.attendees || []
       const externalAttendees = attendees.filter(a => !a.self && !a.organizer && a.email)
