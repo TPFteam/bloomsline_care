@@ -95,15 +95,15 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
   // Preferences edit fields - handle bilingual structure
   const [commStyles, setCommStyles] = useState<string[]>(
-    getLocalizedArray(member.preferences.communication_style, locale)
+    getLocalizedArray(member.preferences?.communication_style, locale)
   )
   const [commStyleInput, setCommStyleInput] = useState('')
   const [strengths, setStrengths] = useState<string[]>(
-    getLocalizedArray(member.preferences.key_strengths, locale)
+    getLocalizedArray(member.preferences?.key_strengths, locale)
   )
   const [strengthInput, setStrengthInput] = useState('')
   const [sensitivities, setSensitivities] = useState<string[]>(
-    getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
+    getLocalizedArray(member.preferences?.areas_of_sensitivity, locale)
   )
   const [sensitivityInput, setSensitivityInput] = useState('')
   const [currentTreatment, setCurrentTreatment] = useState(
@@ -469,10 +469,10 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         communication_style: commStyles.length > 0 ? commStyles : null,
         key_strengths: strengths,
         areas_of_sensitivity: sensitivities,
-        therapeutic_context: member.preferences.therapeutic_context,
+        therapeutic_context: member.preferences?.therapeutic_context ?? null,
         current_treatment: currentTreatment.trim() || null,
-        preferred_contact_method: member.preferences.preferred_contact_method,
-        preferred_session_format: member.preferences.preferred_session_format,
+        preferred_contact_method: member.preferences?.preferred_contact_method ?? 'email',
+        preferred_session_format: member.preferences?.preferred_session_format ?? 'virtual',
       }
 
       const { error } = await supabase
@@ -494,10 +494,10 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   }
 
   // Check if preferences section has any data - use localized values
-  const localizedCommStyles = getLocalizedArray(member.preferences.communication_style, locale)
-  const localizedStrengths = getLocalizedArray(member.preferences.key_strengths, locale)
-  const localizedSensitivities = getLocalizedArray(member.preferences.areas_of_sensitivity, locale)
-  const localizedTherapeuticContext = getLocalizedValue(member.preferences.therapeutic_context, locale)
+  const localizedCommStyles = getLocalizedArray(member.preferences?.communication_style, locale)
+  const localizedStrengths = getLocalizedArray(member.preferences?.key_strengths, locale)
+  const localizedSensitivities = getLocalizedArray(member.preferences?.areas_of_sensitivity, locale)
+  const localizedTherapeuticContext = getLocalizedValue(member.preferences?.therapeutic_context, locale)
   const localizedCurrentTreatment = getLocalizedValue(member.preferences?.current_treatment, locale)
 
   const hasPreferencesData =
@@ -1050,9 +1050,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      setCommStyles(getLocalizedArray(member.preferences.communication_style, locale))
-                      setStrengths(getLocalizedArray(member.preferences.key_strengths, locale))
-                      setSensitivities(getLocalizedArray(member.preferences.areas_of_sensitivity, locale))
+                      setCommStyles(getLocalizedArray(member.preferences?.communication_style, locale))
+                      setStrengths(getLocalizedArray(member.preferences?.key_strengths, locale))
+                      setSensitivities(getLocalizedArray(member.preferences?.areas_of_sensitivity, locale))
                       setCurrentTreatment(getLocalizedValue(member.preferences?.current_treatment, locale) || '')
                       setEditingPreferences(false)
                     }}

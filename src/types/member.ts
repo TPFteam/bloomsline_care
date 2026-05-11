@@ -71,7 +71,7 @@ export interface Member {
   engagement_level: EngagementLevel
 
   // Preferences & Emergency Contact
-  preferences: MemberPreferences
+  preferences: MemberPreferences | null
   emergency_contact: EmergencyContact | null
 
   // Notes
