@@ -178,6 +178,15 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   lines.push(isFr ? `Géré via Bloomsline` : `Managed via Bloomsline`)
   lines.push(appUrl)
 
+  // Google rejects the whole event with 400 if attendees contains an
+  // invalid email — including empty string. Patients without an email on
+  // file (in-person clinic visits, walk-ins) used to wipe out the entire
+  // sync. Skip the attendee entry instead; the event still lands on the
+  // practitioner's calendar, just without a patient invite.
+  const validClientEmail =
+    typeof clientEmail === 'string' &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim())
+
   const event: Record<string, unknown> = {
     summary: title,
     description: lines.join('\n'),
@@ -189,12 +198,13 @@ export function buildCalendarEvent(params: CalendarEventParams) {
       dateTime: endTime,
       timeZone: timezone,
     },
-    attendees: [
-      { email: clientEmail, displayName: clientName },
-    ],
     reminders: {
       useDefault: true,
     },
+  }
+
+  if (validClientEmail) {
+    event.attendees = [{ email: clientEmail.trim(), displayName: clientName }]
   }
 
   if (recurrenceRule) {
