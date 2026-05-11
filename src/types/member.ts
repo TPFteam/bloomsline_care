@@ -72,7 +72,7 @@ export interface Member {
 
   // Preferences & Emergency Contact
   preferences: MemberPreferences
-  emergency_contact: EmergencyContact
+  emergency_contact: EmergencyContact | null
 
   // Notes
   internal_notes: string | null

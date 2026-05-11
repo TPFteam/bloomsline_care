@@ -273,11 +273,11 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
   // Emergency contact edit states
   const [editingEmergency, setEditingEmergency] = useState(false)
   const [savingEmergency, setSavingEmergency] = useState(false)
-  const [emergencyName, setEmergencyName] = useState(member.emergency_contact.name || '')
-  const [emergencyRelationship, setEmergencyRelationship] = useState(member.emergency_contact.relationship || '')
-  const [emergencyPhone, setEmergencyPhone] = useState(member.emergency_contact.phone || '')
-  const [emergencyEmail, setEmergencyEmail] = useState(member.emergency_contact.email || '')
-  const [emergencyNotes, setEmergencyNotes] = useState(member.emergency_contact.notes || '')
+  const [emergencyName, setEmergencyName] = useState(member.emergency_contact?.name || '')
+  const [emergencyRelationship, setEmergencyRelationship] = useState(member.emergency_contact?.relationship || '')
+  const [emergencyPhone, setEmergencyPhone] = useState(member.emergency_contact?.phone || '')
+  const [emergencyEmail, setEmergencyEmail] = useState(member.emergency_contact?.email || '')
+  const [emergencyNotes, setEmergencyNotes] = useState(member.emergency_contact?.notes || '')
 
   useEffect(() => {
     fetchFolderContents(null, true)
@@ -895,9 +895,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
 
   // Check if emergency contact has any data
   const hasEmergencyData =
-    member.emergency_contact.name ||
-    member.emergency_contact.phone ||
-    member.emergency_contact.email
+    member.emergency_contact?.name ||
+    member.emergency_contact?.phone ||
+    member.emergency_contact?.email
 
   const handleSaveEmergency = async () => {
     setSavingEmergency(true)
@@ -2211,11 +2211,11 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setEmergencyName(member.emergency_contact.name || '')
-                    setEmergencyRelationship(member.emergency_contact.relationship || '')
-                    setEmergencyPhone(member.emergency_contact.phone || '')
-                    setEmergencyEmail(member.emergency_contact.email || '')
-                    setEmergencyNotes(member.emergency_contact.notes || '')
+                    setEmergencyName(member.emergency_contact?.name || '')
+                    setEmergencyRelationship(member.emergency_contact?.relationship || '')
+                    setEmergencyPhone(member.emergency_contact?.phone || '')
+                    setEmergencyEmail(member.emergency_contact?.email || '')
+                    setEmergencyNotes(member.emergency_contact?.notes || '')
                     setEditingEmergency(false)
                   }}
                   className="rounded-lg"
@@ -2240,7 +2240,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Name & Relationship */}
-                {member.emergency_contact.name && (
+                {member.emergency_contact?.name && (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
                     <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
                       <User className="w-5 h-5 text-gray-500" />
@@ -2248,9 +2248,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Nom' : 'Name'}</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {member.emergency_contact.name}
-                        {member.emergency_contact.relationship && (
-                          <span className="text-gray-500 font-normal"> · {member.emergency_contact.relationship}</span>
+                        {member.emergency_contact?.name}
+                        {member.emergency_contact?.relationship && (
+                          <span className="text-gray-500 font-normal"> · {member.emergency_contact?.relationship}</span>
                         )}
                       </p>
                     </div>
@@ -2258,7 +2258,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                 )}
 
                 {/* Phone */}
-                {member.emergency_contact.phone && (
+                {member.emergency_contact?.phone && (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
@@ -2266,12 +2266,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Téléphone' : 'Phone'}</p>
-                        <MaskedContact value={member.emergency_contact.phone} type="phone" className="text-sm font-medium text-gray-900" />
+                        <MaskedContact value={member.emergency_contact?.phone} type="phone" className="text-sm font-medium text-gray-900" />
                       </div>
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(member.emergency_contact.phone!)
+                        navigator.clipboard.writeText(member.emergency_contact?.phone!)
                         toast.success(locale === 'fr' ? 'Téléphone copié' : 'Phone copied')
                       }}
                       className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(any-pointer:coarse)]:opacity-100 transition-all"
@@ -2282,7 +2282,7 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                 )}
 
                 {/* Email */}
-                {member.emergency_contact.email && (
+                {member.emergency_contact?.email && (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
@@ -2290,12 +2290,12 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">Email</p>
-                        <MaskedContact value={member.emergency_contact.email} type="email" className="text-sm font-medium text-gray-900" />
+                        <MaskedContact value={member.emergency_contact?.email} type="email" className="text-sm font-medium text-gray-900" />
                       </div>
                     </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(member.emergency_contact.email!)
+                        navigator.clipboard.writeText(member.emergency_contact?.email!)
                         toast.success(locale === 'fr' ? 'Email copié' : 'Email copied')
                       }}
                       className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(any-pointer:coarse)]:opacity-100 transition-all"
@@ -2305,9 +2305,9 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
                   </div>
                 )}
               </div>
-              {member.emergency_contact.notes && (
+              {member.emergency_contact?.notes && (
                 <p className="text-sm text-gray-500 mt-4 p-3 rounded-xl bg-gray-50">
-                  {member.emergency_contact.notes}
+                  {member.emergency_contact?.notes}
                 </p>
               )}
             </motion.div>
