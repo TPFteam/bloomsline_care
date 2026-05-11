@@ -19,7 +19,9 @@ fi
 
 get_var() {
   local key="$1"
-  grep "^${key}=" .env.local | head -1 | cut -d= -f2-
+  # `|| true` so a missing key doesn't kill the script under `set -e`
+  # / `pipefail`. Returning empty is fine — caller checks for empty.
+  grep "^${key}=" .env.local 2>/dev/null | head -1 | cut -d= -f2- || true
 }
 
 SUPABASE_URL="$(get_var NEXT_PUBLIC_SUPABASE_URL)"
