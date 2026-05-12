@@ -1237,11 +1237,20 @@ export default function BookingsPage() {
                                   : <><Video className="w-3 h-3" /> {locale === 'fr' ? 'Vidéo' : 'Virtual'}</>}
                               </span>
                               <span className="text-gray-500 tabular-nums">{durMin} min</span>
-                              <PaymentBadge
-                                status={booking.payment_status || 'unpaid'}
-                                table="bookings"
-                                recordId={booking.id}
-                              />
+                              {/* Payment badge stays in the meta row only when there's
+                                  no action row to host it; the action row puts it after
+                                  the Take-notes button. Keeps a single source of truth. */}
+                              {(() => {
+                                const hasActionRow = (booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) || (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome)
+                                if (hasActionRow) return null
+                                return (
+                                  <PaymentBadge
+                                    status={booking.payment_status || 'unpaid'}
+                                    table="bookings"
+                                    recordId={booking.id}
+                                  />
+                                )
+                              })()}
                               {/* Origin / sync indicator — has the booking made it to
                                   Google Calendar, or does it only live in Bloomsline? */}
                               {booking.google_event_id ? (
@@ -1296,9 +1305,14 @@ export default function BookingsPage() {
                                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
                                     >
                                       <PenLine className="w-3.5 h-3.5 text-gray-500" />
-                                      {locale === 'fr' ? 'Prendre des notes pour cette séance' : 'Take notes for this session'}
+                                      {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                                     </button>
                                   )}
+                                <PaymentBadge
+                                  status={booking.payment_status || 'unpaid'}
+                                  table="bookings"
+                                  recordId={booking.id}
+                                />
                               </div>
                             )}
                           </div>
