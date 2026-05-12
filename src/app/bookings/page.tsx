@@ -505,7 +505,7 @@ export default function BookingsPage() {
 
   // Reschedule
   const [rescheduleBooking, setRescheduleBooking] = useState<any | null>(null)
-  const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string } | null>(null)
+  const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string; outsideHours?: boolean } | null>(null)
   const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
   const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<any | null>(null)
 
@@ -1029,7 +1029,7 @@ export default function BookingsPage() {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   processingId={processingId}
-                  onSlotClick={(day, time) => setCalendarSlotBooking({ date: day, time })}
+                  onSlotClick={(day, time, options) => setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })}
                 />
               ) : (
               <>
@@ -2224,6 +2224,7 @@ export default function BookingsPage() {
         }}
         preselectedDate={calendarSlotBooking?.date}
         preselectedTime={calendarSlotBooking?.time}
+        preselectedOutsideHours={calendarSlotBooking?.outsideHours}
       />
 
       {/* Settings Saved Confirmation Modal */}

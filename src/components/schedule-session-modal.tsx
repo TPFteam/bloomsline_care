@@ -54,12 +54,19 @@ interface ScheduleSessionModalProps {
   rescheduleBooking?: RescheduleBooking | null
   preselectedDate?: Date
   preselectedTime?: string
+  /**
+   * When true, the preselected time falls outside the practitioner's
+   * configured availability (after-hours band click). The modal should
+   * skip the slot-picker entirely and use the time exactly as given —
+   * i.e. open in manual mode with the time already filled.
+   */
+  preselectedOutsideHours?: boolean
 }
 
 type Step = 'member' | 'session' | 'format' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
-export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime }: ScheduleSessionModalProps) {
+export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime, preselectedOutsideHours }: ScheduleSessionModalProps) {
   const { locale } = useLanguage()
   const router = useRouter()
   const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
@@ -211,7 +218,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setSelectedTime(preselectedTime || null)
         if (preselectedTime) keepTimeRef.current = true
         setNotes('')
-        setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
+        // After-hours band clicks force manual mode: the slot picker won't
+        // have a matching slot, so we commit to the typed time instead.
+        setScheduleMode(preselectedOutsideHours || hasExternalBooking ? 'manual' : 'calendar')
         setManualSessionType('')
         setManualDuration(60)
         setManualTime(preselectedTime || '10:00')

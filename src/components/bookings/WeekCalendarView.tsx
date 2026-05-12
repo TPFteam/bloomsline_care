@@ -42,7 +42,7 @@ interface WeekCalendarViewProps {
   onApprove?: (id: string) => void
   onReject?: (id: string) => void
   processingId?: string | null
-  onSlotClick?: (day: Date, time: string) => void
+  onSlotClick?: (day: Date, time: string, options?: { outsideHours?: boolean }) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -303,7 +303,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     const minute = totalMin % 60
     if (hour < 0 || hour >= 24) return
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-    onSlotClick(day, time)
+    onSlotClick(day, time, { outsideHours: true })
   }
 
   return (
