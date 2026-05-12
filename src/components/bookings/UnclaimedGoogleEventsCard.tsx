@@ -9,7 +9,7 @@
  * /api/bookings/claim-google-event for the claim action.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calendar, Search, X, Loader2, ChevronDown, ChevronRight, Video, Building2, RefreshCw, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -366,15 +366,34 @@ function ClaimModal({
   const [sessionTypeId, setSessionTypeId] = useState<string>('')
   const [memberSearch, setMemberSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const listRef = useRef<HTMLDivElement | null>(null)
 
   // Pre-pick the suggested member (and a sane session type default) whenever
-  // the modal opens with a new event.
+  // the modal opens with a new event. When the suggested member sits far down
+  // the alphabetical list, scroll the list so the auto-selected row is in
+  // view — otherwise the practitioner has to scroll to discover that anyone
+  // was matched at all.
   useEffect(() => {
-    if (event) {
-      setMemberId(event.suggestedMember?.id || '')
-      setSessionTypeId(sessionTypes[0]?.id || '')
-      setMemberSearch('')
-    }
+    if (!event) return
+    const id = event.suggestedMember?.id || ''
+    setMemberId(id)
+    setSessionTypeId(sessionTypes[0]?.id || '')
+    setMemberSearch('')
+
+    if (!id) return
+    // Wait for the list to render before measuring.
+    const raf = requestAnimationFrame(() => {
+      const list = listRef.current
+      if (!list) return
+      const btn = list.querySelector<HTMLElement>(`[data-claim-member-id="${id}"]`)
+      if (!btn) return
+      const listRect = list.getBoundingClientRect()
+      const btnRect = btn.getBoundingClientRect()
+      const btnTopWithinList = btnRect.top - listRect.top + list.scrollTop
+      const desired = btnTopWithinList - (list.clientHeight - btn.clientHeight) / 2
+      list.scrollTop = Math.max(0, desired)
+    })
+    return () => cancelAnimationFrame(raf)
   }, [event, sessionTypes])
 
   const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
@@ -460,7 +479,7 @@ function ClaimModal({
                 className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-400 bg-white"
               />
             </div>
-            <div className="max-h-44 overflow-y-auto rounded-lg border border-gray-200 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <div ref={listRef} className="max-h-44 overflow-y-auto rounded-lg border border-gray-200 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
               {filteredMembers.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-3">
                   {t('No matching patient', 'Aucun patient correspondant', 'Ningún paciente coincide')}
@@ -471,6 +490,7 @@ function ClaimModal({
                   <button
                     key={m.id}
                     type="button"
+                    data-claim-member-id={m.id}
                     onClick={() => setMemberId(m.id)}
                     className={`w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
                       selected ? 'bg-violet-50' : 'hover:bg-gray-50'
