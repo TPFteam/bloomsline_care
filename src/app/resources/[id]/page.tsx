@@ -1564,20 +1564,52 @@ export default function ResourceDetailPage() {
                     }
 
                     if (blockType === 'video') {
-                      const videoUrl = (block as any).mediaFile?.url
                       const videoCaption = (block as any).content || (block as any).caption
+                      const videoType: 'upload' | 'youtube' | 'vimeo' | undefined = (block as any).videoType
+                      const externalUrl: string | undefined = (block as any).videoUrl
+                      const uploadedUrl: string | undefined = (block as any).mediaFile?.url
+
+                      // Build an embed URL for YouTube / Vimeo so the patient
+                      // gets a real player. Worksheet creator stores the raw
+                      // URL in block.videoUrl with block.videoType set; the
+                      // renderer previously ignored both and only looked at
+                      // mediaFile.url (uploads), so external videos came back
+                      // as the "Video" placeholder.
+                      const externalEmbed = (() => {
+                        if (!externalUrl) return null
+                        if (videoType === 'youtube') {
+                          const m = externalUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+                          return m ? `https://www.youtube.com/embed/${m[1]}` : null
+                        }
+                        if (videoType === 'vimeo') {
+                          const m = externalUrl.match(/vimeo\.com\/(\d+)/)
+                          return m ? `https://player.vimeo.com/video/${m[1]}` : null
+                        }
+                        return null
+                      })()
+
                       return (
                         <div key={blockId}>
                           {videoCaption && (
                             <p className="text-gray-600 mb-2">{videoCaption}</p>
                           )}
-                          {videoUrl ? (
+                          {externalEmbed ? (
+                            <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
+                              <iframe
+                                src={externalEmbed}
+                                className="w-full h-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                title={videoCaption || (locale === 'fr' ? 'Vidéo' : 'Video')}
+                              />
+                            </div>
+                          ) : uploadedUrl ? (
                             <div
                               className="group relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden cursor-pointer"
-                              onClick={() => setLightbox({ url: videoUrl, type: 'video' })}
+                              onClick={() => setLightbox({ url: uploadedUrl, type: 'video' })}
                             >
                               <video
-                                src={videoUrl}
+                                src={uploadedUrl}
                                 className="w-full h-full object-cover"
                                 preload="metadata"
                                 muted
