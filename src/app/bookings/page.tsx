@@ -273,6 +273,11 @@ export default function BookingsPage() {
   // User state
   const [user, setUser] = useState<UserType | null>(null)
 
+  // Current member names (id → "First Last"). Used so booking rows
+  // display the latest name when a patient has been renamed since the
+  // booking was created. Falls back to booking.client_name (snapshot).
+  const [memberNames, setMemberNames] = useState<Map<string, string>>(new Map())
+
   // Floating session-note panel (Take notes for this session)
   const { openFloat } = useFloatingNotes()
 
@@ -351,7 +356,9 @@ export default function BookingsPage() {
       mode: 'session',
       content: existingNote?.content || '',
       memberId: booking.member_id,
-      memberName: booking.client_name || '',
+      // Prefer the live member name so the floating panel title shows
+      // the current name, not a stale denormalised snapshot.
+      memberName: memberNames.get(booking.member_id) || booking.client_name || '',
       noteType: 'session_summary',
       sessionId: sessionRow?.id,
       existingNoteId: existingNote?.id || undefined,
@@ -470,6 +477,22 @@ export default function BookingsPage() {
         console.error('Failed to load bookings:', error)
       } else {
         setBookings(bookingsData || [])
+      }
+
+      // Load current member names so booking rows display the latest
+      // name even after the patient was renamed. bookings.client_name is
+      // a denormalised snapshot from the moment of booking.
+      const { data: memberRows } = await supabase
+        .from('members')
+        .select('id, first_name, last_name')
+        .eq('practitioner_id', authUser.id)
+      if (memberRows) {
+        const map = new Map<string, string>()
+        for (const m of memberRows) {
+          const name = `${m.first_name || ''} ${m.last_name || ''}`.trim()
+          if (name) map.set(m.id, name)
+        }
+        setMemberNames(map)
       }
 
       setIsLoading(false)
@@ -1235,7 +1258,11 @@ export default function BookingsPage() {
                     booking.status === 'cancelled' ? 'bg-red-400 ring-red-100' :
                     booking.status === 'no_show' ? 'bg-gray-500 ring-gray-200' :
                     'bg-gray-300 ring-gray-100'
-                  const initials = (booking.client_name || '')
+                  // Use the live member name if the booking links to one, so
+                  // renames are reflected in the row. Falls back to the
+                  // snapshotted client_name for guest bookings.
+                  const displayName = (booking.member_id && memberNames.get(booking.member_id)) || booking.client_name || ''
+                  const initials = displayName
                     .split(' ')
                     .map(s => s.charAt(0))
                     .slice(0, 2)
@@ -1264,14 +1291,14 @@ export default function BookingsPage() {
                               >
                                 <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold shrink-0">{initials}</span>
                                 <span className="text-sm font-semibold text-gray-900 truncate group-hover/patient:text-violet-700 group-hover/patient:underline underline-offset-2 decoration-violet-300">
-                                  {booking.client_name}
+                                  {displayName}
                                 </span>
                                 <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover/patient:text-violet-600" />
                               </Link>
                             ) : (
                               <div className="inline-flex items-center gap-2">
                                 <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold shrink-0">{initials}</span>
-                                <span className="text-sm font-semibold text-gray-900 truncate">{booking.client_name}</span>
+                                <span className="text-sm font-semibold text-gray-900 truncate">{displayName}</span>
                               </div>
                             )}
 
