@@ -30,7 +30,6 @@ import {
   Code2,
   MoreHorizontal,
   PenLine,
-  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -48,6 +47,7 @@ import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
 import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
+import { useFloatingNotes } from '@/lib/floating-notes/context'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -270,6 +270,47 @@ export default function BookingsPage() {
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
+
+  // Floating session-note panel (Take notes for this session)
+  const { openFloat } = useFloatingNotes()
+
+  // Click → resolve the session row for this booking (member_id +
+  // scheduled_at match), then open the global floating note panel in
+  // session mode. Falls back to quick-note mode if no session row exists
+  // (shouldn't happen for in-app bookings but covers external claims).
+  const handleTakeNotes = async (booking: { id: string; member_id: string | null; client_name: string | null; start_time: string }) => {
+    if (!booking.member_id) {
+      toast.error(locale === 'fr' ? 'Aucun patient lié à cette séance' : 'No patient linked to this session')
+      return
+    }
+    const sb = createClient()
+    const { data: { user: u } } = await sb.auth.getUser()
+    if (!u) return
+    const { data: sessionRow } = await sb
+      .from('sessions')
+      .select('id')
+      .eq('practitioner_id', u.id)
+      .eq('member_id', booking.member_id)
+      .eq('scheduled_at', booking.start_time)
+      .maybeSingle()
+    const { data: existingNote } = sessionRow?.id
+      ? await sb
+          .from('progress_notes')
+          .select('id, content')
+          .eq('session_id', sessionRow.id)
+          .eq('note_type', 'session_summary')
+          .maybeSingle()
+      : { data: null }
+    openFloat({
+      mode: 'session',
+      content: existingNote?.content || '',
+      memberId: booking.member_id,
+      memberName: booking.client_name || '',
+      noteType: 'session_summary',
+      sessionId: sessionRow?.id,
+      existingNoteId: existingNote?.id || undefined,
+    })
+  }
 
   // Settings state
   const [userId, setUserId] = useState<string | null>(null)
@@ -1222,14 +1263,14 @@ export default function BookingsPage() {
                                 )}
                                 {booking.member_id &&
                                   (booking.status === 'confirmed' || booking.status === 'pending') && (
-                                    <Link
-                                      href={`/members/${booking.member_id}?tab=sessions_notes&sub=sessions&highlight=${booking.id}`}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTakeNotes(booking)}
                                       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
                                     >
                                       <PenLine className="w-3.5 h-3.5 text-gray-500" />
                                       {locale === 'fr' ? 'Prendre des notes pour cette séance' : 'Take notes for this session'}
-                                      <ArrowRight className="w-3 h-3 text-gray-400" />
-                                    </Link>
+                                    </button>
                                   )}
                               </div>
                             )}
