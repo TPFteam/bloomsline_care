@@ -112,6 +112,11 @@ export interface Session {
 
   // Session Details
   session_type: SessionType
+  // Human-readable name for practitioner-defined session types (e.g. "Bilan")
+  // that don't map to a built-in SessionType enum value. When set, the UI
+  // prefers this over the localized SessionType label. Null for sessions
+  // whose type is a standard enum value.
+  custom_session_type: string | null
   session_format: SessionFormat
   scheduled_at: string // ISO datetime string
   duration_minutes: number

@@ -514,6 +514,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       practitioner_id: b.practitioner_id,
       member_id: b.member_id,
       session_type: 'follow_up' as SessionType,
+      custom_session_type: null,
       session_format: (b.session_format === 'in_person' ? 'in_person' : 'virtual') as SessionFormat,
       scheduled_at: b.start_time,
       duration_minutes: Math.round((new Date(b.end_time).getTime() - new Date(b.start_time).getTime()) / 60000),
@@ -1286,7 +1287,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium text-gray-900 text-sm">
-                            {t.members.sessionTypes[session.session_type]}
+                            {session.custom_session_type || t.members.sessionTypes[session.session_type]}
                           </p>
                           {session.member_confirmed && (
                             <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
@@ -1622,7 +1623,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-gray-900 text-sm">
-                            {t.members.sessionTypes[session.session_type]}
+                            {session.custom_session_type || t.members.sessionTypes[session.session_type]}
                           </p>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`}></span>

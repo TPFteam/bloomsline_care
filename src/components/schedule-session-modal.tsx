@@ -588,10 +588,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         const sessionTypePrice = sessionTypes.find(st => st.id === manualSessionType)?.price ?? null
         // Patient-level override: members.session_price wins over session-type rate.
         const manualPrice = selectedMember.session_price ?? sessionTypePrice
+        const manualSessionEnum = toSessionEnum(manualSessionType) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other'
         const sessionData = {
           practitioner_id: userId,
           member_id: selectedMember.id,
-          session_type: toSessionEnum(manualSessionType) as 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other',
+          session_type: manualSessionEnum,
+          custom_session_type: manualSessionEnum === 'other' ? sessionTypeLabel : null,
           session_format: manualFormat,
           scheduled_at: startTime.toISOString(),
           duration_minutes: durationToUse,
@@ -721,6 +723,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             practitioner_id: userId,
             member_id: selectedMember.id,
             session_type: sessionEnum,
+            custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
             session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
             scheduled_at: occStart.toISOString(),
             duration_minutes: durationToUse,
@@ -812,6 +815,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               practitioner_id: userId,
               member_id: selectedMember.id,
               session_type: sessionEnum,
+              custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
               session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
               scheduled_at: startTime.toISOString(),
               duration_minutes: durationToUse,

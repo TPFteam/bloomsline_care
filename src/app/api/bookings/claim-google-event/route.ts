@@ -186,12 +186,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
-    // 2. Insert session for the member's profile timeline.
+    // 2. Insert session for the member's profile timeline. If the chosen
+    //    session type is practitioner-defined (enum collapses to 'other'),
+    //    keep the human name in custom_session_type so the UI doesn't
+    //    fall back to a generic "Other" label.
     try {
+      const sessionEnum = toSessionEnum(resolvedSessionTypeId)
       await adminSupabase.from('sessions').insert({
         practitioner_id: user.id,
         member_id: member.id,
-        session_type: toSessionEnum(resolvedSessionTypeId),
+        session_type: sessionEnum,
+        custom_session_type: sessionEnum === 'other' ? resolvedTypeName : null,
         session_format: sessionFormat === 'in_person' ? 'in_person' : 'virtual',
         scheduled_at: startIso,
         duration_minutes: durationMinutes,
