@@ -21,6 +21,8 @@ import {
   Meh,
   Frown,
   Angry,
+  Maximize2,
+  X as XIcon,
 } from 'lucide-react'
 
 // Mood icon mapping
@@ -1985,6 +1987,7 @@ function ZonedCanvasRenderer({
   const entries: Record<string, ZoneEntry[]> = value || {}
   const [editingZone, setEditingZone] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
+  const [expanded, setExpanded] = useState(false)
 
   const labelOf = (z: CanvasZone) => z.label[locale] || z.label.en
   const descOf = (z: CanvasZone) => z.description?.[locale] || z.description?.en
@@ -2118,46 +2121,144 @@ function ZonedCanvasRenderer({
     )
   }
 
-  // Paint each zone's entries inside the shape — same logic as the
-  // mobile renderer. Capped + truncated so a busy zone doesn't spill.
+  // Scatter each entry as a small "tag" pill at a deterministic-but-
+  // varied position inside the zone. Avoids the label area, child zones
+  // (e.g. inner circle in Circle of Control), and other already-placed
+  // pills. Deterministic seed keeps positions stable across re-renders.
+  const seededRand = (seed: string) => {
+    let h = 2166136261
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i)
+      h = (h * 16777619) >>> 0
+    }
+    return () => {
+      h = (h * 1664525 + 1013904223) >>> 0
+      return h / 0xffffffff
+    }
+  }
+  const estimatePillWidth = (text: string, fontSize: number) =>
+    Math.max(50, text.length * fontSize * 0.58 + 24)
+  const insideShape = (x: number, y: number, s: { kind: string; x?: number; y?: number; w?: number; h?: number; cx?: number; cy?: number; r?: number; rx?: number; ry?: number; points?: [number, number][] }, pad = 0): boolean => {
+    if (s.kind === 'rect') {
+      return x >= (s.x ?? 0) + pad && x <= (s.x ?? 0) + (s.w ?? 0) - pad &&
+             y >= (s.y ?? 0) + pad && y <= (s.y ?? 0) + (s.h ?? 0) - pad
+    }
+    if (s.kind === 'circle') {
+      const dx = x - (s.cx ?? 0), dy = y - (s.cy ?? 0)
+      return Math.hypot(dx, dy) <= (s.r ?? 0) - pad
+    }
+    if (s.kind === 'ellipse') {
+      const dx = (x - (s.cx ?? 0)) / Math.max(1, (s.rx ?? 0) - pad)
+      const dy = (y - (s.cy ?? 0)) / Math.max(1, (s.ry ?? 0) - pad)
+      return dx * dx + dy * dy <= 1
+    }
+    return false
+  }
+  type Placed = { id: string; text: string; cx: number; cy: number; w: number; h: number; angle: number }
+  const planEntries = (z: CanvasZone): Placed[] => {
+    const list = entries[z.id] ?? []
+    if (list.length === 0) return []
+    const maxVisible = 8
+    const visible = list.slice(0, maxVisible)
+    const children = b.zones.filter((c: CanvasZone) => c.parentZoneId === z.id)
+    const { labelY } = zonePos(z)
+    const fontSize = 13
+    const h = fontSize + 14
+    const placed: Placed[] = []
+    const margin = 12
+    for (const entry of visible) {
+      const text = (entry.text || '').length > 24 ? (entry.text || '').slice(0, 22) + '…' : (entry.text || '')
+      const w = estimatePillWidth(text, fontSize)
+      const rng = seededRand(z.id + entry.id)
+      let chosen: Placed | null = null
+      for (let t = 0; t < 60; t++) {
+        const s = z.shape as any
+        let cx = 0, cy = 0
+        if (s.kind === 'rect') {
+          cx = (s.x ?? 0) + w / 2 + margin + rng() * ((s.w ?? 0) - w - 2 * margin)
+          cy = labelY + 26 + h / 2 + rng() * ((s.y ?? 0) + (s.h ?? 0) - labelY - 26 - h - 2 * margin)
+        } else if (s.kind === 'circle') {
+          const angle = rng() * Math.PI * 2
+          const maxR = Math.max(0, (s.r ?? 0) - Math.max(w, h) / 2 - margin)
+          const radius = Math.sqrt(rng()) * maxR
+          cx = (s.cx ?? 0) + Math.cos(angle) * radius
+          cy = (s.cy ?? 0) + Math.sin(angle) * radius
+          if (cy < labelY + h / 2 + 8) continue
+        } else if (s.kind === 'ellipse') {
+          const angle = rng() * Math.PI * 2
+          const r = Math.sqrt(rng())
+          cx = (s.cx ?? 0) + r * Math.cos(angle) * Math.max(0, (s.rx ?? 0) - w / 2 - margin)
+          cy = (s.cy ?? 0) + r * Math.sin(angle) * Math.max(0, (s.ry ?? 0) - h / 2 - margin)
+          if (cy < labelY + h / 2 + 8) continue
+        } else if (s.kind === 'polygon' && s.points && s.points.length) {
+          const xs = s.points.map((p: [number, number]) => p[0])
+          const ys = s.points.map((p: [number, number]) => p[1])
+          cx = Math.min(...xs) + margin + rng() * (Math.max(...xs) - Math.min(...xs) - 2 * margin)
+          cy = Math.min(...ys) + margin + rng() * (Math.max(...ys) - Math.min(...ys) - 2 * margin)
+        }
+        let insideChild = false
+        for (const c of children) {
+          if (insideShape(cx, cy, c.shape as any, -6)) { insideChild = true; break }
+        }
+        if (insideChild) continue
+        const angle = (rng() - 0.5) * 6
+        const candidate: Placed = { id: entry.id, text, cx, cy, w, h, angle }
+        let collides = false
+        for (const p of placed) {
+          if (Math.abs(p.cx - cx) < (p.w + w) / 2 + 6 && Math.abs(p.cy - cy) < (p.h + h) / 2 + 4) {
+            collides = true; break
+          }
+        }
+        if (collides) continue
+        chosen = candidate
+        break
+      }
+      if (chosen) placed.push(chosen)
+    }
+    return placed
+  }
   const renderEntries = (z: CanvasZone) => {
     const list = entries[z.id] ?? []
     if (list.length === 0) return null
     const colour = ACCENT_COLORS[z.accent ?? 'slate']
-    const { cx, entriesStartY } = zonePos(z)
-    const max = 5
-    const visible = list.slice(0, max)
-    const truncate = (s: string) => (s.length > 30 ? s.slice(0, 28) + '…' : s)
+    const placed = planEntries(z)
+    const overflow = list.length - placed.length
     return (
       <g key={`entries-${z.id}`}>
-        {visible.map((entry, i) => (
-          <text
-            key={`entry-${entry.id}`}
-            x={cx}
-            y={entriesStartY + i * 26}
-            fill={colour.text}
-            fontSize={15}
-            fontWeight={500}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            pointerEvents="none"
-          >
-            {`• ${truncate(entry.text || '')}`}
-          </text>
+        {placed.map(p => (
+          <g key={`entry-${p.id}`} transform={`translate(${p.cx} ${p.cy}) rotate(${p.angle})`}>
+            <rect
+              x={-p.w / 2} y={-p.h / 2}
+              width={p.w} height={p.h} rx={p.h / 2}
+              fill="#ffffff" stroke={colour.stroke} strokeWidth={1.2}
+              opacity={0.95}
+            />
+            <text
+              x={0} y={0}
+              fill={colour.stroke}
+              fontSize={13}
+              fontWeight={500}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              pointerEvents="none"
+            >
+              {p.text}
+            </text>
+          </g>
         ))}
-        {list.length > visible.length && (
+        {overflow > 0 && (
           <text
-            x={cx}
-            y={entriesStartY + visible.length * 26}
+            x={zonePos(z).cx}
+            y={zonePos(z).labelY + 22}
             fill={colour.stroke}
-            fontSize={12}
+            fontSize={11}
             fontStyle="italic"
             textAnchor="middle"
             dominantBaseline="middle"
             opacity={0.75}
             pointerEvents="none"
           >
-            +{list.length - visible.length} more
+            +{overflow} more
           </text>
         )}
       </g>
@@ -2171,7 +2272,7 @@ function ZonedCanvasRenderer({
       )}
 
       {/* Visual canvas */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-3 mb-4">
+      <div className="relative bg-white rounded-2xl border border-gray-100 p-3 mb-4">
         <svg
           viewBox={`0 0 ${b.canvas.width} ${b.canvas.height}`}
           className="w-full h-auto"
@@ -2192,7 +2293,59 @@ function ZonedCanvasRenderer({
           {paintOrder.map(renderLabel)}
           {paintOrder.map(renderEntries)}
         </svg>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 border border-gray-200 hover:bg-gray-50 transition"
+          aria-label="Expand canvas"
+        >
+          <Maximize2 className="w-4 h-4 text-gray-700" />
+        </button>
       </div>
+
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex items-center justify-between px-4 pt-5 pb-3">
+            <p className="text-white text-[15px] font-semibold truncate flex-1">{b.content || ''}</p>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="ml-3 p-2 text-white/90 hover:text-white"
+              aria-label="Close expanded canvas"
+            >
+              <XIcon className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-4 pb-6">
+            <div className="bg-white rounded-2xl p-3 w-full max-w-5xl">
+              <svg
+                viewBox={`0 0 ${b.canvas.width} ${b.canvas.height}`}
+                className="w-full h-auto"
+                preserveAspectRatio="xMidYMid meet"
+                role="img"
+                aria-label="Expanded zoned canvas"
+              >
+                {b.canvas.backgroundImageUrl && (
+                  <image
+                    href={b.canvas.backgroundImageUrl}
+                    x={0} y={0}
+                    width={b.canvas.width}
+                    height={b.canvas.height}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                )}
+                {paintOrder.map(renderShape)}
+                {paintOrder.map(renderLabel)}
+                {paintOrder.map(renderEntries)}
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Zone-grouped entry list — primary input surface */}
       <div className="space-y-3">
@@ -2202,12 +2355,11 @@ function ZonedCanvasRenderer({
           return (
             <div
               key={zone.id}
-              className="rounded-xl bg-white border border-gray-200 p-3"
-              style={{ borderLeft: `4px solid ${colour.stroke}` }}
+              className={`rounded-xl ${colour.bg} ${colour.border} border p-3`}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">
-                  <p className="text-[14px] font-bold" style={{ color: colour.text }}>
+                  <p className="text-sm font-semibold text-gray-700">
                     {labelOf(zone)}
                   </p>
                   {descOf(zone) && <p className="text-xs text-gray-500 leading-tight">{descOf(zone)}</p>}
