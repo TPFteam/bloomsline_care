@@ -211,10 +211,30 @@ export function FloatingNotesPanel() {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-gray-700 truncate">
               {floatingNote.memberName}
+              {floatingNote.sessionContext?.title && (
+                <span className="text-gray-400 font-normal"> · {floatingNote.sessionContext.title}</span>
+              )}
             </div>
-            <div className="text-[10px] text-gray-400">
-              {floatingNote.mode === 'session' ? (fr ? 'Note de séance' : 'Session note') : (fr ? 'Note rapide' : 'Quick note')}
-            </div>
+            {floatingNote.sessionContext ? (
+              <div className="text-[10px] text-gray-500 truncate">
+                {(() => {
+                  const d = new Date(floatingNote.sessionContext.startTimeIso)
+                  const dateStr = d.toLocaleDateString(fr ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  const timeStr = d.toLocaleTimeString(fr ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: !fr })
+                  const fmt = floatingNote.sessionContext.format
+                  const fmtLabel = fmt === 'in_person' ? (fr ? 'En personne' : 'In person') :
+                                   (fmt === 'video' || fmt === 'virtual') ? (fr ? 'Vidéo' : 'Virtual') :
+                                   null
+                  const parts = [dateStr, timeStr, `${floatingNote.sessionContext.durationMinutes} min`]
+                  if (fmtLabel) parts.push(fmtLabel)
+                  return parts.join(' · ')
+                })()}
+              </div>
+            ) : (
+              <div className="text-[10px] text-gray-400">
+                {floatingNote.mode === 'session' ? (fr ? 'Note de séance' : 'Session note') : (fr ? 'Note rapide' : 'Quick note')}
+              </div>
+            )}
           </div>
           <button
             type="button"

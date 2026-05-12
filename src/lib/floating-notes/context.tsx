@@ -15,6 +15,18 @@ export interface FloatingNoteData {
   existingNoteId?: string
   milestones?: { id: string; title: string; status: string }[]
   editorNoteTypes?: { type: string; label: string }[]
+  /**
+   * Optional human context shown in the panel title bar so the
+   * practitioner can confirm which session this note is for. Only set
+   * when the panel is opened from a session-specific surface like the
+   * Bookings page; null for ad-hoc quick notes.
+   */
+  sessionContext?: {
+    title: string
+    startTimeIso: string
+    durationMinutes: number
+    format?: 'in_person' | 'video' | 'virtual' | string | null
+  }
 }
 
 interface FloatingNotesContextValue {

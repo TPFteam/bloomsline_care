@@ -278,7 +278,15 @@ export default function BookingsPage() {
   // scheduled_at match), then open the global floating note panel in
   // session mode. Falls back to quick-note mode if no session row exists
   // (shouldn't happen for in-app bookings but covers external claims).
-  const handleTakeNotes = async (booking: { id: string; member_id: string | null; client_name: string | null; start_time: string }) => {
+  const handleTakeNotes = async (booking: {
+    id: string;
+    member_id: string | null;
+    client_name: string | null;
+    start_time: string;
+    end_time: string;
+    session_type: string;
+    session_format?: string | null;
+  }) => {
     if (!booking.member_id) {
       toast.error(locale === 'fr' ? 'Aucun patient lié à cette séance' : 'No patient linked to this session')
       return
@@ -301,6 +309,7 @@ export default function BookingsPage() {
           .eq('note_type', 'session_summary')
           .maybeSingle()
       : { data: null }
+    const durationMinutes = Math.max(0, Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000))
     openFloat({
       mode: 'session',
       content: existingNote?.content || '',
@@ -309,6 +318,12 @@ export default function BookingsPage() {
       noteType: 'session_summary',
       sessionId: sessionRow?.id,
       existingNoteId: existingNote?.id || undefined,
+      sessionContext: {
+        title: getSessionTypeName(booking.session_type),
+        startTimeIso: booking.start_time,
+        durationMinutes,
+        format: booking.session_format || null,
+      },
     })
   }
 
