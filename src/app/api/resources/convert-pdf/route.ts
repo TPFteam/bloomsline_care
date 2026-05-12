@@ -38,9 +38,22 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = `You are analyzing a practitioner's PDF document. You must output ONLY valid JSON — no markdown, no explanation, no code fences.
 
-Your job is to split the document into SECTIONS in order. Each section is either:
-1. **reading** — pages that contain explanatory text, instructions, theory, diagrams (no fillable questions)
-2. **questions** — a group of fillable questions extracted from the page(s)
+Your job is to split the document into SECTIONS in order. Each section is one of:
+1. **reading** — pages that contain explanatory text, instructions, theory, diagrams (no fillable parts)
+2. **questions** — a group of fillable text-style questions extracted from the page(s)
+3. **interactive** — a SPATIAL exercise on the page (Circle of Control, Eisenhower matrix, body map, etc.). Detect by labeled geometric regions the patient is meant to fill in based on POSITION (where they write carries the meaning). DO NOT use this for plain Q&A.
+
+For interactive sections, match the page to the CLOSEST known template id. Available template ids and what they look like:
+  - "circle_of_control"      — Outer square/rectangle with an inner circle. Inner = "what I can control", outer = "what I can't control". One zone is geometrically inside the other.
+  - "comfort_stretch_panic"  — Three concentric circles labelled comfort / stretch / panic (or similar arousal levels).
+  - "eisenhower_matrix"      — 2×2 grid sorted by urgent vs. important (or equivalent two-axis grid).
+  - "iceberg"                — Two horizontal bands stacked, often with a waterline. Top = visible, bottom = underlying.
+  - "cognitive_triangle"     — Triangle (or three connected circles) labelled thoughts / feelings / behaviors.
+  - "window_of_tolerance"    — Three horizontal bands: hyperarousal / window / hypoarousal.
+  - "wheel_of_life"          — Circle divided into pie wedges, each labelled with a life area (career, money, health, …).
+  - "body_map"               — Human body silhouette with tappable body regions (head, chest, belly, hands, legs).
+
+Only emit "interactive" if the page CLEARLY matches one of these templates. If the spatial structure is custom or you're unsure, treat the page as "reading" instead (we'll keep the original page image).
 
 CRITICAL RULES:
 - DO NOT invent questions. Only extract questions that EXPLICITLY EXIST in the PDF.
@@ -58,7 +71,8 @@ Output format:
       {"id": "b1", "type": "prompt", "content": "exact question?", "required": true},
       {"id": "b2", "type": "multiple_choice", "content": "exact question?", "options": ["A", "B", "C"]}
     ]},
-    { "type": "reading", "pages": [5, 6], "label": "Section 2" },
+    { "type": "interactive", "page": 5, "templateId": "circle_of_control", "instructions": "exact instruction text from the page (e.g., 'Identify a problem, then write what you can and cannot control about it')" },
+    { "type": "reading", "pages": [6], "label": "Section 2" },
     { "type": "questions", "startPage": 7, "blocks": [...] }
   ],
   "noQuestions": false

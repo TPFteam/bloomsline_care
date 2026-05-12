@@ -728,7 +728,10 @@ function CreateWorksheetContent() {
       }
 
       const sections = data.sections || []
-      const hasQuestions = sections.some((s: any) => s.type === 'questions' && s.blocks?.length > 0)
+      const hasQuestions = sections.some((s: any) =>
+        (s.type === 'questions' && s.blocks?.length > 0) ||
+        (s.type === 'interactive' && typeof s.templateId === 'string')
+      )
 
       if (!hasQuestions) {
         // No questions — add full PDF as reading material
@@ -805,6 +808,40 @@ function CreateWorksheetContent() {
             const questionBlocks = toWorksheetBlocks(section.blocks)
             totalQuestions += questionBlocks.length
             interleavedBlocks.push(...questionBlocks)
+          } else if (section.type === 'interactive' && typeof section.templateId === 'string') {
+            // Claude detected a spatial exercise (Circle of Control,
+            // Eisenhower, etc.) on this page. Materialise the matching
+            // template from our library — geometry, zones, default
+            // labels — and use the on-page instructions if extracted.
+            const tpl = ZONED_CANVAS_TEMPLATES.find(t => t.id === section.templateId)
+            if (tpl) {
+              const tplBlock = templateToBlock(tpl, generateId(), locale === 'fr' ? 'fr' : 'en')
+              const instructions = typeof section.instructions === 'string' && section.instructions.trim()
+                ? section.instructions.trim()
+                : tplBlock.content
+              interleavedBlocks.push({
+                id: tplBlock.id,
+                type: 'zoned_canvas',
+                content: instructions || '',
+                templateId: tplBlock.templateId,
+                canvas: tplBlock.canvas,
+                zones: tplBlock.zones,
+              } as WorksheetBlock)
+              totalQuestions += 1
+            } else if (section.page && originalPdfUrl) {
+              // Unknown templateId — fall back to embedding the page as
+              // reading content so we never silently drop the page.
+              const chunkUrl = await splitAndUploadChunk([section.page as number])
+              interleavedBlocks.push({
+                id: `pdf-${timestamp}-i${section.page}`,
+                type: 'pdf_document' as any,
+                content: `Page ${section.page}`,
+                mediaFile: chunkUrl,
+                originalPdfUrl,
+                fileName: file.name,
+                pageRange: [section.page],
+              } as any)
+            }
           }
         }
 
