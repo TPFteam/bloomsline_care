@@ -1234,6 +1234,12 @@ function CreateWorksheetContent() {
               // Heading level + spacer size
               headingLevel: block.headingLevel,
               spacerSize: block.spacerSize,
+              // Zoned-canvas (spatial exercise) — without these the
+              // editor reopens with only the prompt text and the canvas
+              // disappears.
+              templateId: block.templateId,
+              canvas: block.canvas,
+              zones: block.zones,
             }))
             setBlocks(loadedBlocks)
           }
@@ -1941,6 +1947,18 @@ function CreateWorksheetContent() {
           return { ...baseBlock, type: 'spacer' as const, spacerSize: block.spacerSize ?? 'md' } as ResourceBlock
         }
 
+        // Spatial-zone exercise — persist the full geometry. Without
+        // `zones` the patient-side renderer crashes on `[...block.zones]`.
+        if (block.type === 'zoned_canvas') {
+          return {
+            ...baseBlock,
+            type: 'zoned_canvas' as const,
+            templateId: block.templateId,
+            canvas: block.canvas,
+            zones: block.zones ?? [],
+          } as ResourceBlock
+        }
+
         // Default: paragraph, quote, tip, divider
         return baseBlock as ResourceBlock
       })
@@ -2138,6 +2156,15 @@ function CreateWorksheetContent() {
         }
         if (block.type === 'spacer') {
           return { ...baseBlock, type: 'spacer' as const, spacerSize: block.spacerSize ?? 'md' } as ResourceBlock
+        }
+        if (block.type === 'zoned_canvas') {
+          return {
+            ...baseBlock,
+            type: 'zoned_canvas' as const,
+            templateId: block.templateId,
+            canvas: block.canvas,
+            zones: block.zones ?? [],
+          } as ResourceBlock
         }
         return baseBlock as ResourceBlock
       })

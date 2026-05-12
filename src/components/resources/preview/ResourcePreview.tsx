@@ -59,6 +59,8 @@ const INTERACTIVE_TYPES = new Set([
   'list_input', 'numeric', 'slider', 'matrix_rating', 'date_picker',
   'time_input', 'file_response', 'audio_response', 'video_response',
   'table_exercise',
+  // Spatial-zone exercise (Circle of Control, Eisenhower, …)
+  'zoned_canvas',
 ])
 
 interface ResourcePreviewProps {

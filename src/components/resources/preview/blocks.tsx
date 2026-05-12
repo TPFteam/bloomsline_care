@@ -381,6 +381,9 @@ export function RenderQuestionBlock({ block, value, onChange, color }: RenderBlo
     case 'table_exercise':
       return <TableExerciseRender block={block} value={value} onChange={onChange} />
 
+    case 'zoned_canvas':
+      return <ZonedCanvasRender block={block} />
+
 
     default:
       return (
@@ -389,6 +392,90 @@ export function RenderQuestionBlock({ block, value, onChange, color }: RenderBlo
         </div>
       )
   }
+}
+
+/** Tiny preview for zoned_canvas blocks in the practitioner's mobile
+ *  mock. Renders the canvas + the per-zone list with no entries. The
+ *  practitioner just wants to see the structure they'll be sharing. */
+function ZonedCanvasRender({ block }: { block: any }) {
+  const accentToHex: Record<string, { stroke: string; bg: string }> = {
+    teal:    { stroke: '#0d9488', bg: 'rgba(20, 184, 166, 0.10)' },
+    amber:   { stroke: '#d97706', bg: 'rgba(245, 158, 11, 0.10)' },
+    rose:    { stroke: '#e11d48', bg: 'rgba(244, 63, 94, 0.10)' },
+    violet:  { stroke: '#7c3aed', bg: 'rgba(139, 92, 246, 0.10)' },
+    sky:     { stroke: '#0284c7', bg: 'rgba(14, 165, 233, 0.10)' },
+    emerald: { stroke: '#059669', bg: 'rgba(16, 185, 129, 0.10)' },
+    orange:  { stroke: '#ea580c', bg: 'rgba(249, 115, 22, 0.10)' },
+    slate:   { stroke: '#475569', bg: 'rgba(100, 116, 139, 0.06)' },
+  }
+  const labelOf = (z: any): string => z?.label?.en || z?.label?.fr || ''
+  const zones = Array.isArray(block.zones) ? block.zones : []
+  const canvas = block.canvas || { width: 800, height: 600 }
+  const ordered = [...zones].sort((a: any, b: any) => {
+    const area = (z: any): number => {
+      const s = z.shape || {}
+      if (s.kind === 'rect') return (s.w ?? 0) * (s.h ?? 0)
+      if (s.kind === 'circle') return Math.PI * (s.r ?? 0) ** 2
+      if (s.kind === 'ellipse') return Math.PI * (s.rx ?? 0) * (s.ry ?? 0)
+      return 1
+    }
+    return area(b) - area(a)
+  })
+  return (
+    <div className="space-y-3">
+      {block.content && (
+        <p className="text-[13px] text-gray-800 leading-relaxed">{block.content}</p>
+      )}
+      <div className="bg-white rounded-xl border border-gray-200 p-2">
+        <svg viewBox={`0 0 ${canvas.width} ${canvas.height}`} className="w-full h-auto" style={{ maxHeight: 240 }}>
+          {ordered.map((z: any) => {
+            const a = accentToHex[z.accent ?? 'slate'] ?? accentToHex.slate
+            const s = z.shape || {}
+            let shapeEl: React.ReactNode = null
+            let cx = 0, cy = 0
+            if (s.kind === 'rect') {
+              shapeEl = <rect x={s.x} y={s.y} width={s.w} height={s.h} rx={s.rx ?? 0} fill={a.bg} stroke={a.stroke} strokeWidth={2} />
+              cx = (s.x ?? 0) + (s.w ?? 0) / 2; cy = (s.y ?? 0) + 22
+            } else if (s.kind === 'circle') {
+              shapeEl = <circle cx={s.cx} cy={s.cy} r={s.r} fill={a.bg} stroke={a.stroke} strokeWidth={2} />
+              cx = s.cx; cy = s.cy
+            } else if (s.kind === 'ellipse') {
+              shapeEl = <ellipse cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill={a.bg} stroke={a.stroke} strokeWidth={2} />
+              cx = s.cx; cy = s.cy
+            } else if (s.kind === 'polygon' && Array.isArray(s.points)) {
+              shapeEl = <polygon points={s.points.map(([x, y]: [number, number]) => `${x},${y}`).join(' ')} fill={a.bg} stroke={a.stroke} strokeWidth={2} />
+              cx = s.points.reduce((acc: number, [x]: [number, number]) => acc + x, 0) / s.points.length
+              cy = s.points.reduce((acc: number, [, y]: [number, number]) => acc + y, 0) / s.points.length
+            }
+            return (
+              <g key={z.id}>
+                {shapeEl}
+                <text x={cx} y={cy} fill={a.stroke} fontSize={14} fontWeight={600} textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
+                  {labelOf(z)}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+      {/* Per-zone empty stubs so the practitioner sees the input UI */}
+      <div className="space-y-2">
+        {zones.map((z: any) => {
+          const a = accentToHex[z.accent ?? 'slate'] ?? accentToHex.slate
+          return (
+            <div
+              key={z.id}
+              className="rounded-lg border px-3 py-2 flex items-center justify-between gap-2"
+              style={{ borderColor: a.stroke + '33', background: a.bg }}
+            >
+              <p className="text-[12px] font-semibold" style={{ color: a.stroke }}>{labelOf(z)}</p>
+              <span className="text-[11px] text-gray-400">+ Add</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 /**
