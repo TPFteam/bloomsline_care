@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { GripVertical, Minus, X, Maximize2, Save, Loader2, FileText } from 'lucide-react'
+import { GripVertical, Minus, X, Maximize2, Minimize2, Save, Loader2, FileText } from 'lucide-react'
 import { analytics } from '@/lib/analytics/events'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
@@ -27,6 +27,7 @@ export function FloatingNotesPanel() {
   const [mounted, setMounted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Drag state
   const dragging = useRef(false)
@@ -52,8 +53,27 @@ export function FloatingNotesPanel() {
       })
       setSize({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT })
       setShowConfirm(false)
+      setIsExpanded(false)
     }
   }, [floatingNote?.memberId, floatingNote?.mode])
+
+  // Toggle a larger, more modal-like layout for distraction-free note
+  // taking. Re-centres so it lands neatly regardless of where the user
+  // had dragged the smaller panel.
+  const toggleExpand = useCallback(() => {
+    if (typeof window === 'undefined') return
+    setIsExpanded(prev => {
+      const next = !prev
+      const targetW = next ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96)) : DEFAULT_WIDTH
+      const targetH = next ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96)) : DEFAULT_HEIGHT
+      setSize({ w: targetW, h: targetH })
+      setPos({
+        x: Math.max(16, (window.innerWidth - targetW) / 2),
+        y: Math.max(16, (window.innerHeight - targetH) / 2),
+      })
+      return next
+    })
+  }, [])
 
   // Escape key minimizes
   useEffect(() => {
@@ -245,13 +265,23 @@ export function FloatingNotesPanel() {
             type="button"
             onClick={() => setMinimized(true)}
             className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            title={fr ? 'Réduire' : 'Minimize'}
           >
             <Minus className="w-4 h-4" />
           </button>
           <button
             type="button"
+            onClick={toggleExpand}
+            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            title={isExpanded ? (fr ? 'Réduire à la taille normale' : 'Restore size') : (fr ? 'Agrandir' : 'Expand')}
+          >
+            {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
             onClick={handleClose}
             className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            title={fr ? 'Fermer' : 'Close'}
           >
             <X className="w-4 h-4" />
           </button>
