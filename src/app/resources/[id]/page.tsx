@@ -317,6 +317,56 @@ function ResponseValueDisplay({ block, value, locale }: { block: ResourceBlock; 
         </a>
       ) : <span className="text-sm text-gray-500">{locale === 'fr' ? 'Fichier envoyé' : 'File uploaded'}</span>
 
+    case 'zoned_canvas': {
+      // value shape: Record<zoneId, Array<{ id, text, createdAt }>>
+      const zones = ('zones' in block && Array.isArray((block as any).zones))
+        ? ((block as any).zones as Array<{
+            id: string
+            label: { en: string; fr: string; es?: string }
+            accent?: 'teal' | 'amber' | 'rose' | 'violet' | 'sky' | 'emerald' | 'orange' | 'slate'
+          }>)
+        : []
+      const entries = (value && typeof value === 'object' ? value : {}) as Record<string, Array<{ id: string; text: string; createdAt: string }>>
+      const totalEntries = Object.values(entries).reduce((acc, list) => acc + (Array.isArray(list) ? list.length : 0), 0)
+      if (totalEntries === 0) {
+        return <span className="text-sm text-gray-500 italic">{locale === 'fr' ? 'Aucune entrée' : 'No entries'}</span>
+      }
+      const accentToHex: Record<string, { bg: string; text: string; dot: string }> = {
+        teal: { bg: 'bg-teal-50', text: 'text-teal-700', dot: 'bg-teal-500' },
+        amber: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
+        rose: { bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-500' },
+        violet: { bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
+        sky: { bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-500' },
+        emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+        orange: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
+        slate: { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-500' },
+      }
+      const labelOf = (z: { label: { en: string; fr: string; es?: string } }) =>
+        locale === 'fr' ? z.label.fr : locale === 'es' ? (z.label.es ?? z.label.en) : z.label.en
+      return (
+        <div className="space-y-2">
+          {zones.map(zone => {
+            const list = entries[zone.id] ?? []
+            if (list.length === 0) return null
+            const a = accentToHex[zone.accent ?? 'slate'] ?? accentToHex.slate
+            return (
+              <div key={zone.id} className={`rounded-lg ${a.bg} px-3 py-2`}>
+                <p className={`text-xs font-semibold ${a.text} mb-1`}>{labelOf(zone)}</p>
+                <ul className="space-y-1">
+                  {list.map(entry => (
+                    <li key={entry.id} className="flex items-start gap-2 text-sm text-gray-800">
+                      <span className={`w-1.5 h-1.5 rounded-full ${a.dot} mt-1.5 shrink-0`} />
+                      <span className="whitespace-pre-wrap break-words">{entry.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+
     default:
       return <span className="text-sm text-gray-800">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
   }
@@ -3598,7 +3648,11 @@ export default function ResourceDetailPage() {
                       const questionBlocks = blocks.filter(b =>
                         ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
                          'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input', 'list_input', 'table_exercise',
-                         'video_response', 'audio_response', 'file_response'].includes(b.type)
+                         'video_response', 'audio_response', 'file_response',
+                         // Spatial-zone interactive exercise — review surface
+                         // groups patient entries by zone.
+                         'zoned_canvas',
+                        ].includes(b.type)
                       )
                       const responses = (selectedSubmission.responses || {}) as Record<string, unknown>
 

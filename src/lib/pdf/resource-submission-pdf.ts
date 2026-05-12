@@ -39,6 +39,7 @@ const QUESTION_TYPES = [
   'prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert',
   'numeric', 'slider', 'matrix_rating', 'mood', 'date_picker', 'time_input',
   'list_input', 'table_exercise', 'video_response', 'audio_response', 'file_response',
+  'zoned_canvas',
 ] as const
 
 function getInitials(name: string): string {
@@ -557,6 +558,41 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
           </div>`
         }).join('')
         return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start">${chips}</div>`
+      }
+
+      case 'zoned_canvas': {
+        // Patient's response is Record<zoneId, Array<{ id, text, ... }>>.
+        // Render as a grouped list per zone — same shape the practitioner
+        // sees in the web review pane.
+        const blockZones = ((block as any).zones || []) as Array<{
+          id: string
+          label: { en: string; fr: string; es?: string }
+          accent?: string
+        }>
+        const entries = (response && typeof response === 'object' ? response : {}) as Record<string, Array<{ id: string; text: string; createdAt: string }>>
+        const total = Object.values(entries).reduce((acc, list) => acc + (Array.isArray(list) ? list.length : 0), 0)
+        if (total === 0) return `<em style="color:#9ca3af">${notAnswered}</em>`
+        const accentText: Record<string, string> = {
+          teal: '#0f766e', amber: '#a16207', rose: '#be123c', violet: '#6d28d9',
+          sky: '#0369a1', emerald: '#047857', orange: '#c2410c', slate: '#334155',
+        }
+        const labelOf = (z: { label: { en: string; fr: string; es?: string } }) =>
+          locale === 'fr' ? z.label.fr : locale === 'es' ? (z.label.es ?? z.label.en) : z.label.en
+        const sections = blockZones
+          .filter(z => Array.isArray(entries[z.id]) && entries[z.id].length > 0)
+          .map(z => {
+            const colour = accentText[z.accent ?? 'slate'] ?? '#334155'
+            const items = entries[z.id]
+              .map(e => `<li style="margin:0 0 2px 0">${escapeHtml(e.text)}</li>`)
+              .join('')
+            return `
+              <div style="margin-bottom:8px">
+                <div style="font-size:11px;font-weight:600;color:${colour};margin-bottom:4px">${escapeHtml(labelOf(z))}</div>
+                <ul style="margin:0;padding-left:18px;font-size:13px;color:#1f2937">${items}</ul>
+              </div>`
+          })
+          .join('')
+        return `<div>${sections}</div>`
       }
 
       default: {
