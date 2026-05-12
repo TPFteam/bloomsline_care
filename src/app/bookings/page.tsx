@@ -1242,6 +1242,18 @@ export default function BookingsPage() {
                                 table="bookings"
                                 recordId={booking.id}
                               />
+                              {/* Origin / sync indicator — has the booking made it to
+                                  Google Calendar, or does it only live in Bloomsline? */}
+                              {booking.google_event_id ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[10px]" title={locale === 'fr' ? 'Synchronisé avec Google Agenda' : 'Synced with Google Calendar'}>
+                                  <Calendar className="w-2.5 h-2.5" />
+                                  {locale === 'fr' ? 'Google Agenda' : 'Google Calendar'}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium text-[10px]" title={locale === 'fr' ? 'Réservation manuelle dans Bloomsline' : 'Manual Bloomsline booking — not on Google Calendar'}>
+                                  {locale === 'fr' ? 'Manuelle' : 'Manual'}
+                                </span>
+                              )}
                               {isAwaitingOutcome && (
                                 <span className="text-orange-600 font-medium">{locale === 'fr' ? 'En attente du statut' : 'Awaiting outcome'}</span>
                               )}
