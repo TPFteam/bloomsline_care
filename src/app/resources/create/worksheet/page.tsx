@@ -114,6 +114,9 @@ type BlockType =
   | 'pdf_document' | 'matching_pairs' | 'flashcard' | 'fill_blank' | 'ordering'
   | 'table_exercise' | 'breathing' | 'visualization' | 'body_scan' | 'timed_action'
   | 'key_points' | 'callout' | 'audio' | 'link'
+  // Spatial-zone interactive exercise (Circle of Control, Eisenhower,
+  // body map, etc.). Driven by the zoned-canvas template library.
+  | 'zoned_canvas'
   | 'video' | 'file' // Legacy types
 
 interface MediaFile {
@@ -194,6 +197,11 @@ interface WorksheetBlock {
   headingLevel?: 'h1' | 'h2' | 'h3'
   // For spacer block — vertical whitespace
   spacerSize?: 'sm' | 'md' | 'lg'
+  // For zoned_canvas (spatial-zone exercises). Persisted exactly as
+  // received from the template library — see lib/resources/zoned-canvas.ts.
+  templateId?: string
+  canvas?: { width: number; height: number; backgroundImageUrl?: string }
+  zones?: import('@/lib/resources/zoned-canvas').CanvasZone[]
 }
 
 interface BlockTypeOption {
@@ -904,12 +912,24 @@ function CreateWorksheetContent() {
   // header are presentational only, with reciprocal tooltips that
   // explain how to move between modes.
   const INTERACTIVE_TYPES_REF = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise'])
-  const resourceMode: 'reading' | 'interactive' = blocks.some(b => INTERACTIVE_TYPES_REF.has(b.type)) ? 'interactive' : 'reading'
+  // Three modes:
+  //   reading     — only static content (no patient input)
+  //   exercise    — text-style interactive blocks (prompt, MC, scale, …)
+  //   interactive — spatial-zone exercises (zoned_canvas) — newer pattern
+  // Both exercise and interactive blocks count as "needs patient response".
+  const hasSpatial = blocks.some(b => b.type === 'zoned_canvas')
+  const hasTextInteractive = blocks.some(b => INTERACTIVE_TYPES_REF.has(b.type))
+  const resourceMode: 'reading' | 'exercise' | 'interactive' =
+    hasSpatial ? 'interactive'
+    : hasTextInteractive ? 'exercise'
+    : 'reading'
 
   // Reading-only block types (content that patients read, not fill)
   const READING_BLOCKS = new Set(['heading', 'paragraph', 'image', 'divider', 'quote', 'tip', 'pdf_document', 'video', 'link', 'key_points', 'spacer'])
   const isBlockAllowed = (blockType: string) => {
-    if (resourceMode === 'interactive') return true
+    // Once the worksheet has any interactive surface (text-style
+    // exercise or spatial interactive), every block type is allowed.
+    if (resourceMode === 'exercise' || resourceMode === 'interactive') return true
     return READING_BLOCKS.has(blockType)
   }
 
@@ -923,7 +943,7 @@ function CreateWorksheetContent() {
   //     "Exercice" / "Exercise" — we no longer surface 'table' as
   //     its own type, since a table-with-prompts is a worksheet in
   //     spirit and clinicians don't care about the sub-type.
-  const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise'])
+  const INTERACTIVE_TYPES = new Set(['prompt','multiple_choice','yes_no','checklist','scale','likert','mood','matching_pairs','flashcard','fill_blank','ordering','list_input','numeric','slider','matrix_rating','date_picker','time_input','file_response','audio_response','video_response','table_exercise','zoned_canvas'])
   const detectedResourceType = (() => {
     if (blocks.some(b => INTERACTIVE_TYPES.has(b.type))) return 'worksheet'
     return 'psychoeducation'
@@ -5523,7 +5543,7 @@ function CreateWorksheetContent() {
                           a derived state. The active mode is computed
                           from the blocks; the inactive pill carries a
                           tooltip explaining how to reach the other mode. */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         {([
                           {
                             mode: 'reading' as const,
@@ -5537,15 +5557,26 @@ function CreateWorksheetContent() {
                                 : 'This document has elements that need patient submission. Delete them to switch back to Reading mode.',
                           },
                           {
+                            mode: 'exercise' as const,
+                            Icon: PenLine,
+                            title: locale === 'fr' ? 'Exercice' : locale === 'es' ? 'Ejercicio' : 'Exercise',
+                            sub: locale === 'fr' ? 'Questions, choix, échelles' : locale === 'es' ? 'Preguntas, opciones, escalas' : 'Questions, choices, scales',
+                            inactiveTip: locale === 'fr'
+                              ? 'Ajoutez une question, un choix multiple ou une échelle pour passer en mode Exercice.'
+                              : locale === 'es'
+                                ? 'Añade una pregunta, opción múltiple o escala para pasar al modo Ejercicio.'
+                                : 'Add a question, multiple choice or scale to switch to Exercise mode.',
+                          },
+                          {
                             mode: 'interactive' as const,
                             Icon: PenLine,
                             title: locale === 'fr' ? 'Interactif' : locale === 'es' ? 'Interactivo' : 'Interactive',
-                            sub: locale === 'fr' ? 'Questions, exercices' : locale === 'es' ? 'Preguntas, ejercicios' : 'Questions, exercises',
+                            sub: locale === 'fr' ? 'Cercle de contrôle, matrice…' : locale === 'es' ? 'Círculo de control, matriz…' : 'Circle of control, matrix…',
                             inactiveTip: locale === 'fr'
-                              ? 'Ajoutez un élément interactif (question, choix multiple, échelle…) pour passer en mode Interactif.'
+                              ? 'Ajoutez un exercice spatial (Cercle de contrôle, Eisenhower, carte corporelle…) pour passer en mode Interactif.'
                               : locale === 'es'
-                                ? 'Añade un elemento interactivo (pregunta, opción múltiple, escala…) para pasar al modo Interactivo.'
-                                : 'Add an interactive element (a question, multiple choice, scale…) to switch to Interactive mode.',
+                                ? 'Añade un ejercicio espacial (Círculo de control, Eisenhower, mapa corporal…) para pasar al modo Interactivo.'
+                                : 'Add a spatial exercise (Circle of control, Eisenhower, body map…) to switch to Interactive mode.',
                           },
                         ]).map(({ mode, Icon, title, sub, inactiveTip }) => {
                           const isActive = resourceMode === mode

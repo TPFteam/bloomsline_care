@@ -37,6 +37,9 @@ const INTERACTIVE_BLOCK_TYPES = new Set<string>([
   'video_response',
   'audio_response',
   'file_response',
+  // Spatial-zone exercises (Circle of Control etc.) — patient adds
+  // entries to zones inside a canvas; counts as interactive content.
+  'zoned_canvas',
 ])
 
 export function blocksContainInteractive(blocks: ResourceBlock[] | null | undefined): boolean {
