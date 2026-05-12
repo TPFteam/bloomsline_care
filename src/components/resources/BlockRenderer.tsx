@@ -2315,12 +2315,17 @@ function ZonedCanvasRenderer({
 
       {expanded && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col"
+          className="fixed inset-0 bg-slate-900/95 flex flex-col"
+          // Bumped above any app chrome (sidebars, sticky headers) that
+          // can sit at z-50/z-100 in this app — at this z-index nothing
+          // else competes for the top of the page.
+          style={{ zIndex: 9999 }}
           role="dialog"
           aria-modal="true"
           onClick={() => setExpanded(false)}
         >
-          <div className="flex items-center justify-between px-4 pt-5 pb-3 gap-3">
+          {/* Header — shrink-0 so it never gets pushed off-screen */}
+          <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 gap-3">
             <p className="text-white text-[15px] font-semibold truncate flex-1">{b.content || ''}</p>
             <button
               type="button"
@@ -2332,14 +2337,17 @@ function ZonedCanvasRenderer({
               <span>Close</span>
             </button>
           </div>
-          <div className="flex-1 flex items-center justify-center px-4 pb-6">
+          {/* Canvas — flex-1 + min-h-0 lets the SVG shrink to fit. */}
+          <div className="flex-1 min-h-0 flex items-center justify-center px-4 pb-3">
             <div
-              className="bg-white rounded-2xl p-3 w-full max-w-5xl"
+              className="relative bg-white rounded-2xl p-3 w-full max-w-5xl"
+              style={{ maxHeight: '100%' }}
               onClick={(e) => e.stopPropagation()}
             >
               <svg
                 viewBox={`0 0 ${b.canvas.width} ${b.canvas.height}`}
                 className="w-full h-auto"
+                style={{ maxHeight: 'calc(100vh - 140px)' }}
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
                 aria-label="Expanded zoned canvas"
@@ -2357,9 +2365,19 @@ function ZonedCanvasRenderer({
                 {paintOrder.map(renderLabel)}
                 {paintOrder.map(renderEntries)}
               </svg>
+              {/* Floating close on the card itself — always reachable, even
+                  if header chrome overlaps. */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setExpanded(false) }}
+                className="absolute top-3 right-3 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white border border-gray-200 hover:bg-gray-100 transition shadow"
+                aria-label="Close expanded canvas"
+              >
+                <Minimize2 className="w-4 h-4 text-gray-700" />
+              </button>
             </div>
           </div>
-          <p className="text-white/60 text-xs text-center pb-4">Click outside or press Esc to close</p>
+          <p className="shrink-0 text-white/60 text-xs text-center pb-3">Click outside or press Esc to close</p>
         </div>
       )}
 
