@@ -30,6 +30,7 @@ import {
   Code2,
   MoreHorizontal,
   PenLine,
+  ArrowUpRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -1227,10 +1228,24 @@ export default function BookingsPage() {
                             {/* Patient row */}
                             <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-xs">
                               <span className="text-gray-500">{locale === 'fr' ? 'avec' : 'with'}</span>
-                              <span className="inline-flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
-                                <span className="text-gray-900 font-medium truncate max-w-[200px]">{booking.client_name}</span>
-                              </span>
+                              {booking.member_id ? (
+                                <Link
+                                  href={`/members/${booking.member_id}`}
+                                  className="inline-flex items-center gap-1.5 group/patient hover:text-violet-700 transition-colors"
+                                  title={locale === 'fr' ? 'Voir le profil du patient' : "View patient profile"}
+                                >
+                                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
+                                  <span className="text-gray-900 font-medium truncate max-w-[200px] group-hover/patient:text-violet-700 group-hover/patient:underline underline-offset-2 decoration-violet-300">
+                                    {booking.client_name}
+                                  </span>
+                                  <ArrowUpRight className="w-3 h-3 text-gray-400 group-hover/patient:text-violet-600" />
+                                </Link>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
+                                  <span className="text-gray-900 font-medium truncate max-w-[200px]">{booking.client_name}</span>
+                                </span>
+                              )}
                               <span className="inline-flex items-center gap-1 text-gray-500">
                                 {booking.session_format === 'in_person'
                                   ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
