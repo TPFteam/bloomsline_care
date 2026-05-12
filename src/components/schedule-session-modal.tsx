@@ -218,9 +218,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setSelectedTime(preselectedTime || null)
         if (preselectedTime) keepTimeRef.current = true
         setNotes('')
-        // After-hours band clicks force manual mode: the slot picker won't
-        // have a matching slot, so we commit to the typed time instead.
-        setScheduleMode(preselectedOutsideHours || hasExternalBooking ? 'manual' : 'calendar')
+        // Stay in calendar mode regardless of after-hours. Manual mode
+        // skips the Google Calendar sync step, which the practitioner
+        // does not want. The outsideHours signal is used downstream to
+        // skip the datetime step instead.
+        setScheduleMode(hasExternalBooking ? 'manual' : 'calendar')
         setManualSessionType('')
         setManualDuration(60)
         setManualTime(preselectedTime || '10:00')
@@ -888,6 +890,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     if (step === 'session' && !preselectedMember) setStep('member')
     else if (step === 'format') setStep('session')
     else if (step === 'datetime') setStep('format')
+    // Mirror the forward-skip from format → confirm for after-hours
+    else if (step === 'confirm' && preselectedOutsideHours) setStep('format')
     else if (step === 'confirm') setStep('datetime')
   }
 
@@ -1829,6 +1833,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                 onClick={() => {
                   if (step === 'member') setStep('session')
                   else if (step === 'session') setStep('format')
+                  // After-hours bookings carry their own date+time from the
+                  // calendar click — skip the datetime step so the practitioner
+                  // doesn't have to re-pick. Still goes through calendar-mode
+                  // submit, so Google Calendar sync runs normally.
+                  else if (step === 'format' && preselectedOutsideHours && selectedDate && selectedTime) setStep('confirm')
                   else if (step === 'format') setStep('datetime')
                   else if (step === 'datetime') setStep('confirm')
                 }}

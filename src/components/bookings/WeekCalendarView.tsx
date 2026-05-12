@@ -68,6 +68,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null)
   const [clickHint, setClickHint] = useState<{ x: number; y: number; key: string } | null>(null)
 
   useEffect(() => {
@@ -422,6 +423,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             <div
               key={day.toISOString()}
               data-day-column
+              onMouseEnter={() => setHoveredDay(day.toISOString())}
+              onMouseLeave={() => setHoveredDay(prev => prev === day.toISOString() ? null : prev)}
               className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick && !showAvailability ? 'cursor-pointer' : ''}`}
               style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
@@ -481,11 +484,12 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* After-hours zones — one or two faint bands per day,
-                  whatever isn't covered by configured availability inside
-                  the visible window. Click anywhere on a band to open the
+              {/* After-hours zones — only revealed for the hovered day so
+                  the calendar stays calm on rest. One or two faint bands per
+                  day cover whatever isn't configured availability inside the
+                  visible window. Click anywhere on a band to open the
                   schedule modal at the clicked time (snapped to 15 min). */}
-              {showAvailability && afterHoursBands(day.getDay()).map((band, bi) => (
+              {showAvailability && hoveredDay === day.toISOString() && afterHoursBands(day.getDay()).map((band, bi) => (
                 <div
                   key={`afterhours-${bi}`}
                   title={locale === 'fr' ? 'Hors horaires — cliquez pour réserver' : 'After-hours — click to schedule'}
