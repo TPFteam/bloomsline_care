@@ -2037,12 +2037,21 @@ function ZonedCanvasRenderer({
 
   const renderShape = (z: CanvasZone) => {
     const colour = ACCENT_COLORS[z.accent ?? 'slate']
+    const onActivate = () => startAdd(z.id)
     const common = {
       fill: colour.fill,
       stroke: colour.stroke,
       strokeWidth: 2,
       cursor: disabled ? 'default' : 'pointer',
-      onClick: () => startAdd(z.id),
+      onClick: onActivate,
+      // Accessibility: each zone is a button labelled with its zone
+      // label so screen readers can target zones directly.
+      role: disabled ? undefined : 'button',
+      tabIndex: disabled ? undefined : 0,
+      'aria-label': labelOf(z),
+      onKeyDown: disabled ? undefined : (e: React.KeyboardEvent<SVGElement>) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate() }
+      },
     }
     const s = z.shape
     if (s.kind === 'rect') {

@@ -831,6 +831,13 @@ function CreateWorksheetContent() {
             } else if (section.page && originalPdfUrl) {
               // Unknown templateId — fall back to embedding the page as
               // reading content so we never silently drop the page.
+              toast.message(
+                locale === 'fr'
+                  ? `Exercice spatial non reconnu (page ${section.page}) — page ajoutée comme document de lecture.`
+                  : locale === 'es'
+                    ? `Ejercicio espacial no reconocido (página ${section.page}) — página añadida como documento de lectura.`
+                    : `Unrecognised spatial exercise (page ${section.page}) — page added as reading material.`
+              )
               const chunkUrl = await splitAndUploadChunk([section.page as number])
               interleavedBlocks.push({
                 id: `pdf-${timestamp}-i${section.page}`,
@@ -3355,6 +3362,65 @@ function CreateWorksheetContent() {
                       rows={2}
                       className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none overflow-hidden min-h-[60px]"
                     />
+                  </div>
+                )}
+
+                {/* Zoned Canvas (interactive spatial exercise) editor */}
+                {block.type === 'zoned_canvas' && block.zones && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {locale === 'fr' ? 'Instructions affichées au patient' : 'Instructions shown to the patient'}
+                      </label>
+                      <textarea
+                        value={block.content || ''}
+                        onChange={(e) => updateBlock(block.id, { content: e.target.value })}
+                        placeholder={locale === 'fr' ? 'Décrivez l’exercice…' : 'Describe the exercise…'}
+                        rows={2}
+                        className="w-full px-4 py-2.5 bg-gray-50/80 border border-gray-200/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent resize-none min-h-[60px]"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        {locale === 'fr' ? 'Zones' : 'Zones'}
+                      </p>
+                      <p className="text-xs text-gray-500 mb-3">
+                        {locale === 'fr'
+                          ? 'Renommez chaque zone selon le contexte clinique. La géométrie reste celle du modèle.'
+                          : 'Rename each zone to match the clinical context. The geometry comes from the template.'}
+                      </p>
+                      <div className="space-y-2">
+                        {block.zones.map((zone, zi) => {
+                          const accentClass: Record<string, string> = {
+                            teal: 'bg-teal-500', amber: 'bg-amber-500', rose: 'bg-rose-500', violet: 'bg-violet-500',
+                            sky: 'bg-sky-500', emerald: 'bg-emerald-500', orange: 'bg-orange-500', slate: 'bg-slate-500',
+                          }
+                          const dotClass = accentClass[zone.accent ?? 'slate'] ?? 'bg-slate-500'
+                          const labelKey = locale === 'fr' ? 'fr' : 'en'
+                          const currentLabel = zone.label[labelKey] || zone.label.en
+                          return (
+                            <div key={zone.id} className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${dotClass} shrink-0`} />
+                              <input
+                                value={currentLabel}
+                                onChange={(e) => {
+                                  const nextZones = (block.zones || []).map((z, idx) => {
+                                    if (idx !== zi) return z
+                                    return {
+                                      ...z,
+                                      label: { ...z.label, [labelKey]: e.target.value },
+                                    }
+                                  })
+                                  updateBlock(block.id, { zones: nextZones })
+                                }}
+                                placeholder={zone.label.en}
+                                className="flex-1 px-3 py-2 bg-gray-50/80 border border-gray-200/60 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
 
