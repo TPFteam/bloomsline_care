@@ -79,7 +79,9 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const [showConvertConfirm, setShowConvertConfirm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [bookSessionTrigger, setBookSessionTrigger] = useState(false)
-  const [highlightId, setHighlightId] = useState<string | undefined>(undefined)
+  const [highlightId, setHighlightId] = useState<string | undefined>(
+    searchParams.get('highlight') || undefined,
+  )
   const [notes, setNotes] = useState<ProgressNote[]>([])
   const [sessions, setSessions] = useState<MemberSession[]>([])
 
@@ -87,6 +89,14 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
     fetchMember()
     fetchRelatedData()
   }, [resolvedParams.id])
+
+  // Auto-clear the URL-provided highlight after a few seconds so the
+  // ring fades naturally and the URL stops carrying transient state.
+  useEffect(() => {
+    if (!searchParams.get('highlight')) return
+    const t = setTimeout(() => setHighlightId(undefined), 4000)
+    return () => clearTimeout(t)
+  }, [searchParams])
 
   // Redirect prospect to 'sessions_notes' tab if on a tab they can't see
   useEffect(() => {

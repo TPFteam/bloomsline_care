@@ -244,21 +244,29 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
 
 
-  // Scroll to highlighted session or section
+  // Scroll to highlighted session or section. Also auto-open the note
+  // panel for the highlighted session so "Go to this session" from the
+  // bookings page lands directly on the note-taking surface.
   useEffect(() => {
-    if (highlightSessionId) {
-      // Wait for the DOM to update
-      setTimeout(() => {
-        // Handle special case for past-sessions-section
-        const elementId = highlightSessionId === 'past-sessions-section'
-          ? 'past-sessions-section'
-          : `session-${highlightSessionId}`
-        const element = document.getElementById(elementId)
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
-      }, 100)
+    if (!highlightSessionId) return
+    if (highlightSessionId !== 'past-sessions-section') {
+      setExpandedNotes(prev => {
+        if (prev.has(highlightSessionId)) return prev
+        const next = new Set(prev)
+        next.add(highlightSessionId)
+        return next
+      })
     }
+    const t = setTimeout(() => {
+      const elementId = highlightSessionId === 'past-sessions-section'
+        ? 'past-sessions-section'
+        : `session-${highlightSessionId}`
+      const element = document.getElementById(elementId)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+    return () => clearTimeout(t)
   }, [highlightSessionId])
 
   // Fetch milestones for the member

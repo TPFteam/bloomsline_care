@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -28,6 +28,9 @@ import {
   Building2,
   SlidersHorizontal,
   Code2,
+  MoreHorizontal,
+  PenLine,
+  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -127,6 +130,65 @@ const STATUS_LABELS: Record<string, { en: string; fr: string }> = {
   cancelled: { en: 'Cancelled', fr: 'Annulé' },
   completed: { en: 'Completed', fr: 'Terminé' },
   no_show: { en: 'No Show', fr: 'Absent' },
+}
+
+// ── Booking row menu ────────────────────────────────────────────────
+// Compact 3-dot dropdown that hosts the row's secondary actions
+// (reschedule, cancel, delete, etc). Keeps the booking row visually
+// uncluttered while preserving access to every existing action.
+interface RowMenuItem {
+  label: string
+  icon?: React.ComponentType<{ className?: string }>
+  onClick: () => void
+  danger?: boolean
+}
+function RowMenu({ items }: { items: RowMenuItem[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [open])
+  if (items.length === 0) return null
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        aria-label="More actions"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[180px] py-1">
+          {items.map((item, i) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { item.onClick(); setOpen(false) }}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                {Icon && <Icon className="w-3.5 h-3.5" />}
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const DAYS_OF_WEEK: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -1093,7 +1155,7 @@ export default function BookingsPage() {
                       </div>
 
                       {/* Row content */}
-                      <div className="flex-1 min-w-0 pb-5">
+                      <div className="flex-1 min-w-0 pb-8">
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                           <div className="min-w-0 flex-1">
                             {/* Headline: session type · relative date · time */}
@@ -1140,51 +1202,40 @@ export default function BookingsPage() {
                                 {booking.notes}
                               </p>
                             )}
+
+                            {/* Take-notes affordance — jump to the patient's sessions tab
+                                with this booking highlighted. Visible on upcoming /
+                                pending / awaiting-outcome rows that have a linked
+                                member; not shown for finalised history items. */}
+                            {booking.member_id &&
+                              (booking.status === 'confirmed' || booking.status === 'pending') && (
+                                <Link
+                                  href={`/members/${booking.member_id}?tab=sessions_notes&sub=sessions&highlight=${booking.id}`}
+                                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                                >
+                                  <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                                  {locale === 'fr' ? 'Aller à cette séance' : 'Go to this session'}
+                                  <ArrowRight className="w-3 h-3 text-gray-400" />
+                                </Link>
+                              )}
                           </div>
 
-                          {/* Actions — same set as before, status-aware */}
-                          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                          {/* Actions — primary action + ⋯ menu for the rest. */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Pending: Approve visible, Reject + Delete in menu */}
                             {booking.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => handleApprove(booking.id)}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                  {locale === 'fr' ? 'Accepter' : 'Approve'}
-                                </button>
-                                <button
-                                  onClick={() => setCancelConfirmBooking(booking)}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  {locale === 'fr' ? 'Refuser' : 'Reject'}
-                                </button>
-                              </>
+                              <button
+                                onClick={() => handleApprove(booking.id)}
+                                disabled={processingId === booking.id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                {locale === 'fr' ? 'Accepter' : 'Approve'}
+                              </button>
                             )}
-                            {isAwaitingOutcome && (
-                              <>
-                                <button
-                                  onClick={() => handleMarkStatus(booking.id, 'completed')}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                  {locale === 'fr' ? 'Terminé' : 'Complete'}
-                                </button>
-                                <button
-                                  onClick={() => handleMarkStatus(booking.id, 'no_show')}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  {locale === 'fr' ? 'Absent' : 'No-show'}
-                                </button>
-                              </>
-                            )}
-                            {booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome && (
+
+                            {/* Confirmed future: Join visible, Reschedule + Cancel + Delete in menu */}
+                            {booking.status === 'confirmed' && !isAwaitingOutcome && booking.meet_link && (
                               <a
                                 href={booking.meet_link}
                                 target="_blank"
@@ -1195,33 +1246,33 @@ export default function BookingsPage() {
                                 {locale === 'fr' ? 'Rejoindre' : 'Join'}
                               </a>
                             )}
-                            {booking.status === 'confirmed' && !isAwaitingOutcome && (
-                              <>
-                                <button
-                                  onClick={() => openRescheduleModal(booking)}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-teal-600 text-xs font-medium rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors disabled:opacity-50"
-                                >
-                                  <RefreshCw className="w-3.5 h-3.5" />
-                                  {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
-                                </button>
-                                <button
-                                  onClick={() => setCancelConfirmBooking(booking)}
-                                  disabled={processingId === booking.id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
-                                >
-                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                                </button>
-                              </>
+
+                            {/* Awaiting outcome: Complete visible, No-show + Reschedule + Delete in menu */}
+                            {isAwaitingOutcome && (
+                              <button
+                                onClick={() => handleMarkStatus(booking.id, 'completed')}
+                                disabled={processingId === booking.id}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                {locale === 'fr' ? 'Terminé' : 'Complete'}
+                              </button>
                             )}
-                            <button
-                              onClick={() => setDeleteConfirmBooking(booking)}
-                              className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                              title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+
+                            <RowMenu items={[
+                              ...(booking.status === 'pending' ? [
+                                { label: locale === 'fr' ? 'Refuser' : 'Reject', icon: X, onClick: () => setCancelConfirmBooking(booking), danger: true },
+                              ] : []),
+                              ...(isAwaitingOutcome ? [
+                                { label: locale === 'fr' ? 'Absent' : 'No-show', icon: XCircle, onClick: () => handleMarkStatus(booking.id, 'no_show') },
+                                { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
+                              ] : []),
+                              ...(booking.status === 'confirmed' && !isAwaitingOutcome ? [
+                                { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
+                                { label: locale === 'fr' ? 'Annuler' : 'Cancel', icon: X, onClick: () => setCancelConfirmBooking(booking), danger: true },
+                              ] : []),
+                              { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => setDeleteConfirmBooking(booking), danger: true },
+                            ]} />
                           </div>
                         </div>
                       </div>
