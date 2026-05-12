@@ -49,6 +49,7 @@ import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
 import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -295,13 +296,48 @@ export default function BookingsPage() {
     const sb = createClient()
     const { data: { user: u } } = await sb.auth.getUser()
     if (!u) return
-    const { data: sessionRow } = await sb
-      .from('sessions')
-      .select('id')
-      .eq('practitioner_id', u.id)
-      .eq('member_id', booking.member_id)
-      .eq('scheduled_at', booking.start_time)
-      .maybeSingle()
+
+    // Fetch in parallel: matching session row, the practitioner's custom
+    // note types (for the tag chips inside the editor), and the patient's
+    // milestones (for the goal-tagging affordance). Each is best-effort —
+    // missing data degrades gracefully to fewer editor affordances.
+    const [sessionRowRes, customTypesRes, milestonesRes] = await Promise.all([
+      sb.from('sessions')
+        .select('id')
+        .eq('practitioner_id', u.id)
+        .eq('member_id', booking.member_id)
+        .eq('scheduled_at', booking.start_time)
+        .maybeSingle(),
+      sb.from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', u.id)
+        .order('created_at'),
+      sb.from('milestones')
+        .select('id, title, status')
+        .eq('member_id', booking.member_id)
+        .order('created_at'),
+    ])
+    const sessionRow = sessionRowRes.data
+    const customTypes = (customTypesRes.data || [])
+      .map(r => r.type_name as string)
+      .filter(name => !name.startsWith('_hidden:'))
+    const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
+
+    // Build the note-type list the editor expects (defaults + custom).
+    // Labels are kept as the raw type name; the editor i18n-formats them
+    // when it shows the chip palette.
+    const noteTypeMap = new Map<string, { type: string; label: string }>()
+    for (const t of FIXED_NOTE_TYPES) {
+      noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
+    }
+    for (const t of DEFAULT_NOTE_TYPES) {
+      if (!noteTypeMap.has(t)) noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
+    }
+    for (const t of customTypes) {
+      if (!noteTypeMap.has(t)) noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
+    }
+    const editorNoteTypes = Array.from(noteTypeMap.values())
+
     const { data: existingNote } = sessionRow?.id
       ? await sb
           .from('progress_notes')
@@ -319,6 +355,8 @@ export default function BookingsPage() {
       noteType: 'session_summary',
       sessionId: sessionRow?.id,
       existingNoteId: existingNote?.id || undefined,
+      milestones,
+      editorNoteTypes,
       sessionContext: {
         title: getSessionTypeName(booking.session_type),
         startTimeIso: booking.start_time,
