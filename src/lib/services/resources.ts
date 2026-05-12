@@ -240,14 +240,39 @@ export async function deleteResource(id: string): Promise<void> {
     .eq('resource_id', id)
   const responseIds = (responseRows || []).map(r => r.id as string)
 
-  const { error } = await supabase
+  const { error, count, status, statusText } = await supabase
     .from('resources')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('id', id)
 
   if (error) {
-    console.error('Error deleting resource:', error)
+    // Pull every accessible property — PostgrestError, Error, plain object,
+    // anything. Some upstream wrappers throw a frozen {} which is why the
+    // previous attempts logged empty.
+    const e: any = error
+    console.error('Error deleting resource:', {
+      message: e?.message,
+      details: e?.details,
+      hint: e?.hint,
+      code: e?.code,
+      name: e?.name,
+      stack: e?.stack,
+      ownKeys: Object.getOwnPropertyNames(e || {}),
+      jsonified: (() => { try { return JSON.stringify(e) } catch { return 'unstringifiable' } })(),
+      proto: e ? Object.getPrototypeOf(e)?.constructor?.name : null,
+      status,
+      statusText,
+      count,
+      resourceId: id,
+    })
     throw error
+  }
+  // Surfacing this — RLS hides the row from delete and returns no error.
+  // Without this check we'd silently "succeed" but the row still exists.
+  if (count === 0) {
+    const msg = 'Delete matched 0 rows — likely RLS or wrong practitioner_id'
+    console.error(msg, { resourceId: id, status, statusText })
+    throw new Error(msg)
   }
 
   // Tidy notifications whose deep links point at the now-missing resource.
