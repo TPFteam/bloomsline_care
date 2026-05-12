@@ -81,6 +81,7 @@ import { toast } from 'sonner'
 import type { Resource, ResourceType, ResourceBlock } from '@/types/resource'
 // Notification + email for resource sharing handled by Supabase edge function
 import { ShareResourceModal } from '@/components/resources/ShareResourceModal'
+import { BlockRenderer } from '@/components/resources/BlockRenderer'
 
 interface SimpleMember {
   id: string
@@ -1480,7 +1481,7 @@ export default function ResourceDetailPage() {
                     // Track question and info numbers separately
                     let questionNumber = 0
                     let infoNumber = 0
-                    const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response', 'table_exercise']
+                    const questionTypes = ['prompt', 'checklist', 'scale', 'matrix_rating', 'likert', 'multiple_choice', 'yes_no', 'mood', 'numeric', 'slider', 'date_picker', 'time_input', 'list_input', 'audio_response', 'file_response', 'video_response', 'table_exercise', 'zoned_canvas']
                     const infoTypes = ['heading', 'paragraph', 'quote', 'tip', 'affirmation', 'image', 'divider', 'pdf_document']
 
                     // Question type labels for display
@@ -1502,6 +1503,7 @@ export default function ResourceDetailPage() {
                       file_response: { en: 'File', fr: 'Fichier' },
                       video_response: { en: 'Video', fr: 'Vidéo' },
                       table_exercise: { en: 'Table', fr: 'Tableau' },
+                      zoned_canvas: { en: 'Interactive', fr: 'Interactif' },
                     }
 
                     // Info type labels for display
@@ -2054,6 +2056,16 @@ export default function ResourceDetailPage() {
                               <p className="text-sm text-gray-500">{locale === 'fr' ? 'Cliquez pour enregistrer' : 'Click to record'}</p>
                             </div>
                           </>
+                        )}
+
+                        {blockType === 'zoned_canvas' && (
+                          <BlockRenderer
+                            block={block as any}
+                            value={{}}
+                            onChange={() => {}}
+                            disabled
+                            locale={locale as 'en' | 'fr' | 'es'}
+                          />
                         )}
                       </div>
                     )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CheckCircle,
@@ -22,6 +22,7 @@ import {
   Frown,
   Angry,
   Maximize2,
+  Minimize2,
   X as XIcon,
 } from 'lucide-react'
 
@@ -1989,6 +1990,15 @@ function ZonedCanvasRenderer({
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
 
+  // ESC closes the expanded view — standard modal behaviour, expected
+  // on web. Without this, keyboard-only users get stuck.
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [expanded])
+
   const labelOf = (z: CanvasZone) => z.label[locale] || z.label.en
   const descOf = (z: CanvasZone) => z.description?.[locale] || z.description?.en
 
@@ -2308,20 +2318,25 @@ function ZonedCanvasRenderer({
           className="fixed inset-0 z-50 bg-slate-900/95 flex flex-col"
           role="dialog"
           aria-modal="true"
+          onClick={() => setExpanded(false)}
         >
-          <div className="flex items-center justify-between px-4 pt-5 pb-3">
+          <div className="flex items-center justify-between px-4 pt-5 pb-3 gap-3">
             <p className="text-white text-[15px] font-semibold truncate flex-1">{b.content || ''}</p>
             <button
               type="button"
-              onClick={() => setExpanded(false)}
-              className="ml-3 p-2 text-white/90 hover:text-white"
-              aria-label="Close expanded canvas"
+              onClick={(e) => { e.stopPropagation(); setExpanded(false) }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition shadow"
+              aria-label="Close expanded canvas (Esc)"
             >
-              <XIcon className="w-6 h-6" />
+              <Minimize2 className="w-4 h-4" />
+              <span>Close</span>
             </button>
           </div>
           <div className="flex-1 flex items-center justify-center px-4 pb-6">
-            <div className="bg-white rounded-2xl p-3 w-full max-w-5xl">
+            <div
+              className="bg-white rounded-2xl p-3 w-full max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <svg
                 viewBox={`0 0 ${b.canvas.width} ${b.canvas.height}`}
                 className="w-full h-auto"
@@ -2344,6 +2359,7 @@ function ZonedCanvasRenderer({
               </svg>
             </div>
           </div>
+          <p className="text-white/60 text-xs text-center pb-4">Click outside or press Esc to close</p>
         </div>
       )}
 
