@@ -2389,7 +2389,8 @@ function ZonedCanvasRenderer({
           return (
             <div
               key={zone.id}
-              className={`rounded-xl ${colour.bg} ${colour.border} border p-3`}
+              className="rounded-xl bg-[#fafaf9] border p-3"
+              style={{ borderColor: colour.stroke + '88', borderWidth: 1.5 }}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">
@@ -2419,10 +2420,10 @@ function ZonedCanvasRenderer({
                         <button
                           type="button"
                           onClick={() => removeEntry(zone.id, entry.id)}
-                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-rose-500 transition-opacity"
+                          className="w-5 h-5 inline-flex items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-rose-100 hover:text-rose-600 transition flex-shrink-0"
                           aria-label="Remove entry"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       )}
                     </li>
