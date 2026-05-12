@@ -64,6 +64,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null)
   const [clickHint, setClickHint] = useState<{ x: number; y: number; key: string } | null>(null)
 
   useEffect(() => {
@@ -357,6 +358,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           return (
             <div
               key={day.toISOString()}
+              onMouseEnter={() => setHoveredDay(day.toISOString())}
+              onMouseLeave={() => setHoveredDay(prev => prev === day.toISOString() ? null : prev)}
               className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick && !showAvailability ? 'cursor-pointer' : ''}`}
               style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
@@ -416,12 +419,16 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* Available slots — teal pill for in-hours, dashed-gray pill
-                  for after-hours. Both go through calendar-mode submit so
-                  Google Calendar sync runs in either case; the after-hours
+              {/* Available slots — teal pill for in-hours (always shown),
+                  dashed-gray pill for after-hours (only shown while the
+                  practitioner is hovering this specific day, so the rest of
+                  the week stays calm). Both go through calendar-mode submit
+                  so Google Calendar sync runs in either case; the after-hours
                   click carries an outsideHours flag so the modal can skip
                   the (now redundant) datetime picker step. */}
-              {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || []).map((slot, si) => {
+              {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || [])
+                .filter(slot => !slot.outside || hoveredDay === day.toISOString())
+                .map((slot, si) => {
                 const startH = getHoursInTz(slot.start)
                 const endH = getHoursInTz(slot.end)
                 const slotTop = (startH - START_HOUR) * HOUR_HEIGHT
