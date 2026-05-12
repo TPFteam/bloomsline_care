@@ -55,6 +55,8 @@ export type BlockType =
   | 'visualization'
   | 'body_scan'
   | 'reflection'
+  // Spatial-zone interactive exercise (Circle of Control, etc.)
+  | 'zoned_canvas'
 
 // Media file interface
 export interface MediaFile {
@@ -284,6 +286,30 @@ export interface FileResponseBlock extends BaseBlock {
   acceptedFileTypes?: string[]
 }
 
+// Spatial-zone interactive exercise (Circle of Control, Eisenhower
+// matrix, body map, etc.). Driven by the zoned-canvas template
+// library at src/lib/resources/zoned-canvas.ts. Patients add entries
+// to zones by tapping; the entry is attributed to the zone that owns
+// the tap position (deepest match wins, via parentZoneId nesting).
+export interface ZonedCanvasBlock extends BaseBlock {
+  type: 'zoned_canvas'
+  templateId?: string
+  canvas: { width: number; height: number; backgroundImageUrl?: string }
+  zones: Array<{
+    id: string
+    label: { en: string; fr: string; es?: string }
+    description?: { en: string; fr: string; es?: string }
+    shape:
+      | { kind: 'rect'; x: number; y: number; w: number; h: number; rx?: number }
+      | { kind: 'circle'; cx: number; cy: number; r: number }
+      | { kind: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
+      | { kind: 'polygon'; points: [number, number][] }
+    accent?: 'teal' | 'amber' | 'rose' | 'violet' | 'sky' | 'emerald' | 'orange' | 'slate'
+    parentZoneId?: string | null
+    maxItems?: number
+  }>
+}
+
 // Union type for all blocks
 export type ResourceBlock =
   | HeadingBlock
@@ -317,6 +343,7 @@ export type ResourceBlock =
   // Response blocks (member uploads as answer)
   | VideoResponseBlock
   | AudioResponseBlock
+  | ZonedCanvasBlock
   | FileResponseBlock
 
 // Scoring range for worksheet scoring

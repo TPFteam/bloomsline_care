@@ -454,6 +454,17 @@ export function BlockRenderer({
         />
       )
 
+    case 'zoned_canvas':
+      return (
+        <ZonedCanvasRenderer
+          block={block}
+          value={value as Record<string, Array<{ id: string; text: string; createdAt: string }>> | undefined}
+          onChange={onChange}
+          disabled={disabled}
+          locale={locale}
+        />
+      )
+
     default:
       return (
         <div className="p-4 bg-gray-50 rounded-xl text-gray-500">
@@ -1908,6 +1919,315 @@ function FileResponseBlock({
           </p>
         </label>
       )}
+    </div>
+  )
+}
+
+// ===== Zoned Canvas Block =====
+// Renders a 2-D canvas with labeled zones (rectangles, circles, polygons).
+// Patients add entries by tapping a zone OR by pressing the "+ Add" button
+// under the list view below the canvas. The list view is the primary entry
+// surface on mobile and the accessibility fallback on desktop. SVG canvas
+// is for visual context.
+type Accent = 'teal' | 'amber' | 'rose' | 'violet' | 'sky' | 'emerald' | 'orange' | 'slate'
+const ACCENT_COLORS: Record<Accent, { fill: string; stroke: string; text: string; bg: string; border: string }> = {
+  teal:    { fill: 'rgba(20, 184, 166, 0.10)', stroke: '#0d9488', text: '#0f766e', bg: 'bg-teal-50',    border: 'border-teal-200' },
+  amber:   { fill: 'rgba(245, 158, 11, 0.10)', stroke: '#d97706', text: '#a16207', bg: 'bg-amber-50',   border: 'border-amber-200' },
+  rose:    { fill: 'rgba(244, 63, 94, 0.10)',  stroke: '#e11d48', text: '#be123c', bg: 'bg-rose-50',    border: 'border-rose-200' },
+  violet:  { fill: 'rgba(139, 92, 246, 0.10)', stroke: '#7c3aed', text: '#6d28d9', bg: 'bg-violet-50',  border: 'border-violet-200' },
+  sky:     { fill: 'rgba(14, 165, 233, 0.10)', stroke: '#0284c7', text: '#0369a1', bg: 'bg-sky-50',     border: 'border-sky-200' },
+  emerald: { fill: 'rgba(16, 185, 129, 0.10)', stroke: '#059669', text: '#047857', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  orange:  { fill: 'rgba(249, 115, 22, 0.10)', stroke: '#ea580c', text: '#c2410c', bg: 'bg-orange-50',  border: 'border-orange-200' },
+  slate:   { fill: 'rgba(100, 116, 139, 0.06)', stroke: '#475569', text: '#334155', bg: 'bg-slate-50',  border: 'border-slate-200' },
+}
+
+interface ZoneShape {
+  kind: 'rect' | 'circle' | 'ellipse' | 'polygon'
+  x?: number; y?: number; w?: number; h?: number; rx?: number
+  cx?: number; cy?: number; r?: number; ry?: number
+  points?: [number, number][]
+}
+
+interface CanvasZone {
+  id: string
+  label: { en: string; fr: string; es?: string }
+  description?: { en: string; fr: string; es?: string }
+  shape: ZoneShape
+  accent?: Accent
+  parentZoneId?: string | null
+  maxItems?: number
+}
+
+interface ZonedCanvasBlockData {
+  type: 'zoned_canvas'
+  id: string
+  content?: string
+  canvas: { width: number; height: number; backgroundImageUrl?: string }
+  zones: CanvasZone[]
+}
+
+interface ZoneEntry { id: string; text: string; createdAt: string }
+
+function ZonedCanvasRenderer({
+  block,
+  value,
+  onChange,
+  disabled = false,
+  locale = 'en',
+}: {
+  block: ResourceBlock
+  value: Record<string, ZoneEntry[]> | undefined
+  onChange: (value: Record<string, ZoneEntry[]>) => void
+  disabled?: boolean
+  locale?: 'en' | 'fr' | 'es'
+}) {
+  const b = block as unknown as ZonedCanvasBlockData
+  const entries: Record<string, ZoneEntry[]> = value || {}
+  const [editingZone, setEditingZone] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+
+  const labelOf = (z: CanvasZone) => z.label[locale] || z.label.en
+  const descOf = (z: CanvasZone) => z.description?.[locale] || z.description?.en
+
+  const startAdd = (zoneId: string) => {
+    if (disabled) return
+    setEditingZone(zoneId)
+    setDraft('')
+  }
+  const commitAdd = () => {
+    if (!editingZone || !draft.trim()) { setEditingZone(null); return }
+    const next = { ...entries }
+    const list = next[editingZone] ? [...next[editingZone]] : []
+    list.push({
+      id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      text: draft.trim(),
+      createdAt: new Date().toISOString(),
+    })
+    next[editingZone] = list
+    onChange(next)
+    setEditingZone(null)
+    setDraft('')
+  }
+  const removeEntry = (zoneId: string, entryId: string) => {
+    const next = { ...entries }
+    next[zoneId] = (next[zoneId] || []).filter(e => e.id !== entryId)
+    if (next[zoneId].length === 0) delete next[zoneId]
+    onChange(next)
+  }
+
+  // Sort zones by area (descending) for SVG paint order, so the smaller
+  // nested zones (e.g. inner circle) render on top of their parent.
+  const zoneArea = (z: CanvasZone): number => {
+    const s = z.shape
+    if (s.kind === 'rect')    return (s.w ?? 0) * (s.h ?? 0)
+    if (s.kind === 'circle')  return Math.PI * (s.r ?? 0) ** 2
+    if (s.kind === 'ellipse') return Math.PI * (s.rx ?? 0) * (s.ry ?? 0)
+    if (s.kind === 'polygon' && s.points) {
+      let a = 0
+      for (let i = 0; i < s.points.length; i++) {
+        const [x1, y1] = s.points[i]
+        const [x2, y2] = s.points[(i + 1) % s.points.length]
+        a += x1 * y2 - x2 * y1
+      }
+      return Math.abs(a) / 2
+    }
+    return 0
+  }
+  const paintOrder = [...b.zones].sort((a, z) => zoneArea(z) - zoneArea(a))
+
+  const renderShape = (z: CanvasZone) => {
+    const colour = ACCENT_COLORS[z.accent ?? 'slate']
+    const common = {
+      fill: colour.fill,
+      stroke: colour.stroke,
+      strokeWidth: 2,
+      cursor: disabled ? 'default' : 'pointer',
+      onClick: () => startAdd(z.id),
+    }
+    const s = z.shape
+    if (s.kind === 'rect') {
+      return <rect key={z.id} x={s.x} y={s.y} width={s.w} height={s.h} rx={s.rx ?? 0} {...common} />
+    }
+    if (s.kind === 'circle') {
+      return <circle key={z.id} cx={s.cx} cy={s.cy} r={s.r} {...common} />
+    }
+    if (s.kind === 'ellipse') {
+      return <ellipse key={z.id} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} {...common} />
+    }
+    if (s.kind === 'polygon' && s.points) {
+      return <polygon key={z.id} points={s.points.map(([x, y]) => `${x},${y}`).join(' ')} {...common} />
+    }
+    return null
+  }
+
+  // Label inside each zone — centred on shape centroid, accent-coloured.
+  const renderLabel = (z: CanvasZone) => {
+    const colour = ACCENT_COLORS[z.accent ?? 'slate']
+    const s = z.shape
+    let cx = 0, cy = 0
+    if (s.kind === 'rect')         { cx = (s.x ?? 0) + (s.w ?? 0) / 2; cy = (s.y ?? 0) + 22 }
+    else if (s.kind === 'circle')  { cx = s.cx ?? 0; cy = s.cy ?? 0 }
+    else if (s.kind === 'ellipse') { cx = s.cx ?? 0; cy = s.cy ?? 0 }
+    else if (s.kind === 'polygon' && s.points && s.points.length) {
+      cx = s.points.reduce((a, [x]) => a + x, 0) / s.points.length
+      cy = s.points.reduce((a, [, y]) => a + y, 0) / s.points.length
+    }
+    return (
+      <text
+        key={`label-${z.id}`}
+        x={cx}
+        y={cy}
+        fill={colour.text}
+        fontSize={14}
+        fontWeight={600}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        pointerEvents="none"
+      >
+        {labelOf(z)}
+      </text>
+    )
+  }
+
+  return (
+    <div>
+      {b.content && (
+        <p className="text-gray-700 mb-4 text-[15px] leading-relaxed">{b.content}</p>
+      )}
+
+      {/* Visual canvas */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-3 mb-4">
+        <svg
+          viewBox={`0 0 ${b.canvas.width} ${b.canvas.height}`}
+          className="w-full h-auto"
+          style={{ maxHeight: 480 }}
+          role="img"
+          aria-label="Zoned canvas — use the list below to add entries"
+        >
+          {b.canvas.backgroundImageUrl && (
+            <image
+              href={b.canvas.backgroundImageUrl}
+              x={0} y={0}
+              width={b.canvas.width}
+              height={b.canvas.height}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          )}
+          {paintOrder.map(renderShape)}
+          {paintOrder.map(renderLabel)}
+        </svg>
+      </div>
+
+      {/* Zone-grouped entry list — primary input surface */}
+      <div className="space-y-3">
+        {b.zones.map(zone => {
+          const colour = ACCENT_COLORS[zone.accent ?? 'slate']
+          const list = entries[zone.id] ?? []
+          return (
+            <div
+              key={zone.id}
+              className={`rounded-xl ${colour.bg} ${colour.border} border p-3`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: colour.text }}>
+                    {labelOf(zone)}
+                  </p>
+                  {descOf(zone) && <p className="text-xs text-gray-500 leading-tight">{descOf(zone)}</p>}
+                </div>
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={() => startAdd(zone.id)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}
+                  </button>
+                )}
+              </div>
+              {list.length > 0 ? (
+                <ul className="space-y-1">
+                  {list.map(entry => (
+                    <li key={entry.id} className="flex items-start gap-2 group">
+                      <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: colour.stroke }} />
+                      <span className="flex-1 text-sm text-gray-800 whitespace-pre-wrap break-words">{entry.text}</span>
+                      {!disabled && (
+                        <button
+                          type="button"
+                          onClick={() => removeEntry(zone.id, entry.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-rose-500 transition-opacity"
+                          aria-label="Remove entry"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-gray-400 italic">
+                  {locale === 'fr' ? 'Aucune entrée pour le moment' : locale === 'es' ? 'Sin entradas todavía' : 'No entries yet'}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Modal-style input sheet */}
+      <AnimatePresence>
+        {editingZone && (
+          <motion.div
+            className="fixed inset-0 z-[120] bg-black/40 flex items-end sm:items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditingZone(null)}
+          >
+            <motion.div
+              className="w-full max-w-md bg-white rounded-2xl shadow-xl p-4"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 30, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {locale === 'fr' ? 'Ajouter à' : locale === 'es' ? 'Añadir a' : 'Add to'}
+              </p>
+              <p className="text-base font-semibold text-gray-900 mb-3">
+                {labelOf(b.zones.find(z => z.id === editingZone) as CanvasZone)}
+              </p>
+              <textarea
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commitAdd() }}
+                placeholder={locale === 'fr' ? 'Écrivez quelque chose…' : locale === 'es' ? 'Escribe algo…' : 'Write something…'}
+                rows={3}
+                autoFocus
+                className="w-full p-3 rounded-xl border border-gray-200 focus:border-teal-300 focus:ring-2 focus:ring-teal-100 outline-none text-sm text-gray-800 resize-none"
+              />
+              <div className="flex items-center justify-end gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingZone(null)}
+                  className="px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+                >
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={commitAdd}
+                  disabled={!draft.trim()}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {locale === 'fr' ? 'Ajouter' : locale === 'es' ? 'Añadir' : 'Add'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
