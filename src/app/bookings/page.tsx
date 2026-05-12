@@ -1203,24 +1203,39 @@ export default function BookingsPage() {
                               </p>
                             )}
 
-                            {/* Take-notes affordance — jump to the patient's sessions tab
-                                with this booking highlighted. Visible on upcoming /
-                                pending / awaiting-outcome rows that have a linked
-                                member; not shown for finalised history items. */}
-                            {booking.member_id &&
-                              (booking.status === 'confirmed' || booking.status === 'pending') && (
-                                <Link
-                                  href={`/members/${booking.member_id}?tab=sessions_notes&sub=sessions&highlight=${booking.id}`}
-                                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
-                                >
-                                  <PenLine className="w-3.5 h-3.5 text-gray-500" />
-                                  {locale === 'fr' ? 'Aller à cette séance' : 'Go to this session'}
-                                  <ArrowRight className="w-3 h-3 text-gray-400" />
-                                </Link>
-                              )}
+                            {/* Session-level actions — note-taking + Meet join.
+                                "Take notes for this session" is named explicitly
+                                so it isn't confused with the videoconference Join. */}
+                            {((booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) ||
+                              (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome)) && (
+                              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                {booking.member_id &&
+                                  (booking.status === 'confirmed' || booking.status === 'pending') && (
+                                    <Link
+                                      href={`/members/${booking.member_id}?tab=sessions_notes&sub=sessions&highlight=${booking.id}`}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                                    >
+                                      <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                                      {locale === 'fr' ? 'Prendre des notes pour cette séance' : 'Take notes for this session'}
+                                      <ArrowRight className="w-3 h-3 text-gray-400" />
+                                    </Link>
+                                  )}
+                                {booking.status === 'confirmed' && !isAwaitingOutcome && booking.meet_link && (
+                                  <a
+                                    href={booking.meet_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+                                  >
+                                    <Video className="w-3.5 h-3.5" />
+                                    {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
 
-                          {/* Actions — primary action + ⋯ menu for the rest. */}
+                          {/* Actions — status-change action + ⋯ menu for the rest. */}
                           <div className="flex items-center gap-2 shrink-0">
                             {/* Pending: Approve visible, Reject + Delete in menu */}
                             {booking.status === 'pending' && (
@@ -1232,19 +1247,6 @@ export default function BookingsPage() {
                                 {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                                 {locale === 'fr' ? 'Accepter' : 'Approve'}
                               </button>
-                            )}
-
-                            {/* Confirmed future: Join visible, Reschedule + Cancel + Delete in menu */}
-                            {booking.status === 'confirmed' && !isAwaitingOutcome && booking.meet_link && (
-                              <a
-                                href={booking.meet_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
-                              >
-                                <Video className="w-3.5 h-3.5" />
-                                {locale === 'fr' ? 'Rejoindre' : 'Join'}
-                              </a>
                             )}
 
                             {/* Awaiting outcome: Complete visible, No-show + Reschedule + Delete in menu */}
