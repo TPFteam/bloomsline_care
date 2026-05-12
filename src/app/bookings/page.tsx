@@ -961,27 +961,28 @@ export default function BookingsPage() {
                 </div>
               )}
 
-              {/* Sub Tabs */}
-              <div className="flex gap-2 flex-wrap">
-                {bookingView !== 'calendar' && (['upcoming', 'past', 'all'] as AppointmentFilter[]).map((tab) => {
-                  const isActive = appointmentFilter === tab
-
+              {/* Sub Tabs — scroll-anchored to sections (list view only) */}
+              <div className="flex gap-2 items-center flex-wrap">
+                {bookingView !== 'calendar' && (() => {
+                  const handleScroll = (id: string) => () => {
+                    const el = document.getElementById(id)
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                  const upcomingCount = bookings.filter(b => (b.status === 'confirmed' || b.status === 'pending') && parseISO(b.start_time) > new Date()).length
+                  const historyCount = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || b.status === 'no_show' || (b.status === 'confirmed' && parseISO(b.start_time) < new Date())).length
                   return (
-                    <button
-                      key={tab}
-                      onClick={() => setAppointmentFilter(tab)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-white shadow-sm text-gray-900 border border-gray-200'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
-                      }`}
-                    >
-                      {locale === 'fr'
-                        ? (tab === 'upcoming' ? 'À venir' : tab === 'past' ? 'Passés' : 'Tous')
-                        : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
+                    <>
+                      <button onClick={handleScroll('up-next-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/60 transition-colors">
+                        {locale === 'fr' ? 'À venir' : 'Upcoming'}
+                        <span className="text-xs text-gray-400 tabular-nums">{upcomingCount}</span>
+                      </button>
+                      <button onClick={handleScroll('history-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-white/60 transition-colors">
+                        {locale === 'fr' ? 'Historique' : 'History'}
+                        <span className="text-xs text-gray-400 tabular-nums">{historyCount}</span>
+                      </button>
+                    </>
                   )
-                })}
+                })()}
                 {/* View toggle */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
                   <button
@@ -1038,219 +1039,248 @@ export default function BookingsPage() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
                 </div>
-              ) : filteredBookings.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-[1.5rem] p-12 border border-gray-200 border-dashed text-center"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gray-900 flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <p className="text-gray-600 font-medium">
-                    {appointmentFilter === 'upcoming'
-                      ? (locale === 'fr' ? 'Aucun rendez-vous à venir' : 'No upcoming appointments')
-                      : appointmentFilter === 'past'
-                      ? (locale === 'fr' ? 'Aucun rendez-vous passé' : 'No past appointments')
-                      : (locale === 'fr' ? 'Aucune réservation' : 'No bookings yet')}
-                  </p>
-                </motion.div>
-              ) : (
-                <div>
-                  {/* Group bookings by date */}
-                  {(() => {
-                    const grouped: Record<string, typeof filteredBookings> = {}
-                    filteredBookings.forEach(b => {
-                      const dateKey = format(parseISO(b.start_time), 'yyyy-MM-dd')
-                      if (!grouped[dateKey]) grouped[dateKey] = []
-                      grouped[dateKey].push(b)
-                    })
+              ) : (() => {
+                // ── Compute upcoming vs history once. Order-preserving. ──
+                const now = new Date()
+                const upcomingBookings = bookings
+                  .filter(b => (b.status === 'confirmed' || b.status === 'pending') && parseISO(b.start_time) > now)
+                  .sort((a, b) => {
+                    if (a.status === 'pending' && b.status !== 'pending') return -1
+                    if (a.status !== 'pending' && b.status === 'pending') return 1
+                    return parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime()
+                  })
+                const historyBookings = bookings
+                  .filter(b =>
+                    b.status === 'completed' ||
+                    b.status === 'cancelled' ||
+                    b.status === 'no_show' ||
+                    (b.status === 'confirmed' && parseISO(b.start_time) < now)
+                  )
+                  .sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime())
 
-                    return Object.entries(grouped).map(([dateKey, dayBookings]) => {
-                      const dateObj = parseISO(dateKey)
-                      const isToday = format(new Date(), 'yyyy-MM-dd') === dateKey
-                      const isTmrw = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd') === dateKey
+                // ── Relative-date label for a booking row ──
+                const dateHeadline = (d: Date) => {
+                  if (isToday(d)) return locale === 'fr' ? "Aujourd'hui" : 'Today'
+                  if (isTomorrow(d)) return locale === 'fr' ? 'Demain' : 'Tomorrow'
+                  return format(d, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+                }
 
-                      return (
-                        <div key={dateKey} className="mb-6">
-                          {/* Date header */}
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="text-sm font-semibold text-gray-500">
-                              {isToday
-                                ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                                : isTmrw
-                                  ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
-                                  : format(dateObj, locale === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })}
-                            </h3>
-                            <div className="flex-1 h-px bg-gray-200" />
-                            <span className="text-xs text-gray-400">{dayBookings.length}</span>
+                // ── Reusable timeline row renderer ──
+                // Keeps every existing action wired up; only the visual chrome changed.
+                const renderRow = (booking: typeof bookings[number], _index: number, isLast: boolean) => {
+                  const startTime = parseISO(booking.start_time)
+                  const durMin = Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)
+                  const isAwaitingOutcome = booking.status === 'confirmed' && isPast(startTime)
+                  const dotColor =
+                    booking.status === 'pending' ? 'bg-amber-400 ring-amber-100' :
+                    booking.status === 'confirmed' ? (isAwaitingOutcome ? 'bg-orange-400 ring-orange-100' : 'bg-teal-500 ring-teal-100') :
+                    booking.status === 'completed' ? 'bg-emerald-500 ring-emerald-100' :
+                    booking.status === 'cancelled' ? 'bg-red-400 ring-red-100' :
+                    booking.status === 'no_show' ? 'bg-gray-500 ring-gray-200' :
+                    'bg-gray-300 ring-gray-100'
+                  const initials = (booking.client_name || '')
+                    .split(' ')
+                    .map(s => s.charAt(0))
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() || '·'
+                  return (
+                    <div key={booking.id} id={`booking-${booking.id}`} className="relative flex gap-4 group">
+                      {/* Timeline column — dot + vertical line */}
+                      <div className="relative w-3 flex-shrink-0">
+                        <span className={`absolute left-0 top-1.5 w-3 h-3 rounded-full ring-4 ${dotColor}`} />
+                        {!isLast && <span className="absolute left-1.5 top-5 bottom-[-1.25rem] w-px bg-gray-200" />}
+                      </div>
+
+                      {/* Row content */}
+                      <div className="flex-1 min-w-0 pb-5">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="min-w-0 flex-1">
+                            {/* Headline: session type · relative date · time */}
+                            <p className="text-sm font-medium text-gray-900 truncate">{getSessionTypeName(booking.session_type)}</p>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              <span className="text-gray-800 font-medium">{dateHeadline(startTime)}</span>
+                              <span className="text-gray-400"> · </span>
+                              <span>{format(startTime, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })}</span>
+                              <span className="text-gray-400"> · </span>
+                              <span className="font-medium">{format(startTime, 'h:mm a')}</span>
+                            </p>
+
+                            {/* Patient row */}
+                            <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-xs">
+                              <span className="text-gray-500">{locale === 'fr' ? 'avec' : 'with'}</span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
+                                <span className="text-gray-900 font-medium truncate max-w-[200px]">{booking.client_name}</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-gray-500">
+                                {booking.session_format === 'in_person'
+                                  ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
+                                  : <><Video className="w-3 h-3" /> {locale === 'fr' ? 'Vidéo' : 'Virtual'}</>}
+                              </span>
+                              <span className="text-gray-500 tabular-nums">{durMin} min</span>
+                              <PaymentBadge
+                                status={booking.payment_status || 'unpaid'}
+                                table="bookings"
+                                recordId={booking.id}
+                              />
+                              {isAwaitingOutcome && (
+                                <span className="text-orange-600 font-medium">{locale === 'fr' ? 'En attente du statut' : 'Awaiting outcome'}</span>
+                              )}
+                            </div>
+
+                            {/* Cancellation reason or notes — inline, subtle */}
+                            {booking.status === 'cancelled' && booking.cancellation_reason && (
+                              <p className="text-xs text-red-500 mt-2">
+                                {locale === 'fr' ? 'Annulé' : 'Cancelled'}{booking.cancelled_by === 'member' ? (locale === 'fr' ? ' par le patient' : ' by patient') : ''}: {booking.cancellation_reason}
+                              </p>
+                            )}
+                            {booking.notes && booking.status !== 'cancelled' && (
+                              <p className={`text-xs mt-2 ${booking.notes.startsWith('Rescheduled:') ? 'text-amber-600' : 'text-gray-500 italic'}`}>
+                                {booking.notes}
+                              </p>
+                            )}
                           </div>
 
-                          {/* Bookings for this day */}
-                          <div className="space-y-2">
-                            {dayBookings.map((booking, index) => {
-                              const startTime = parseISO(booking.start_time)
-                              const isPastBooking = isPast(startTime) && booking.status !== 'completed' && booking.status !== 'cancelled' && booking.status !== 'no_show'
-                              const statusConfig = STATUS_CONFIG[booking.status]
-
-                              return (
-                                <motion.div
-                                  id={`booking-${booking.id}`}
-                                  key={booking.id}
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3, delay: index * 0.03 }}
-                                  className="bg-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+                          {/* Actions — same set as before, status-aware */}
+                          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                            {booking.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(booking.id)}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
                                 >
-                                  <div className="flex items-stretch gap-4">
-                                    {/* Format icon + Time */}
-                                    <div className="w-24 flex-shrink-0 flex items-center gap-2">
-                                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${booking.session_format === 'in_person' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'}`}>
-                                        {booking.session_format === 'in_person' ? <Building2 className="w-3.5 h-3.5" /> : <Video className="w-3.5 h-3.5" />}
-                                      </div>
-                                      <div className="text-center">
-                                        <p className="text-sm font-semibold text-gray-900">{format(startTime, 'h:mm a')}</p>
-                                        <p className="text-xs text-gray-400">
-                                          {Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)} min
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Divider */}
-                                    <div className={`w-1 rounded-full self-stretch ${booking.status === 'pending' ? 'bg-amber-400' : booking.status === 'confirmed' ? 'bg-teal-400' : booking.status === 'completed' ? 'bg-gray-300' : booking.status === 'cancelled' ? 'bg-red-300' : 'bg-gray-300'}`} />
-
-                                    {/* Client + Session */}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <p className="font-medium text-gray-900 truncate">{booking.client_name}</p>
-                                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                                          {STATUS_LABELS[booking.status]?.[locale as 'en' | 'fr'] || booking.status}
-                                        </span>
-                                        <PaymentBadge
-                                          status={booking.payment_status || 'unpaid'}
-                                          table="bookings"
-                                          recordId={booking.id}
-                                        />
-                                      </div>
-                                      <p className="text-xs text-gray-500 truncate">
-                                        {getSessionTypeName(booking.session_type)} · {booking.client_email}
-                                      </p>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      {booking.status === 'pending' && (
-                                        <>
-                                          <button
-                                            onClick={() => handleApprove(booking.id)}
-                                            disabled={processingId === booking.id}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                                          >
-                                            {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                            {locale === 'fr' ? 'Accepter' : 'Approve'}
-                                          </button>
-                                          <button
-                                            onClick={() => setCancelConfirmBooking(booking)}
-                                            disabled={processingId === booking.id}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
-                                          >
-                                            <X className="w-3.5 h-3.5" />
-                                            {locale === 'fr' ? 'Refuser' : 'Reject'}
-                                          </button>
-                                        </>
-                                      )}
-                                      {booking.status === 'confirmed' && isPastBooking && (
-                                        <>
-                                          <button
-                                            onClick={() => handleMarkStatus(booking.id, 'completed')}
-                                            disabled={processingId === booking.id}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                                          >
-                                            {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                            {locale === 'fr' ? 'Terminé' : 'Completed'}
-                                          </button>
-                                          <button
-                                            onClick={() => handleMarkStatus(booking.id, 'no_show')}
-                                            disabled={processingId === booking.id}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                          >
-                                            <XCircle className="w-3.5 h-3.5" />
-                                            {locale === 'fr' ? 'Absent' : 'No Show'}
-                                          </button>
-                                        </>
-                                      )}
-                                      {booking.status === 'confirmed' && booking.meet_link && (
-                                        <a
-                                          href={booking.meet_link}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
-                                        >
-                                          <Video className="w-3.5 h-3.5" />
-                                          {locale === 'fr' ? 'Rejoindre' : 'Join'}
-                                        </a>
-                                      )}
-                                      {booking.status === 'confirmed' && (
-                                        <button
-                                          onClick={() => openRescheduleModal(booking)}
-                                          disabled={processingId === booking.id}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 text-teal-600 text-xs font-medium rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors disabled:opacity-50"
-                                        >
-                                          <RefreshCw className="w-3.5 h-3.5" />
-                                          {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
-                                        </button>
-                                      )}
-                                      {booking.status === 'confirmed' && !isPastBooking && (
-                                        <button
-                                          onClick={() => setCancelConfirmBooking(booking)}
-                                          disabled={processingId === booking.id}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
-                                        >
-                                          {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                                          {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => setDeleteConfirmBooking(booking)}
-                                        className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                        title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  {/* Cancellation reason */}
-                                  {booking.status === 'cancelled' && booking.cancellation_reason && (
-                                    <div className="mt-2 ml-[136px] pl-5 border-l-2 border-red-200">
-                                      <p className="text-xs text-red-500">
-                                        {locale === 'fr' ? 'Annulé' : 'Cancelled'}{booking.cancelled_by === 'member' ? (locale === 'fr' ? ' par le patient' : ' by patient') : ''}: {booking.cancellation_reason}
-                                      </p>
-                                      {booking.cancelled_at && (
-                                        <p className="text-[10px] text-gray-400 mt-0.5">
-                                          {new Date(booking.cancelled_at).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                                        </p>
-                                      )}
-                                    </div>
-                                  )}
-                                  {/* Notes — compact */}
-                                  {booking.notes && booking.status !== 'cancelled' && (
-                                    <div className={`mt-2 ml-[136px] pl-5 border-l-2 ${booking.notes.startsWith('Rescheduled:') ? 'border-amber-200' : 'border-gray-100'}`}>
-                                      <p className={`text-xs ${booking.notes.startsWith('Rescheduled:') ? 'text-amber-600' : 'text-gray-500 italic'}`}>{booking.notes}</p>
-                                    </div>
-                                  )}
-                                </motion.div>
-                              )
-                            })}
+                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                  {locale === 'fr' ? 'Accepter' : 'Approve'}
+                                </button>
+                                <button
+                                  onClick={() => setCancelConfirmBooking(booking)}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  {locale === 'fr' ? 'Refuser' : 'Reject'}
+                                </button>
+                              </>
+                            )}
+                            {isAwaitingOutcome && (
+                              <>
+                                <button
+                                  onClick={() => handleMarkStatus(booking.id, 'completed')}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                  {locale === 'fr' ? 'Terminé' : 'Complete'}
+                                </button>
+                                <button
+                                  onClick={() => handleMarkStatus(booking.id, 'no_show')}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  {locale === 'fr' ? 'Absent' : 'No-show'}
+                                </button>
+                              </>
+                            )}
+                            {booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome && (
+                              <a
+                                href={booking.meet_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+                              >
+                                <Video className="w-3.5 h-3.5" />
+                                {locale === 'fr' ? 'Rejoindre' : 'Join'}
+                              </a>
+                            )}
+                            {booking.status === 'confirmed' && !isAwaitingOutcome && (
+                              <>
+                                <button
+                                  onClick={() => openRescheduleModal(booking)}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-teal-600 text-xs font-medium rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                  {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+                                </button>
+                                <button
+                                  onClick={() => setCancelConfirmBooking(booking)}
+                                  disabled={processingId === booking.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                >
+                                  {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => setDeleteConfirmBooking(booking)}
+                              className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                              title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      )
-                    })
-                  })()}
-                </div>
-              )}
+                      </div>
+                    </div>
+                  )
+                }
+
+                // Empty state for the page (both sections empty)
+                if (upcomingBookings.length === 0 && historyBookings.length === 0) {
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white rounded-2xl p-12 border border-gray-200 border-dashed text-center"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                        <Calendar className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-600 font-medium">
+                        {locale === 'fr' ? 'Aucune réservation' : 'No bookings yet'}
+                      </p>
+                    </motion.div>
+                  )
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {/* ── Up next ── */}
+                    <section id="up-next-section" className="bg-white rounded-2xl border border-gray-200 p-6 scroll-mt-6">
+                      <header className="flex items-baseline gap-2 mb-5">
+                        <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'À venir' : 'Up next'}</h2>
+                        <span className="text-sm text-gray-400 tabular-nums">{upcomingBookings.length}</span>
+                      </header>
+                      {upcomingBookings.length === 0 ? (
+                        <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucun rendez-vous à venir' : 'No upcoming appointments'}</p>
+                      ) : (
+                        <div>
+                          {upcomingBookings.map((b, i) => renderRow(b, i, i === upcomingBookings.length - 1))}
+                        </div>
+                      )}
+                    </section>
+
+                    {/* ── History ── */}
+                    <section id="history-section" className="bg-white rounded-2xl border border-gray-200 p-6 scroll-mt-6">
+                      <header className="flex items-baseline gap-2 mb-5">
+                        <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'Historique' : 'History'}</h2>
+                        <span className="text-sm text-gray-400 tabular-nums">{historyBookings.length}</span>
+                      </header>
+                      {historyBookings.length === 0 ? (
+                        <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucun rendez-vous passé' : 'No past appointments'}</p>
+                      ) : (
+                        <div>
+                          {historyBookings.map((b, i) => renderRow(b, i, i === historyBookings.length - 1))}
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                )
+              })()}
             </>
           )}
           </>
