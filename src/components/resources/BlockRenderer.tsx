@@ -2070,31 +2070,97 @@ function ZonedCanvasRenderer({
   }
 
   // Label inside each zone — centred on shape centroid, accent-coloured.
+  // Top-of-zone layout so entries can stack below the label and still
+  // land inside the shape.
+  const zonePos = (z: CanvasZone) => {
+    const s = z.shape
+    if (s.kind === 'rect') {
+      const cx = (s.x ?? 0) + (s.w ?? 0) / 2
+      const labelY = (s.y ?? 0) + 30
+      return { cx, labelY, entriesStartY: labelY + 30 }
+    }
+    if (s.kind === 'circle') {
+      const cx = s.cx ?? 0
+      const labelY = (s.cy ?? 0) - (s.r ?? 0) + 34
+      return { cx, labelY, entriesStartY: labelY + 30 }
+    }
+    if (s.kind === 'ellipse') {
+      const cx = s.cx ?? 0
+      const labelY = (s.cy ?? 0) - (s.ry ?? 0) + 34
+      return { cx, labelY, entriesStartY: labelY + 30 }
+    }
+    if (s.kind === 'polygon' && s.points && s.points.length) {
+      const cx = s.points.reduce((a, [x]) => a + x, 0) / s.points.length
+      const minY = Math.min(...s.points.map(p => p[1]))
+      const labelY = minY + 30
+      return { cx, labelY, entriesStartY: labelY + 30 }
+    }
+    return { cx: 0, labelY: 0, entriesStartY: 0 }
+  }
+
   const renderLabel = (z: CanvasZone) => {
     const colour = ACCENT_COLORS[z.accent ?? 'slate']
-    const s = z.shape
-    let cx = 0, cy = 0
-    if (s.kind === 'rect')         { cx = (s.x ?? 0) + (s.w ?? 0) / 2; cy = (s.y ?? 0) + 22 }
-    else if (s.kind === 'circle')  { cx = s.cx ?? 0; cy = s.cy ?? 0 }
-    else if (s.kind === 'ellipse') { cx = s.cx ?? 0; cy = s.cy ?? 0 }
-    else if (s.kind === 'polygon' && s.points && s.points.length) {
-      cx = s.points.reduce((a, [x]) => a + x, 0) / s.points.length
-      cy = s.points.reduce((a, [, y]) => a + y, 0) / s.points.length
-    }
+    const { cx, labelY } = zonePos(z)
     return (
       <text
         key={`label-${z.id}`}
         x={cx}
-        y={cy}
+        y={labelY}
         fill={colour.text}
-        fontSize={14}
-        fontWeight={600}
+        fontSize={18}
+        fontWeight={700}
         textAnchor="middle"
         dominantBaseline="middle"
         pointerEvents="none"
       >
         {labelOf(z)}
       </text>
+    )
+  }
+
+  // Paint each zone's entries inside the shape — same logic as the
+  // mobile renderer. Capped + truncated so a busy zone doesn't spill.
+  const renderEntries = (z: CanvasZone) => {
+    const list = entries[z.id] ?? []
+    if (list.length === 0) return null
+    const colour = ACCENT_COLORS[z.accent ?? 'slate']
+    const { cx, entriesStartY } = zonePos(z)
+    const max = 5
+    const visible = list.slice(0, max)
+    const truncate = (s: string) => (s.length > 30 ? s.slice(0, 28) + '…' : s)
+    return (
+      <g key={`entries-${z.id}`}>
+        {visible.map((entry, i) => (
+          <text
+            key={`entry-${entry.id}`}
+            x={cx}
+            y={entriesStartY + i * 26}
+            fill={colour.text}
+            fontSize={15}
+            fontWeight={500}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            pointerEvents="none"
+          >
+            {`• ${truncate(entry.text || '')}`}
+          </text>
+        ))}
+        {list.length > visible.length && (
+          <text
+            x={cx}
+            y={entriesStartY + visible.length * 26}
+            fill={colour.stroke}
+            fontSize={12}
+            fontStyle="italic"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            opacity={0.75}
+            pointerEvents="none"
+          >
+            +{list.length - visible.length} more
+          </text>
+        )}
+      </g>
     )
   }
 
@@ -2124,6 +2190,7 @@ function ZonedCanvasRenderer({
           )}
           {paintOrder.map(renderShape)}
           {paintOrder.map(renderLabel)}
+          {paintOrder.map(renderEntries)}
         </svg>
       </div>
 
@@ -2135,11 +2202,12 @@ function ZonedCanvasRenderer({
           return (
             <div
               key={zone.id}
-              className={`rounded-xl ${colour.bg} ${colour.border} border p-3`}
+              className="rounded-xl bg-white border border-gray-200 p-3"
+              style={{ borderLeft: `4px solid ${colour.stroke}` }}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: colour.text }}>
+                  <p className="text-[14px] font-bold" style={{ color: colour.text }}>
                     {labelOf(zone)}
                   </p>
                   {descOf(zone) && <p className="text-xs text-gray-500 leading-tight">{descOf(zone)}</p>}
