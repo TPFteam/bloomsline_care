@@ -377,7 +377,15 @@ function ClaimModal({
     if (!event) return
     const id = event.suggestedMember?.id || ''
     setMemberId(id)
-    setSessionTypeId(sessionTypes[0]?.id || '')
+    // Prefer the follow-up session type as the default — most claimed
+    // events represent ongoing patient work, not first consultations.
+    // Fall back to the first available type if no follow-up is configured.
+    const followUp = sessionTypes.find(st => {
+      const sid = st.id.toLowerCase()
+      const name = st.name.toLowerCase()
+      return sid === 'follow_up' || sid.includes('follow') || name.includes('follow') || name.includes('suivi')
+    })
+    setSessionTypeId(followUp?.id || sessionTypes[0]?.id || '')
     setMemberSearch('')
 
     if (!id) return
