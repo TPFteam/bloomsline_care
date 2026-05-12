@@ -1215,37 +1215,41 @@ export default function BookingsPage() {
                       <div className="flex-1 min-w-0 pb-8">
                         <div className="flex items-start justify-between gap-3 flex-wrap">
                           <div className="min-w-0 flex-1">
-                            {/* Headline: session type · relative date · time */}
-                            <p className="text-sm font-medium text-gray-900 truncate">{getSessionTypeName(booking.session_type)}</p>
-                            <p className="text-sm text-gray-500 mt-0.5">
-                              <span className="text-gray-800 font-medium">{dateHeadline(startTime)}</span>
+                            {/* Headline: patient name (the row's primary identity).
+                                Clickable when linked to a member, with an arrow
+                                affordance to the profile. */}
+                            {booking.member_id ? (
+                              <Link
+                                href={`/members/${booking.member_id}`}
+                                className="inline-flex items-center gap-2 group/patient hover:text-violet-700 transition-colors"
+                                title={locale === 'fr' ? 'Voir le profil du patient' : "View patient profile"}
+                              >
+                                <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold shrink-0">{initials}</span>
+                                <span className="text-sm font-semibold text-gray-900 truncate group-hover/patient:text-violet-700 group-hover/patient:underline underline-offset-2 decoration-violet-300">
+                                  {booking.client_name}
+                                </span>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover/patient:text-violet-600" />
+                              </Link>
+                            ) : (
+                              <div className="inline-flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold shrink-0">{initials}</span>
+                                <span className="text-sm font-semibold text-gray-900 truncate">{booking.client_name}</span>
+                              </div>
+                            )}
+
+                            {/* Sub-line: session type + relative date + time */}
+                            <p className="text-sm text-gray-500 mt-1">
+                              <span className="text-gray-800 font-medium">{getSessionTypeName(booking.session_type)}</span>
+                              <span className="text-gray-400"> · </span>
+                              <span className="text-gray-700 font-medium">{dateHeadline(startTime)}</span>
                               <span className="text-gray-400"> · </span>
                               <span>{format(startTime, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })}</span>
                               <span className="text-gray-400"> · </span>
                               <span className="font-medium">{format(startTime, 'h:mm a')}</span>
                             </p>
 
-                            {/* Patient row */}
+                            {/* Meta row: format · duration · origin chip · payment (if no action row) · awaiting flag */}
                             <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-xs">
-                              <span className="text-gray-500">{locale === 'fr' ? 'avec' : 'with'}</span>
-                              {booking.member_id ? (
-                                <Link
-                                  href={`/members/${booking.member_id}`}
-                                  className="inline-flex items-center gap-1.5 group/patient hover:text-violet-700 transition-colors"
-                                  title={locale === 'fr' ? 'Voir le profil du patient' : "View patient profile"}
-                                >
-                                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
-                                  <span className="text-gray-900 font-medium truncate max-w-[200px] group-hover/patient:text-violet-700 group-hover/patient:underline underline-offset-2 decoration-violet-300">
-                                    {booking.client_name}
-                                  </span>
-                                  <ArrowUpRight className="w-3 h-3 text-gray-400 group-hover/patient:text-violet-600" />
-                                </Link>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[10px] font-semibold">{initials}</span>
-                                  <span className="text-gray-900 font-medium truncate max-w-[200px]">{booking.client_name}</span>
-                                </span>
-                              )}
                               <span className="inline-flex items-center gap-1 text-gray-500">
                                 {booking.session_format === 'in_person'
                                   ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
@@ -1266,8 +1270,7 @@ export default function BookingsPage() {
                                   />
                                 )
                               })()}
-                              {/* Origin / sync indicator — has the booking made it to
-                                  Google Calendar, or does it only live in Bloomsline? */}
+                              {/* Origin / sync indicator */}
                               {booking.google_event_id ? (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[10px]" title={locale === 'fr' ? 'Synchronisé avec Google Agenda' : 'Synced with Google Calendar'}>
                                   <Calendar className="w-2.5 h-2.5" />
