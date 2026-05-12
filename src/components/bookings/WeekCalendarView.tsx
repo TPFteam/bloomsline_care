@@ -59,6 +59,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
+  // Per day-of-week list of schedule ranges in local minutes (since midnight).
+  // Drives the after-hours band rendering: anything outside these ranges and
+  // within START_HOUR..END_HOUR is treated as bookable after-hours space.
+  const [dayRanges, setDayRanges] = useState<Record<number, Array<{ startMin: number; endMin: number }>>>({})
   const [showAvailability, setShowAvailability] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
@@ -79,7 +83,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
       setUserId(user.id)
       supabase
         .from('availability_schedules')
-        .select('timezone, day_of_week, session_format')
+        .select('timezone, day_of_week, session_format, start_time, end_time')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .then(({ data }) => {
@@ -87,6 +91,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           setPractitionerTz(data[0].timezone)
           const dayMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 }
           const dfMap: Record<number, string[]> = {}
+          const rangeMap: Record<number, Array<{ startMin: number; endMin: number }>> = {}
+          const parseMin = (hhmmss: string) => {
+            const [h, m] = hhmmss.split(':').map(n => parseInt(n, 10))
+            return (h || 0) * 60 + (m || 0)
+          }
           for (const d of data) {
             const num = dayMap[d.day_of_week]
             const fmt = (d as any).session_format || 'both'
@@ -97,8 +106,14 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             } else {
               if (!dfMap[num].includes(fmt)) dfMap[num].push(fmt)
             }
+            if (!rangeMap[num]) rangeMap[num] = []
+            rangeMap[num].push({
+              startMin: parseMin(d.start_time),
+              endMin: parseMin(d.end_time),
+            })
           }
           setDayFormats(dfMap)
+          setDayRanges(rangeMap)
         })
     })
   }, [])
@@ -244,6 +259,53 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
 
   const todayCheck = (day: Date) => isSameDay(day, new Date())
 
+  // For a given weekday, return the after-hours band(s) inside the visible
+  // window as { topPx, heightPx }. The window is START_HOUR..END_HOUR. If
+  // the day has no configured schedule, the entire window becomes one band.
+  const VISIBLE_START_MIN = START_HOUR * 60
+  const VISIBLE_END_MIN = END_HOUR * 60
+  const afterHoursBands = (dow: number): Array<{ topPx: number; heightPx: number }> => {
+    const ranges = (dayRanges[dow] || [])
+      .map(r => ({ startMin: Math.max(r.startMin, VISIBLE_START_MIN), endMin: Math.min(r.endMin, VISIBLE_END_MIN) }))
+      .filter(r => r.endMin > r.startMin)
+      .sort((a, b) => a.startMin - b.startMin)
+
+    const bands: Array<{ startMin: number; endMin: number }> = []
+    let cursor = VISIBLE_START_MIN
+    for (const r of ranges) {
+      if (r.startMin > cursor) bands.push({ startMin: cursor, endMin: r.startMin })
+      cursor = Math.max(cursor, r.endMin)
+    }
+    if (cursor < VISIBLE_END_MIN) bands.push({ startMin: cursor, endMin: VISIBLE_END_MIN })
+
+    return bands.map(b => ({
+      topPx: ((b.startMin - VISIBLE_START_MIN) / 60) * HOUR_HEIGHT,
+      heightPx: ((b.endMin - b.startMin) / 60) * HOUR_HEIGHT,
+    }))
+  }
+
+  // Click handler for after-hours bands. Maps the Y offset within the band
+  // to a time, snapped to 15-min granularity, and opens the schedule modal.
+  const handleAfterHoursClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    day: Date,
+  ) => {
+    if (!onSlotClick) return
+    const grid = (e.currentTarget.closest('[data-day-column]') as HTMLElement | null)
+    if (!grid) return
+    const rect = grid.getBoundingClientRect()
+    const y = e.clientY - rect.top
+    if (y < 0) return
+    const rawHour = START_HOUR + y / HOUR_HEIGHT
+    let totalMin = Math.round(rawHour * 60)
+    totalMin = Math.round(totalMin / 15) * 15 // snap to 15 min
+    const hour = Math.floor(totalMin / 60)
+    const minute = totalMin % 60
+    if (hour < 0 || hour >= 24) return
+    const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+    onSlotClick(day, time)
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header */}
@@ -359,6 +421,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           return (
             <div
               key={day.toISOString()}
+              data-day-column
               className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick && !showAvailability ? 'cursor-pointer' : ''}`}
               style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
@@ -418,20 +481,31 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* Available slots — teal pill for in-hours, dashed-gray pill
-                  for after-hours. Both open the schedule modal on click. */}
+              {/* After-hours zones — one or two faint bands per day,
+                  whatever isn't covered by configured availability inside
+                  the visible window. Click anywhere on a band to open the
+                  schedule modal at the clicked time (snapped to 15 min). */}
+              {showAvailability && afterHoursBands(day.getDay()).map((band, bi) => (
+                <div
+                  key={`afterhours-${bi}`}
+                  title={locale === 'fr' ? 'Hors horaires — cliquez pour réserver' : 'After-hours — click to schedule'}
+                  onClick={(e) => { e.stopPropagation(); handleAfterHoursClick(e, day) }}
+                  className="absolute left-0 right-0 z-[1] cursor-pointer bg-gray-50/40 hover:bg-gray-100/70 border-t border-b border-dashed border-gray-200 transition-colors"
+                  style={{ top: band.topPx, height: band.heightPx }}
+                />
+              ))}
+
+              {/* Available slots — teal pill for each bookable in-hours slot. */}
               {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || []).map((slot, si) => {
                 const startH = getHoursInTz(slot.start)
                 const endH = getHoursInTz(slot.end)
                 const slotTop = (startH - START_HOUR) * HOUR_HEIGHT
                 const fullHeight = Math.max((endH - startH) * HOUR_HEIGHT, 24)
                 const isHovered = hoveredSlot === slot.start
-                const isOutside = slot.outside
                 return (
                   <div
                     key={`slot-${si}`}
                     data-event
-                    title={isOutside ? (locale === 'fr' ? 'Hors horaires' : 'After-hours') : undefined}
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!onSlotClick) return
@@ -444,35 +518,24 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                     }}
                     onMouseEnter={() => setHoveredSlot(slot.start)}
                     onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-lg cursor-pointer overflow-hidden transition-all duration-150 ${
-                      isOutside
-                        ? isHovered
-                          ? 'bg-gray-700 border border-gray-700 shadow-lg text-white z-[8]'
-                          : 'bg-white border border-dashed border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-500 z-[5]'
-                        : isHovered
-                          ? 'bg-teal-500 border border-teal-600 shadow-lg text-white z-[8]'
-                          : 'bg-teal-50 border border-teal-200 hover:bg-teal-100 text-teal-700 z-[5]'
+                    className={`absolute left-1 right-1 rounded-lg border cursor-pointer overflow-hidden transition-all duration-150 ${
+                      isHovered
+                        ? 'bg-teal-500 border-teal-600 shadow-lg text-white z-[8]'
+                        : 'bg-teal-50 border-teal-200 hover:bg-teal-100 text-teal-700 z-[5]'
                     }`}
                     style={{
                       top: slotTop + 1,
                       height: isHovered ? fullHeight - 2 : 24,
                     }}
                   >
-                    <div className="flex items-center gap-1 px-2 h-full">
-                      {isOutside && <Clock className={`w-2.5 h-2.5 shrink-0 ${isHovered ? 'text-white' : 'text-gray-400'}`} />}
-                      <span className={`text-[10px] font-semibold truncate ${
-                        isOutside
-                          ? isHovered ? 'text-white' : 'text-gray-500'
-                          : isHovered ? 'text-white' : 'text-teal-700'
-                      }`}>
+                    <div className="flex items-center px-2 h-full">
+                      <span className={`text-[10px] font-semibold truncate ${isHovered ? 'text-white' : 'text-teal-700'}`}>
                         {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
                       </span>
                     </div>
                     {isHovered && (
                       <div className="px-2 pb-1">
-                        <span className={`text-[10px] ${isOutside ? 'text-gray-300' : 'text-teal-100'}`}>
-                          {isOutside ? (locale === 'fr' ? '60 min · hors horaires' : '60 min · after-hours') : '60 min'}
-                        </span>
+                        <span className="text-[10px] text-teal-100">60 min</span>
                       </div>
                     )}
                   </div>

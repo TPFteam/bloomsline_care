@@ -203,77 +203,54 @@ export async function GET(request: NextRequest) {
       ...(sessionConflicts || []).map(s => ({ start: new Date(s.scheduled_at).getTime(), end: new Date(s.scheduled_at).getTime() + s.duration_minutes * 60 * 1000 })),
     ];
 
-    // Pre-compute schedule windows in UTC ms so we can decide
-    // inside-vs-outside-availability for each generated slot in O(1).
-    const scheduleRanges: Array<{ start: number; end: number }> = (schedules || []).map(schedule => {
-      const startLocal = new Date(`${date}T${schedule.start_time}Z`);
-      const endLocal = new Date(`${date}T${schedule.end_time}Z`);
-      return {
-        start: startLocal.getTime() - tzOffsetMs,
-        end: endLocal.getTime() - tzOffsetMs,
-      }
-    })
-
-    // Walk the full local day 00:00 → 24:00 in the practitioner's timezone.
-    // Slots that fall entirely within a schedule range are normal availability;
-    // anything else is tagged as `outside_availability` so the UI can render
-    // it with the muted style. Patient-facing flows never hit this branch.
-    const localDayStart = new Date(`${date}T00:00:00Z`).getTime() - tzOffsetMs
-    const localDayEnd = new Date(`${date}T00:00:00Z`).getTime() - tzOffsetMs + 24 * 60 * 60 * 1000
-
+    // Generate inside-hours slots only. The practitioner-side calendar
+    // surfaces after-hours availability via a separate continuous-band UI
+    // (in WeekCalendarView), not via discrete slot pills — discrete
+    // after-hours pills crowded the grid past usefulness.
     const generatedSlots: TimeSlot[] = [];
     const durationMs = duration * 60 * 1000;
     const stepMs = 30 * 60 * 1000;
-
     const now = Date.now();
     const noticeCutoff = now + minNoticeMs;
 
-    for (let t = localDayStart; t + durationMs <= localDayEnd; t += stepMs) {
-      const slotStart = new Date(t);
-      const slotEnd = new Date(t + durationMs);
+    for (const schedule of (schedules || [])) {
+      const startLocal = new Date(`${date}T${schedule.start_time}Z`);
+      const endLocal = new Date(`${date}T${schedule.end_time}Z`);
+      const startUtc = new Date(startLocal.getTime() - tzOffsetMs);
+      const endUtc = new Date(endLocal.getTime() - tzOffsetMs);
 
-      // Skip past slots AND slots within the minimum notice window
-      if (slotStart.getTime() < noticeCutoff) continue;
+      for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
+        const slotStart = new Date(t);
+        const slotEnd = new Date(t + durationMs);
 
-      // Hour-aligned filter: only keep slots starting at :00 in the
-      // practitioner's local timezone. Computed via Intl so DST is handled.
-      if (hourAligned) {
-        const localMinute = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz,
-          minute: '2-digit',
-          hour12: false,
-        }).format(slotStart);
-        if (parseInt(localMinute, 10) !== 0) continue;
+        if (slotStart.getTime() < noticeCutoff) continue;
+
+        if (hourAligned) {
+          const localMinute = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            minute: '2-digit',
+            hour12: false,
+          }).format(slotStart);
+          if (parseInt(localMinute, 10) !== 0) continue;
+        }
+
+        const hasConflict = allConflicts.some((c) => {
+          const cStart = c.start - bufBefore;
+          const cEnd = c.end + bufAfter;
+          return slotStart.getTime() < cEnd && slotEnd.getTime() > cStart;
+        });
+        if (hasConflict) continue;
+
+        generatedSlots.push({
+          slot_start: slotStart.toISOString(),
+          slot_end: slotEnd.toISOString(),
+        });
       }
-
-      // Check for conflicts with existing bookings + sessions — applies
-      // regardless of whether the slot is inside the schedule or after-hours.
-      const hasConflict = allConflicts.some((c) => {
-        const cStart = c.start - bufBefore;
-        const cEnd = c.end + bufAfter;
-        return slotStart.getTime() < cEnd && slotEnd.getTime() > cStart;
-      });
-      if (hasConflict) continue;
-
-      // Inside availability iff the whole slot is contained in some schedule
-      // range. Half-overlaps (slot straddling the 17:00 boundary) count as
-      // outside so the UI doesn't claim they're normal availability.
-      const insideSchedule = scheduleRanges.some(r =>
-        slotStart.getTime() >= r.start && slotEnd.getTime() <= r.end
-      )
-
-      generatedSlots.push({
-        slot_start: slotStart.toISOString(),
-        slot_end: slotEnd.toISOString(),
-        outside_availability: !insideSchedule,
-      });
     }
 
     slots = generatedSlots;
-    // hasSchedule is informational — surfaces in logs and could be useful in
-    // future UX, but doesn't gate output.
     if (!hasSchedule) {
-      console.log('[available-slots] no schedule for', dayOfWeek, '— returning after-hours-only slots')
+      console.log('[available-slots] no schedule for', dayOfWeek)
     }
   } else {
     // Public booking — use RPC with min_notice_hours filter
