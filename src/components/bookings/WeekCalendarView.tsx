@@ -419,22 +419,25 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* Available slots — teal pill for in-hours (always shown),
-                  dashed-gray pill for after-hours (only shown while the
-                  practitioner is hovering this specific day, so the rest of
-                  the week stays calm). Both go through calendar-mode submit
-                  so Google Calendar sync runs in either case; the after-hours
-                  click carries an outsideHours flag so the modal can skip
-                  the (now redundant) datetime picker step. */}
-              {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || [])
-                .filter(slot => !slot.outside || hoveredDay === day.toISOString())
-                .map((slot, si) => {
+              {/* Available slots — teal pill for in-hours (always shown).
+                  After-hours pills are always in the DOM but invisible
+                  outside the hovered day, fading in/out smoothly via CSS
+                  opacity — no flickery mount/unmount. Both go through
+                  calendar-mode submit (Google Calendar sync intact);
+                  after-hours clicks carry an outsideHours flag so the modal
+                  skips the (now redundant) datetime picker step. */}
+              {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || []).map((slot, si) => {
                 const startH = getHoursInTz(slot.start)
                 const endH = getHoursInTz(slot.end)
                 const slotTop = (startH - START_HOUR) * HOUR_HEIGHT
                 const fullHeight = Math.max((endH - startH) * HOUR_HEIGHT, 24)
                 const isHovered = hoveredSlot === slot.start
                 const isOutside = slot.outside
+                const isDayHovered = hoveredDay === day.toISOString()
+                // After-hours pills: invisible (and non-interactive) unless
+                // this day is hovered. Inside-hours pills are always
+                // visible/interactive.
+                const outsideHidden = isOutside && !isDayHovered
                 return (
                   <div
                     key={`slot-${si}`}
@@ -452,7 +455,9 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                     }}
                     onMouseEnter={() => setHoveredSlot(slot.start)}
                     onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-lg cursor-pointer overflow-hidden transition-all duration-150 ${
+                    className={`absolute left-1 right-1 rounded-lg overflow-hidden transition-opacity duration-200 ${
+                      outsideHidden ? 'opacity-0 pointer-events-none' : 'opacity-100 cursor-pointer'
+                    } ${
                       isOutside
                         ? isHovered
                           ? 'bg-gray-700 border border-gray-700 shadow-lg text-white z-[8]'
@@ -464,6 +469,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                     style={{
                       top: slotTop + 1,
                       height: isHovered ? fullHeight - 2 : 24,
+                      transitionDuration: '200ms',
                     }}
                   >
                     <div className="flex items-center gap-1 px-2 h-full">
