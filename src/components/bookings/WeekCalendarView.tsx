@@ -61,7 +61,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
   const [showAvailability, setShowAvailability] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string }>>>({})
+  const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
   const [clickHint, setClickHint] = useState<{ x: number; y: number; key: string } | null>(null)
@@ -159,15 +159,20 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     if (!showAvailability || !userId) { setAvailSlots({}); return }
     const fetchSlots = async () => {
       setAvailLoading(true)
-      const result: Record<string, Array<{ start: string; end: string }>> = {}
-      const activeDays = days.filter(d => dayFormats[d.getDay()])
-      await Promise.all(activeDays.map(async (day) => {
+      const result: Record<string, Array<{ start: string; end: string; outside: boolean }>> = {}
+      // Hit every visible day, including ones the practitioner doesn't normally
+      // work — the route now returns after-hours slots for those too.
+      await Promise.all(days.map(async (day) => {
         const dateStr = format(day, 'yyyy-MM-dd')
         try {
           const res = await fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=60&skipNotice=true`)
           if (res.ok) {
             const data = await res.json()
-            result[dateStr] = (data.slots || []).map((s: any) => ({ start: s.slot_start, end: s.slot_end }))
+            result[dateStr] = (data.slots || []).map((s: any) => ({
+              start: s.slot_start,
+              end: s.slot_end,
+              outside: !!s.outside_availability,
+            }))
           }
         } catch { /* silent */ }
       }))
@@ -252,6 +257,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <span className="w-2 h-2 rounded-full bg-amber-100 border border-amber-300" />
             {locale === 'fr' ? 'En attente' : 'Pending'}
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-white border border-dashed border-gray-400" />
+            {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
           </span>
           {googleConnected && (
             <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
@@ -409,17 +418,20 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 )
               })()}
 
-              {/* Available slots */}
+              {/* Available slots — teal pill for in-hours, dashed-gray pill
+                  for after-hours. Both open the schedule modal on click. */}
               {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || []).map((slot, si) => {
                 const startH = getHoursInTz(slot.start)
                 const endH = getHoursInTz(slot.end)
                 const slotTop = (startH - START_HOUR) * HOUR_HEIGHT
                 const fullHeight = Math.max((endH - startH) * HOUR_HEIGHT, 24)
                 const isHovered = hoveredSlot === slot.start
+                const isOutside = slot.outside
                 return (
                   <div
                     key={`slot-${si}`}
                     data-event
+                    title={isOutside ? (locale === 'fr' ? 'Hors horaires' : 'After-hours') : undefined}
                     onClick={(e) => {
                       e.stopPropagation()
                       if (!onSlotClick) return
@@ -432,24 +444,35 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                     }}
                     onMouseEnter={() => setHoveredSlot(slot.start)}
                     onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-lg border cursor-pointer overflow-hidden transition-all duration-150 ${
-                      isHovered
-                        ? 'bg-teal-500 border-teal-600 shadow-lg text-white z-[8]'
-                        : 'bg-teal-50 border-teal-200 hover:bg-teal-100 text-teal-700 z-[5]'
+                    className={`absolute left-1 right-1 rounded-lg cursor-pointer overflow-hidden transition-all duration-150 ${
+                      isOutside
+                        ? isHovered
+                          ? 'bg-gray-700 border border-gray-700 shadow-lg text-white z-[8]'
+                          : 'bg-white border border-dashed border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-500 z-[5]'
+                        : isHovered
+                          ? 'bg-teal-500 border border-teal-600 shadow-lg text-white z-[8]'
+                          : 'bg-teal-50 border border-teal-200 hover:bg-teal-100 text-teal-700 z-[5]'
                     }`}
                     style={{
                       top: slotTop + 1,
                       height: isHovered ? fullHeight - 2 : 24,
                     }}
                   >
-                    <div className="flex items-center px-2 h-full">
-                      <span className={`text-[10px] font-semibold truncate ${isHovered ? 'text-white' : 'text-teal-700'}`}>
+                    <div className="flex items-center gap-1 px-2 h-full">
+                      {isOutside && <Clock className={`w-2.5 h-2.5 shrink-0 ${isHovered ? 'text-white' : 'text-gray-400'}`} />}
+                      <span className={`text-[10px] font-semibold truncate ${
+                        isOutside
+                          ? isHovered ? 'text-white' : 'text-gray-500'
+                          : isHovered ? 'text-white' : 'text-teal-700'
+                      }`}>
                         {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
                       </span>
                     </div>
                     {isHovered && (
                       <div className="px-2 pb-1">
-                        <span className="text-[10px] text-teal-100">60 min</span>
+                        <span className={`text-[10px] ${isOutside ? 'text-gray-300' : 'text-teal-100'}`}>
+                          {isOutside ? (locale === 'fr' ? '60 min · hors horaires' : '60 min · after-hours') : '60 min'}
+                        </span>
                       </div>
                     )}
                   </div>

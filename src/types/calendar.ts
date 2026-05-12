@@ -102,6 +102,10 @@ export interface Booking {
 export interface TimeSlot {
   slot_start: string;
   slot_end: string;
+  // Practitioner-side only: marks slots generated outside the practitioner's
+  // configured availability_schedules. Patient-facing endpoints never set or
+  // expose this flag — every slot they see falls within the schedule.
+  outside_availability?: boolean;
 }
 
 export interface CreateBookingInput {

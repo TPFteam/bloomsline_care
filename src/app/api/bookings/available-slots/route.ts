@@ -91,21 +91,31 @@ export async function GET(request: NextRequest) {
 
     console.log('[available-slots] schedules for', dayOfWeek, ':', JSON.stringify(schedules), 'error:', schedError);
 
-    // If no schedules exist for this day, return empty
-    // (Do NOT auto-seed — practitioners manage their own availability)
+    // Days with no configured schedule still produce slots — practitioners
+    // can book outside their normal hours (after-hours visit, weekend
+    // emergency, etc.). Those slots are tagged `outside_availability: true`
+    // so the calendar UI can render them with the muted visual style and
+    // patients-side endpoints can ignore them entirely.
+    const hasSchedule = !!schedules && schedules.length > 0
 
-    if (!schedules || schedules.length === 0) {
-      // Still fetch timezone from any schedule day for display
+    // Resolve a sane timezone for output even when no schedule exists today.
+    let tz = 'UTC'
+    if (hasSchedule) {
+      tz = schedules![0].timezone || 'UTC'
+    } else {
       const { data: anySchedule } = await supabase
         .from('availability_schedules')
         .select('timezone')
         .eq('user_id', practitionerId)
         .limit(1)
         .maybeSingle();
-      return NextResponse.json({ slots: [], practitionerTimezone: anySchedule?.timezone || 'UTC' });
+      tz = anySchedule?.timezone || 'UTC'
     }
+    knownTz = tz;
 
-    // Check for date override blocking the whole day
+    // Check for date override blocking the whole day. When the practitioner
+    // has explicitly marked a day as unavailable, even the after-hours slots
+    // shouldn't appear — they're saying "do not book me at all today".
     const { data: override } = await supabase
       .from('availability_overrides')
       .select('is_available')
@@ -116,11 +126,8 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (override) {
-      return NextResponse.json({ slots: [], practitionerTimezone: schedules[0].timezone || 'UTC' });
+      return NextResponse.json({ slots: [], practitionerTimezone: tz });
     }
-
-    const tz = schedules[0].timezone || 'UTC';
-    knownTz = tz;
 
     // Calculate the UTC offset for the practitioner's timezone on this date.
     // Uses Intl.DateTimeFormat to reliably get the offset — works on any server locale.
@@ -196,56 +203,78 @@ export async function GET(request: NextRequest) {
       ...(sessionConflicts || []).map(s => ({ start: new Date(s.scheduled_at).getTime(), end: new Date(s.scheduled_at).getTime() + s.duration_minutes * 60 * 1000 })),
     ];
 
-    // Generate slots from each schedule window
+    // Pre-compute schedule windows in UTC ms so we can decide
+    // inside-vs-outside-availability for each generated slot in O(1).
+    const scheduleRanges: Array<{ start: number; end: number }> = (schedules || []).map(schedule => {
+      const startLocal = new Date(`${date}T${schedule.start_time}Z`);
+      const endLocal = new Date(`${date}T${schedule.end_time}Z`);
+      return {
+        start: startLocal.getTime() - tzOffsetMs,
+        end: endLocal.getTime() - tzOffsetMs,
+      }
+    })
+
+    // Walk the full local day 00:00 → 24:00 in the practitioner's timezone.
+    // Slots that fall entirely within a schedule range are normal availability;
+    // anything else is tagged as `outside_availability` so the UI can render
+    // it with the muted style. Patient-facing flows never hit this branch.
+    const localDayStart = new Date(`${date}T00:00:00Z`).getTime() - tzOffsetMs
+    const localDayEnd = new Date(`${date}T00:00:00Z`).getTime() - tzOffsetMs + 24 * 60 * 60 * 1000
+
     const generatedSlots: TimeSlot[] = [];
     const durationMs = duration * 60 * 1000;
     const stepMs = 30 * 60 * 1000;
 
-    for (const schedule of schedules) {
-      // Convert practitioner local times to UTC
-      // schedule.start_time is like "09:00:00" in the practitioner's timezone
-      const startLocal = new Date(`${date}T${schedule.start_time}Z`);
-      const endLocal = new Date(`${date}T${schedule.end_time}Z`);
-      const startUtc = new Date(startLocal.getTime() - tzOffsetMs);
-      const endUtc = new Date(endLocal.getTime() - tzOffsetMs);
+    const now = Date.now();
+    const noticeCutoff = now + minNoticeMs;
 
-      const now = Date.now();
-      const noticeCutoff = now + minNoticeMs;
-      for (let t = startUtc.getTime(); t + durationMs <= endUtc.getTime(); t += stepMs) {
-        const slotStart = new Date(t);
-        const slotEnd = new Date(t + durationMs);
+    for (let t = localDayStart; t + durationMs <= localDayEnd; t += stepMs) {
+      const slotStart = new Date(t);
+      const slotEnd = new Date(t + durationMs);
 
-        // Skip past slots AND slots within the minimum notice window
-        if (slotStart.getTime() < noticeCutoff) continue;
+      // Skip past slots AND slots within the minimum notice window
+      if (slotStart.getTime() < noticeCutoff) continue;
 
-        // Hour-aligned filter: only keep slots starting at :00 in the
-        // practitioner's local timezone. Computed via Intl so DST is handled.
-        if (hourAligned) {
-          const localMinute = new Intl.DateTimeFormat('en-US', {
-            timeZone: tz,
-            minute: '2-digit',
-            hour12: false,
-          }).format(slotStart);
-          if (parseInt(localMinute, 10) !== 0) continue;
-        }
-
-        // Check for conflicts with existing bookings + sessions
-        const hasConflict = allConflicts.some((c) => {
-          const cStart = c.start - bufBefore;
-          const cEnd = c.end + bufAfter;
-          return slotStart.getTime() < cEnd && slotEnd.getTime() > cStart;
-        });
-
-        if (!hasConflict) {
-          generatedSlots.push({
-            slot_start: slotStart.toISOString(),
-            slot_end: slotEnd.toISOString(),
-          });
-        }
+      // Hour-aligned filter: only keep slots starting at :00 in the
+      // practitioner's local timezone. Computed via Intl so DST is handled.
+      if (hourAligned) {
+        const localMinute = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz,
+          minute: '2-digit',
+          hour12: false,
+        }).format(slotStart);
+        if (parseInt(localMinute, 10) !== 0) continue;
       }
+
+      // Check for conflicts with existing bookings + sessions — applies
+      // regardless of whether the slot is inside the schedule or after-hours.
+      const hasConflict = allConflicts.some((c) => {
+        const cStart = c.start - bufBefore;
+        const cEnd = c.end + bufAfter;
+        return slotStart.getTime() < cEnd && slotEnd.getTime() > cStart;
+      });
+      if (hasConflict) continue;
+
+      // Inside availability iff the whole slot is contained in some schedule
+      // range. Half-overlaps (slot straddling the 17:00 boundary) count as
+      // outside so the UI doesn't claim they're normal availability.
+      const insideSchedule = scheduleRanges.some(r =>
+        slotStart.getTime() >= r.start && slotEnd.getTime() <= r.end
+      )
+
+      generatedSlots.push({
+        slot_start: slotStart.toISOString(),
+        slot_end: slotEnd.toISOString(),
+        outside_availability: !insideSchedule,
+      });
     }
 
     slots = generatedSlots;
+    // hasSchedule is informational — surfaces in logs and could be useful in
+    // future UX, but doesn't gate output.
+    if (!hasSchedule) {
+      console.log('[available-slots] no schedule for', dayOfWeek, '— returning after-hours-only slots')
+    }
   } else {
     // Public booking — use RPC with min_notice_hours filter
     const { data: baseSlots, error: rpcError } = await supabase.rpc(
