@@ -91,6 +91,7 @@ import type { ResourceCategory } from '@/types/library'
 import { toast } from 'sonner'
 import DescriptionEditor from '@/components/resources/DescriptionEditor'
 import { ResourcePreview } from '@/components/resources/preview/ResourcePreview'
+import { ZONED_CANVAS_TEMPLATES, templateToBlock, type ZonedCanvasTemplate } from '@/lib/resources/zoned-canvas'
 
 // Hide the visibility picker (Private / Public / Share-via-external-link)
 // in the publish flow until the Digital Library + public-link sharing
@@ -209,6 +210,43 @@ interface BlockTypeOption {
   icon: React.ElementType
   label: Record<string, string>
   description: Record<string, string>
+}
+
+// Tiny preview thumbnail for a zoned-canvas template — used in the
+// block picker. Reuses the template's actual geometry, scaled to a
+// 28×28 box so practitioners get a real preview rather than an icon.
+function TemplateThumb({ template }: { template: ZonedCanvasTemplate }) {
+  const accentToHex: Record<string, string> = {
+    teal: '#0d9488', amber: '#d97706', rose: '#e11d48', violet: '#7c3aed',
+    sky: '#0284c7', emerald: '#059669', orange: '#ea580c', slate: '#475569',
+  }
+  const cw = template.canvas.width
+  const ch = template.canvas.height
+  // Sort by area (largest first) so nested shapes paint on top.
+  const ordered = [...template.zones].sort((a, b) => {
+    const area = (z: typeof a) => {
+      const s = z.shape
+      if (s.kind === 'rect') return s.w * s.h
+      if (s.kind === 'circle') return Math.PI * s.r * s.r
+      if (s.kind === 'ellipse') return Math.PI * s.rx * s.ry
+      return 1
+    }
+    return area(b) - area(a)
+  })
+  return (
+    <svg viewBox={`0 0 ${cw} ${ch}`} className="w-6 h-6">
+      {ordered.map((z, i) => {
+        const stroke = accentToHex[z.accent ?? 'slate'] ?? '#475569'
+        const fill = stroke + '22'
+        const s = z.shape
+        if (s.kind === 'rect')    return <rect    key={i} x={s.x} y={s.y} width={s.w} height={s.h} rx={s.rx ?? 0} fill={fill} stroke={stroke} strokeWidth={Math.max(cw, ch) / 60} />
+        if (s.kind === 'circle')  return <circle  key={i} cx={s.cx} cy={s.cy} r={s.r}   fill={fill} stroke={stroke} strokeWidth={Math.max(cw, ch) / 60} />
+        if (s.kind === 'ellipse') return <ellipse key={i} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill={fill} stroke={stroke} strokeWidth={Math.max(cw, ch) / 60} />
+        if (s.kind === 'polygon') return <polygon key={i} points={s.points.map(([x, y]) => `${x},${y}`).join(' ')} fill={fill} stroke={stroke} strokeWidth={Math.max(cw, ch) / 60} />
+        return null
+      })}
+    </svg>
+  )
 }
 
 const blockTypes: BlockTypeOption[] = [
@@ -1323,16 +1361,46 @@ function CreateWorksheetContent() {
     setShowBlockPicker(false)
     markAsModified()
     // The first time an interactive block is added, the derived
-    // resourceMode flips Reading → Interactive on the next render — show
-    // a small toast so the practitioner sees it happen rather than
-    // wondering why the pill changed.
+    // resourceMode flips Reading → Exercise (or Interactive for
+    // spatial blocks) on the next render — show a small toast so the
+    // practitioner sees it happen rather than wondering why the pill
+    // changed.
     if (resourceMode === 'reading' && INTERACTIVE_TYPES.has(type)) {
       toast.message(
         locale === 'fr'
-          ? 'Mode interactif activé — ce support recueille désormais les réponses du patient.'
+          ? 'Mode exercice activé — ce support recueille désormais les réponses du patient.'
           : locale === 'es'
-            ? 'Modo interactivo activado — este recurso ahora recopila respuestas del paciente.'
-            : 'Switched to Interactive — this resource now collects patient input.'
+            ? 'Modo ejercicio activado — este recurso ahora recopila respuestas del paciente.'
+            : 'Switched to Exercise — this resource now collects patient input.'
+      )
+    }
+  }
+
+  // Materialise a zoned-canvas template into a fresh block and insert
+  // it at the end of the worksheet. Same flow as addBlock but the
+  // block is fully pre-populated from the template library.
+  const addZonedCanvasFromTemplate = (template: ZonedCanvasTemplate) => {
+    const tplBlock = templateToBlock(template, generateId(), locale === 'fr' ? 'fr' : 'en')
+    const newBlock: WorksheetBlock = {
+      id: tplBlock.id,
+      type: 'zoned_canvas',
+      content: tplBlock.content || '',
+      templateId: tplBlock.templateId,
+      canvas: tplBlock.canvas,
+      zones: tplBlock.zones,
+    }
+    const wasReading = resourceMode === 'reading'
+    setBlocks([...blocks, newBlock])
+    setExpandedBlock(newBlock.id)
+    setShowBlockPicker(false)
+    markAsModified()
+    if (wasReading) {
+      toast.message(
+        locale === 'fr'
+          ? 'Mode interactif activé — exercice spatial ajouté.'
+          : locale === 'es'
+            ? 'Modo interactivo activado — ejercicio espacial añadido.'
+            : 'Switched to Interactive — spatial exercise added.'
       )
     }
   }
@@ -2230,6 +2298,75 @@ function CreateWorksheetContent() {
         {/* Paragraph/Instructions */}
         {block.type === 'paragraph' && (
           <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{block.content}</p>
+        )}
+
+        {/* Zoned canvas (interactive spatial exercise) preview */}
+        {block.type === 'zoned_canvas' && block.canvas && block.zones && (
+          <div className="space-y-3">
+            {block.content && (
+              <p className="text-gray-600 leading-relaxed whitespace-pre-wrap text-sm">{block.content}</p>
+            )}
+            <div className="bg-white rounded-xl border border-gray-200 p-3">
+              <svg
+                viewBox={`0 0 ${block.canvas.width} ${block.canvas.height}`}
+                className="w-full h-auto"
+                style={{ maxHeight: 280 }}
+              >
+                {[...block.zones]
+                  .sort((a, b) => {
+                    const area = (z: typeof a) => {
+                      const s = z.shape as any
+                      if (s.kind === 'rect') return s.w * s.h
+                      if (s.kind === 'circle') return Math.PI * s.r * s.r
+                      if (s.kind === 'ellipse') return Math.PI * s.rx * s.ry
+                      return 1
+                    }
+                    return area(b) - area(a)
+                  })
+                  .map((z, i) => {
+                    const accentToHex: Record<string, string> = {
+                      teal: '#0d9488', amber: '#d97706', rose: '#e11d48', violet: '#7c3aed',
+                      sky: '#0284c7', emerald: '#059669', orange: '#ea580c', slate: '#475569',
+                    }
+                    const stroke = accentToHex[z.accent ?? 'slate'] ?? '#475569'
+                    const fill = stroke + '1a'
+                    const s = z.shape as any
+                    let shapeEl = null
+                    let cx = 0, cy = 0
+                    if (s.kind === 'rect') {
+                      shapeEl = <rect x={s.x} y={s.y} width={s.w} height={s.h} rx={s.rx ?? 0} fill={fill} stroke={stroke} strokeWidth={2} />
+                      cx = s.x + s.w / 2; cy = s.y + 22
+                    } else if (s.kind === 'circle') {
+                      shapeEl = <circle cx={s.cx} cy={s.cy} r={s.r} fill={fill} stroke={stroke} strokeWidth={2} />
+                      cx = s.cx; cy = s.cy
+                    } else if (s.kind === 'ellipse') {
+                      shapeEl = <ellipse cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} fill={fill} stroke={stroke} strokeWidth={2} />
+                      cx = s.cx; cy = s.cy
+                    } else if (s.kind === 'polygon') {
+                      shapeEl = <polygon points={s.points.map(([x, y]: [number, number]) => `${x},${y}`).join(' ')} fill={fill} stroke={stroke} strokeWidth={2} />
+                      cx = s.points.reduce((a: number, [x]: [number, number]) => a + x, 0) / s.points.length
+                      cy = s.points.reduce((a: number, [, y]: [number, number]) => a + y, 0) / s.points.length
+                    }
+                    const label = z.label[locale === 'fr' ? 'fr' : 'en'] || z.label.en
+                    return (
+                      <g key={z.id ?? i}>
+                        {shapeEl}
+                        <text x={cx} y={cy} fill={stroke} fontSize={14} fontWeight={600} textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
+                          {label}
+                        </text>
+                      </g>
+                    )
+                  })}
+              </svg>
+            </div>
+            <p className="text-xs text-gray-500 italic">
+              {locale === 'fr'
+                ? `Exercice spatial · ${block.zones.length} zone${block.zones.length > 1 ? 's' : ''}`
+                : locale === 'es'
+                  ? `Ejercicio espacial · ${block.zones.length} zona${block.zones.length > 1 ? 's' : ''}`
+                  : `Spatial exercise · ${block.zones.length} zone${block.zones.length > 1 ? 's' : ''}`}
+            </p>
+          </div>
         )}
 
         {/* Bullet List */}
@@ -5799,6 +5936,32 @@ function CreateWorksheetContent() {
                                         </button>
                                       )
                                     })}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Interactive (spatial exercises) Row */}
+                              <div className="flex items-start gap-6 py-3 border-b border-gray-100">
+                                <div className="flex-1">
+                                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">
+                                    {locale === 'fr' ? 'Interactif (zones spatiales)' : locale === 'es' ? 'Interactivo (zonas espaciales)' : 'Interactive (spatial)'}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {ZONED_CANVAS_TEMPLATES.map(tpl => (
+                                      <button
+                                        key={tpl.id}
+                                        onClick={() => addZonedCanvasFromTemplate(tpl)}
+                                        className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 transition-colors group border border-violet-100"
+                                        title={tpl.description[locale === 'fr' ? 'fr' : 'en'] || ''}
+                                      >
+                                        <span className="w-8 h-8 rounded-md bg-white border border-violet-100 flex items-center justify-center shrink-0">
+                                          <TemplateThumb template={tpl} />
+                                        </span>
+                                        <span className="text-xs font-medium text-violet-700 group-hover:text-violet-800">
+                                          {tpl.name[locale === 'fr' ? 'fr' : 'en'] || tpl.name.en}
+                                        </span>
+                                      </button>
+                                    ))}
                                   </div>
                                 </div>
                               </div>
