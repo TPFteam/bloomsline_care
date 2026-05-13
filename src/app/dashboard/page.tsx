@@ -1,129 +1,91 @@
 'use client'
 
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/browser-client'
+// Bloomsline home page. Cut down from a 1.8k-line mix of activity feeds,
+// templates, and quick-action cards to a focused three-zone layout:
+//   1. Adaptive greeting + urgency chips (only what needs attention)
+//   2. Up next list + click-to-expand mini week calendar
+//   3. Compact quick-action row
+//
+// The previous /dashboard-preview route was the iteration sandbox for
+// this — same layout, real data fetches.
+
+import { useEffect, useMemo, useState, Suspense } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { format, parseISO, isToday, isTomorrow, isSameDay, startOfWeek, addDays } from 'date-fns'
+import { fr as frLocale } from 'date-fns/locale'
 import { toast } from 'sonner'
-import type { User } from '@/types/user'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Home,
-  FileText,
-  Table2,
-  ChevronRight,
-  BookOpen,
-  Puzzle,
-  Sparkles,
-  X,
-  Plus,
-  Clock,
-  HeartHandshake,
-  UserPlus,
-  Edit3,
-  Share2,
-  Calendar,
-  CheckCircle2,
-  Send,
-  Mail,
-  Phone,
-  Save,
-  Loader2,
-  Search,
-  RefreshCw,
-  CalendarPlus,
-  Video,
+  Calendar, ChevronRight, UserPlus, Share2, Video, X,
+  AlertCircle, ArrowUpRight, Sparkles, Loader2,
+  Search, FileText, Send, Mail, Phone, Save,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { PaymentBadge } from '@/components/ui/payment-badge'
-import { PhoneInput } from '@/components/ui/phone-input'
-import Link from 'next/link'
-import { useLanguage, lt } from '@/lib/i18n/context'
+import { createClient } from '@/lib/supabase/browser-client'
+import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
+import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
-import type { Member } from '@/types/member'
 import { ConsentModal } from '@/components/consent-modal'
-import { isAdmin } from '@/lib/admin'
+import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
+import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
+import type { User } from '@/types/user'
 
-interface ActivityItem {
+interface DashBooking {
   id: string
-  type: 'resource_created' | 'resource_updated' | 'member_added' | 'session_scheduled' | 'session_completed' | 'resource_shared' | 'submission_received'
-  title: string
-  description: string
-  timestamp: string
-  href?: string
+  practitioner_id: string
+  member_id: string | null
+  client_name: string
+  client_email: string
+  start_time: string
+  end_time: string
+  status: string
+  session_type: string
+  notes: string | null
+  google_event_id?: string | null
+  meet_link?: string | null
+  payment_status?: string | null
 }
 
-interface TemplateOption {
-  id: string
-  type: 'worksheet' | 'table' | 'psychoeducation'
-  name: Record<string, string>
-  description: Record<string, string>
-  href: string
-}
+function DashboardInner() {
+  const supabase = createClient()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { locale, setLocale } = useLanguage()
+  const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
+  const { openFloat } = useFloatingNotes()
 
-
-type ResourceType = 'worksheet' | 'table' | 'psychoeducation'
-
-interface Template {
-  id: string
-  name: Record<string, string>
-  description: Record<string, string>
-}
-
-const templatesData: Record<ResourceType, Template[]> = {
-  psychoeducation: [
-    {
-      id: 'self-esteem',
-      name: { en: 'Understanding Self-Esteem', fr: 'Comprendre l\'estime de soi' },
-      description: { en: 'Guide to building healthy self-esteem', fr: 'Guide pour une estime de soi saine' },
-    },
-    {
-      id: 'cbt-introduction',
-      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
-      description: { en: 'Simple introduction to CBT', fr: 'Introduction simple à la TCC' },
-    },
-  ],
-  worksheet: [
-    {
-      id: 'gratitude',
-      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
-      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
-    },
-  ],
-  table: [
-    {
-      id: 'cognitive-restructuring',
-      name: { en: 'Cognitive Restructuring Chart', fr: 'Tableau de restructuration cognitive' },
-      description: { en: 'Challenge negative thoughts', fr: 'Remettre en question les pensées négatives' },
-    },
-    {
-      id: 'emotion-tracker',
-      name: { en: 'Emotion Tracker', fr: 'Suivi des émotions' },
-      description: { en: 'Monitor emotions', fr: 'Surveiller les émotions' },
-    },
-  ],
-}
-
-function DashboardContent() {
   const [user, setUser] = useState<User | null>(null)
-  const welcomeShown = useRef(false)
+  const [bookings, setBookings] = useState<DashBooking[]>([])
   const [loading, setLoading] = useState(true)
-  const [showScheduleModal, setShowScheduleModal] = useState(false)
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
-  const [selectedType, setSelectedType] = useState<ResourceType | null>(null)
-  const [upcomingSessions, setUpcomingSessions] = useState<{ id: string; client_name: string; session_type: string; start_time: string; member_id: string | null; status: string; meet_link?: string | null; payment_status?: string | null }[]>([])
+  const [hasConsented, setHasConsented] = useState(true)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
+  // Slot-click prefill — mirrors the bookings page so a click on an
+  // empty time slot in the full-calendar modal opens the schedule
+  // modal with that date/time already set.
+  const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string; outsideHours?: boolean } | null>(null)
+  const [sessionTypeMap, setSessionTypeMap] = useState<Record<string, { name: string; name_fr?: string }>>({})
 
-  // Member picker for quick actions
-  const [members, setMembers] = useState<{ id: string; first_name: string; last_name: string; status: string; last_session_at: string | null; email: string | null; phone: string | null; user_id: string | null }[]>([])
+  // Member list — feeds the picker for the Share-resource flow.
+  type MemberLite = { id: string; first_name: string; last_name: string; status: string; last_session_at: string | null }
+  const [members, setMembers] = useState<MemberLite[]>([])
+
+  // Add Member modal state
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
+  const [sendInvite, setSendInvite] = useState(true)
+  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
+  const [savingMember, setSavingMember] = useState(false)
+  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string }[]>([])
+
+  // Member picker (step 1 of the share-resource flow)
   const [showMemberPicker, setShowMemberPicker] = useState(false)
-  const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'reengage' | 'summary' | 'session' | null>(null)
+  const [memberPickerAction, setMemberPickerAction] = useState<'share' | null>(null)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
-  const [schedulePreselectedMember, setSchedulePreselectedMember] = useState<Member | null>(null)
 
-  // Resource picker — opens after a member is chosen via the
-  // "Share a resource" quick action, mirrors the Book-a-session two-step
-  // pattern. We hold the chosen member here while the user picks a
-  // resource to send.
+  // Resource picker (step 2 of the share-resource flow)
   const [shareTargetMember, setShareTargetMember] = useState<{ id: string; first_name: string; last_name: string } | null>(null)
   const [showResourcePicker, setShowResourcePicker] = useState(false)
   const [resourcePickerSearch, setResourcePickerSearch] = useState('')
@@ -131,254 +93,244 @@ function DashboardContent() {
   const [resourcePickerLoading, setResourcePickerLoading] = useState(false)
   const [resourcePickerSending, setResourcePickerSending] = useState<string | null>(null)
 
-  // User's latest resources
-  const [userResources, setUserResources] = useState<{ id: string; title: string; type: string }[]>([])
+  // Recently-shared resources for the home-page widget (last 5 shares
+  // joined with member name + resource title).
+  type RecentShare = {
+    id: string
+    shared_at: string
+    member_id: string
+    member_first_name: string
+    member_last_name: string
+    resource_id: string
+    resource_title: string
+    resource_type: string | null
+  }
+  const [recentShares, setRecentShares] = useState<RecentShare[]>([])
 
-  // Add Member Modal
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
-  const [sendInvite, setSendInvite] = useState(true)
-  const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
-  const [savingMember, setSavingMember] = useState(false)
-  const [hasConsented, setHasConsented] = useState(true)
-  const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string }[]>([])
+  // Auth gate, profile bootstrap, consent state, then data fetch.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) { router.replace('/sign-in'); return }
+      if (cancelled) return
 
-  // Featured templates - one from each type
-  const featuredTemplates: TemplateOption[] = [
-    {
-      id: 'gratitude',
-      type: 'worksheet',
-      name: { en: 'Gratitude Journal', fr: 'Journal de gratitude' },
-      description: { en: 'Daily gratitude reflection practice', fr: 'Pratique quotidienne de réflexion de gratitude' },
-      href: '/resources/create/worksheet?template=gratitude',
-    },
-    {
-      id: 'cognitive-restructuring',
-      type: 'table',
-      name: { en: 'Cognitive Restructuring', fr: 'Restructuration cognitive' },
-      description: { en: 'Challenge and reframe negative thoughts', fr: 'Remettre en question les pensées négatives' },
-      href: '/resources/create/table?template=cognitive-restructuring',
-    },
-    {
-      id: 'cbt-introduction',
-      type: 'psychoeducation',
-      name: { en: 'CBT Introduction', fr: 'Introduction à la TCC' },
-      description: { en: 'Simple introduction to CBT', fr: 'Introduction simple à la TCC' },
-      href: '/resources/create/psychoeducation?template=cbt-introduction',
-    },
-  ]
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = createClient()
-  const { t, locale, setLocale } = useLanguage()
+      const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+      if (cancelled) return
 
-  // Fetch activity data
-  const fetchRecentActivity = useCallback(async (userId: string, currentLocale: string) => {
-    try {
-      const activities: ActivityItem[] = []
-
-      // Fetch resources created
-      const { data: resources, error: resourcesError } = await supabase
-        .from('resources')
-        .select('id, title, type, created_at')
-        .eq('practitioner_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      if (!resourcesError && resources) {
-        resources.forEach((resource) => {
-          activities.push({
-            id: `resource-${resource.id}`,
-            type: 'resource_created',
-            title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
-            description: currentLocale === 'fr'
-              ? `Créé un ${resource.type === 'worksheet' ? 'exercice' : resource.type === 'table' ? 'tableau' : 'psychoéducation'}`
-              : `Created a ${resource.type}`,
-            timestamp: resource.created_at,
-            href: `/resources/${resource.id}`,
-          })
-        })
+      if (profile?.user_type === 'member') {
+        router.replace('/home')
+        return
       }
 
-      // Fetch members added
-      const { data: members, error: membersError } = await supabase
-        .from('members')
-        .select('id, first_name, last_name, created_at')
-        .eq('practitioner_id', userId)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(3)
+      const resolvedUser = (profile as User) || ({ id: authUser.id, email: authUser.email } as User)
+      setUser(resolvedUser)
+      setHasConsented(!!profile?.has_consented)
+      if (profile?.preferred_language) setLocale(profile.preferred_language as any, false)
 
-      if (!membersError && members) {
-        members.forEach((member) => {
-          const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Nouveau patient' : 'New member')
-          activities.push({
-            id: `member-${member.id}`,
-            type: 'member_added',
-            title: memberName,
-            description: currentLocale === 'fr' ? 'Patient ajouté' : 'Member added',
-            timestamp: member.created_at,
-            href: `/members/${member.id}`,
-          })
-        })
-      }
+      // Open the Schedule Session modal directly when arriving with
+      // ?action=schedule (back-compat with existing CTAs across the app).
+      if (searchParams.get('action') === 'schedule') setShowSchedule(true)
 
-      // Fetch shared resources
-      const { data: sharedResources, error: sharedError } = await supabase
-        .from('member_shared_resources')
-        .select(`
-          id,
-          shared_at,
-          resource:resources(id, title, type),
-          member:members(id, first_name, last_name, deleted_at)
-        `)
-        .eq('practitioner_id', userId)
-        .order('shared_at', { ascending: false })
-        .limit(10)
-
-      if (!sharedError && sharedResources) {
-        sharedResources.forEach((share) => {
-          const resource = Array.isArray(share.resource) ? share.resource[0] : share.resource
-          const member = Array.isArray(share.member) ? share.member[0] : share.member
-          if (resource && member && !(member as { deleted_at?: string }).deleted_at) {
-            const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
-            activities.push({
-              id: `share-${share.id}`,
-              type: 'resource_shared',
-              title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
-              description: currentLocale === 'fr'
-                ? `Partagé avec ${memberName}`
-                : `Shared with ${memberName}`,
-              timestamp: share.shared_at,
-              href: `/members/${member.id}`,
-            })
-          }
-        })
-      }
-
-      // Fetch bookings/sessions — also fetch deleted_at via member join to filter out
-      const { data: bookings, error: bookingsError } = await supabase
+      // Pull this-week + 2 weeks ahead so the mini calendar can render
+      // even on quiet weeks.
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+      const horizonEnd = addDays(weekStart, 21).toISOString()
+      const { data: bk } = await supabase
         .from('bookings')
-        .select('id, client_name, session_type, status, start_time, created_at, member_id, member:members(deleted_at)')
-        .eq('practitioner_id', userId)
-        .in('status', ['confirmed', 'completed', 'pending'])
-        .order('created_at', { ascending: false })
-        .limit(10)
+        .select('*')
+        .eq('practitioner_id', authUser.id)
+        .gte('start_time', weekStart.toISOString())
+        .lt('start_time', horizonEnd)
+        .order('start_time', { ascending: true })
+      if (!cancelled && bk) setBookings(bk as DashBooking[])
 
-      if (!bookingsError && bookings) {
-        bookings.forEach((booking) => {
-          // Skip bookings whose member was soft-deleted
-          const m = Array.isArray((booking as any).member) ? (booking as any).member[0] : (booking as any).member
-          if (booking.member_id && m?.deleted_at) return
-          const isCompleted = booking.status === 'completed'
-          activities.push({
-            id: `booking-${booking.id}`,
-            type: isCompleted ? 'session_completed' : 'session_scheduled',
-            title: booking.client_name,
-            description: isCompleted
-              ? (currentLocale === 'fr' ? 'Séance terminée' : 'Session completed')
-              : (currentLocale === 'fr' ? 'Séance programmée' : 'Session scheduled'),
-            timestamp: booking.created_at,
-            href: booking.member_id ? `/members/${booking.member_id}` : undefined,
+      // Practitioner's members — used by the Share-resource picker.
+      const { data: membersData } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, status, last_session_at')
+        .eq('practitioner_id', authUser.id)
+        .is('deleted_at', null)
+        .order('first_name')
+      if (!cancelled && membersData) setMembers(membersData as MemberLite[])
+
+      // Last 5 shares — for the "Recent resources" widget under the
+      // mini-week. Joins via FK so we get member name + resource title
+      // in a single round-trip.
+      const { data: shares } = await supabase
+        .from('member_shared_resources')
+        .select('id, shared_at, member:members(id, first_name, last_name), resource:resources(id, title, type)')
+        .eq('practitioner_id', authUser.id)
+        .order('shared_at', { ascending: false })
+        .limit(5)
+      if (!cancelled && shares) {
+        const mapped: RecentShare[] = shares
+          .map((s: any) => {
+            const m = Array.isArray(s.member) ? s.member[0] : s.member
+            const r = Array.isArray(s.resource) ? s.resource[0] : s.resource
+            if (!m || !r) return null
+            const title = typeof r.title === 'string'
+              ? r.title
+              : (r.title?.[locale] || r.title?.en || Object.values(r.title || {})[0] || 'Untitled')
+            return {
+              id: s.id as string,
+              shared_at: s.shared_at as string,
+              member_id: m.id as string,
+              member_first_name: m.first_name as string,
+              member_last_name: m.last_name as string,
+              resource_id: r.id as string,
+              resource_title: title as string,
+              resource_type: (r.type as string) ?? null,
+            }
           })
-        })
+          .filter(Boolean) as RecentShare[]
+        setRecentShares(mapped)
       }
 
-      // Fetch member submissions
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('resource_submissions')
-        .select(`
-          id,
-          submitted_at,
-          status,
-          resource:resources(id, title, type),
-          member:members(id, first_name, last_name, deleted_at)
-        `)
-        .eq('practitioner_id', userId)
-        .eq('status', 'submitted')
-        .order('submitted_at', { ascending: false })
-        .limit(10)
-
-      if (!submissionsError && submissions) {
-        submissions.forEach((sub) => {
-          const resource = Array.isArray(sub.resource) ? sub.resource[0] : sub.resource
-          const member = Array.isArray(sub.member) ? sub.member[0] : sub.member
-          if (resource && member && !(member as { deleted_at?: string }).deleted_at) {
-            const memberName = `${member.first_name || ''} ${member.last_name || ''}`.trim() || (currentLocale === 'fr' ? 'Patient' : 'Member')
-            activities.push({
-              id: `submission-${sub.id}`,
-              type: 'submission_received',
-              title: resource.title || (currentLocale === 'fr' ? 'Sans titre' : 'Untitled'),
-              description: currentLocale === 'fr'
-                ? `Réponse de ${memberName}`
-                : `Response from ${memberName}`,
-              timestamp: sub.submitted_at,
-              href: `/members/${member.id}`,
-            })
-          }
-        })
-      }
-
-      // Ensure variety in activities - take most recent from different types first
-      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-
-      // Group activities by type and take most recent from each
-      const byType = new Map<string, ActivityItem[]>()
-      activities.forEach(activity => {
-        const existing = byType.get(activity.type) || []
-        existing.push(activity)
-        byType.set(activity.type, existing)
-      })
-
-      // Priority order for variety: member_added, resource_shared, session_*, submission, resource_created
-      const priorityTypes = ['member_added', 'resource_shared', 'session_completed', 'session_scheduled', 'submission_received', 'resource_created', 'resource_updated']
-
-      const diverseActivities: ActivityItem[] = []
-
-      // First pass: take one from each type in priority order
-      for (const type of priorityTypes) {
-        const typeActivities = byType.get(type)
-        if (typeActivities && typeActivities.length > 0 && diverseActivities.length < 3) {
-          diverseActivities.push(typeActivities[0])
+      // Build a lookup so we can render session_type IDs as human
+      // labels in the Up next list.
+      const { data: settings } = await supabase
+        .from('booking_settings')
+        .select('session_types')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+      if (!cancelled && Array.isArray(settings?.session_types)) {
+        const map: Record<string, { name: string; name_fr?: string }> = {}
+        for (const st of settings!.session_types as Array<{ id?: string; name: string; name_fr?: string }>) {
+          if (st.id) map[st.id] = { name: st.name, name_fr: st.name_fr }
+          map[st.name] = { name: st.name, name_fr: st.name_fr }
         }
+        setSessionTypeMap(map)
       }
+      if (!cancelled) setLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [supabase, router, searchParams, setLocale])
 
-      // If we still have slots, fill with most recent overall (avoiding duplicates)
-      if (diverseActivities.length < 3) {
-        for (const activity of activities) {
-          if (!diverseActivities.find(a => a.id === activity.id) && diverseActivities.length < 3) {
-            diverseActivities.push(activity)
-          }
-        }
-      }
+  const handleConsent = async () => {
+    setHasConsented(true)
+    if (user) await supabase.from('users').update({ has_consented: true }).eq('id', user.id)
+  }
 
-      // Sort the final selection by timestamp (most recent first)
-      diverseActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-
-      setRecentActivity(diverseActivities)
-    } catch (error) {
-      console.error('Error fetching activity:', error)
+  // Open the global floating note panel scoped to this session. Mirrors
+  // the bookings page so notes captured here land in the same surface.
+  const handleTakeNotes = async (booking: DashBooking) => {
+    if (!booking.member_id) {
+      toast.error(t('No patient linked to this session', 'Aucun patient lié à cette séance', 'Sin paciente vinculado'))
+      return
     }
-  }, [supabase])
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (!u) return
+    const [sessionRowRes, customTypesRes, milestonesRes] = await Promise.all([
+      supabase.from('sessions')
+        .select('id')
+        .eq('practitioner_id', u.id)
+        .eq('member_id', booking.member_id)
+        .eq('scheduled_at', booking.start_time)
+        .maybeSingle(),
+      supabase.from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', u.id)
+        .order('created_at'),
+      supabase.from('milestones')
+        .select('id, title, status')
+        .eq('member_id', booking.member_id)
+        .order('created_at'),
+    ])
+    const sessionRow = sessionRowRes.data
+    const customTypes = (customTypesRes.data || [])
+      .map((r: any) => r.type_name as string)
+      .filter((name: string) => !name.startsWith('_hidden:'))
+    const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
+    const noteTypeMap = new Map<string, { type: string; label: string }>()
+    for (const tt of FIXED_NOTE_TYPES) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    for (const tt of DEFAULT_NOTE_TYPES) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    for (const tt of customTypes) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    const editorNoteTypes = Array.from(noteTypeMap.values())
+    const { data: existingNote } = sessionRow?.id
+      ? await supabase
+          .from('progress_notes')
+          .select('id, content')
+          .eq('session_id', sessionRow.id)
+          .eq('note_type', 'session_summary')
+          .maybeSingle()
+      : { data: null }
+    const durationMinutes = Math.max(0, Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000))
+    // Resolve a friendly session-type label for the panel header.
+    const typeMeta = sessionTypeMap[booking.session_type]
+    const sessionTitle = typeMeta
+      ? (locale === 'fr' ? (typeMeta.name_fr || typeMeta.name) : typeMeta.name)
+      : booking.session_type
+    openFloat({
+      mode: 'session',
+      content: existingNote?.content || '',
+      memberId: booking.member_id,
+      memberName: booking.client_name || '',
+      noteType: 'session_summary',
+      sessionId: sessionRow?.id,
+      existingNoteId: existingNote?.id || undefined,
+      milestones,
+      editorNoteTypes,
+      sessionContext: {
+        title: sessionTitle,
+        startTimeIso: booking.start_time,
+        durationMinutes,
+        format: null,
+      },
+    })
+  }
 
-  // Handle Add Member
+  // Compact "Nh ago" / "Nd ago" used in the member picker.
+  const formatTimeAgo = (timestamp: string) => {
+    const diffMs = Date.now() - new Date(timestamp).getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffMins < 1) return locale === 'fr' ? "À l'instant" : 'Just now'
+    if (diffMins < 60) return locale === 'fr' ? `Il y a ${diffMins} min` : `${diffMins}m ago`
+    if (diffHours < 24) return locale === 'fr' ? `Il y a ${diffHours}h` : `${diffHours}h ago`
+    if (diffDays < 7) return locale === 'fr' ? `Il y a ${diffDays}j` : `${diffDays}d ago`
+    return new Date(timestamp).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
+  }
+
+  // Open Add Member modal + lazily load groups for the chip selector.
+  const openAddMember = () => {
+    setShowAddMemberModal(true)
+    supabase.from('member_groups').select('id, name, color').order('name').then(({ data }) => {
+      if (data) setMemberGroups(data)
+    })
+  }
+
+  // Refresh members + bookings so newly-created entries appear immediately.
+  const refreshAfterMemberChange = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+    const { data: membersData } = await supabase
+      .from('members')
+      .select('id, first_name, last_name, status, last_session_at')
+      .eq('practitioner_id', authUser.id)
+      .is('deleted_at', null)
+      .order('first_name')
+    if (membersData) setMembers(membersData as MemberLite[])
+  }
+
+  // Create the member, optionally fire the welcome email, then close modal.
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
       toast.error(locale === 'fr'
-        ? 'Le prénom, le nom et l\'email sont requis'
+        ? "Le prénom, le nom et l'email sont requis"
         : 'First name, last name, and email are required')
       return
     }
-
     setSavingMember(true)
-
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) {
-        router.push('/sign-in')
-        return
-      }
+      if (!authUser) { router.push('/sign-in'); return }
 
       const memberData = {
         practitioner_id: authUser.id,
@@ -390,23 +342,19 @@ function DashboardContent() {
         engagement_level: 'medium' as const,
         is_minor: newMember.isMinor,
       }
-
       const { data: memberResult, error } = await supabase
         .from('members')
         .insert(memberData)
         .select()
         .single()
-
       if (error) throw error
 
-      // Add to groups if any selected
       if (newMember.groupIds.length > 0 && memberResult?.id) {
         await supabase.from('member_group_members').insert(
           newMember.groupIds.map(gid => ({ group_id: gid, member_id: memberResult.id }))
         )
       }
 
-      // Send invitation email if toggle is on
       if (sendInvite && memberResult?.id) {
         try {
           const { data: practitionerProfile } = await supabase
@@ -414,7 +362,6 @@ function DashboardContent() {
             .select('full_name, avatar_url')
             .eq('id', authUser.id)
             .single()
-
           await supabase.functions.invoke('send-member-welcome', {
             body: {
               memberName: newMember.firstName.trim(),
@@ -425,7 +372,6 @@ function DashboardContent() {
               locale,
             },
           })
-
           await supabase
             .from('members')
             .update({ invitation_sent: true, invitation_sent_at: new Date().toISOString() })
@@ -435,870 +381,421 @@ function DashboardContent() {
         }
       }
 
-      // Reset form and close modal
       setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
       setSendInvite(true)
       setShowAddMemberModal(false)
       toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
-
-      // Refresh activity
-      await fetchRecentActivity(authUser.id, locale)
-    } catch (error) {
-      console.error('Error creating member:', error)
+      await refreshAfterMemberChange()
+    } catch (err) {
+      console.error('Error creating member:', err)
       toast.error(locale === 'fr' ? 'Erreur lors de la création' : 'Error creating member')
     } finally {
       setSavingMember(false)
     }
   }
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+  // ── Derived counts ──
+  const now = new Date()
+  const pendingCount = useMemo(
+    () => bookings.filter(b => b.status === 'pending').length,
+    [bookings],
+  )
+  const awaitingCount = useMemo(
+    () => bookings.filter(b => b.status === 'confirmed' && parseISO(b.start_time) < now).length,
+    [bookings, now],
+  )
+  const todayCount = useMemo(
+    () => bookings.filter(b => isSameDay(parseISO(b.start_time), now) && b.status !== 'cancelled').length,
+    [bookings, now],
+  )
+  const upNext = useMemo(
+    () => bookings
+      .filter(b => parseISO(b.start_time) > now && (b.status === 'confirmed' || b.status === 'pending'))
+      .slice(0, 5),
+    [bookings, now],
+  )
 
-      if (authError || !authUser) {
-        router.push('/sign-in')
-        return
+  // Mini week — 7 day cells Mon→Sun for the current week.
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const countForDay = (d: Date) =>
+    bookings.filter(b => b.status !== 'cancelled' && isSameDay(parseISO(b.start_time), d)).length
+
+  // Derive first name from the User row's `full_name`. Skip the email
+  // prefix fallback so we never read "Hi bloomsline".
+  const rawFull = user?.full_name?.trim()
+  const firstName = rawFull && !rawFull.includes('@') ? rawFull.split(/\s+/)[0] : ''
+  const dateLabel = format(now, locale === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMMM d', {
+    locale: locale === 'fr' ? frLocale : undefined,
+  })
+
+  // Two-line greeting:
+  //   Line 1 — time-of-day + practitioner's first name (prominent)
+  //   Line 2 — today's flow with patient names, or a context-aware
+  //            mood line when there's nothing scheduled. Picks are
+  //            stable within the same hour so the page doesn't flicker.
+  const hour = now.getHours()
+  const day = now.getDay()
+  const seed = Math.abs(now.getDate() + hour)
+
+  const timeOfDayHeadline = (() => {
+    const tod = hour < 12
+      ? t('Good morning', 'Bonjour', 'Buenos días')
+      : hour < 18
+        ? t('Good afternoon', 'Bon après-midi', 'Buenas tardes')
+        : t('Good evening', 'Bonsoir', 'Buenas noches')
+    return firstName ? `${tod}, ${firstName}` : tod
+  })()
+
+  const todaysFlowLine = (() => {
+    if (loading) return ''
+
+    if (todayCount > 0) {
+      // Patient names from today's bookings (skip cancelled). De-dup so
+      // a recurring patient with multiple sessions today only shows
+      // their name once.
+      const todaysPatients = bookings
+        .filter(b => isSameDay(parseISO(b.start_time), now) && b.status !== 'cancelled')
+        .map(b => b.client_name?.split(/\s+/)[0])
+        .filter(Boolean) as string[]
+      const unique = Array.from(new Set(todaysPatients))
+      const first = unique[0]
+      const second = unique[1]
+      // No names available — fall back to a count-only sentence.
+      if (!first) {
+        return t(
+          `${todayCount} session${todayCount > 1 ? 's' : ''} on the books today.`,
+          `${todayCount} séance${todayCount > 1 ? 's' : ''} aujourd'hui.`,
+          `${todayCount} sesión${todayCount > 1 ? 'es' : ''} hoy.`,
+        )
       }
-
-      const { data: userProfile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
-
-      if (profileError) {
-        if (profileError.code === 'PGRST116') {
-          router.push('/onboarding')
-          return
+      // Only one unique patient across N sessions.
+      if (!second) {
+        if (todayCount === 1) {
+          return t(
+            `Today you'll see ${first}.`,
+            `Aujourd'hui, vous verrez ${first}.`,
+            `Hoy verás a ${first}.`,
+          )
         }
-        const userType = authUser.user_metadata?.user_type || 'mentor'
-        if (userType === 'member') {
-          router.replace('/home')
-          return
-        }
-        setUser({
-          id: authUser.id,
-          email: authUser.email!,
-          full_name: authUser.user_metadata?.full_name || null,
-          avatar_url: authUser.user_metadata?.avatar_url || null,
-          user_type: userType,
-          preferred_language: 'en',
-          created_at: authUser.created_at,
-          updated_at: authUser.updated_at || authUser.created_at,
-        })
-      } else {
-        if (userProfile.user_type === 'member') {
-          router.replace('/home')
-          return
-        }
-        setUser(userProfile)
-        setHasConsented(!!userProfile.has_consented)
-        if (userProfile.preferred_language) {
-          setLocale(userProfile.preferred_language, false)
-        }
+        return t(
+          `${todayCount} sessions today with ${first}.`,
+          `${todayCount} séances aujourd'hui avec ${first}.`,
+          `${todayCount} sesiones hoy con ${first}.`,
+        )
       }
-
-      setLoading(false)
-
-      // Fetch members for quick action picker
-      const { data: membersData } = await supabase
-        .from('members')
-        .select('id, first_name, last_name, status, last_session_at, email, phone, user_id')
-        .eq('practitioner_id', authUser.id)
-        .is('deleted_at', null)
-        .order('first_name')
-      if (membersData) setMembers(membersData)
-
-      // Fetch upcoming sessions from BOTH bookings and sessions tables
-      // Some sessions may exist only in the sessions table (if booking insert failed silently)
-      const now = new Date().toISOString()
-
-      const [bookingsRes, sessionsRes] = await Promise.all([
-        supabase
-          .from('bookings')
-          .select('*, member:members(deleted_at)')
-          .eq('practitioner_id', authUser.id)
-          .in('status', ['confirmed', 'pending'])
-          .gte('start_time', now)
-          .order('start_time', { ascending: true })
-          .limit(10),
-        supabase
-          .from('sessions')
-          .select('id, session_type, scheduled_at, member_id, status, practitioner_id, member:members(deleted_at)')
-          .eq('practitioner_id', authUser.id)
-          .eq('status', 'scheduled')
-          .gte('scheduled_at', now)
-          .order('scheduled_at', { ascending: true })
-          .limit(10),
-      ])
-
-      // Filter out bookings/sessions for soft-deleted members
-      const isMemberDeleted = (row: any): boolean => {
-        if (!row?.member_id) return false
-        const m = Array.isArray(row.member) ? row.member[0] : row.member
-        return !!m?.deleted_at
+      // Two+ unique patients — show first two, collapse the rest.
+      const rest = todayCount - 2
+      if (rest <= 0) {
+        return t(
+          `Today you'll see ${first} and ${second}.`,
+          `Aujourd'hui, vous verrez ${first} et ${second}.`,
+          `Hoy verás a ${first} y ${second}.`,
+        )
       }
-      if (bookingsRes.data) bookingsRes.data = bookingsRes.data.filter((b: any) => !isMemberDeleted(b)).slice(0, 5)
-      if (sessionsRes.data) sessionsRes.data = sessionsRes.data.filter((s: any) => !isMemberDeleted(s)).slice(0, 5)
-
-      // Merge: use bookings as primary, fill in sessions-only entries
-      const bookingMemberIds = new Set((bookingsRes.data || []).map(b => `${b.member_id}_${b.start_time}`))
-      const sessionsOnly = (sessionsRes.data || []).filter(
-        s => !bookingMemberIds.has(`${s.member_id}_${s.scheduled_at}`)
+      const others = rest === 1
+        ? t('1 other', '1 autre', '1 más')
+        : t(`${rest} others`, `${rest} autres`, `${rest} más`)
+      return t(
+        `Today you'll see ${first}, ${second}, and ${others}.`,
+        `Aujourd'hui, vous verrez ${first}, ${second} et ${others}.`,
+        `Hoy verás a ${first}, ${second} y ${others}.`,
       )
-
-      // Look up member names for sessions-only entries
-      let sessionsMapped: typeof upcomingSessions = []
-      if (sessionsOnly.length > 0) {
-        const memberIds = [...new Set(sessionsOnly.map(s => s.member_id).filter(Boolean))]
-        const { data: memberNames } = memberIds.length > 0
-          ? await supabase.from('members').select('id, first_name, last_name').in('id', memberIds).is('deleted_at', null)
-          : { data: [] }
-        const nameMap: Record<string, string> = {}
-        memberNames?.forEach(m => { nameMap[m.id] = `${m.first_name} ${m.last_name}` })
-
-        sessionsMapped = sessionsOnly.map(s => ({
-          id: s.id,
-          client_name: nameMap[s.member_id] || 'Unknown',
-          session_type: s.session_type,
-          start_time: s.scheduled_at,
-          member_id: s.member_id,
-          status: 'confirmed',
-        }))
-      }
-
-      const merged = [...(bookingsRes.data || []), ...sessionsMapped]
-        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-        .slice(0, 3)
-
-      setUpcomingSessions(merged)
-
-      // Fetch user's latest resources
-      const { data: latestResources } = await supabase
-        .from('resources')
-        .select('id, title, type')
-        .eq('practitioner_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(3)
-      if (latestResources && latestResources.length > 0) setUserResources(latestResources)
-
-      if (searchParams.get('welcome') === 'true' && !welcomeShown.current) {
-        welcomeShown.current = true
-        toast.success(`Welcome to Bloomsline, ${authUser.user_metadata?.full_name || 'there'}!`)
-        const url = new URL(window.location.href)
-        url.searchParams.delete('welcome')
-        window.history.replaceState({}, '', url.pathname)
-      }
-
-      await fetchRecentActivity(authUser.id, locale)
     }
 
-    getUser()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, searchParams, supabase, setLocale, locale])
-
-  const handleConsent = async () => {
-    setHasConsented(true)
-    if (user) {
-      await supabase.from('users').update({ has_consented: true }).eq('id', user.id)
+    // Empty-today branch — mood line varies by weekday / time / awaiting.
+    const candidates: string[] = []
+    if (day === 0 || day === 6) candidates.push(t(
+      'Enjoy the weekend.',
+      'Profitez de votre week-end.',
+      'Disfruta el fin de semana.',
+    ))
+    if (day === 1) candidates.push(t(
+      'A quiet Monday — a good moment to set the week.',
+      'Un lundi calme — l\'occasion de poser la semaine.',
+      'Lunes tranquilo — un buen momento para preparar la semana.',
+    ))
+    if (day === 5) candidates.push(t(
+      'Light Friday — wind down before the weekend.',
+      'Vendredi calme — préparez le week-end.',
+      'Viernes ligero — desconecta antes del fin de semana.',
+    ))
+    if (hour < 12) {
+      candidates.push(t('Your morning is clear.', 'Votre matinée est libre.', 'Tu mañana está libre.'))
+      if (awaitingCount > 0) candidates.push(t(
+        `A quiet morning — a chance to close ${awaitingCount} session${awaitingCount > 1 ? 's' : ''}.`,
+        `Matinée calme — l'occasion de clôturer ${awaitingCount} séance${awaitingCount > 1 ? 's' : ''}.`,
+        `Mañana tranquila — momento para cerrar ${awaitingCount} sesión${awaitingCount > 1 ? 'es' : ''}.`,
+      ))
+    } else if (hour < 18) {
+      candidates.push(t('Your afternoon is open.', 'Votre après-midi est libre.', 'Tu tarde está libre.'))
+    } else {
+      candidates.push(t('The day is winding down.', 'La journée touche à sa fin.', 'El día está terminando.'))
     }
-  }
-
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour >= 6 && hour < 12) return locale === 'fr' ? 'Bonjour' : 'Good morning'
-    if (hour >= 12 && hour < 18) return locale === 'fr' ? 'Bonjour' : 'Good afternoon'
-    return locale === 'fr' ? 'Bonsoir' : 'Good evening'
-  }
-
-  const getTemplateIcon = (type: TemplateOption['type']) => {
-    switch (type) {
-      case 'worksheet': return FileText
-      case 'table': return Table2
-      case 'psychoeducation': return BookOpen
-      default: return FileText
-    }
-  }
-
-  const getTemplateColor = (type: TemplateOption['type']) => {
-    switch (type) {
-      case 'worksheet': return 'bg-blue-50 text-blue-600'
-      case 'table': return 'bg-emerald-50 text-emerald-600'
-      case 'psychoeducation': return 'bg-emerald-50 text-emerald-600'
-      default: return 'bg-gray-50 text-gray-600'
-    }
-  }
-
-  const getTemplateTypeLabel = (type: TemplateOption['type']) => {
-    switch (type) {
-      case 'worksheet': return locale === 'fr' ? 'Fiche' : 'Worksheet'
-      case 'table': return locale === 'fr' ? 'Tableau' : 'Table'
-      case 'psychoeducation': return locale === 'fr' ? 'Psychoéducation' : 'Psychoeducation'
-      default: return ''
-    }
-  }
-
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'resource_created': return FileText
-      case 'resource_updated': return Edit3
-      case 'member_added': return UserPlus
-      case 'session_scheduled': return Calendar
-      case 'session_completed': return CheckCircle2
-      case 'resource_shared': return Share2
-      case 'submission_received': return Send
-      default: return FileText
-    }
-  }
-
-  const getActivityColor = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'resource_created': return 'bg-blue-50 text-blue-600'
-      case 'resource_updated': return 'bg-purple-50 text-purple-600'
-      case 'member_added': return 'bg-emerald-50 text-emerald-600'
-      case 'session_scheduled': return 'bg-amber-50 text-amber-600'
-      case 'session_completed': return 'bg-green-50 text-green-600'
-      case 'resource_shared': return 'bg-indigo-50 text-indigo-600'
-      case 'submission_received': return 'bg-pink-50 text-pink-600'
-      default: return 'bg-gray-50 text-gray-600'
-    }
-  }
-
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date()
-    const date = new Date(timestamp)
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return locale === 'fr' ? 'À l\'instant' : 'Just now'
-    if (diffMins < 60) return locale === 'fr' ? `Il y a ${diffMins} min` : `${diffMins}m ago`
-    if (diffHours < 24) return locale === 'fr' ? `Il y a ${diffHours}h` : `${diffHours}h ago`
-    if (diffDays < 7) return locale === 'fr' ? `Il y a ${diffDays}j` : `${diffDays}d ago`
-    return date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
-  }
-
-  const quickActions = [
-    {
-      id: 'add-patient',
-      type: null,
-      title: locale === 'fr' ? 'Nouveau suivi' : 'New Follow-up',
-      icon: HeartHandshake,
-      color: 'from-rose-400 to-rose-500',
-      bgColor: 'bg-rose-50',
-    },
-    {
-      id: 'book-session',
-      type: null,
-      title: locale === 'fr' ? 'Créer une séance' : 'Book a Session',
-      icon: CalendarPlus,
-      color: 'from-teal-400 to-teal-500',
-      bgColor: 'bg-teal-50',
-    },
-    {
-      id: 'share-resource',
-      type: null,
-      title: locale === 'fr' ? 'Envoyer un support' : 'Share a Resource',
-      icon: Share2,
-      color: 'from-indigo-400 to-indigo-500',
-      bgColor: 'bg-indigo-50',
-    },
-  ]
-
-  const getTypeLabel = (type: ResourceType) => {
-    const labels: Record<ResourceType, Record<string, string>> = {
-      psychoeducation: { en: 'Psychoeducation', fr: 'Psychoéducation' },
-      worksheet: { en: 'Worksheet', fr: 'Fiche' },
-      table: { en: 'Table', fr: 'Tableau' },
-    }
-    return lt(labels[type], locale)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
-        <div className="text-center">
-          <div className="w-10 h-10 border-3 border-gray-300 dark:border-gray-700 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{t.dashboard.loading}</p>
-        </div>
-      </div>
-    )
-  }
+    if (pendingCount > 0) candidates.push(t(
+      `${pendingCount} request${pendingCount > 1 ? 's' : ''} waiting on you.`,
+      `${pendingCount} demande${pendingCount > 1 ? 's' : ''} en attente.`,
+      `${pendingCount} solicitud${pendingCount > 1 ? 'es' : ''} esperando.`,
+    ))
+    if (candidates.length === 0) return ''
+    return candidates[seed % candidates.length]
+  })()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex transition-colors">
-      <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
+    <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar activeItem="home" />
-
-      {/* Main Content */}
       <main className="flex-1 ml-14">
-        <AppHeader
-          user={user}
-          isAdmin={!!user && isAdmin(user.id)}
-          leftContent={
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-              <Home className="w-4 h-4" strokeWidth={2.5} />
-              <span>{locale === 'fr' ? 'Accueil' : 'Home'}</span>
-            </div>
-          }
-        />
-
-        {/* Content */}
-        <div className="p-8">
-          {/* Greeting Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 flex items-end justify-between"
-          >
-            <div>
-              <p className="text-sm text-gray-500 mb-1">
-                {locale === 'fr' ? 'Mon espace de travail' : 'My Workspace'}
-              </p>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {getGreeting()}, {user?.full_name?.split(' ')[0] || 'there'}
-              </h1>
-            </div>
-          </motion.div>
-
-          {/* Quick Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-10"
-          >
-            <div className="flex gap-4">
-              {quickActions.map((action, index) => (
-                <motion.div
-                  key={action.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05 }}
-                  whileHover={{ y: -2, scale: 1.02 }}
-                  onClick={() => {
-                    if (action.id === 'add-patient') {
-                      setShowAddMemberModal(true)
-                      // Fetch groups for the modal
-                      supabase.from('member_groups').select('id, name, color').order('name').then(({ data }) => {
-                        if (data) setMemberGroups(data)
-                      })
-                    } else if (action.id === 'share-resource') {
-                      // Two-step: pick member → pick resource → send.
-                      // Mirrors the Book-a-session flow.
-                      setMemberPickerAction('share')
-                      setMemberSearchQuery('')
-                      setShowMemberPicker(true)
-                    } else if (action.id === 'reengage') {
-                      setMemberPickerAction('reengage')
-                      setMemberSearchQuery('')
-                      setShowMemberPicker(true)
-                    } else if (action.id === 'bloom-pulse') {
-                      setMemberPickerAction('summary')
-                      setMemberSearchQuery('')
-                      setShowMemberPicker(true)
-                    } else if (action.id === 'book-session') {
-                      setMemberPickerAction('session')
-                      setMemberSearchQuery('')
-                      setShowMemberPicker(true)
-                    } else if (action.type) {
-                      setSelectedType(action.type)
-                    }
-                  }}
-                  className="flex flex-col items-center group cursor-pointer w-[140px]"
-                >
-                    <div className="w-[140px] h-[140px] bg-gray-100 rounded-2xl flex items-center justify-center mb-3 group-hover:bg-gray-200/80 transition-colors relative overflow-hidden p-4 isolate">
-                      {/* Custom illustrations for each card */}
-                      {action.id === 'add-patient' && (
-                        <div className="relative">
-                          <motion.div
-                            className="w-16 h-20 bg-white rounded-lg shadow-md flex flex-col items-center pt-3 gap-1"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <motion.div
-                              className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-300 to-rose-400"
-                              animate={{ scale: [1, 1.05, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            />
-                            <div className="w-10 h-1.5 bg-rose-200 rounded-full mt-1" />
-                            <div className="w-6 h-1 bg-rose-100 rounded-full" />
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-rose-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                          >
-                            <Plus className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'share-resource' && (
-                        <div className="relative">
-                          <motion.div
-                            className="w-14 h-18 bg-white rounded-lg shadow-md flex flex-col items-center justify-center gap-1.5 p-2"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-10 h-1.5 bg-indigo-200 rounded-full" />
-                            <div className="w-8 h-1.5 bg-indigo-100 rounded-full" />
-                            <div className="w-10 h-1.5 bg-indigo-200 rounded-full" />
-                            <div className="w-6 h-1.5 bg-indigo-100 rounded-full" />
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-3 -top-1 w-7 h-7 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <Share2 className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'reengage' && (
-                        <div className="relative">
-                          <motion.div
-                            className="w-16 h-18 bg-white rounded-lg shadow-md flex flex-col items-center pt-2 gap-1"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-10 h-2 bg-amber-200 rounded-full" />
-                            <div className="grid grid-cols-3 gap-0.5 mt-1">
-                              {[...Array(6)].map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  className="w-2.5 h-2.5 rounded-sm bg-amber-100"
-                                  animate={i === 4 ? { backgroundColor: ['#fde68a', '#fbbf24', '#fde68a'] } : {}}
-                                  transition={{ duration: 2, repeat: Infinity }}
-                                />
-                              ))}
-                            </div>
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ rotate: [0, -180, -360] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <RefreshCw className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'bloom-pulse' && (
-                        <div className="relative">
-                          <motion.div
-                            className="w-16 h-18 bg-white rounded-lg shadow-md flex items-end justify-center gap-1 p-2 pt-3"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <motion.div
-                              className="w-2.5 bg-violet-200 rounded-full"
-                              animate={{ height: [12, 18, 12] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            />
-                            <motion.div
-                              className="w-2.5 bg-violet-300 rounded-full"
-                              animate={{ height: [18, 10, 18] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                            />
-                            <motion.div
-                              className="w-2.5 bg-violet-400 rounded-full"
-                              animate={{ height: [10, 22, 10] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                            />
-                            <motion.div
-                              className="w-2.5 bg-violet-300 rounded-full"
-                              animate={{ height: [16, 12, 16] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
-                            />
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-2 -top-2 w-7 h-7 bg-gradient-to-br from-violet-400 to-violet-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.15, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                      {action.id === 'book-session' && (
-                        <div className="relative">
-                          <motion.div
-                            className="w-16 h-18 bg-white rounded-lg shadow-md flex flex-col items-center pt-2 gap-1"
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <div className="w-10 h-2 bg-teal-300 rounded-full" />
-                            <div className="grid grid-cols-4 gap-0.5 mt-1">
-                              {[...Array(8)].map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  className={`w-2 h-2 rounded-sm ${i === 5 ? 'bg-teal-400' : 'bg-teal-100'}`}
-                                  animate={i === 5 ? { scale: [1, 1.3, 1] } : {}}
-                                  transition={{ duration: 2, repeat: Infinity }}
-                                />
-                              ))}
-                            </div>
-                          </motion.div>
-                          <motion.div
-                            className="absolute -right-2 -bottom-2 w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center shadow-lg"
-                            animate={{ scale: [1, 1.1, 1] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                          >
-                            <Plus className="w-3.5 h-3.5 text-white" />
-                          </motion.div>
-                        </div>
-                      )}
-
-                    </div>
-                    <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900 text-center">{action.title}</p>
-                  </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-2 gap-8">
-            {/* Latest Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {locale === 'fr' ? 'Activité récente' : 'Latest activity'}
-                </h2>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {recentActivity.length === 0 ? (
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
-                    <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Aucune activité récente' : 'No recent activity'}
-                    </p>
-                  </div>
-                ) : (
-                  recentActivity.map((activity, index) => {
-                    const ActivityIcon = getActivityIcon(activity.type)
-                    const colorClass = getActivityColor(activity.type)
-                    const content = (
-                      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
-                          <ActivityIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                            {activity.title}
-                          </p>
-                          <p className="text-xs text-gray-500">{activity.description}</p>
-                        </div>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
-                          {formatTimeAgo(activity.timestamp)}
-                        </span>
-                      </div>
-                    )
-                    return (
-                      <motion.div
-                        key={activity.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.25 + index * 0.05 }}
-                      >
-                        {activity.href ? (
-                          <Link href={activity.href}>{content}</Link>
-                        ) : (
-                          content
-                        )}
-                      </motion.div>
-                    )
-                  })
-                )}
-              </div>
-            </motion.div>
-
-            {/* Upcoming Sessions */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {locale === 'fr' ? 'Prochaines séances' : 'Upcoming sessions'}
-                </h2>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {upcomingSessions.length === 0 ? (
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 text-center">
-                    <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Aucune séance à venir' : 'No upcoming sessions'}
-                    </p>
-                  </div>
-                ) : (
-                  upcomingSessions.map((session, index) => {
-                    const sessionDate = new Date(session.start_time)
-                    const isToday = sessionDate.toDateString() === new Date().toDateString()
-                    const isTomorrow = sessionDate.toDateString() === new Date(Date.now() + 86400000).toDateString()
-                    const dayLabel = isToday
-                      ? (locale === 'fr' ? "Aujourd'hui" : 'Today')
-                      : isTomorrow
-                        ? (locale === 'fr' ? 'Demain' : 'Tomorrow')
-                        : sessionDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                    const timeLabel = sessionDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
-
-                    const content = (
-                      <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 flex flex-col items-center justify-center">
-                          <span className="text-[10px] font-semibold text-blue-600 uppercase leading-none">
-                            {sessionDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' })}
-                          </span>
-                          <span className="text-sm font-bold text-blue-700 leading-none mt-0.5">
-                            {sessionDate.getDate()}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                            {session.client_name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {dayLabel} · {timeLabel}
-                          </p>
-                        </div>
-                        {session.status === 'pending' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 whitespace-nowrap">
-                            {locale === 'fr' ? 'En attente' : 'Pending'}
-                          </span>
-                        )}
-                        {session.meet_link && session.status !== 'pending' && (
-                          <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(session.meet_link!, '_blank', 'noopener,noreferrer') }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
-                          >
-                            <Video className="w-3.5 h-3.5" />
-                            {locale === 'fr' ? 'Rejoindre' : 'Join'}
-                          </button>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
-                      </div>
-                    )
-
-                    return (
-                      <motion.div
-                        key={session.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.35 + index * 0.05 }}
-                      >
-                        {session.member_id ? (
-                          <Link href={`/members/${session.member_id}?tab=sessions_notes`}>{content}</Link>
-                        ) : (
-                          content
-                        )}
-                      </motion.div>
-                    )
-                  })
-                )}
-                {upcomingSessions.length > 0 && (
-                  <Link
-                    href="/bookings"
-                    className="flex items-center justify-end gap-2 py-3 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                  >
-                    {locale === 'fr' ? 'Voir toutes les séances' : 'View all sessions'}
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
-            </motion.div>
+        <AppHeader user={user} leftContent={
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-lg font-semibold text-gray-900">{t('Home', 'Accueil', 'Inicio')}</h1>
           </div>
+        } />
 
-          {/* Explore Templates */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-10"
-          >
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              {userResources.length > 0
-                ? (locale === 'fr' ? 'Vos dernières ressources' : 'Your latest resources')
-                : (locale === 'fr' ? 'Modèles à explorer' : 'Explore templates')}
-            </h2>
-
-            <div className="grid grid-cols-3 gap-3">
-              {userResources.length > 0
-                ? userResources.map((resource, index) => {
-                    const TemplateIcon = getTemplateIcon(resource.type as 'worksheet' | 'table' | 'psychoeducation')
-                    const colorClass = getTemplateColor(resource.type as 'worksheet' | 'table' | 'psychoeducation')
-                    return (
-                      <Link key={resource.id} href={`/resources/${resource.id}`}>
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.45 + index * 0.05 }}
-                          className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
-                        >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
-                            <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                              {resource.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {getTemplateTypeLabel(resource.type as TemplateOption['type'])}
-                            </p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
-                        </motion.div>
-                      </Link>
-                    )
-                  })
-                : featuredTemplates.map((template, index) => {
-                    const TemplateIcon = getTemplateIcon(template.type)
-                    const colorClass = getTemplateColor(template.type)
-                    return (
-                      <Link key={template.id} href={template.href}>
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.45 + index * 0.05 }}
-                          className="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer group"
-                        >
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.split(' ')[0]}`}>
-                            <TemplateIcon className={`w-5 h-5 ${colorClass.split(' ')[1]}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-gray-700">
-                              {lt(template.name, locale)}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {getTemplateTypeLabel(template.type)}
-                            </p>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
-                        </motion.div>
-                      </Link>
-                    )
-                  })
-              }
+        <div className="px-8 py-6 max-w-7xl mx-auto w-full">
+          {/* ── Zone 1: Greeting + urgency row + quick-action icons ── */}
+          <section className="mb-8 flex items-start justify-between gap-6">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-gray-400 mb-2 capitalize">{dateLabel}</p>
+              <h2 className="text-3xl font-semibold text-gray-900 leading-snug">{timeOfDayHeadline}</h2>
+              {todaysFlowLine && (
+                <p className="text-base text-gray-600 mt-1 mb-4">{todaysFlowLine}</p>
+              )}
+              <UrgencyRow pending={pendingCount} awaiting={awaitingCount} t={t} loading={loading} />
             </div>
-          </motion.div>
+            {/* Quick actions — icon buttons aligned with the headline
+                level, slightly larger so they feel like a primary
+                action set. Tooltip on hover (title attr) describes each. */}
+            <div className="flex items-center gap-2 shrink-0 mt-10">
+              <QuickIcon
+                icon={Calendar}
+                color="amber"
+                label={t('Add patient', 'Nouveau patient', 'Nuevo paciente')}
+                onClick={openAddMember}
+              />
+              <QuickIcon
+                icon={UserPlus}
+                color="teal"
+                label={t('Book session', 'Planifier', 'Reservar')}
+                onClick={() => setShowSchedule(true)}
+              />
+              <QuickIcon
+                icon={Share2}
+                color="indigo"
+                label={t('Share resource', 'Partager', 'Compartir')}
+                onClick={() => {
+                  setMemberSearchQuery('')
+                  setMemberPickerAction('share')
+                  setShowMemberPicker(true)
+                }}
+              />
+            </div>
+          </section>
+
+          {/* ── Zone 2: Up next + mini week calendar ── */}
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8 items-start">
+            <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-6">
+              <header className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
+                <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
+                  {t('View all', 'Voir tout', 'Ver todo')}
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </header>
+              {loading ? (
+                <div className="space-y-3">
+                  {[0, 1, 2].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-lg" />)}
+                </div>
+              ) : upNext.length === 0 ? (
+                <EmptyUpNext t={t} />
+              ) : (
+                <ul className="space-y-2">
+                  {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
+                </ul>
+              )}
+            </div>
+
+            <div className="lg:col-span-2 flex flex-col gap-6">
+            <button
+              type="button"
+              onClick={() => setShowCalendar(true)}
+              className="bg-white rounded-2xl border border-gray-200 p-6 text-left hover:border-gray-300 hover:shadow-sm transition group"
+            >
+              {/* Header: title + week total. Total reads at a glance so
+                  the practitioner doesn't have to count days. */}
+              {(() => {
+                const totalThisWeek = weekDays.reduce((acc, d) => acc + countForDay(d), 0)
+                return (
+                  <header className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <h3 className="text-base font-semibold text-gray-900">{t('This week', 'Cette semaine', 'Esta semana')}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {totalThisWeek > 0 && (
+                        <span className="text-xs text-gray-500 tabular-nums">
+                          {totalThisWeek === 1
+                            ? t('1 session', '1 séance', '1 sesión')
+                            : t(`${totalThisWeek} sessions`, `${totalThisWeek} séances`, `${totalThisWeek} sesiones`)}
+                        </span>
+                      )}
+                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
+                    </div>
+                  </header>
+                )
+              })()}
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map(day => {
+                  const count = countForDay(day)
+                  const isCurrentDay = isSameDay(day, now)
+                  return (
+                    <div key={day.toISOString()} className="flex flex-col items-center gap-1 py-2">
+                      <span className={`text-[10px] uppercase tracking-wide ${isCurrentDay ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                        {format(day, 'EEE', { locale: locale === 'fr' ? frLocale : undefined }).slice(0, 3)}
+                      </span>
+                      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                        isCurrentDay
+                          ? 'bg-gray-900 text-white'
+                          : count > 0
+                            ? 'text-gray-900'
+                            : 'text-gray-400'
+                      }`}>
+                        {format(day, 'd')}
+                      </span>
+                      {/* Session count below the date — "N session(s)"
+                          for non-empty days, nothing for empty ones. */}
+                      <span className={`text-[10px] tabular-nums leading-none mt-0.5 ${
+                        count === 0
+                          ? 'text-transparent select-none'
+                          : 'text-blue-600 font-medium'
+                      }`}>
+                        {count > 0
+                          ? (count === 1
+                              ? t('1 session', '1 séance', '1 sesión')
+                              : t(`${count} sessions`, `${count} séances`, `${count} sesiones`))
+                          : '0'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-gray-400 mt-3 text-center">
+                {t('Click anywhere to open the full calendar', 'Cliquez pour ouvrir le calendrier complet', 'Clic para abrir el calendario completo')}
+              </p>
+            </button>
+
+            {/* Recently shared resources — quick "what did I just send"
+                surface; complements the calendar by filling the space
+                under it. */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <header className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-base font-semibold text-gray-900">{t('Recent resources', 'Ressources récentes', 'Recursos recientes')}</h3>
+                </div>
+                <Link
+                  href="/resources"
+                  className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1"
+                >
+                  {t('View all', 'Voir tout', 'Ver todo')}
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </header>
+              {loading ? (
+                <div className="space-y-2">
+                  {[0, 1].map(i => <div key={i} className="h-12 bg-gray-50 animate-pulse rounded-lg" />)}
+                </div>
+              ) : recentShares.length === 0 ? (
+                <div className="text-center py-6 text-gray-400">
+                  <p className="text-xs">
+                    {t('No resources shared yet.', 'Aucune ressource partagée pour le moment.', 'Aún no se han compartido recursos.')}
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-1">
+                  {recentShares.slice(0, 3).map(s => {
+                    const sharedAt = parseISO(s.shared_at)
+                    const minsAgo = (Date.now() - sharedAt.getTime()) / 60000
+                    const timeAgo =
+                      minsAgo < 60 ? `${Math.max(1, Math.floor(minsAgo))}m`
+                      : minsAgo < 60 * 24 ? `${Math.floor(minsAgo / 60)}h`
+                      : minsAgo < 60 * 24 * 7 ? `${Math.floor(minsAgo / (60 * 24))}d`
+                      : format(sharedAt, locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+                    return (
+                      <li key={s.id}>
+                        <Link
+                          href={`/resources/${s.resource_id}`}
+                          className="flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 transition group/share"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-900 truncate group-hover/share:text-violet-700">
+                              {s.resource_title}
+                            </p>
+                            <p className="text-[11px] text-gray-500 truncate">
+                              {t(`Shared with ${s.member_first_name}`, `Partagée avec ${s.member_first_name}`, `Compartido con ${s.member_first_name}`)}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-gray-400 tabular-nums shrink-0">{timeAgo}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+            </div>
+          </section>
 
         </div>
       </main>
 
-      {/* Schedule Session Modal */}
+      {/* ── Modals ── */}
+      <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
+
       <ScheduleSessionModal
-        isOpen={showScheduleModal}
-        onClose={() => { setShowScheduleModal(false); setSchedulePreselectedMember(null) }}
-        onSuccess={() => { setShowScheduleModal(false); setSchedulePreselectedMember(null) }}
-        preselectedMember={schedulePreselectedMember}
+        isOpen={showSchedule}
+        onClose={() => setShowSchedule(false)}
+        onSuccess={() => {
+          setShowSchedule(false)
+          // Re-fetch so the new booking shows up in Up next + mini week
+          ;(async () => {
+            const { data: { user: u } } = await supabase.auth.getUser()
+            if (!u) return
+            const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+            const horizonEnd = addDays(weekStart, 21).toISOString()
+            const { data: bk } = await supabase.from('bookings').select('*')
+              .eq('practitioner_id', u.id)
+              .gte('start_time', weekStart.toISOString())
+              .lt('start_time', horizonEnd)
+              .order('start_time', { ascending: true })
+            if (bk) setBookings(bk as DashBooking[])
+          })()
+        }}
       />
 
-      {/* Template Selection Modal */}
-      <AnimatePresence>
-        {selectedType && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setSelectedType(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {locale === 'fr' ? 'Choisir un modèle' : 'Choose a template'}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {getTypeLabel(selectedType)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedType(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-
-              {/* Templates List */}
-              <div className="p-4 space-y-2">
-                {templatesData[selectedType].map((template, index) => (
-                  <motion.button
-                    key={template.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => {
-                      router.push(`/resources/create/${selectedType}?template=${template.id}`)
-                      setSelectedType(null)
-                    }}
-                    className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left group"
-                  >
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                      <FileText className="w-5 h-5 text-gray-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 group-hover:text-gray-700">
-                        {lt(template.name, locale)}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {lt(template.description, locale)}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                  </motion.button>
-                ))}
-
-                {/* Blank Option */}
-                <motion.button
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: templatesData[selectedType].length * 0.05 }}
-                  onClick={() => {
-                    router.push(`/resources/create/${selectedType}?template=blank`)
-                    setSelectedType(null)
-                  }}
-                  className="w-full flex items-center gap-3 p-4 border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl transition-colors text-left group"
-                >
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-gray-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {locale === 'fr'
-                        ? (selectedType === 'worksheet' ? 'Nouvel exercice' : selectedType === 'table' ? 'Nouveau tableau' : 'Nouvelle fiche')
-                        : (selectedType === 'worksheet' ? 'New Worksheet' : selectedType === 'table' ? 'New Table' : 'New Psychoeducation')
-                      }
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {locale === 'fr' ? 'Créez sans modèle' : 'Start from scratch'}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Slot-click flow — same shape as the bookings page. Opens the
+          schedule modal pre-filled with the clicked day + time. */}
+      <ScheduleSessionModal
+        isOpen={!!calendarSlotBooking}
+        onClose={() => setCalendarSlotBooking(null)}
+        onSuccess={() => {
+          setCalendarSlotBooking(null)
+          ;(async () => {
+            const { data: { user: u } } = await supabase.auth.getUser()
+            if (!u) return
+            const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+            const horizonEnd = addDays(weekStart, 21).toISOString()
+            const { data: bk } = await supabase.from('bookings').select('*')
+              .eq('practitioner_id', u.id)
+              .gte('start_time', weekStart.toISOString())
+              .lt('start_time', horizonEnd)
+              .order('start_time', { ascending: true })
+            if (bk) setBookings(bk as DashBooking[])
+          })()
+        }}
+        preselectedDate={calendarSlotBooking?.date}
+        preselectedTime={calendarSlotBooking?.time}
+        preselectedOutsideHours={calendarSlotBooking?.outsideHours}
+      />
 
       {/* Add Member Modal */}
       <AnimatePresence>
@@ -1317,7 +814,6 @@ function DashboardContent() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-xl w-full max-w-md shadow-xl"
             >
-              {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person'}
@@ -1330,10 +826,8 @@ function DashboardContent() {
                 </button>
               </div>
 
-              {/* Form */}
               <form onSubmit={handleAddMember} className="p-5">
                 <div className="space-y-4">
-                  {/* Name Row */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -1364,9 +858,8 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-gray-400" />
                       Email *
                     </label>
@@ -1380,9 +873,8 @@ function DashboardContent() {
                     />
                   </div>
 
-                  {/* Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-gray-400" />
                       {locale === 'fr' ? 'Téléphone' : 'Phone'}
                       <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
@@ -1394,7 +886,6 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* Minor Toggle */}
                 <label className="flex items-center gap-3 cursor-pointer mt-2">
                   <div className="relative">
                     <input
@@ -1411,7 +902,6 @@ function DashboardContent() {
                   </span>
                 </label>
 
-                {/* Send Invitation Card */}
                 <div
                   onClick={() => setSendInvite(!sendInvite)}
                   className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all mt-4 ${
@@ -1439,7 +929,6 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* Group selector */}
                 {memberGroups.length > 0 && (
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -1475,7 +964,6 @@ function DashboardContent() {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                   <Button
                     type="button"
@@ -1509,7 +997,7 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {/* Member Picker Modal */}
+      {/* Member Picker — step 1 of the share-resource flow */}
       <AnimatePresence>
         {showMemberPicker && (
           <motion.div
@@ -1527,7 +1015,6 @@ function DashboardContent() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -1535,9 +1022,6 @@ function DashboardContent() {
                   </h3>
                   <p className="text-sm text-gray-500">
                     {memberPickerAction === 'share' && (locale === 'fr' ? 'Envoyer un support' : 'Share a resource')}
-                    {memberPickerAction === 'reengage' && (locale === 'fr' ? 'Réengager un suivi' : 'Schedule a session')}
-                    {memberPickerAction === 'summary' && (locale === 'fr' ? 'Obtenir un résumé' : 'View summary')}
-                    {memberPickerAction === 'session' && (locale === 'fr' ? 'Créer une séance' : 'Book a session')}
                   </p>
                 </div>
                 <button
@@ -1548,7 +1032,6 @@ function DashboardContent() {
                 </button>
               </div>
 
-              {/* Search */}
               <div className="px-5 pt-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1563,25 +1046,12 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Members List */}
               <div className="p-4 max-h-80 overflow-y-auto space-y-1">
                 {(() => {
                   const query = memberSearchQuery.toLowerCase()
-                  let filtered = members.filter(m =>
+                  const filtered = members.filter(m =>
                     `${m.first_name} ${m.last_name}`.toLowerCase().includes(query)
                   )
-                  // For reengage: sort inactive/no recent sessions first
-                  if (memberPickerAction === 'reengage') {
-                    filtered.sort((a, b) => {
-                      const aInactive = a.status === 'inactive' ? 0 : 1
-                      const bInactive = b.status === 'inactive' ? 0 : 1
-                      if (aInactive !== bInactive) return aInactive - bInactive
-                      // Then by oldest last session
-                      const aDate = a.last_session_at ? new Date(a.last_session_at).getTime() : 0
-                      const bDate = b.last_session_at ? new Date(b.last_session_at).getTime() : 0
-                      return aDate - bDate
-                    })
-                  }
                   if (filtered.length === 0) {
                     return (
                       <div className="text-center py-8">
@@ -1603,7 +1073,7 @@ function DashboardContent() {
                         onClick={async () => {
                           setShowMemberPicker(false)
                           if (memberPickerAction === 'share') {
-                            // Step 2 — open resource picker pre-loaded with this practitioner's library.
+                            // Step 2 — load practitioner's resource library
                             setShareTargetMember({ id: member.id, first_name: member.first_name, last_name: member.last_name })
                             setResourcePickerSearch('')
                             setShowResourcePicker(true)
@@ -1621,11 +1091,6 @@ function DashboardContent() {
                             } finally {
                               setResourcePickerLoading(false)
                             }
-                          } else if (memberPickerAction === 'reengage' || memberPickerAction === 'session') {
-                            setSchedulePreselectedMember(member as unknown as Member)
-                            setShowScheduleModal(true)
-                          } else if (memberPickerAction === 'summary') {
-                            router.push(`/members/${member.id}?tab=overview`)
                           }
                         }}
                         className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors text-left group"
@@ -1658,17 +1123,16 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {/* Resource picker — step 2 of the share flow. Opens after the
-          practitioner picks a member. Selecting a resource inserts a
-          row into member_shared_resources; the existing edge-function
-          webhook handles notifications + email. */}
+      {/* Resource Picker — step 2 of the share-resource flow. Inserts a
+          row into member_shared_resources; existing edge-function webhook
+          handles notification + email. */}
       <AnimatePresence>
         {showResourcePicker && shareTargetMember && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
             onClick={() => setShowResourcePicker(false)}
           >
             <motion.div
@@ -1676,17 +1140,17 @@ function DashboardContent() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden"
             >
-              <div className="px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+              <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-base font-semibold text-gray-900">
                     {locale === 'fr' ? 'Choisir un support' : locale === 'es' ? 'Elige un recurso' : 'Pick a resource'}
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowResourcePicker(false)}
-                    className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
                     aria-label="Close"
                   >
                     <X className="w-4 h-4" />
@@ -1706,7 +1170,7 @@ function DashboardContent() {
                     value={resourcePickerSearch}
                     onChange={(e) => setResourcePickerSearch(e.target.value)}
                     placeholder={locale === 'fr' ? 'Rechercher...' : locale === 'es' ? 'Buscar...' : 'Search...'}
-                    className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                     autoFocus
                   />
                 </div>
@@ -1783,13 +1247,13 @@ function DashboardContent() {
                         }
                       }}
                       disabled={!!resourcePickerSending}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors text-left group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-300" />
+                      <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-indigo-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{res.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{res.title || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</p>
                         {res.description && (
                           <p className="text-xs text-gray-500 truncate">{res.description}</p>
                         )}
@@ -1807,21 +1271,213 @@ function DashboardContent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Full calendar modal */}
+      {showCalendar && (
+        <div
+          className="fixed inset-0 z-[9999] bg-slate-900/90 flex flex-col"
+          onClick={() => setShowCalendar(false)}
+        >
+          <div className="flex items-center justify-between px-6 pt-5 pb-3">
+            <h3 className="text-white text-base font-semibold">{t('Calendar', 'Calendrier', 'Calendario')}</h3>
+            <button
+              type="button"
+              onClick={() => setShowCalendar(false)}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white text-gray-900 text-sm font-medium hover:bg-gray-100 transition shadow"
+            >
+              <X className="w-4 h-4" />
+              {t('Close', 'Fermer', 'Cerrar')}
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-auto px-4 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl p-4 max-w-6xl mx-auto">
+              <WeekCalendarView
+                bookings={bookings as any}
+                onApprove={async () => {}}
+                onReject={async () => {}}
+                processingId={null}
+                onSlotClick={(day, time, options) => {
+                  setShowCalendar(false)
+                  setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors">
-        <div className="text-center">
-          <div className="w-10 h-10 border-3 border-gray-300 dark:border-gray-700 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Loading...</p>
-        </div>
-      </div>
-    }>
-      <DashboardContent />
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>}>
+      <DashboardInner />
     </Suspense>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Pieces
+// ─────────────────────────────────────────────────────────────────
+
+function UrgencyRow({
+  pending, awaiting, t, loading,
+}: {
+  pending: number
+  awaiting: number
+  t: (en: string, fr: string, es: string) => string
+  loading: boolean
+}) {
+  if (loading) return null
+  if (pending + awaiting === 0) return null
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pending > 0 && (
+        <Link href="/bookings?filter=pending" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium hover:bg-amber-100 transition">
+          <AlertCircle className="w-3.5 h-3.5" />
+          {t(`${pending} pending approval${pending > 1 ? 's' : ''}`, `${pending} en attente d'approbation`, `${pending} pendiente${pending > 1 ? 's' : ''}`)}
+        </Link>
+      )}
+      {awaiting > 0 && (
+        <Link href="/bookings#history-section" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium hover:bg-orange-100 transition">
+          <AlertCircle className="w-3.5 h-3.5" />
+          {t(`${awaiting} to close`, `${awaiting} à clôturer`, `${awaiting} por cerrar`)}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function UpNextRow({
+  booking, locale, t, sessionTypeMap, onTakeNotes, isFirst,
+}: {
+  booking: DashBooking
+  locale: string
+  t: (en: string, fr: string, es: string) => string
+  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
+  onTakeNotes: (b: DashBooking) => void
+  isFirst: boolean
+}) {
+  const start = parseISO(booking.start_time)
+  const displayName = booking.client_name || t('Unnamed patient', 'Patient sans nom', 'Paciente sin nombre')
+  const dateLabel = isToday(start)
+    ? t('Today', "Aujourd'hui", 'Hoy')
+    : isTomorrow(start)
+      ? t('Tomorrow', 'Demain', 'Mañana')
+      : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+  // 24-hour clock for fr/es, am/pm for en. Single line.
+  const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
+  // Resolve a friendly session-type label. Prefer the practitioner's
+  // configured list (handles 'custom_…' IDs). Fall back to a localized
+  // default-enum label, finally the raw value.
+  const typeMeta = sessionTypeMap[booking.session_type]
+  const enumDefaults: Record<string, { en: string; fr: string; es: string }> = {
+    initial_consultation: { en: 'Initial consultation', fr: 'Première séance', es: 'Consulta inicial' },
+    follow_up:            { en: 'Follow-up',            fr: 'Suivi',           es: 'Seguimiento' },
+    check_in:             { en: 'Check-in',             fr: 'Bilan',           es: 'Revisión' },
+    crisis:               { en: 'Crisis',               fr: 'Crise',           es: 'Crisis' },
+    group:                { en: 'Group',                fr: 'Groupe',          es: 'Grupo' },
+    other:                { en: 'Other',                fr: 'Autre',           es: 'Otro' },
+  }
+  const enumDefault = enumDefaults[booking.session_type]
+  const sessionLabel =
+    typeMeta
+      ? (locale === 'fr' ? (typeMeta.name_fr || typeMeta.name) : typeMeta.name)
+      : enumDefault
+        ? enumDefault[locale as 'en' | 'fr' | 'es'] || enumDefault.en
+        : booking.session_type
+  return (
+    <li className="flex items-center gap-4 py-2.5 px-3 rounded-lg hover:bg-gray-50 transition">
+      <div className="px-2.5 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-semibold shrink-0 tabular-nums">
+        {format(start, timeFmt)}
+      </div>
+      <div className="flex-1 min-w-0">
+        {booking.member_id ? (
+          <Link href={`/members/${booking.member_id}`} className="text-sm font-medium text-gray-900 hover:text-violet-700 truncate inline-block">
+            {displayName}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium text-gray-900 truncate inline-block">{displayName}</span>
+        )}
+        <p className="text-xs text-gray-500 mt-0.5">
+          <span className="text-gray-700 font-medium">{dateLabel}</span>
+          <span className="text-gray-400"> · </span>
+          {booking.status === 'pending'
+            ? <span className="text-amber-700 font-medium">{t('Pending approval', "En attente d'approbation", 'Pendiente de aprobación')}</span>
+            : <span>{sessionLabel}</span>}
+        </p>
+      </div>
+      {/* Action buttons only show on the very next session — the
+          practitioner doesn't need a Join button for a session three
+          days away. */}
+      {isFirst && (
+        <div className="flex items-center gap-2 shrink-0">
+          {booking.meet_link && (booking.status === 'confirmed' || booking.status === 'pending') && (
+            <a
+              href={booking.meet_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+            >
+              <Video className="w-3.5 h-3.5" />
+              {t('Join now', 'Rejoindre', 'Unirse')}
+            </a>
+          )}
+          {booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending') && (
+            <button
+              type="button"
+              onClick={() => onTakeNotes(booking)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5 text-gray-500" />
+              {t('Take notes', 'Prendre des notes', 'Tomar notas')}
+            </button>
+          )}
+        </div>
+      )}
+    </li>
+  )
+}
+
+function EmptyUpNext({
+  t,
+}: {
+  t: (en: string, fr: string, es: string) => string
+}) {
+  return (
+    <div className="text-center py-10 text-gray-400">
+      <Sparkles className="w-6 h-6 mx-auto mb-2 text-emerald-300" />
+      <p className="text-sm">{t('No sessions yet — your week is open.', 'Aucune séance — votre semaine est libre.', 'Sin sesiones — tu semana está libre.')}</p>
+    </div>
+  )
+}
+
+function QuickIcon({
+  icon: Icon, color, label, onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  color: 'rose' | 'teal' | 'indigo' | 'amber'
+  label: string
+  onClick: () => void
+}) {
+  // Bumped to the 100/200 shades so the colored chip is unambiguously
+  // present at glance (50 read as nearly-white on light backgrounds).
+  const colorClass: Record<typeof color, string> = {
+    rose:   'bg-rose-100 text-rose-700 hover:bg-rose-200',
+    teal:   'bg-teal-100 text-teal-700 hover:bg-teal-200',
+    indigo: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200',
+    amber:  'bg-amber-100 text-amber-700 hover:bg-amber-200',
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-gray-200 ${colorClass[color]}`}
+    >
+      <Icon className="w-6 h-6" />
+    </button>
   )
 }
