@@ -298,6 +298,10 @@ export default function BookingsPage() {
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set())
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const [paymentFilters, setPaymentFilters] = useState<Set<string>>(new Set())
+  // Tracks which bookings (keyed by `${member_id}::${minute}`) have a
+  // saved session_summary progress note. Drives the "Take notes" vs
+  // "View notes" label on History rows.
+  const [bookingsWithNotes, setBookingsWithNotes] = useState<Set<string>>(new Set())
   const resetFilters = () => {
     setDateRange('all')
     setCustomFrom(null)
@@ -772,6 +776,32 @@ export default function BookingsPage() {
       .eq('practitioner_id', userId)
       .order('start_time', { ascending: true })
     if (data) setBookings(data as Booking[])
+
+    // Build the "has saved session note" lookup. Joins sessions →
+    // progress_notes filtered to session_summary so we know which
+    // History rows should show "View notes" vs "Take notes".
+    const { data: noteRows } = await sb
+      .from('sessions')
+      .select('member_id, scheduled_at, progress_notes!inner(id, note_type)')
+      .eq('practitioner_id', userId)
+      .eq('progress_notes.note_type', 'session_summary')
+    if (noteRows) {
+      const set = new Set<string>()
+      for (const s of noteRows as any[]) {
+        const mid = s.member_id
+        const minute = Math.floor(new Date(s.scheduled_at).getTime() / 60000)
+        set.add(`${mid}::${minute}`)
+      }
+      setBookingsWithNotes(set)
+    }
+  }
+
+  // Match a booking against the has-notes set. Same minute-precision
+  // pairing the rest of the page uses for bookings ↔ sessions.
+  const bookingHasNotes = (b: Booking): boolean => {
+    if (!b.member_id) return false
+    const minute = Math.floor(new Date(b.start_time).getTime() / 60000)
+    return bookingsWithNotes.has(`${b.member_id}::${minute}`)
   }
 
   const openClosePopupBooking = (booking: Booking) => {
@@ -1648,6 +1678,42 @@ export default function BookingsPage() {
                                 />
                               </div>
                             )}
+
+                            {/* History rows (completed / cancelled / no_show)
+                                — View notes if a note exists, otherwise Take
+                                notes + small "No notes" hint. Mirrors the
+                                SessionsTab History behaviour. */}
+                            {booking.member_id && (booking.status === 'completed' || booking.status === 'cancelled' || booking.status === 'no_show') && (() => {
+                              const hasNote = bookingHasNotes(booking)
+                              return (
+                                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                  {hasNote ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTakeNotes(booking)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                                    >
+                                      <FileText className="w-3.5 h-3.5 text-gray-500" />
+                                      {locale === 'fr' ? 'Voir les notes' : 'View notes'}
+                                    </button>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleTakeNotes(booking)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                                      >
+                                        <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                                        {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                                      </button>
+                                      <span className="text-xs text-gray-400 italic">
+                                        {locale === 'fr' ? 'Aucune note' : 'No notes'}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              )
+                            })()}
 
                             {/* The "Session N/Y" chip in the meta row above
                                 is already clickable and opens the
