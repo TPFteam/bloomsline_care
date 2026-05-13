@@ -2,17 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Pencil,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Loader2,
-} from 'lucide-react'
-import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns'
+import { Pencil, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { TimeSelect } from '@/components/ui/time-select'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -20,7 +11,6 @@ import type { Session } from '@/types/member'
 
 type SessionType = 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other'
 type SessionFormat = 'in_person' | 'virtual' | 'phone'
-type SessionStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
 interface EditSessionModalProps {
   session: Session | null
@@ -35,27 +25,16 @@ export function EditSessionModal({ session, onClose, onSave }: EditSessionModalP
   const [sessionType, setSessionType] = useState<SessionType>('follow_up')
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [duration, setDuration] = useState(60)
-  const [status, setStatus] = useState<SessionStatus>('scheduled')
-  const [summary, setSummary] = useState('')
-  const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [saving, setSaving] = useState(false)
-  const [showMore, setShowMore] = useState(false)
 
-  // Populate from session when it changes
+  // Populate from session when it changes. Date/time and status are
+  // intentionally NOT editable here — date/time goes through the
+  // Reschedule flow, status goes through the Show / No-show flows.
   useEffect(() => {
     if (session) {
       setSessionType(session.session_type as SessionType)
       setSessionFormat(session.session_format as SessionFormat)
       setDuration(session.duration_minutes)
-      setStatus(session.status as SessionStatus)
-      setSummary(session.summary || '')
-      const d = new Date(session.scheduled_at)
-      setSelectedDate(startOfDay(d))
-      setCalendarMonth(d)
-      setSelectedTime(format(d, 'HH:mm'))
-      setShowMore(false)
     }
   }, [session])
 
@@ -63,24 +42,12 @@ export function EditSessionModal({ session, onClose, onSave }: EditSessionModalP
     if (!session) return
     setSaving(true)
     try {
-      const dt = new Date(selectedDate)
-      if (selectedTime) {
-        const [hours, minutes] = selectedTime.split(':').map(Number)
-        dt.setHours(hours, minutes, 0, 0)
-      } else {
-        const orig = new Date(session.scheduled_at)
-        dt.setHours(orig.getHours(), orig.getMinutes(), 0, 0)
-      }
-
       const { error } = await supabase
         .from('sessions')
         .update({
           session_type: sessionType,
           session_format: sessionFormat,
-          scheduled_at: dt.toISOString(),
           duration_minutes: duration,
-          summary: summary.trim() || null,
-          status,
           updated_at: new Date().toISOString(),
         })
         .eq('id', session.id)
@@ -95,18 +62,6 @@ export function EditSessionModal({ session, onClose, onSave }: EditSessionModalP
     } finally {
       setSaving(false)
     }
-  }
-
-  // Calendar days
-  const monthStart = startOfMonth(calendarMonth)
-  const monthEnd = endOfMonth(calendarMonth)
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
-  const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
-  const days: Date[] = []
-  let day = calStart
-  while (day <= calEnd) {
-    days.push(day)
-    day = addDays(day, 1)
   }
 
   return (
@@ -137,163 +92,72 @@ export function EditSessionModal({ session, onClose, onSave }: EditSessionModalP
               </button>
             </div>
 
-            {/* Body */}
+            {/* Body — only the three fields the practitioner can change
+                here. Date/time is reachable via Reschedule; status is set
+                through the Show / No-show flow. */}
             <div className="p-6 space-y-5 overflow-y-auto flex-1" style={{ scrollbarWidth: 'none' }}>
-              {/* Date & Time — always visible */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {locale === 'fr' ? 'Date et heure' : 'Date & Time'}
-                </label>
+              <p className="text-xs text-gray-500">
+                {locale === 'fr'
+                  ? 'Pour changer la date ou l\'heure, utilisez Reprogrammer dans le menu.'
+                  : 'To change the date or time, use Reschedule from the menu.'}
+              </p>
 
-                {/* Mini Calendar */}
-                <div className="border border-gray-200 rounded-xl p-3 mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <button onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))} className="p-1 rounded-lg hover:bg-gray-100">
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-sm font-medium">{format(calendarMonth, 'MMMM yyyy')}</span>
-                    <button onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))} className="p-1 rounded-lg hover:bg-gray-100">
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 mb-1">
-                    {(locale === 'fr' ? ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']).map((d) => (
-                      <div key={d} className="text-center text-xs text-gray-400 py-1">{d}</div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1">
-                    {days.map((d) => {
-                      const isCurrentMonth = isSameMonth(d, calendarMonth)
-                      const isSelected = isSameDay(d, selectedDate)
-                      return (
-                        <button
-                          key={d.toISOString()}
-                          disabled={!isCurrentMonth}
-                          onClick={() => {
-                            setSelectedDate(startOfDay(d))
-                            setSelectedTime(null)
-                          }}
-                          className={`text-xs py-1.5 rounded-lg transition-all ${
-                            !isCurrentMonth ? 'text-gray-200' :
-                            isSelected ? 'bg-gray-900 text-white font-medium' :
-                            'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {format(d, 'd')}
-                        </button>
-                      )
-                    })}
-                  </div>
+              {/* Type & Format */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t.members.sessions.sessionType}
+                  </label>
+                  <select
+                    value={sessionType}
+                    onChange={(e) => setSessionType(e.target.value as SessionType)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                  >
+                    <option value="initial_consultation">{t.members.sessionTypes.initial_consultation}</option>
+                    <option value="follow_up">{t.members.sessionTypes.follow_up}</option>
+                    <option value="check_in">{t.members.sessionTypes.check_in}</option>
+                    <option value="crisis">{t.members.sessionTypes.crisis}</option>
+                    <option value="group">{t.members.sessionTypes.group}</option>
+                    <option value="other">{t.members.sessionTypes.other}</option>
+                  </select>
                 </div>
-
-                <p className="text-sm text-gray-500 mb-2">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
-
-                <TimeSelect
-                  value={selectedTime || '09:00'}
-                  onChange={(v) => setSelectedTime(v)}
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t.members.sessions.sessionFormat}
+                  </label>
+                  <select
+                    value={sessionFormat}
+                    onChange={(e) => setSessionFormat(e.target.value as SessionFormat)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
+                  >
+                    <option value="in_person">{t.members.sessionFormats.in_person}</option>
+                    <option value="virtual">{t.members.sessionFormats.virtual}</option>
+                    <option value="phone">{t.members.sessionFormats.phone}</option>
+                  </select>
+                </div>
               </div>
 
-              {/* More options toggle */}
-              <button
-                type="button"
-                onClick={() => setShowMore(!showMore)}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ChevronDown className={`w-4 h-4 transition-transform ${showMore ? 'rotate-180' : ''}`} />
-                {showMore
-                  ? (locale === 'fr' ? 'Moins d\'options' : 'Fewer options')
-                  : (locale === 'fr' ? 'Plus d\'options' : 'More options')}
-              </button>
-
-              {/* Collapsible: Status, Type, Format, Duration */}
-              <AnimatePresence initial={false}>
-                {showMore && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden space-y-5"
-                  >
-                    {/* Status */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {locale === 'fr' ? 'Statut' : 'Status'}
-                      </label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as SessionStatus)}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                      >
-                        <option value="scheduled">{t.members.sessionStatus.scheduled}</option>
-                        <option value="completed">{t.members.sessionStatus.completed}</option>
-                        <option value="cancelled">{t.members.sessionStatus.cancelled}</option>
-                        <option value="no_show">{t.members.sessionStatus.no_show}</option>
-                      </select>
-                    </div>
-
-                    {/* Type & Format */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t.members.sessions.sessionType}
-                        </label>
-                        <select
-                          value={sessionType}
-                          onChange={(e) => setSessionType(e.target.value as SessionType)}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                        >
-                          <option value="initial_consultation">{t.members.sessionTypes.initial_consultation}</option>
-                          <option value="follow_up">{t.members.sessionTypes.follow_up}</option>
-                          <option value="check_in">{t.members.sessionTypes.check_in}</option>
-                          <option value="crisis">{t.members.sessionTypes.crisis}</option>
-                          <option value="group">{t.members.sessionTypes.group}</option>
-                          <option value="other">{t.members.sessionTypes.other}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t.members.sessions.sessionFormat}
-                        </label>
-                        <select
-                          value={sessionFormat}
-                          onChange={(e) => setSessionFormat(e.target.value as SessionFormat)}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
-                        >
-                          <option value="in_person">{t.members.sessionFormats.in_person}</option>
-                          <option value="virtual">{t.members.sessionFormats.virtual}</option>
-                          <option value="phone">{t.members.sessionFormats.phone}</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Duration */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t.members.sessions.duration}
-                      </label>
-                      <div className="flex gap-2">
-                        {[30, 45, 50, 60, 90].map((d) => (
-                          <button
-                            key={d}
-                            onClick={() => setDuration(d)}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                              duration === d
-                                ? 'bg-gray-900 text-white'
-                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
-                            }`}
-                          >
-                            {d} min
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Duration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t.members.sessions.duration}
+                </label>
+                <div className="flex gap-2">
+                  {[30, 45, 50, 60, 90].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDuration(d)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        duration === d
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      {d} min
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Footer */}

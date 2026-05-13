@@ -26,11 +26,15 @@ import {
   Loader2,
   MoreHorizontal,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Ban,
   StickyNote,
+  PenLine,
+  Building2,
 } from 'lucide-react'
-import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter } from 'date-fns'
+import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter, isToday, isTomorrow, isPast, parseISO } from 'date-fns'
+import { fr as frLocale } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { TimeSelect } from '@/components/ui/time-select'
 import { useLanguage } from '@/lib/i18n/context'
@@ -43,6 +47,8 @@ import { EditSessionModal } from '@/components/EditSessionModal'
 import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { PaymentBadge } from '@/components/ui/payment-badge'
+import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
+import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
 import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
 
@@ -56,12 +62,85 @@ interface SessionsTabProps {
   onBookModalOpened?: () => void
 }
 
+// ── Session row menu ────────────────────────────────────────────────
+// Compact 3-dot dropdown that hosts secondary row actions
+// (reschedule, cancel, delete, etc). Keeps the session row visually
+// uncluttered while preserving access to every existing action.
+interface RowMenuItem {
+  label: string
+  icon?: React.ComponentType<{ className?: string }>
+  onClick: () => void
+  // Visual tone — keeps Show/No-show/Delete distinguishable instead of
+  // all looking like the same destructive action.
+  tone?: 'default' | 'success' | 'warning' | 'danger'
+  danger?: boolean // legacy alias for tone:'danger'
+}
+function RowMenu({ items }: { items: RowMenuItem[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [open])
+  if (items.length === 0) return null
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        aria-label="More actions"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[180px] py-1">
+          {items.map((item, i) => {
+            const Icon = item.icon
+            const tone = item.tone ?? (item.danger ? 'danger' : 'default')
+            const toneClass =
+              tone === 'success' ? 'text-emerald-600 hover:bg-emerald-50' :
+              tone === 'warning' ? 'text-amber-600 hover:bg-amber-50' :
+              tone === 'danger'  ? 'text-red-600 hover:bg-red-50' :
+              'text-gray-700 hover:bg-gray-50'
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { item.onClick(); setOpen(false) }}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${toneClass}`}
+              >
+                {Icon && <Icon className="w-3.5 h-3.5" />}
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SessionsTab({ memberId, member, sessions, onSessionsUpdate, highlightSessionId, openBookModal, onBookModalOpened }: SessionsTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
 
-  // Pending bookings for this member
+  // Pending bookings for this member (used for the "Pending approval"
+  // section + for matching each session to its parent booking so we can
+  // show Join button, origin chip, etc).
   const [pendingBookings, setPendingBookings] = useState<any[]>([])
+  // All bookings for this member — needed because History sessions also
+  // need their parent booking looked up for the Google/Manual chip.
+  const [allBookings, setAllBookings] = useState<any[]>([])
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -69,19 +148,24 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         .from('bookings')
         .select('*')
         .eq('member_id', memberId)
-        .in('status', ['pending', 'confirmed'])
-        .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
-      setPendingBookings(data || [])
+      const rows = data || []
+      setAllBookings(rows)
+      const now = new Date().toISOString()
+      setPendingBookings(rows.filter(b => ['pending', 'confirmed'].includes(b.status) && b.start_time >= now))
     }
     fetchBookings()
   }, [memberId])
 
+  // Match a session to its parent booking by timestamp (within 1 min).
+  const getBookingForSession = (scheduledAt: string) => {
+    const sessionTime = Math.floor(new Date(scheduledAt).getTime() / 60000)
+    return allBookings.find(b => Math.floor(new Date(b.start_time).getTime() / 60000) === sessionTime) || null
+  }
+
   // Build meet_link lookup: match booking start_time to session scheduled_at (within 1 min)
   const getMeetLinkForSession = (scheduledAt: string): string | null => {
-    const sessionTime = Math.floor(new Date(scheduledAt).getTime() / 60000)
-    const booking = pendingBookings.find(b => b.meet_link && Math.floor(new Date(b.start_time).getTime() / 60000) === sessionTime)
-    return booking?.meet_link || null
+    return getBookingForSession(scheduledAt)?.meet_link || null
   }
 
   const handleBookingAction = async (bookingId: string, action: 'confirmed' | 'cancelled') => {
@@ -121,6 +205,122 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [showAddSession, setShowAddSession] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true' || openBookModal === true)
   const [rescheduleSession, setRescheduleSession] = useState<any | null>(null)
+
+  // ── Close session popup state ──────────────────────────────────────
+  // Single popup that starts by asking Show vs No-show, then expands
+  // into the relevant branch. Branch-specific state is preserved across
+  // outcome toggles so a half-filled No-show isn't lost if you flip to
+  // Show by accident.
+  const [closePopupSession, setClosePopupSession] = useState<Session | null>(null)
+  const [closePopupOutcome, setClosePopupOutcome] = useState<'show' | 'no_show' | null>(null)
+  // Show-branch state. Every required field starts null/empty so the
+  // practitioner must explicitly answer each section — no silent
+  // defaults that they might miss.
+  const [showPopupPayment, setShowPopupPayment] = useState<PaymentStatus | null>(null)
+  const [showPopupNoteAction, setShowPopupNoteAction] = useState<'take' | 'skip' | 'has' | null>(null)
+  const [showPopupNoteDraft, setShowPopupNoteDraft] = useState('')
+  // After a Show close is confirmed, ask "Schedule next session?" in
+  // a separate small popup so the main Close popup stays focused on
+  // the just-finished session.
+  const [scheduleNextPromptOpen, setScheduleNextPromptOpen] = useState(false)
+  // No-show branch state
+  const [noShowPopupPayment, setNoShowPopupPayment] = useState<PaymentStatus | null>(null)
+  const [noShowPopupReason, setNoShowPopupReason] = useState<string>('')
+  const [noShowPopupComments, setNoShowPopupComments] = useState('')
+  // Shared saving flag
+  const [closePopupSaving, setClosePopupSaving] = useState(false)
+
+  const openClosePopup = (session: Session) => {
+    setClosePopupSession(session)
+    setClosePopupOutcome(null)
+    // Reset every required field. The only auto-fill is the "Note
+    // already added" detection — that satisfies the requirement
+    // without forcing a click since the system already has the answer.
+    setShowPopupPayment(null)
+    const hasExistingNote = !!sessionSummaryNotes[session.id]?.content
+    setShowPopupNoteAction(hasExistingNote ? 'has' : null)
+    setShowPopupNoteDraft('')
+    setNoShowPopupPayment(null)
+    setNoShowPopupReason('')
+    setNoShowPopupComments('')
+  }
+
+  const closeClosePopup = () => {
+    setClosePopupSession(null)
+    setClosePopupOutcome(null)
+    setShowPopupNoteDraft('')
+    setNoShowPopupComments('')
+  }
+
+  const confirmClosePopup = async () => {
+    if (!closePopupSession || !closePopupOutcome) return
+    const session = closePopupSession
+    setClosePopupSaving(true)
+    try {
+      if (closePopupOutcome === 'show') {
+        // Required fields: payment + note choice. Guard explicitly so a
+        // stray confirm with null state never silently writes.
+        if (showPopupPayment === null || showPopupNoteAction === null) return
+        if (showPopupPayment !== session.payment_status) {
+          await supabase.from('sessions').update({ payment_status: showPopupPayment }).eq('id', session.id)
+        }
+        // Save new note if the practitioner wrote one inside the popup
+        if (showPopupNoteAction === 'take' && showPopupNoteDraft.replace(/<[^>]*>/g, '').trim()) {
+          await handleSaveSessionSummary(session.id, showPopupNoteDraft)
+        }
+        await handleUpdateStatus(session.id, 'completed')
+        closeClosePopup()
+        // Hand off to the small follow-up prompt — ask after the
+        // session is closed, not while filling the form.
+        setScheduleNextPromptOpen(true)
+      } else {
+        // Required fields: payment + reason. Comments optional.
+        if (noShowPopupPayment === null || !noShowPopupReason) return
+        if (noShowPopupPayment !== session.payment_status) {
+          await supabase.from('sessions').update({ payment_status: noShowPopupPayment }).eq('id', session.id)
+        }
+        // Always store as cancelled — no_communication is just one
+        // reason among many, per founder's decision.
+        await handleUpdateStatus(session.id, 'cancelled', noShowPopupReason, noShowPopupComments)
+        closeClosePopup()
+      }
+    } finally {
+      setClosePopupSaving(false)
+    }
+  }
+
+  // Shared reschedule launcher — used by the menu item on every row and
+  // by the bookings page equivalent.
+  const openRescheduleForSession = (session: Session) => {
+    const matchingBooking = allBookings.find(b =>
+      Math.floor(new Date(b.start_time).getTime() / 60000) === Math.floor(new Date(session.scheduled_at).getTime() / 60000)
+    )
+    const fullName = `${member.first_name} ${member.last_name}`
+    const sessionEnd = new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString()
+    setRescheduleSession(matchingBooking ? {
+      id: matchingBooking.id,
+      practitioner_id: session.practitioner_id,
+      member_id: session.member_id,
+      client_name: fullName,
+      client_email: member.email || '',
+      session_type: session.session_type,
+      session_format: session.session_format,
+      start_time: session.scheduled_at,
+      end_time: sessionEnd,
+      series_id: session.series_id,
+    } : {
+      id: session.id,
+      practitioner_id: session.practitioner_id,
+      member_id: session.member_id,
+      client_name: fullName,
+      client_email: member.email || '',
+      session_type: session.session_type,
+      session_format: session.session_format,
+      start_time: session.scheduled_at,
+      end_time: sessionEnd,
+      series_id: session.series_id,
+    })
+  }
 
   // Open modal when triggered from parent (e.g. header Book Session button)
   useEffect(() => {
@@ -186,19 +386,59 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // Delete state
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
-  const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'complete' | 'cancel' | 'no_show' | 'delete' } | null>(null)
+  // Only Delete still flows through this generic confirm dialog —
+  // complete, cancel, and no_show all go through the Close session
+  // popup now.
+  const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'delete' } | null>(null)
   // Modal that asks the practitioner what to do with notes attached to a
   // session they're about to delete. We branch the delete flow through
   // here only when the count > 0; otherwise the session is deleted directly.
   const [notesPrompt, setNotesPrompt] = useState<{ sessionId: string; count: number } | null>(null)
-  // For series cancel: 'this' (just this occurrence) or 'following' (this + all later siblings)
-  const [cancelScope, setCancelScope] = useState<'this' | 'following'>('this')
   // Series detail drawer: when set, shows all occurrences for this series_id
   const [viewingSeriesId, setViewingSeriesId] = useState<string | null>(null)
-  const [confirmReason, setConfirmReason] = useState('')
-  const [confirmNotes, setConfirmNotes] = useState('')
 
   // Reschedule proposal state
+  // Per-series toggle for the "show next dates" list inside a collapsed
+  // recurring card. Keyed by series_id.
+  const [expandedSeriesNext, setExpandedSeriesNext] = useState<Set<string>>(new Set())
+
+  // ── Filter state (date / status / type / payment) ────────────────
+  const [dateRange, setDateRange] = useState<DateRangePreset>('all')
+  const [customFrom, setCustomFrom] = useState<string | null>(null)
+  const [customTo, setCustomTo] = useState<string | null>(null)
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set())
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
+  const [paymentFilters, setPaymentFilters] = useState<Set<string>>(new Set())
+  const resetFilters = () => {
+    setDateRange('all')
+    setCustomFrom(null)
+    setCustomTo(null)
+    setStatusFilters(new Set())
+    setTypeFilters(new Set())
+    setPaymentFilters(new Set())
+  }
+
+  // Practitioner's configured session types (from booking_settings) —
+  // drives the Type filter. Falls back to derived-from-data if none
+  // are configured, so the filter is always useful.
+  const [configuredSessionTypes, setConfiguredSessionTypes] = useState<{ id: string; name: string; name_fr?: string }[]>([])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: settings } = await supabase
+        .from('booking_settings')
+        .select('session_types')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (cancelled) return
+      if (Array.isArray(settings?.session_types)) {
+        setConfiguredSessionTypes(settings!.session_types as any)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [supabase])
   const [proposingSession, setProposingSession] = useState<Session | null>(null)
   const [proposedDate, setProposedDate] = useState('')
   const [proposedTime, setProposedTime] = useState('')
@@ -546,14 +786,55 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       updated_at: b.created_at,
     } as Session))
 
-  const upcomingSessions = [
+  // Map a Session to its StatusKey for filtering (mirrors the dot
+  // colour logic — 'scheduled' splits into future vs awaiting outcome).
+  const sessionStatusKey = (s: Session): StatusKey => {
+    if (s.status === 'scheduled') {
+      return new Date(s.scheduled_at) < new Date() ? 'awaiting' : 'scheduled'
+    }
+    if (s.status === 'completed') return 'completed'
+    if (s.status === 'cancelled') return 'cancelled'
+    if (s.status === 'no_show') return 'no_show'
+    return 'scheduled'
+  }
+
+  // Apply the active filter set to a Session row. Returns true if it
+  // should be visible after filtering.
+  const passesFilters = (s: Session): boolean => {
+    if (!inDateRange(new Date(s.scheduled_at), dateRange, customFrom, customTo)) return false
+    if (statusFilters.size > 0 && !statusFilters.has(sessionStatusKey(s))) return false
+    if (typeFilters.size > 0 && !typeFilters.has(s.session_type as string)) return false
+    if (paymentFilters.size > 0 && !paymentFilters.has(s.payment_status || 'unpaid')) return false
+    return true
+  }
+
+  const upcomingSessionsRaw = [
     ...sessions.filter(s => s.status === 'scheduled' && new Date(s.scheduled_at) >= new Date()),
     ...bookingsAsSessions,
-  ].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+  ]
+    .filter(passesFilters)
+    .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
-  const pastSessions = sessions.filter(s =>
-    s.status !== 'scheduled' || new Date(s.scheduled_at) < new Date()
-  )
+  // Collapse recurring-series occurrences into a single card. A 12-session
+  // series shouldn't produce 12 cards in Up next — show the next one as
+  // the row and fold the remaining future dates into a compact list
+  // inside the same card.
+  const upcomingSessions: (Session & { _seriesNext?: Session[] })[] = (() => {
+    const seen = new Set<string>()
+    const out: (Session & { _seriesNext?: Session[] })[] = []
+    for (const s of upcomingSessionsRaw) {
+      if (!s.series_id) { out.push(s); continue }
+      if (seen.has(s.series_id)) continue
+      seen.add(s.series_id)
+      const seriesNext = upcomingSessionsRaw.filter(x => x.series_id === s.series_id && x.id !== s.id)
+      out.push({ ...s, _seriesNext: seriesNext })
+    }
+    return out
+  })()
+
+  const pastSessions = sessions
+    .filter(s => s.status !== 'scheduled' || new Date(s.scheduled_at) < new Date())
+    .filter(passesFilters)
 
   const handleAddSession = async () => {
     if (!scheduledAt) {
@@ -750,6 +1031,13 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   }
 
   const handleDeleteSession = async (sessionId: string) => {
+    // Synthetic rows for pending bookings have IDs prefixed with
+    // "booking-". They don't exist in the sessions table — delete the
+    // underlying booking row instead.
+    if (sessionId.startsWith('booking-')) {
+      await deleteBookingRow(sessionId.slice('booking-'.length))
+      return
+    }
     // Before deleting, find out if any notes are linked to this session
     // so we can ask the practitioner whether to keep them (detach) or
     // delete them too. If none, fall straight through to the deletion.
@@ -767,6 +1055,33 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       console.warn('Could not count notes for session, deleting without prompt:', err)
     }
     await deleteSessionAndNotes(sessionId, 'no_notes')
+  }
+
+  // Hard-delete a booking row (used when the "delete" came from a
+  // bookings-as-session synthetic row in this tab).
+  const deleteBookingRow = async (bookingId: string) => {
+    try {
+      const { error, count } = await supabase
+        .from('bookings')
+        .delete({ count: 'exact' })
+        .eq('id', bookingId)
+      if (error) throw error
+      if ((count ?? 0) === 0) {
+        throw new Error('Delete matched 0 rows — likely RLS or wrong practitioner_id')
+      }
+      // Refresh the local pending-bookings cache so the row disappears.
+      setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
+      setAllBookings(prev => prev.filter(b => b.id !== bookingId))
+      toast.success(locale === 'fr' ? 'Réservation supprimée' : 'Booking deleted')
+    } catch (err: any) {
+      console.error('Error deleting booking:', {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      })
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete booking')
+    }
   }
 
   /**
@@ -1123,632 +1438,384 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </motion.div>
       )}
 
-      {/* Upcoming Sessions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl p-6  border border-gray-200 hover-lift"
-      >
-        <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center ">
-            <Calendar className="w-5 h-5 text-blue-600" />
-          </div>
-          {t.members.sessions.upcomingSessions}
-          {upcomingSessions.length > 0 && (
-            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-              {upcomingSessions.length}
-            </span>
-          )}
-        </h3>
+      {/* Upcoming + History — timeline UI (ported from /bookings page) */}
+      {(() => {
+        const now = new Date()
 
-        <div className="space-y-2">
-          {/* Add Session — card-style CTA at the top of the list */}
-          <button
-            type="button"
-            onClick={() => setShowScheduleModal(true)}
-            className="w-full p-4 rounded-xl border border-dashed border-gray-300 hover:border-gray-900 bg-gray-50/40 hover:bg-gray-50 transition-all group flex items-center gap-3 text-left"
-          >
-            <div className="w-9 h-9 rounded-lg bg-white border border-gray-200 group-hover:border-gray-900 flex items-center justify-center transition-colors">
-              <Plus className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
-            </div>
-            <span className="text-sm font-medium text-gray-500 group-hover:text-gray-900 transition-colors">
-              {t.members.sessions.addSession}
-            </span>
-          </button>
+        // ── Relative-date label for a session row ──
+        const dateHeadline = (d: Date) => {
+          if (isToday(d)) return locale === 'fr' ? "Aujourd'hui" : 'Today'
+          if (isTomorrow(d)) return locale === 'fr' ? 'Demain' : 'Tomorrow'
+          return format(d, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+        }
 
-          {upcomingSessions.length === 0 && (
-            <p className="text-sm text-gray-400 italic text-center py-2">
-              {t.members.sessions.noUpcoming}
-            </p>
-          )}
-          {upcomingSessions.length > 0 && upcomingSessions.map((session, index) => {
-              const FormatIcon = formatIcon[session.session_format]
-              const hasRescheduleRequest = session.reschedule_requested && session.reschedule_status === 'pending'
-              const hasPendingProposal = session.reschedule_status === 'proposed'
-              return (
-                <motion.div
-                  key={session.id}
-                  id={`session-${session.id}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    boxShadow: highlightSessionId === session.id
-                      ? ['0 0 0 0 rgba(59, 130, 246, 0)', '0 0 20px 8px rgba(59, 130, 246, 0.4)', '0 0 0 0 rgba(59, 130, 246, 0)']
-                      : '0 0 0 0 rgba(0, 0, 0, 0)'
-                  }}
-                  transition={{
-                    delay: 0.05 * index,
-                    boxShadow: highlightSessionId === session.id ? { duration: 1.5, repeat: 2 } : {}
-                  }}
-                  className={`p-4 rounded-xl bg-gradient-to-r ${
-                    hasRescheduleRequest
-                      ? 'from-amber-50/80 to-amber-100/50 border-amber-300/60'
-                      : hasPendingProposal
-                      ? 'from-purple-50/80 to-purple-100/50 border-purple-300/60'
-                      : 'from-blue-50/80 to-blue-100/50 border-blue-200/50'
-                  } border hover:shadow-lg transition-all group ${
-                    highlightSessionId === session.id ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-                  }`}
-                >
-                  {/* Reschedule Request Banner */}
-                  {hasRescheduleRequest && (
-                    <div className="mb-4 p-3 rounded-xl bg-amber-100/80 border border-amber-200">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-amber-800 text-sm">Reschedule Requested</p>
-                          {session.reschedule_reason && (
-                            <p className="text-sm text-amber-700 mt-1">
-                              <span className="font-medium">Reason:</span> {session.reschedule_reason}
-                            </p>
-                          )}
-                          {session.member_suggested_date && (
-                            <p className="text-sm text-amber-700 mt-1 flex items-center gap-1">
-                              <CalendarCheck className="w-4 h-4" />
-                              <span className="font-medium">Suggested:</span>{' '}
-                              {new Date(session.member_suggested_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-3">
-                            {session.member_suggested_date && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleAcceptReschedule(session)}
-                                className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs h-8"
-                              >
-                                <Check className="w-3.5 h-3.5 mr-1" />
-                                Accept Suggested Date
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenProposal(session)}
-                              className="border-amber-400 text-amber-700 hover:bg-amber-50 rounded-lg text-xs h-8"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                              Propose New Date
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDeclineReschedule(session.id)}
-                              className="text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-xs h-8"
-                            >
-                              <X className="w-3.5 h-3.5 mr-1" />
-                              Decline
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+        // ── Session type label (handles custom types + i18n) ──
+        const getSessionTypeLabel = (type: SessionType, custom?: string | null) => {
+          if (custom) return custom
+          const labels = t.members.sessionTypes as Record<string, string>
+          return labels[type] || type
+        }
+
+        // ── Reusable timeline row renderer ──
+        const renderRow = (session: Session, _index: number, isLast: boolean) => {
+          const startTime = parseISO(session.scheduled_at)
+          const durMin = session.duration_minutes
+          const isAwaitingOutcome = session.status === 'scheduled' && isPast(startTime)
+          const isFutureScheduled = session.status === 'scheduled' && !isPast(startTime)
+          const hasRescheduleRequest = session.reschedule_requested && session.reschedule_status === 'pending'
+          const hasPendingProposal = session.reschedule_status === 'proposed'
+          // Each status maps to a distinct hue — green is reserved for
+          // 'completed' so a future-scheduled session no longer reads as
+          // "done". Status maps to the StatusDot icon+color via the
+          // shared SessionDotLegend map.
+          const statusKey: StatusKey =
+            session.status === 'scheduled' ? (isAwaitingOutcome ? 'awaiting' : 'scheduled') :
+            session.status === 'completed' ? 'completed' :
+            session.status === 'cancelled' ? 'cancelled' :
+            session.status === 'no_show'   ? 'no_show'   :
+            'scheduled'
+
+          const meetLink = isFutureScheduled ? getMeetLinkForSession(session.scheduled_at) : null
+          // Origin chip: matched booking → Google if synced, else Manual.
+          // No matched booking (e.g. session scheduled directly via Add
+          // Session) is treated as Manual.
+          const matchedBooking = getBookingForSession(session.scheduled_at)
+          const isGoogleSynced = !!matchedBooking?.google_event_id
+          const isNotesOpen = expandedNotes.has(session.id) || editingSummarySession === session.id
+          const recordTable = session.id.startsWith('booking-') ? 'bookings' as const : 'sessions' as const
+          const recordId = session.id.startsWith('booking-') ? session.id.replace('booking-', '') : session.id
+
+          // Menu shape depends on whether the session is still open.
+          // Closed sessions (completed/cancelled/no_show) can only be
+          // edited or deleted — Close + Reschedule don't apply anymore.
+          const isClosed = session.status !== 'scheduled'
+          const menuItems: RowMenuItem[] = [
+            {
+              label: locale === 'fr' ? 'Modifier la séance' : 'Edit session',
+              icon: Pencil,
+              onClick: () => handleStartEdit(session),
+            },
+            ...(isClosed ? [] : [
+              {
+                label: locale === 'fr' ? 'Clôturer la séance' : 'Close session',
+                icon: CheckCircle,
+                onClick: () => openClosePopup(session),
+                tone: 'success' as const,
+              },
+              {
+                label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule',
+                icon: RefreshCw,
+                onClick: () => openRescheduleForSession(session),
+              },
+            ]),
+            {
+              label: locale === 'fr' ? 'Supprimer' : 'Delete',
+              icon: Trash2,
+              onClick: () => setConfirmAction({ sessionId: session.id, action: 'delete' }),
+              danger: true,
+            },
+          ]
+
+          return (
+            <motion.div
+              key={session.id}
+              id={`session-${session.id}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                boxShadow: highlightSessionId === session.id
+                  ? ['0 0 0 0 rgba(59, 130, 246, 0)', '0 0 20px 8px rgba(59, 130, 246, 0.4)', '0 0 0 0 rgba(59, 130, 246, 0)']
+                  : '0 0 0 0 rgba(0, 0, 0, 0)'
+              }}
+              transition={{
+                boxShadow: highlightSessionId === session.id ? { duration: 1.5, repeat: 2 } : {}
+              }}
+              className={`relative flex gap-4 group ${highlightSessionId === session.id ? 'ring-2 ring-blue-400 ring-offset-2 rounded-lg' : ''}`}
+            >
+              {/* Timeline column — dot (with status icon) + vertical line */}
+              <div className="relative w-5 flex-shrink-0">
+                <span className="absolute left-0 top-0.5">
+                  <StatusDot status={statusKey} />
+                </span>
+                {!isLast && <span className="absolute left-1/2 -translate-x-1/2 top-7 bottom-[-1.25rem] w-px bg-gray-200" />}
+              </div>
+
+              {/* Row content */}
+              <div className="flex-1 min-w-0 pb-8">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    {/* Headline: session title */}
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {getSessionTypeLabel(session.session_type, session.custom_session_type)}
+                    </p>
+
+                    {/* Sub-line: relative date + time */}
+                    <p className="text-sm text-gray-500 mt-1">
+                      <span className="text-gray-700 font-medium">{dateHeadline(startTime)}</span>
+                      <span className="text-gray-400"> · </span>
+                      <span className="font-medium">{format(startTime, 'h:mm a')}</span>
+                    </p>
+
+                    {/* Meta row: format · duration · series chip · attendee · reschedule banner · awaiting flag */}
+                    <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-xs">
+                      <span className="inline-flex items-center gap-1 text-gray-500">
+                        {session.session_format === 'in_person'
+                          ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
+                          : session.session_format === 'phone'
+                          ? <><Phone className="w-3 h-3" /> {locale === 'fr' ? 'Téléphone' : 'Phone'}</>
+                          : <><Video className="w-3 h-3" /> {locale === 'fr' ? 'Vidéo' : 'Virtual'}</>}
+                      </span>
+                      <span className="text-gray-500 tabular-nums">{durMin} {t.members.sessions.minutes}</span>
+                      {/* Origin chip — Google Calendar / Manual */}
+                      {isGoogleSynced ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[10px]"
+                          title={locale === 'fr' ? 'Synchronisé avec Google Agenda' : 'Synced with Google Calendar'}
+                        >
+                          <Calendar className="w-2.5 h-2.5" />
+                          {locale === 'fr' ? 'Google Agenda' : 'Google Calendar'}
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium text-[10px]"
+                          title={locale === 'fr' ? 'Séance manuelle — non synchronisée avec Google Agenda' : 'Manual session — not synced with Google Calendar'}
+                        >
+                          {locale === 'fr' ? 'Manuelle' : 'Manual'}
+                        </span>
+                      )}
+                      {session.member_confirmed && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium text-[10px]">
+                          <Check className="w-2.5 h-2.5" />
+                          {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
+                        </span>
+                      )}
+                      {session.series_id && session.series_position && session.series_total && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingSeriesId(session.series_id!)}
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 hover:bg-violet-100 text-violet-700 font-medium text-[10px] transition-colors"
+                          title={locale === 'fr' ? 'Voir la série' : 'View series'}
+                        >
+                          <RefreshCw className="w-2.5 h-2.5" />
+                          {locale === 'fr'
+                            ? `Séance ${session.series_position}/${session.series_total}`
+                            : `Session ${session.series_position}/${session.series_total}`}
+                        </button>
+                      )}
+                      {session.attendee_status === 'declined' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 font-medium text-[10px]" title={locale === 'fr' ? 'Le patient a refusé l\'invitation' : 'Patient declined the invite'}>
+                          <X className="w-2.5 h-2.5" />
+                          {locale === 'fr' ? 'Refusé' : 'Declined'}
+                        </span>
+                      )}
+                      {session.attendee_status === 'tentative' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium text-[10px]" title={locale === 'fr' ? 'Réponse provisoire du patient' : 'Patient marked as tentative'}>
+                          {locale === 'fr' ? 'Provisoire' : 'Tentative'}
+                        </span>
+                      )}
+                      {hasRescheduleRequest && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium text-[10px]" title={session.reschedule_reason || undefined}>
+                          <AlertCircle className="w-2.5 h-2.5" />
+                          {locale === 'fr' ? 'Report demandé' : 'Reschedule requested'}
+                        </span>
+                      )}
+                      {hasPendingProposal && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium text-[10px]">
+                          <MessageSquare className="w-2.5 h-2.5" />
+                          {locale === 'fr' ? 'Réponse en attente' : 'Awaiting member'}
+                        </span>
+                      )}
+                      {session.status === 'completed' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium text-[10px]">
+                          {locale === 'fr' ? 'Terminée' : 'Completed'}
+                        </span>
+                      )}
+                      {session.status === 'cancelled' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 font-medium text-[10px]">
+                          {locale === 'fr' ? 'Annulée' : 'Cancelled'}
+                        </span>
+                      )}
+                      {session.status === 'no_show' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium text-[10px]">
+                          {locale === 'fr' ? 'Absent' : 'No show'}
+                        </span>
+                      )}
+                      {isAwaitingOutcome && (
+                        <span className="text-orange-600 font-medium">{locale === 'fr' ? 'En attente du statut' : 'Awaiting outcome'}</span>
+                      )}
                     </div>
-                  )}
 
-                  {/* Pending Proposal Banner */}
-                  {hasPendingProposal && (
-                    <div className="mb-4 p-3 rounded-xl bg-purple-100/80 border border-purple-200">
-                      <div className="flex items-start gap-2">
-                        <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-semibold text-purple-800 text-sm">Awaiting Member Response</p>
-                          {session.practitioner_proposed_date && (
-                            <p className="text-sm text-purple-700 mt-1">
-                              <span className="font-medium">Proposed:</span>{' '}
-                              {new Date(session.practitioner_proposed_date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              })}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                    {/* Cancellation reason — inline */}
+                    {(session.status === 'cancelled' || session.status === 'no_show') && session.cancellation_reason && (
+                      <p className="text-xs text-red-500 mt-2">
+                        {({
+                          client_request: locale === 'fr' ? 'Demande du patient' : 'Client request',
+                          practitioner_unavailable: locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable',
+                          scheduling_conflict: locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict',
+                          illness: locale === 'fr' ? 'Maladie' : 'Illness',
+                          personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
+                          rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
+                          no_communication: locale === 'fr' ? 'Aucune communication' : 'No communication',
+                          forgot: locale === 'fr' ? 'Patient a oublié' : 'Client forgot',
+                          late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
+                          technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
+                          emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
+                          other: locale === 'fr' ? 'Autre' : 'Other',
+                        } as Record<string, string>)[session.cancellation_reason] || session.cancellation_reason}
+                      </p>
+                    )}
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${
-                        hasRescheduleRequest
-                          ? 'from-amber-100 to-amber-200'
-                          : hasPendingProposal
-                          ? 'from-purple-100 to-purple-200'
-                          : 'from-blue-100 to-blue-200'
-                      } flex items-center justify-center`}>
-                        <FormatIcon className={`w-4 h-4 ${
-                          hasRescheduleRequest
-                            ? 'text-amber-600'
-                            : hasPendingProposal
-                            ? 'text-purple-600'
-                            : 'text-blue-600'
-                        }`} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium text-gray-900 text-sm">
-                            {session.custom_session_type || t.members.sessionTypes[session.session_type]}
-                          </p>
-                          {session.member_confirmed && (
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
-                              <Check className="w-3 h-3" />
-                              {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
-                            </span>
-                          )}
-                          {session.series_id && session.series_position && session.series_total && (
-                            <button
-                              type="button"
-                              onClick={() => setViewingSeriesId(session.series_id!)}
-                              className="px-2 py-0.5 rounded-md bg-violet-100 hover:bg-violet-200 text-violet-700 text-xs font-medium flex items-center gap-1 transition-colors"
-                              title={locale === 'fr' ? 'Voir la série' : 'View series'}
-                            >
-                              <RefreshCw className="w-3 h-3" />
-                              {locale === 'fr'
-                                ? `Séance ${session.series_position}/${session.series_total}`
-                                : `Session ${session.series_position}/${session.series_total}`}
-                            </button>
-                          )}
-                          {session.attendee_status === 'declined' && (
-                            <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Le patient a refusé l\'invitation' : 'Patient declined the invite'}>
-                              <X className="w-3 h-3" />
-                              {locale === 'fr' ? 'Refusé' : 'Declined'}
-                            </span>
-                          )}
-                          {session.attendee_status === 'tentative' && (
-                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-xs font-medium flex items-center gap-1" title={locale === 'fr' ? 'Réponse provisoire du patient' : 'Patient marked as tentative'}>
-                              {locale === 'fr' ? 'Provisoire' : 'Tentative'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-                          <span>
-                            {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: 'numeric',
-                              minute: '2-digit',
-                            })}
-                          </span>
-                          <span>·</span>
-                          <span>{session.duration_minutes} {t.members.sessions.minutes}</span>
-                          <span>·</span>
-                          <span>{t.members.sessionFormats[session.session_format]}</span>
-                          <span>·</span>
-                          <PaymentBadge
-                            status={session.payment_status || 'unpaid'}
-                            table={session.id.startsWith('booking-') ? 'bookings' : 'sessions'}
-                            recordId={session.id.startsWith('booking-') ? session.id.replace('booking-', '') : session.id}
-                          />
-                        </div>
+                    {/* Summary preview (read-only, when not actively editing) */}
+                    {session.summary && session.status !== 'cancelled' && session.status !== 'no_show' && editingSummarySession !== session.id && (
+                      <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                        {session.summary.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}
+                      </p>
+                    )}
 
-                        {session.summary && (
-                          <div className="mt-3 p-3 rounded-xl bg-white/60 border border-blue-100">
-                            <div className="flex items-start gap-2">
-                              <FileText className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Summary</p>
-                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                  {session.summary?.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {(() => {
-                        const meetLink = getMeetLinkForSession(session.scheduled_at)
-                        return meetLink ? (
+                    {/* Action row — primary actions stay visible */}
+                    {(isFutureScheduled || isAwaitingOutcome) && (
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {isFutureScheduled && meetLink && (
                           <a
                             href={meetLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors mr-1"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
                           >
                             <Video className="w-3.5 h-3.5" />
                             {locale === 'fr' ? 'Rejoindre' : 'Join'}
                           </a>
-                        ) : null
-                      })()}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingSummarySession(editingSummarySession === session.id ? null : session.id)
-                          setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
-                        }}
-                        className="h-10 w-10 p-0 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-colors"
-                        title={locale === 'fr' ? 'Notes de séance' : 'Session notes'}
-                      >
-                        <StickyNote className="w-5 h-5" />
-                      </Button>
-                    <div className="relative">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setActionMenuId(actionMenuId === session.id ? null : session.id)}
-                        className="h-10 w-10 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
-                      >
-                        <MoreHorizontal className="w-5 h-5" />
-                      </Button>
-                      {actionMenuId === session.id && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setActionMenuId(null)} />
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
+                        )}
+                        {/* Awaiting-outcome rows get a glowing Close
+                            session call-to-action right before Take notes
+                            so the practitioner can't miss it. */}
+                        {isAwaitingOutcome && (
+                          <span className="relative inline-flex rounded-md">
+                            <span
+                              className="absolute inset-0 rounded-md bg-amber-400 opacity-40 animate-ping"
+                              style={{ animationDuration: '2s' }}
+                            />
                             <button
-                              onClick={() => { setActionMenuId(null); handleStartEdit(session) }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              type="button"
+                              onClick={() => openClosePopup(session)}
+                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md transition-colors"
                             >
-                              <Pencil className="w-4 h-4 text-gray-400" />
-                              {locale === 'fr' ? 'Modifier' : 'Edit'}
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
                             </button>
-                            <button
-                              onClick={() => {
-                                setActionMenuId(null)
-                                // Find matching booking for reschedule
-                                const matchingBooking = pendingBookings.find(b =>
-                                  Math.floor(new Date(b.start_time).getTime() / 60000) === Math.floor(new Date(session.scheduled_at).getTime() / 60000)
-                                )
-                                setRescheduleSession(matchingBooking ? {
-                                  id: matchingBooking.id,
-                                  practitioner_id: session.practitioner_id,
-                                  member_id: session.member_id,
-                                  client_name: `${member.first_name} ${member.last_name}`,
-                                  client_email: member.email || '',
-                                  session_type: session.session_type,
-                                  session_format: session.session_format,
-                                  start_time: session.scheduled_at,
-                                  end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
-                                  series_id: session.series_id,
-                                } : {
-                                  id: session.id,
-                                  practitioner_id: session.practitioner_id,
-                                  member_id: session.member_id,
-                                  client_name: `${member.first_name} ${member.last_name}`,
-                                  client_email: member.email || '',
-                                  session_type: session.session_type,
-                                  session_format: session.session_format,
-                                  start_time: session.scheduled_at,
-                                  end_time: new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString(),
-                                  series_id: session.series_id,
-                                })
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <RefreshCw className="w-4 h-4 text-teal-500" />
-                              {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
-                            </button>
-                            <button
-                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'complete' }) }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <CheckCircle className="w-4 h-4 text-emerald-500" />
-                              {locale === 'fr' ? 'Marquer terminée' : 'Mark as completed'}
-                            </button>
-                            <button
-                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'cancel' }) }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <XCircle className="w-4 h-4 text-orange-500" />
-                              {locale === 'fr' ? 'Annuler la séance' : 'Cancel session'}
-                            </button>
-                            {/* Skip-this-week shortcut — only on series occurrences. Cancels just
-                                this one with a templated reason, no modal, no per-week friction. */}
-                            {session.series_id && (
-                              <button
-                                onClick={async () => {
-                                  setActionMenuId(null)
-                                  await handleUpdateStatus(session.id, 'cancelled' as SessionStatus, 'rescheduled', undefined, 'this')
-                                }}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                              >
-                                <Calendar className="w-4 h-4 text-violet-500" />
-                                {locale === 'fr' ? 'Sauter cette semaine' : 'Skip this week'}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'no_show' }) }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <Ban className="w-4 h-4 text-amber-500" />
-                              {locale === 'fr' ? 'Absent' : 'No show'}
-                            </button>
-                            <div className="border-t border-gray-100 my-1" />
-                            <button
-                              onClick={() => { setActionMenuId(null); setConfirmAction({ sessionId: session.id, action: 'delete' }) }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              {locale === 'fr' ? 'Supprimer' : 'Delete'}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  </div>
-
-                  {/* Saved note indicator */}
-                  {sessionSummaryNotes[session.id] && editingSummarySession !== session.id && (
-                    <div className="mt-3 pl-12">
-                      <button
-                        onClick={() => { setEditingSummarySession(session.id); setSummaryDraft(sessionSummaryNotes[session.id]?.content || '') }}
-                        className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
-                      >
-                        <StickyNote className="w-3.5 h-3.5" />
-                        {locale === 'fr' ? 'Voir la note' : 'View note'}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Inline Session Note editor for upcoming */}
-                  {editingSummarySession === session.id && (
-                    <div className="mt-3 pl-12">
-                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                        <RichTextEditor
-                          value={summaryDraft}
-                          onChange={setSummaryDraft}
-                          placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : 'Write your session note...'}
-                          memberId={memberId}
-                          locale={locale}
-                          autoFocus
-                          milestones={milestones}
-                          noteTypes={editorNoteTypes}
-                          lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
-                          onAddType={handleEditorAddType}
-                          onRenameType={handleEditorRenameType}
-                          onDeleteType={handleEditorDeleteType}
-                          getTagNoteCount={getTagNoteCount}
-                          maxTypes={Math.max(7, editorNoteTypes.length)}
-                          memberName={member?.first_name}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isNotesOpen) {
+                              setExpandedNotes(prev => {
+                                const next = new Set(prev)
+                                next.delete(session.id)
+                                return next
+                              })
+                              if (editingSummarySession === session.id) {
+                                setEditingSummarySession(null)
+                                setSummaryDraft('')
+                              }
+                            } else {
+                              setExpandedNotes(prev => {
+                                const next = new Set(prev)
+                                next.add(session.id)
+                                return next
+                              })
+                              setEditingSummarySession(session.id)
+                              setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                        >
+                          <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                          {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                        </button>
+                        <PaymentBadge
+                          status={session.payment_status || 'unpaid'}
+                          table={recordTable}
+                          recordId={recordId}
                         />
-                        <div className="flex items-center justify-end gap-2 px-3 py-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => { setEditingSummarySession(null); setSummaryDraft('') }}
-                            className="h-8 px-3 text-gray-500 hover:text-gray-700 rounded-lg"
-                          >
-                            {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleSaveSessionSummary(session.id, summaryDraft)}
-                            disabled={savingSummary || !summaryDraft.replace(/<[^>]*>/g, '').trim()}
-                            className="h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                          >
-                            {savingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
-                          </Button>
-                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                </motion.div>
-              )
-            })}
-        </div>
-      </motion.div>
-
-      {/* Past Sessions */}
-      <motion.div
-        id="past-sessions-section"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{
-          opacity: 1,
-          y: 0,
-          boxShadow: highlightSessionId === 'past-sessions-section'
-            ? ['0 0 0 0 rgba(59, 130, 246, 0)', '0 0 20px 8px rgba(59, 130, 246, 0.4)', '0 0 0 0 rgba(59, 130, 246, 0)']
-            : '0 0 0 0 rgba(0, 0, 0, 0)'
-        }}
-        transition={{
-          delay: 0.1,
-          boxShadow: highlightSessionId === 'past-sessions-section' ? { duration: 1.5, repeat: 2 } : {}
-        }}
-        className={`bg-white rounded-2xl p-6 border border-gray-200 ${
-          highlightSessionId === 'past-sessions-section' ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-        }`}
-      >
-        <h3 className="font-semibold text-gray-900 mb-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ">
-            <Clock className="w-5 h-5 text-gray-600" />
-          </div>
-          {t.members.sessions.pastSessions}
-          {pastSessions.length > 0 && (
-            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-              {pastSessions.length}
-            </span>
-          )}
-        </h3>
-
-        {pastSessions.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 ">
-              <Clock className="w-7 h-7 text-gray-400" />
-            </div>
-            <p className="text-sm font-medium text-gray-500">{t.members.sessions.noPast}</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {pastSessions.map((session, index) => {
-              const FormatIcon = formatIcon[session.session_format]
-              const statusStyle = statusStyles[session.status]
-              return (
-                <motion.div
-                  key={session.id}
-                  id={`session-${session.id}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    boxShadow: highlightSessionId === session.id
-                      ? ['0 0 0 0 rgba(59, 130, 246, 0)', '0 0 20px 8px rgba(59, 130, 246, 0.4)', '0 0 0 0 rgba(59, 130, 246, 0)']
-                      : '0 0 0 0 rgba(0, 0, 0, 0)'
-                  }}
-                  transition={{
-                    delay: 0.03 * index,
-                    boxShadow: highlightSessionId === session.id ? { duration: 1.5, repeat: 2 } : {}
-                  }}
-                  className={`p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all group ${
-                    highlightSessionId === session.id ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center border border-gray-200">
-                        <FormatIcon className="w-4 h-4 text-gray-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900 text-sm">
-                            {session.custom_session_type || t.members.sessionTypes[session.session_type]}
-                          </p>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`}></span>
-                            {t.members.sessionStatus[session.status]}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-                          <span>
-                            {new Date(session.scheduled_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </span>
-                          <span>·</span>
-                          <span>{session.duration_minutes} {t.members.sessions.minutes}</span>
-                          <span>·</span>
-                          <span>{t.members.sessionFormats[session.session_format]}</span>
-                          <span>·</span>
+                    {/* Past/completed/cancelled: View notes if a note
+                        exists, otherwise Take notes + "No notes" label. */}
+                    {!isFutureScheduled && !isAwaitingOutcome && (() => {
+                      const hasNote = !!sessionSummaryNotes[session.id]?.content
+                      return (
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          {hasNote ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isNotesOpen) {
+                                  setExpandedNotes(prev => {
+                                    const next = new Set(prev)
+                                    next.delete(session.id)
+                                    return next
+                                  })
+                                  if (editingSummarySession === session.id) {
+                                    setEditingSummarySession(null)
+                                    setSummaryDraft('')
+                                  }
+                                } else {
+                                  setExpandedNotes(prev => {
+                                    const next = new Set(prev)
+                                    next.add(session.id)
+                                    return next
+                                  })
+                                }
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-gray-500" />
+                              {isNotesOpen
+                                ? (locale === 'fr' ? 'Masquer les notes' : 'Hide notes')
+                                : (locale === 'fr' ? 'Voir les notes' : 'View notes')}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedNotes(prev => {
+                                    const next = new Set(prev)
+                                    next.add(session.id)
+                                    return next
+                                  })
+                                  setEditingSummarySession(session.id)
+                                  setSummaryDraft('')
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                              >
+                                <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                                {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                              </button>
+                              <span className="text-xs text-gray-400 italic">
+                                {locale === 'fr' ? 'Aucune note' : 'No notes'}
+                              </span>
+                            </>
+                          )}
                           <PaymentBadge
                             status={session.payment_status || 'unpaid'}
-                            table="sessions"
-                            recordId={session.id}
+                            table={recordTable}
+                            recordId={recordId}
                           />
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleStartEdit(session)}
-                        className="h-8 px-2 text-xs text-blue-600 hover:bg-white rounded-lg"
-                      >
-                        <Pencil className="w-3.5 h-3.5 mr-1" />
-                        Edit
-                      </Button>
-                      {deletingSessionId === session.id ? (
-                        <div className="flex items-center gap-1 bg-red-50 rounded-lg px-2 py-1">
-                          <span className="text-xs text-red-600">Delete?</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteSession(session.id)}
-                            className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 rounded-md"
-                          >
-                            <Check className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingSessionId(null)}
-                            className="h-6 w-6 p-0 text-gray-500 hover:bg-gray-100 rounded-md"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeletingSessionId(session.id)}
-                          className="h-8 px-2 text-xs text-gray-400 hover:text-red-500 hover:bg-white rounded-lg"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 mr-1" />
-                          Delete
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {/* Cancellation reason */}
-                  {(session.status === 'cancelled' || session.status === 'no_show') && (session.cancellation_reason || session.notes) && (
-                    <div className="mt-3 pl-12">
-                      <div className="flex items-start gap-2 text-sm">
-                        <AlertCircle className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          {session.cancellation_reason && (
-                            <span className="text-gray-500 font-medium">
-                              {{
-                                client_request: locale === 'fr' ? 'Demande du patient' : 'Client request',
-                                practitioner_unavailable: locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable',
-                                scheduling_conflict: locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict',
-                                illness: locale === 'fr' ? 'Maladie' : 'Illness',
-                                personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
-                                rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
-                                no_communication: locale === 'fr' ? 'Aucune communication' : 'No communication',
-                                forgot: locale === 'fr' ? 'Patient a oublié' : 'Client forgot',
-                                late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
-                                technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
-                                emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
-                                other: locale === 'fr' ? 'Autre' : 'Other',
-                              }[session.cancellation_reason] || session.cancellation_reason}
-                            </span>
-                          )}
-                          {session.cancellation_reason && session.notes && <span className="text-gray-300 mx-1">·</span>}
-                          {session.notes && <span className="text-gray-400">{session.notes.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      )
+                    })()}
 
-                  {/* Summary */}
-                  {session.summary && session.status !== 'cancelled' && session.status !== 'no_show' && (
-                    <div className="mt-3 pl-12">
-                      <div className="flex items-start gap-2">
-                        <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {session.summary?.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    {/* The "Session N/Y" chip in the meta row above is
+                        already clickable and opens the SeriesDetailDrawer
+                        — no separate "View all sessions" button needed. */}
 
-                  {/* Inline Session Note */}
-                  {(session.status === 'completed' || session.status === 'no_show') && (
-                    <div className="mt-3 pl-12">
-                      {editingSummarySession === session.id ? (
+                    {/* Inline session-note editor — toggled by "Take notes" or via menu */}
+                    {editingSummarySession === session.id && (
+                      <div className="mt-3">
                         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                           <RichTextEditor
                             value={summaryDraft}
@@ -1771,10 +1838,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                setEditingSummarySession(null)
-                                setSummaryDraft('')
-                              }}
+                              onClick={() => { setEditingSummarySession(null); setSummaryDraft('') }}
                               className="h-8 px-3 text-gray-500 hover:text-gray-700 rounded-lg"
                             >
                               {locale === 'fr' ? 'Annuler' : 'Cancel'}
@@ -1785,252 +1849,182 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               disabled={savingSummary || !summaryDraft.replace(/<[^>]*>/g, '').trim()}
                               className="h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
                             >
-                              {savingSummary ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                locale === 'fr' ? 'Enregistrer' : 'Save'
-                              )}
+                              {savingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
                             </Button>
                           </div>
                         </div>
-                      ) : sessionSummaryNotes[session.id] ? (
-                        <div>
-                          <button
-                            onClick={() => setExpandedNotes(prev => {
-                              const next = new Set(prev)
-                              if (next.has(session.id)) next.delete(session.id)
-                              else next.add(session.id)
-                              return next
-                            })}
-                            className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            {expandedNotes.has(session.id)
-                              ? (locale === 'fr' ? 'Masquer la note' : 'Hide note')
-                              : (locale === 'fr' ? 'Voir la note' : 'View note')}
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedNotes.has(session.id) ? 'rotate-180' : ''}`} />
-                          </button>
-                          <AnimatePresence>
-                            {expandedNotes.has(session.id) && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="mt-2 bg-white border border-gray-200 rounded-xl p-3">
-                                  <MarkdownRenderer
-                                    content={sessionSummaryNotes[session.id]?.content || ''}
-                                    onContentChange={(html) => handleSaveSessionSummary(session.id, html)}
-                                    onEdit={() => {
-                                      setEditingSummarySession(session.id)
-                                      setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
-                                    }}
-                                  />
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
+                      </div>
+                    )}
+
+                    {/* Saved note viewer — only for completed/no_show, expanded via Take notes toggle */}
+                    {sessionSummaryNotes[session.id] && editingSummarySession !== session.id && expandedNotes.has(session.id) && (
+                      <div className="mt-3 bg-white border border-gray-200 rounded-xl p-3">
+                        <MarkdownRenderer
+                          content={sessionSummaryNotes[session.id]?.content || ''}
+                          onContentChange={(html) => handleSaveSessionSummary(session.id, html)}
+                          onEdit={() => {
                             setEditingSummarySession(session.id)
-                            setSummaryDraft('')
+                            setSummaryDraft(sessionSummaryNotes[session.id]?.content || '')
                           }}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors text-sm"
-                        >
-                          <FileText className="w-4 h-4" />
-                          {locale === 'fr' ? 'Rédiger une note de séance' : 'Write session note'}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                        />
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Show action buttons for past sessions still marked as scheduled */}
-                  {session.status === 'scheduled' && new Date(session.scheduled_at) < new Date() && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(session.id, 'completed')}
-                        className="h-7 px-2 text-xs text-emerald-600 hover:bg-emerald-50 rounded-lg"
-                      >
-                        <Check className="w-3 h-3 mr-1" />
-                        {t.members.sessions.markComplete}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(session.id, 'no_show')}
-                        className="h-7 px-2 text-xs text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        {locale === 'fr' ? 'Absent' : 'No Show'}
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
-      </motion.div>
+                  {/* Three-dot menu — every other action lives here */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <RowMenu items={menuItems} />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )
+        }
 
-      {/* Confirmation Modal */}
-      {confirmAction && (() => {
-        const targetSession = sessions.find(s => s.id === confirmAction.sessionId)
-        const isSeries = !!(targetSession?.series_id)
-        const remainingInSeries = isSeries
-          ? sessions.filter(s =>
-              s.series_id === targetSession!.series_id &&
-              new Date(s.scheduled_at).getTime() >= new Date(targetSession!.scheduled_at).getTime() &&
-              s.status !== 'cancelled'
-            ).length
-          : 0
         return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes(''); setCancelScope('this') }}>
+          <div className="space-y-6">
+            {/* ── Filter bar — applies to both Up next + History ── */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-4">
+              <SessionFilters
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                customFrom={customFrom}
+                customTo={customTo}
+                onCustomChange={(from, to) => { setCustomFrom(from); setCustomTo(to) }}
+                statusOptions={[
+                  { key: 'scheduled', label: locale === 'fr' ? 'Planifiée' : 'Scheduled' },
+                  { key: 'awaiting',  label: locale === 'fr' ? 'En attente' : 'Awaiting' },
+                  { key: 'completed', label: locale === 'fr' ? 'Terminée' : 'Completed' },
+                  { key: 'cancelled', label: locale === 'fr' ? 'Annulée' : 'Cancelled' },
+                  { key: 'no_show',   label: locale === 'fr' ? 'Absent' : 'No-show' },
+                ]}
+                statusFilters={statusFilters}
+                onStatusFiltersChange={setStatusFilters}
+                typeOptions={(() => {
+                  // Use the practitioner's configured session types from
+                  // booking_settings — that's the canonical list. Fall
+                  // back to types derived from existing sessions if the
+                  // practitioner hasn't configured any yet.
+                  const labels = t.members.sessionTypes as Record<string, string>
+                  if (configuredSessionTypes.length > 0) {
+                    return configuredSessionTypes
+                      .map(st => ({
+                        key: st.name,
+                        label: locale === 'fr' ? (st.name_fr || st.name) : st.name,
+                      }))
+                      .sort((a, b) => a.label.localeCompare(b.label))
+                  }
+                  const seen = new Set<string>()
+                  const opts: { key: string; label: string }[] = []
+                  for (const s of sessions) {
+                    const key = s.session_type as string
+                    if (!key || seen.has(key)) continue
+                    seen.add(key)
+                    opts.push({ key, label: labels[key] || key })
+                  }
+                  return opts.sort((a, b) => a.label.localeCompare(b.label))
+                })()}
+                typeFilters={typeFilters}
+                onTypeFiltersChange={setTypeFilters}
+                paymentOptions={[
+                  { key: 'paid',   label: locale === 'fr' ? 'Payé' : 'Paid' },
+                  { key: 'unpaid', label: locale === 'fr' ? 'Non payé' : 'Unpaid' },
+                ]}
+                paymentFilters={paymentFilters}
+                onPaymentFiltersChange={setPaymentFilters}
+                locale={locale}
+                onReset={resetFilters}
+              />
+            </section>
+
+            {/* ── Up next ── */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6">
+              <header className="flex items-center justify-between mb-5">
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'À venir' : 'Up next'}</h2>
+                  <span className="text-sm text-gray-400 tabular-nums">{upcomingSessions.length}</span>
+                </div>
+                <SessionDotLegend />
+              </header>
+
+              {/* Add Session CTA — kept at the top of the timeline */}
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(true)}
+                className="w-full mb-4 p-3 rounded-xl border border-dashed border-gray-300 hover:border-gray-900 bg-gray-50/40 hover:bg-gray-50 transition-all group flex items-center gap-3 text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 group-hover:border-gray-900 flex items-center justify-center transition-colors">
+                  <Plus className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
+                </div>
+                <span className="text-sm font-medium text-gray-500 group-hover:text-gray-900 transition-colors">
+                  {t.members.sessions.addSession}
+                </span>
+              </button>
+
+              {upcomingSessions.length === 0 ? (
+                <p className="text-sm text-gray-400">{t.members.sessions.noUpcoming}</p>
+              ) : (
+                <div>
+                  {upcomingSessions.map((s, i) => renderRow(s, i, i === upcomingSessions.length - 1))}
+                </div>
+              )}
+            </section>
+
+            {/* ── History ── */}
+            <section
+              id="past-sessions-section"
+              className={`bg-white rounded-2xl border border-gray-200 p-6 ${
+                highlightSessionId === 'past-sessions-section' ? 'ring-2 ring-blue-400 ring-offset-2' : ''
+              }`}
+            >
+              <header className="flex items-center justify-between mb-5">
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'Historique' : 'History'}</h2>
+                  <span className="text-sm text-gray-400 tabular-nums">{pastSessions.length}</span>
+                </div>
+                <SessionDotLegend />
+              </header>
+              {pastSessions.length === 0 ? (
+                <p className="text-sm text-gray-400">{t.members.sessions.noPast}</p>
+              ) : (
+                <div>
+                  {pastSessions.map((s, i) => renderRow(s, i, i === pastSessions.length - 1))}
+                </div>
+              )}
+            </section>
+          </div>
+        )
+      })()}
+
+
+      {/* Delete confirmation — the only flow still routed through this
+          dialog. Status changes (complete/cancel/no_show) all go through
+          the Close session popup. */}
+      {confirmAction && (() => {
+        return (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setConfirmAction(null)}
+        >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Marquer comme terminée ?' : 'Mark as completed?') :
-               confirmAction.action === 'cancel' ? (locale === 'fr' ? 'Annuler cette séance ?' : 'Cancel this session?') :
-               confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Marquer comme absent ?' : 'Mark as no show?') :
-               (locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?')}
+              {locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?'}
             </h3>
-
-            {/* Series scope picker — only when cancelling a session that belongs to a recurring series */}
-            {confirmAction.action === 'cancel' && isSeries && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {locale === 'fr' ? 'Portée de l\'annulation' : 'Cancel scope'}
-                </label>
-                <div className="space-y-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setCancelScope('this')}
-                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      cancelScope === 'this'
-                        ? 'border-teal-500 bg-teal-50 text-teal-800'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="font-medium">{locale === 'fr' ? 'Uniquement cette séance' : 'Only this session'}</span>
-                    <span className="block text-xs text-gray-500 mt-0.5">
-                      {locale === 'fr' ? 'Les autres séances de la série restent planifiées.' : 'The rest of the series stays scheduled.'}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCancelScope('following')}
-                    className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      cancelScope === 'following'
-                        ? 'border-red-500 bg-red-50 text-red-800'
-                        : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="font-medium">
-                      {locale === 'fr'
-                        ? `Cette séance et toutes les suivantes (${remainingInSeries})`
-                        : `This and all following (${remainingInSeries})`}
-                    </span>
-                    <span className="block text-xs text-gray-500 mt-0.5">
-                      {locale === 'fr' ? 'Les séances passées de la série restent intactes.' : 'Past sessions in the series stay intact.'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Reason dropdown for cancel/no_show */}
-            {(confirmAction.action === 'cancel' || confirmAction.action === 'no_show') && (
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {locale === 'fr' ? 'Raison' : 'Reason'}
-                  </label>
-                  <select
-                    value={confirmReason}
-                    onChange={(e) => setConfirmReason(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white text-sm"
-                  >
-                    <option value="">{locale === 'fr' ? 'Sélectionner une raison...' : 'Select a reason...'}</option>
-                    {confirmAction.action === 'cancel' ? (
-                      <>
-                        <option value="client_request">{locale === 'fr' ? 'Demande du patient' : 'Client request'}</option>
-                        <option value="practitioner_unavailable">{locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'}</option>
-                        <option value="scheduling_conflict">{locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'}</option>
-                        <option value="illness">{locale === 'fr' ? 'Maladie' : 'Illness'}</option>
-                        <option value="personal_reasons">{locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons'}</option>
-                        <option value="rescheduled">{locale === 'fr' ? 'Reprogrammée' : 'Rescheduled'}</option>
-                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="no_communication">{locale === 'fr' ? 'Aucune communication' : 'No communication'}</option>
-                        <option value="forgot">{locale === 'fr' ? 'Patient a oublié' : 'Client forgot'}</option>
-                        <option value="late_cancellation">{locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'}</option>
-                        <option value="technical_issue">{locale === 'fr' ? 'Problème technique' : 'Technical issue'}</option>
-                        <option value="emergency">{locale === 'fr' ? 'Urgence' : 'Emergency'}</option>
-                        <option value="other">{locale === 'fr' ? 'Autre' : 'Other'}</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {locale === 'fr' ? 'Commentaire' : 'Comment'} <span className="text-gray-400 font-normal">({locale === 'fr' ? 'facultatif' : 'optional'})</span>
-                  </label>
-                  <textarea
-                    value={confirmNotes}
-                    onChange={(e) => setConfirmNotes(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Ajouter un commentaire...' : 'Add a comment...'}
-                    rows={2}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none resize-none text-sm"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Simple message for complete/delete */}
-            {confirmAction.action !== 'cancel' && confirmAction.action !== 'no_show' && (
-              <p className="text-sm text-gray-500 mt-2 mb-4">
-                {confirmAction.action === 'delete'
-                  ? (locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.')
-                  : (locale === 'fr' ? 'Vous pouvez modifier le statut ultérieurement.' : 'You can change the status later.')}
-              </p>
-            )}
-
+            <p className="text-sm text-gray-500 mt-2 mb-4">
+              {locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.'}
+            </p>
             <div className="flex gap-3 justify-end mt-6">
-              <Button variant="outline" onClick={() => { setConfirmAction(null); setConfirmReason(''); setConfirmNotes(''); setCancelScope('this') }} className="rounded-xl">
+              <Button variant="outline" onClick={() => setConfirmAction(null)} className="rounded-xl">
                 {locale === 'fr' ? 'Retour' : 'Back'}
               </Button>
               <Button
                 onClick={async () => {
-                  const status = confirmAction.action === 'complete' ? 'completed' : confirmAction.action === 'cancel' ? 'cancelled' : confirmAction.action === 'no_show' ? 'no_show' : null
-                  if (confirmAction.action === 'delete') {
-                    await handleDeleteSession(confirmAction.sessionId)
-                  } else if (status) {
-                    const reason = confirmReason || undefined
-                    const notes = confirmNotes || undefined
-                    const scope = (confirmAction.action === 'cancel' && isSeries) ? cancelScope : undefined
-                    await handleUpdateStatus(confirmAction.sessionId, status as SessionStatus, reason, notes, scope)
-                  }
+                  await handleDeleteSession(confirmAction.sessionId)
                   setConfirmAction(null)
-                  setConfirmReason('')
-                  setConfirmNotes('')
-                  setCancelScope('this')
                 }}
-                disabled={confirmAction.action === 'cancel' && !confirmReason}
-                className={`rounded-xl ${confirmAction.action === 'delete' || (confirmAction.action === 'cancel' && isSeries && cancelScope === 'following') ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
               >
-                {confirmAction.action === 'complete' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
-                 confirmAction.action === 'cancel'
-                   ? (isSeries && cancelScope === 'following'
-                       ? (locale === 'fr' ? `Annuler ${remainingInSeries} séances` : `Cancel ${remainingInSeries} sessions`)
-                       : (locale === 'fr' ? 'Annuler la séance' : 'Cancel session'))
-                 : confirmAction.action === 'no_show' ? (locale === 'fr' ? 'Confirmer' : 'Confirm') :
-                 (locale === 'fr' ? 'Supprimer' : 'Delete')}
+                {locale === 'fr' ? 'Supprimer' : 'Delete'}
               </Button>
             </div>
           </div>
@@ -2109,6 +2103,289 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               >
                 <Check className="w-4 h-4 mr-2" />
                 {locale === 'fr' ? 'Conserver' : locale === 'es' ? 'Conservar' : 'Keep'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Close session popup — single dialog. Top asks Show vs
+          No-show, then reveals the matching branch. ─── */}
+      {closePopupSession && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onClick={closeClosePopup}
+        >
+          <div
+            // Widen the popup when the inline RichTextEditor is open —
+            // the toolbar needs more room than the standard md width.
+            className={`bg-white rounded-2xl shadow-xl w-full p-6 max-h-[90vh] overflow-y-auto transition-[max-width] duration-200 ${
+              closePopupOutcome === 'show' && showPopupNoteAction === 'take'
+                ? 'max-w-2xl'
+                : 'max-w-md'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+              </h3>
+              <button
+                type="button"
+                onClick={closeClosePopup}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Outcome — Show or No-show. Required first choice. */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                {locale === 'fr' ? 'Comment s\'est passée la séance ?' : 'How did this session go?'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setClosePopupOutcome('show')}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium border transition ${
+                    closePopupOutcome === 'show'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                  }`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Présent' : 'Show'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClosePopupOutcome('no_show')}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium border transition ${
+                    closePopupOutcome === 'no_show'
+                      ? 'bg-amber-600 text-white border-amber-600'
+                      : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Absent' : 'No show'}
+                </button>
+              </div>
+            </div>
+
+            {/* ─── Show branch ─── */}
+            {closePopupOutcome === 'show' && (
+              <>
+                {/* Section 1 — Payment */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Paiement' : 'Payment'}
+                  </p>
+                  <div className="flex gap-2">
+                    {(['paid', 'unpaid'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setShowPopupPayment(opt)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                          showPopupPayment === opt
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {opt === 'paid'
+                          ? (locale === 'fr' ? 'Payé' : 'Paid')
+                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 2 — Note */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Note de séance' : 'Session note'}
+                  </p>
+                  {showPopupNoteAction === 'has' ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>{locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}</span>
+                    </div>
+                  ) : showPopupNoteAction === 'take' ? (
+                    <div>
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <RichTextEditor
+                          value={showPopupNoteDraft}
+                          onChange={setShowPopupNoteDraft}
+                          placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : 'Write your session note...'}
+                          memberId={memberId}
+                          locale={locale}
+                          autoFocus
+                          milestones={milestones}
+                          noteTypes={editorNoteTypes}
+                          lockedTypes={FIXED_NOTE_TYPES as unknown as string[]}
+                          onAddType={handleEditorAddType}
+                          onRenameType={handleEditorRenameType}
+                          onDeleteType={handleEditorDeleteType}
+                          getTagNoteCount={getTagNoteCount}
+                          maxTypes={Math.max(7, editorNoteTypes.length)}
+                          memberName={member?.first_name}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPopupNoteAction('skip'); setShowPopupNoteDraft('') }}
+                        className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                      >
+                        {locale === 'fr' ? '← Sans note' : '← No note'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPopupNoteAction('take')}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                      >
+                        <PenLine className="w-4 h-4 text-gray-500" />
+                        {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPopupNoteAction('skip')}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 border border-gray-200 text-gray-600"
+                      >
+                        {locale === 'fr' ? 'Aucune note' : 'No notes'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+              </>
+            )}
+
+            {/* ─── No-show branch ─── */}
+            {closePopupOutcome === 'no_show' && (
+              <>
+                {/* Section 1 — Payment */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Paiement' : 'Payment'}
+                  </p>
+                  <div className="flex gap-2">
+                    {(['paid', 'unpaid'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setNoShowPopupPayment(opt)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                          noShowPopupPayment === opt
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {opt === 'paid'
+                          ? (locale === 'fr' ? 'Payé' : 'Paid')
+                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 2 — Reason + comments */}
+                <div className="mb-6">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Raison' : 'Reason'}
+                  </p>
+                  <select
+                    value={noShowPopupReason}
+                    onChange={(e) => setNoShowPopupReason(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    <option value="" disabled>
+                      {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
+                    </option>
+                    {([
+                      ['no_communication', locale === 'fr' ? 'Aucune communication' : 'No communication'],
+                      ['client_request', locale === 'fr' ? 'Demande du patient' : 'Client request'],
+                      ['late_cancellation', locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'],
+                      ['illness', locale === 'fr' ? 'Maladie' : 'Illness'],
+                      ['forgot', locale === 'fr' ? 'Patient a oublié' : 'Client forgot'],
+                      ['emergency', locale === 'fr' ? 'Urgence' : 'Emergency'],
+                      ['technical_issue', locale === 'fr' ? 'Problème technique' : 'Technical issue'],
+                      ['scheduling_conflict', locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'],
+                      ['practitioner_unavailable', locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'],
+                      ['other', locale === 'fr' ? 'Autre' : 'Other'],
+                    ] as const).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={noShowPopupComments}
+                    onChange={(e) => setNoShowPopupComments(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
+                    rows={3}
+                    className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="ghost" onClick={closeClosePopup} disabled={closePopupSaving}>
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={confirmClosePopup}
+                disabled={
+                  closePopupSaving ||
+                  !closePopupOutcome ||
+                  (closePopupOutcome === 'show'   && (showPopupPayment === null || showPopupNoteAction === null)) ||
+                  (closePopupOutcome === 'no_show' && (noShowPopupPayment === null || !noShowPopupReason))
+                }
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                {closePopupSaving
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : (locale === 'fr' ? 'Confirmer' : 'Confirm')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Schedule-next follow-up — appears after a Show close ─── */}
+      {scheduleNextPromptOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onClick={() => setScheduleNextPromptOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Planifier la prochaine séance ?' : 'Schedule next session?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {locale === 'fr'
+                ? `Voulez-vous planifier une nouvelle séance avec ${member.first_name} maintenant ?`
+                : `Would you like to schedule a new session with ${member.first_name} now?`}
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setScheduleNextPromptOpen(false)}
+              >
+                {locale === 'fr' ? 'Non' : 'No'}
+              </Button>
+              <Button
+                onClick={() => { setScheduleNextPromptOpen(false); setShowScheduleModal(true) }}
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                {locale === 'fr' ? 'Oui, planifier' : 'Yes, schedule'}
               </Button>
             </div>
           </div>

@@ -31,6 +31,8 @@ import {
   MoreHorizontal,
   PenLine,
   ArrowUpRight,
+  CheckCircle,
+  Pencil,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -38,6 +40,10 @@ import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { Button } from '@/components/ui/button'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { TimeSelect } from '@/components/ui/time-select'
+import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
+import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
+import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
+import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -83,6 +89,14 @@ interface Booking {
   cancellation_reason: string | null
   session_format: string | null
   created_at: string
+  // Recurring-series columns (added by migration 20260508_recurring_sessions_phase0).
+  // Null for one-off bookings.
+  series_id?: string | null
+  series_parent_id?: string | null
+  series_position?: number | null
+  series_total?: number | null
+  recurrence_rule?: string | null
+  updated_at?: string | null
 }
 
 type MainTab = 'appointments' | 'settings'
@@ -142,7 +156,10 @@ interface RowMenuItem {
   label: string
   icon?: React.ComponentType<{ className?: string }>
   onClick: () => void
-  danger?: boolean
+  // Visual tone — keeps Show/No-show/Delete distinguishable instead of
+  // all looking like the same destructive action. Mirrors SessionsTab.
+  tone?: 'default' | 'success' | 'warning' | 'danger'
+  danger?: boolean // legacy alias for tone:'danger'
 }
 function RowMenu({ items }: { items: RowMenuItem[] }) {
   const [open, setOpen] = useState(false)
@@ -175,12 +192,18 @@ function RowMenu({ items }: { items: RowMenuItem[] }) {
         <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-[180px] py-1">
           {items.map((item, i) => {
             const Icon = item.icon
+            const tone = item.tone || (item.danger ? 'danger' : 'default')
+            const toneClass =
+              tone === 'danger' ? 'text-red-600 hover:bg-red-50'
+              : tone === 'success' ? 'text-emerald-700 hover:bg-emerald-50'
+              : tone === 'warning' ? 'text-amber-700 hover:bg-amber-50'
+              : 'text-gray-700 hover:bg-gray-50'
             return (
               <button
                 key={i}
                 type="button"
                 onClick={() => { item.onClick(); setOpen(false) }}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'}`}
+                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${toneClass}`}
               >
                 {Icon && <Icon className="w-3.5 h-3.5" />}
                 {item.label}
@@ -265,6 +288,24 @@ export default function BookingsPage() {
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
   const [bookingView, setBookingView] = useState<'list' | 'calendar'>('list')
   const [processingId, setProcessingId] = useState<string | null>(null)
+  // Recurring-series drawer — opened from the "View all sessions" button
+  // on any series-anchor row. Mirrors the SessionsTab behaviour.
+  const [viewingSeriesId, setViewingSeriesId] = useState<string | null>(null)
+  // ── Filter state (date / status / type / payment) ────────────────
+  const [dateRange, setDateRange] = useState<DateRangePreset>('all')
+  const [customFrom, setCustomFrom] = useState<string | null>(null)
+  const [customTo, setCustomTo] = useState<string | null>(null)
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set())
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
+  const [paymentFilters, setPaymentFilters] = useState<Set<string>>(new Set())
+  const resetFilters = () => {
+    setDateRange('all')
+    setCustomFrom(null)
+    setCustomTo(null)
+    setStatusFilters(new Set())
+    setTypeFilters(new Set())
+    setPaymentFilters(new Set())
+  }
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
@@ -689,13 +730,143 @@ export default function BookingsPage() {
   const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
   const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<any | null>(null)
 
+  // ── Close-session popup state ──────────────────────────────────────
+  // Mirrors SessionsTab. A single dialog asks "How did this session go?"
+  // (Show vs No-show) and then reveals the matching branch's sections.
+  // Captures local state until the practitioner confirms, then writes
+  // everything atomically through the right branch.
+  const [closePopupBooking, setClosePopupBooking] = useState<Booking | null>(null)
+  const [closePopupOutcome, setClosePopupOutcome] = useState<'show' | 'no_show' | null>(null)
+  const [closePopupSaving, setClosePopupSaving] = useState(false)
+
+  // Show-branch fields
+  // Every required field starts null — practitioner must explicitly
+  // answer each section before Confirm enables. No silent defaults.
+  const [showBPayment, setShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [showBNoteAction, setShowBNoteAction] = useState<'take' | 'skip' | 'has' | null>(null)
+  const [showBNoteDraft, setShowBNoteDraft] = useState('')
+  // Schedule-next is asked AFTER Close is confirmed, via a small
+  // follow-up popup — keeps the main Close form focused on the
+  // session that just happened.
+  const [scheduleNextPromptOpenB, setScheduleNextPromptOpenB] = useState(false)
+
+  // No-show-branch fields
+  const [noShowBPayment, setNoShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [noShowBReason, setNoShowBReason] = useState<string>('')
+  const [noShowBComments, setNoShowBComments] = useState('')
+
+  // For the post-Show "Schedule next" branch — opens ScheduleSessionModal.
+  // Bookings page doesn't have the full Member shape on hand, so the modal
+  // opens at its member-picker step (consistent with the existing Reschedule
+  // path) rather than auto-preselecting.
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+
+  // Refresh bookings list — shared by every status-changing handler.
+  // Mirrors SessionsTab's onSessionsUpdate pattern.
+  const fetchBookings = async () => {
+    if (!userId) return
+    const sb = createClient()
+    const { data } = await sb
+      .from('bookings')
+      .select('*')
+      .eq('practitioner_id', userId)
+      .order('start_time', { ascending: true })
+    if (data) setBookings(data as Booking[])
+  }
+
+  const openClosePopupBooking = (booking: Booking) => {
+    setClosePopupBooking(booking)
+    setClosePopupOutcome(null)
+    // Reset every required field. The only auto-fill is the "Note
+    // already added" detection — that satisfies the note requirement
+    // since the system already has the answer.
+    setShowBPayment(null)
+    const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
+    setShowBNoteAction(hasExistingNote ? 'has' : null)
+    setShowBNoteDraft('')
+    setNoShowBPayment(null)
+    setNoShowBReason('')
+    setNoShowBComments('')
+  }
+  const closeClosePopupBooking = () => {
+    setClosePopupBooking(null)
+    setClosePopupOutcome(null)
+    setShowBNoteDraft('')
+    setNoShowBComments('')
+  }
+
+  const confirmClosePopupBooking = async () => {
+    if (!closePopupBooking || !closePopupOutcome) return
+    const booking = closePopupBooking
+    setClosePopupSaving(true)
+    try {
+      const sb = createClient()
+      if (closePopupOutcome === 'show') {
+        // Required fields: payment + note choice. Guard against null.
+        if (showBPayment === null || showBNoteAction === null) return
+        const updates: Record<string, unknown> = {
+          status: 'completed',
+          payment_status: showBPayment,
+        }
+        // Save new note inline by appending to practitioner_notes (don't
+        // overwrite an existing entry).
+        if (showBNoteAction === 'take' && showBNoteDraft.replace(/<[^>]*>/g, '').trim()) {
+          const existing = booking.practitioner_notes || ''
+          updates.practitioner_notes = existing
+            ? existing + '\n\n' + showBNoteDraft
+            : showBNoteDraft
+        }
+        const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
+        if (error) throw error
+        await fetchBookings()
+        closeClosePopupBooking()
+        // Hand off to the small follow-up prompt.
+        setScheduleNextPromptOpenB(true)
+        toast.success(locale === 'fr' ? 'Rendez-vous marqué comme terminé' : 'Booking marked as completed')
+      } else {
+        // Required fields: payment + reason. Comments optional.
+        if (noShowBPayment === null || !noShowBReason) return
+        const updates: Record<string, unknown> = {
+          status: 'cancelled',
+          payment_status: noShowBPayment,
+          cancellation_reason: noShowBReason,
+          cancelled_at: new Date().toISOString(),
+        }
+        if (noShowBComments.trim()) {
+          const existing = booking.practitioner_notes || ''
+          updates.practitioner_notes = (existing
+            ? existing + '\n\n' + noShowBComments.trim()
+            : noShowBComments.trim()).trim()
+        }
+        const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
+        if (error) throw error
+        await fetchBookings()
+        closeClosePopupBooking()
+        toast.success(locale === 'fr' ? 'Rendez-vous marqué comme annulé' : 'Booking marked as cancelled')
+      }
+    } catch (err) {
+      console.error('confirmClosePopupBooking error:', err)
+      toast.error(locale === 'fr' ? 'Erreur lors de la mise à jour' : 'Failed to update booking')
+    } finally {
+      setClosePopupSaving(false)
+    }
+  }
+
   const handleDeleteBooking = async (bookingId: string) => {
     try {
       setProcessingId(bookingId)
       const sb = createClient()
-      // Delete the booking
-      const { error } = await sb.from('bookings').delete().eq('id', bookingId)
+      // Delete the booking. Request exact count so we can detect the
+      // RLS-silently-blocked case (no error, but 0 rows affected) and
+      // surface it instead of fake-succeeding.
+      const { error, count } = await sb
+        .from('bookings')
+        .delete({ count: 'exact' })
+        .eq('id', bookingId)
       if (error) throw error
+      if ((count ?? 0) === 0) {
+        throw new Error('Delete matched 0 rows — likely RLS or wrong practitioner_id')
+      }
       // Also delete matching session if exists
       const booking = bookings.find(b => b.id === bookingId)
       if (booking) {
@@ -706,8 +877,13 @@ export default function BookingsPage() {
       setBookings(prev => prev.filter(b => b.id !== bookingId))
       setDeleteConfirmBooking(null)
       toast.success(locale === 'fr' ? 'Rendez-vous supprimé' : 'Booking deleted')
-    } catch (err) {
-      console.error('Delete booking error:', err)
+    } catch (err: any) {
+      console.error('Delete booking error:', {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+      })
       toast.error(locale === 'fr' ? 'Erreur lors de la suppression' : 'Failed to delete booking')
     } finally {
       setProcessingId(null)
@@ -1222,13 +1398,47 @@ export default function BookingsPage() {
               ) : (() => {
                 // ── Compute upcoming vs history once. Order-preserving. ──
                 const now = new Date()
-                const upcomingBookings = bookings
+                // Map a Booking to its StatusKey for filtering (same logic
+                // as the dot colour).
+                const bookingStatusKey = (b: Booking): StatusKey => {
+                  if (b.status === 'pending') return 'pending'
+                  if (b.status === 'confirmed') return parseISO(b.start_time) < now ? 'awaiting' : 'scheduled'
+                  if (b.status === 'completed') return 'completed'
+                  if (b.status === 'cancelled') return 'cancelled'
+                  if (b.status === 'no_show') return 'no_show'
+                  return 'scheduled'
+                }
+                const passesFilters = (b: Booking): boolean => {
+                  if (!inDateRange(parseISO(b.start_time), dateRange, customFrom, customTo)) return false
+                  if (statusFilters.size > 0 && !statusFilters.has(bookingStatusKey(b))) return false
+                  if (typeFilters.size > 0 && !typeFilters.has(b.session_type as string)) return false
+                  if (paymentFilters.size > 0 && !paymentFilters.has(b.payment_status || 'unpaid')) return false
+                  return true
+                }
+                const upcomingBookingsRaw = bookings
                   .filter(b => (b.status === 'confirmed' || b.status === 'pending') && parseISO(b.start_time) > now)
+                  .filter(passesFilters)
                   .sort((a, b) => {
                     if (a.status === 'pending' && b.status !== 'pending') return -1
                     if (a.status !== 'pending' && b.status === 'pending') return 1
                     return parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime()
                   })
+                // Collapse recurring-series occurrences into a single card,
+                // identical to the SessionsTab pattern. One card per series
+                // shows the next occurrence; subsequent dates open via the
+                // "View all sessions" button on that card.
+                const upcomingBookings = ((): (typeof bookings[number] & { _seriesNext?: typeof bookings })[] => {
+                  const seen = new Set<string>()
+                  const out: (typeof bookings[number] & { _seriesNext?: typeof bookings })[] = []
+                  for (const b of upcomingBookingsRaw) {
+                    if (!b.series_id) { out.push(b); continue }
+                    if (seen.has(b.series_id)) continue
+                    seen.add(b.series_id)
+                    const seriesNext = upcomingBookingsRaw.filter(x => x.series_id === b.series_id && x.id !== b.id)
+                    out.push({ ...b, _seriesNext: seriesNext })
+                  }
+                  return out
+                })()
                 const historyBookings = bookings
                   .filter(b =>
                     b.status === 'completed' ||
@@ -1236,6 +1446,7 @@ export default function BookingsPage() {
                     b.status === 'no_show' ||
                     (b.status === 'confirmed' && parseISO(b.start_time) < now)
                   )
+                  .filter(passesFilters)
                   .sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime())
 
                 // ── Relative-date label for a booking row ──
@@ -1251,13 +1462,15 @@ export default function BookingsPage() {
                   const startTime = parseISO(booking.start_time)
                   const durMin = Math.round((parseISO(booking.end_time).getTime() - startTime.getTime()) / 60000)
                   const isAwaitingOutcome = booking.status === 'confirmed' && isPast(startTime)
-                  const dotColor =
-                    booking.status === 'pending' ? 'bg-amber-400 ring-amber-100' :
-                    booking.status === 'confirmed' ? (isAwaitingOutcome ? 'bg-orange-400 ring-orange-100' : 'bg-teal-500 ring-teal-100') :
-                    booking.status === 'completed' ? 'bg-emerald-500 ring-emerald-100' :
-                    booking.status === 'cancelled' ? 'bg-red-400 ring-red-100' :
-                    booking.status === 'no_show' ? 'bg-gray-500 ring-gray-200' :
-                    'bg-gray-300 ring-gray-100'
+                  // Map status → shared StatusKey so the timeline dot
+                  // and the legend popover stay in sync.
+                  const statusKey: StatusKey =
+                    booking.status === 'pending'   ? 'pending'   :
+                    booking.status === 'confirmed' ? (isAwaitingOutcome ? 'awaiting' : 'scheduled') :
+                    booking.status === 'completed' ? 'completed' :
+                    booking.status === 'cancelled' ? 'cancelled' :
+                    booking.status === 'no_show'   ? 'no_show'   :
+                    'scheduled'
                   // Use the live member name if the booking links to one, so
                   // renames are reflected in the row. Falls back to the
                   // snapshotted client_name for guest bookings.
@@ -1270,10 +1483,12 @@ export default function BookingsPage() {
                     .toUpperCase() || '·'
                   return (
                     <div key={booking.id} id={`booking-${booking.id}`} className="relative flex gap-4 group">
-                      {/* Timeline column — dot + vertical line */}
-                      <div className="relative w-3 flex-shrink-0">
-                        <span className={`absolute left-0 top-1.5 w-3 h-3 rounded-full ring-4 ${dotColor}`} />
-                        {!isLast && <span className="absolute left-1.5 top-5 bottom-[-1.25rem] w-px bg-gray-200" />}
+                      {/* Timeline column — status dot (icon inside) + vertical line */}
+                      <div className="relative w-5 flex-shrink-0">
+                        <span className="absolute left-0 top-0.5">
+                          <StatusDot status={statusKey} />
+                        </span>
+                        {!isLast && <span className="absolute left-1/2 -translate-x-1/2 top-7 bottom-[-1.25rem] w-px bg-gray-200" />}
                       </div>
 
                       {/* Row content */}
@@ -1325,7 +1540,7 @@ export default function BookingsPage() {
                                   no action row to host it; the action row puts it after
                                   the Take-notes button. Keeps a single source of truth. */}
                               {(() => {
-                                const hasActionRow = (booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) || (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome)
+                                const hasActionRow = (booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) || (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome) || isAwaitingOutcome
                                 if (hasActionRow) return null
                                 return (
                                   <PaymentBadge
@@ -1346,6 +1561,21 @@ export default function BookingsPage() {
                                   {locale === 'fr' ? 'Manuelle' : 'Manual'}
                                 </span>
                               )}
+                              {/* Series — small clickable chip that opens
+                                  the SeriesDetailDrawer (mirrors SessionsTab). */}
+                              {booking.series_id && booking.series_position && booking.series_total && (
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingSeriesId(booking.series_id!)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 hover:bg-violet-100 text-violet-700 font-medium text-[10px] transition-colors"
+                                  title={locale === 'fr' ? 'Voir la série' : 'View series'}
+                                >
+                                  <RefreshCw className="w-2.5 h-2.5" />
+                                  {locale === 'fr'
+                                    ? `Séance ${booking.series_position}/${booking.series_total}`
+                                    : `Session ${booking.series_position}/${booking.series_total}`}
+                                </button>
+                              )}
                               {isAwaitingOutcome && (
                                 <span className="text-orange-600 font-medium">{locale === 'fr' ? 'En attente du statut' : 'Awaiting outcome'}</span>
                               )}
@@ -1363,12 +1593,32 @@ export default function BookingsPage() {
                               </p>
                             )}
 
-                            {/* Session-level actions — note-taking + Meet join.
-                                "Take notes for this session" is named explicitly
-                                so it isn't confused with the videoconference Join. */}
+                            {/* Session-level actions — Close session
+                                (awaiting outcome), Join (meet link), Take
+                                notes, payment. Action row also fires for
+                                isAwaitingOutcome so the Close button is
+                                always reachable even on guest bookings. */}
                             {((booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) ||
-                              (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome)) && (
+                              (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome) ||
+                              isAwaitingOutcome) && (
                               <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                {/* Awaiting outcome — glowing Close session CTA */}
+                                {isAwaitingOutcome && (
+                                  <span className="relative inline-flex rounded-md">
+                                    <span
+                                      className="absolute inset-0 rounded-md bg-amber-400 opacity-40 animate-ping"
+                                      style={{ animationDuration: '2s' }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => openClosePopupBooking(booking)}
+                                      className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md transition-colors"
+                                    >
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+                                    </button>
+                                  </span>
+                                )}
                                 {booking.status === 'confirmed' && !isAwaitingOutcome && booking.meet_link && (
                                   <a
                                     href={booking.meet_link}
@@ -1398,6 +1648,10 @@ export default function BookingsPage() {
                                 />
                               </div>
                             )}
+
+                            {/* The "Session N/Y" chip in the meta row above
+                                is already clickable and opens the
+                                SeriesDetailDrawer — no separate big button. */}
                           </div>
 
                           {/* Actions — status-change action + ⋯ menu for the rest. */}
@@ -1414,32 +1668,40 @@ export default function BookingsPage() {
                               </button>
                             )}
 
-                            {/* Awaiting outcome: Complete visible, No-show + Reschedule + Delete in menu */}
-                            {isAwaitingOutcome && (
+                            {/* Awaiting outcome: rely on the menu's Show item (mirrors
+                                SessionsTab). The inline "Complete" button used to live
+                                here — removed when Show landed in the menu. */}
+
+                            {/* Pending bookings keep an inline Reject affordance — it's
+                                a status-change action, not the same as Delete. */}
+                            {booking.status === 'pending' && (
                               <button
-                                onClick={() => handleMarkStatus(booking.id, 'completed')}
+                                onClick={() => setCancelConfirmBooking(booking)}
                                 disabled={processingId === booking.id}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
                               >
-                                {processingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                {locale === 'fr' ? 'Terminé' : 'Complete'}
+                                <X className="w-3.5 h-3.5" />
+                                {locale === 'fr' ? 'Refuser' : 'Reject'}
                               </button>
                             )}
 
-                            <RowMenu items={[
-                              ...(booking.status === 'pending' ? [
-                                { label: locale === 'fr' ? 'Refuser' : 'Reject', icon: X, onClick: () => setCancelConfirmBooking(booking), danger: true },
-                              ] : []),
-                              ...(isAwaitingOutcome ? [
-                                { label: locale === 'fr' ? 'Absent' : 'No-show', icon: XCircle, onClick: () => handleMarkStatus(booking.id, 'no_show') },
-                                { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
-                              ] : []),
-                              ...(booking.status === 'confirmed' && !isAwaitingOutcome ? [
-                                { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
-                                { label: locale === 'fr' ? 'Annuler' : 'Cancel', icon: X, onClick: () => setCancelConfirmBooking(booking), danger: true },
-                              ] : []),
-                              { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => setDeleteConfirmBooking(booking), danger: true },
-                            ]} />
+                            {/* Mirror of SessionsTab. Close + Reschedule only
+                                apply while the booking is still open (pending
+                                or confirmed) — closed rows just keep Delete.
+                                "Edit session" is omitted because bookings have
+                                no dedicated edit-booking flow. */}
+                            {(() => {
+                              const isClosedB = booking.status !== 'pending' && booking.status !== 'confirmed'
+                              return (
+                                <RowMenu items={[
+                                  ...(isClosedB ? [] : [
+                                    { label: locale === 'fr' ? 'Clôturer la séance' : 'Close session', icon: CheckCircle, onClick: () => openClosePopupBooking(booking), tone: 'success' as const },
+                                    { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
+                                  ]),
+                                  { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => setDeleteConfirmBooking(booking), danger: true },
+                                ]} />
+                              )
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -1467,11 +1729,67 @@ export default function BookingsPage() {
 
                 return (
                   <div className="space-y-6">
+                    {/* ── Filter bar — applies to both Up next + History ── */}
+                    <section className="bg-white rounded-2xl border border-gray-200 p-4">
+                      <SessionFilters
+                        dateRange={dateRange}
+                        onDateRangeChange={setDateRange}
+                        customFrom={customFrom}
+                        customTo={customTo}
+                        onCustomChange={(from, to) => { setCustomFrom(from); setCustomTo(to) }}
+                        statusOptions={[
+                          { key: 'pending',   label: locale === 'fr' ? 'En attente d\'approbation' : 'Pending' },
+                          { key: 'scheduled', label: locale === 'fr' ? 'Planifiée' : 'Scheduled' },
+                          { key: 'awaiting',  label: locale === 'fr' ? 'En attente' : 'Awaiting' },
+                          { key: 'completed', label: locale === 'fr' ? 'Terminée' : 'Completed' },
+                          { key: 'cancelled', label: locale === 'fr' ? 'Annulée' : 'Cancelled' },
+                          { key: 'no_show',   label: locale === 'fr' ? 'Absent' : 'No-show' },
+                        ]}
+                        statusFilters={statusFilters}
+                        onStatusFiltersChange={setStatusFilters}
+                        typeOptions={(() => {
+                          // Use the practitioner's configured session
+                          // types — that's the canonical list.
+                          if (sessionTypes && sessionTypes.length > 0) {
+                            return sessionTypes
+                              .map(st => ({
+                                key: st.name,
+                                label: locale === 'fr' ? (st.name_fr || st.name) : st.name,
+                              }))
+                              .sort((a, b) => a.label.localeCompare(b.label))
+                          }
+                          // Fallback if no settings: derive from existing data
+                          const seen = new Set<string>()
+                          const opts: { key: string; label: string }[] = []
+                          for (const b of bookings) {
+                            const key = b.session_type as string
+                            if (!key || seen.has(key)) continue
+                            seen.add(key)
+                            opts.push({ key, label: getSessionTypeName(key) || key })
+                          }
+                          return opts.sort((a, b) => a.label.localeCompare(b.label))
+                        })()}
+                        typeFilters={typeFilters}
+                        onTypeFiltersChange={setTypeFilters}
+                        paymentOptions={[
+                          { key: 'paid',   label: locale === 'fr' ? 'Payé' : 'Paid' },
+                          { key: 'unpaid', label: locale === 'fr' ? 'Non payé' : 'Unpaid' },
+                        ]}
+                        paymentFilters={paymentFilters}
+                        onPaymentFiltersChange={setPaymentFilters}
+                        locale={locale}
+                        onReset={resetFilters}
+                      />
+                    </section>
+
                     {/* ── Up next ── */}
                     <section id="up-next-section" className="bg-white rounded-2xl border border-gray-200 p-6 scroll-mt-6">
-                      <header className="flex items-baseline gap-2 mb-5">
-                        <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'À venir' : 'Up next'}</h2>
-                        <span className="text-sm text-gray-400 tabular-nums">{upcomingBookings.length}</span>
+                      <header className="flex items-center justify-between mb-5">
+                        <div className="flex items-baseline gap-2">
+                          <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'À venir' : 'Up next'}</h2>
+                          <span className="text-sm text-gray-400 tabular-nums">{upcomingBookings.length}</span>
+                        </div>
+                        <SessionDotLegend />
                       </header>
                       {upcomingBookings.length === 0 ? (
                         <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucun rendez-vous à venir' : 'No upcoming appointments'}</p>
@@ -1484,9 +1802,12 @@ export default function BookingsPage() {
 
                     {/* ── History ── */}
                     <section id="history-section" className="bg-white rounded-2xl border border-gray-200 p-6 scroll-mt-6">
-                      <header className="flex items-baseline gap-2 mb-5">
-                        <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'Historique' : 'History'}</h2>
-                        <span className="text-sm text-gray-400 tabular-nums">{historyBookings.length}</span>
+                      <header className="flex items-center justify-between mb-5">
+                        <div className="flex items-baseline gap-2">
+                          <h2 className="text-xl font-bold text-gray-900">{locale === 'fr' ? 'Historique' : 'History'}</h2>
+                          <span className="text-sm text-gray-400 tabular-nums">{historyBookings.length}</span>
+                        </div>
+                        <SessionDotLegend />
                       </header>
                       {historyBookings.length === 0 ? (
                         <p className="text-sm text-gray-400">{locale === 'fr' ? 'Aucun rendez-vous passé' : 'No past appointments'}</p>
@@ -2497,6 +2818,331 @@ export default function BookingsPage() {
           </div>
         </div>
       )}
+
+      {/* Series detail drawer — opens from the "View all sessions" button.
+          Bookings carry the same series_* columns as sessions, so we just
+          map the field shape (start_time → scheduled_at, status confirmed
+          → scheduled) before handing them to the shared drawer. */}
+      <SeriesDetailDrawer
+        isOpen={!!viewingSeriesId}
+        onClose={() => setViewingSeriesId(null)}
+        sessions={(() => {
+          if (!viewingSeriesId) return []
+          return bookings
+            .filter(b => b.series_id === viewingSeriesId)
+            .map(b => ({
+              id: b.id,
+              member_id: b.member_id || '',
+              practitioner_id: b.practitioner_id,
+              scheduled_at: b.start_time,
+              duration_minutes: Math.round((parseISO(b.end_time).getTime() - parseISO(b.start_time).getTime()) / 60000),
+              status: (b.status === 'confirmed' ? 'scheduled' : b.status) as any,
+              session_type: b.session_type as any,
+              session_format: b.session_format as any,
+              series_id: b.series_id,
+              series_position: b.series_position,
+              series_total: b.series_total,
+              recurrence_rule: b.recurrence_rule,
+              created_at: b.created_at,
+              updated_at: b.updated_at,
+              payment_status: b.payment_status,
+            }) as any)
+        })()}
+        memberName={(() => {
+          const first = bookings.find(b => b.series_id === viewingSeriesId)
+          if (!first) return ''
+          return (first.member_id && memberNames.get(first.member_id)) || first.client_name || ''
+        })()}
+        locale={locale as 'en' | 'fr' | 'es'}
+      />
+
+      {/* ─── Close session popup — single dialog. Top asks Show vs
+          No-show, then reveals the matching branch. Mirrors SessionsTab. ─── */}
+      {closePopupBooking && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onClick={closeClosePopupBooking}
+        >
+          <div
+            // Widen the popup when the inline note editor is open so the
+            // textarea isn't squeezed.
+            className={`bg-white rounded-2xl shadow-xl w-full p-6 max-h-[90vh] overflow-y-auto transition-[max-width] duration-200 ${
+              closePopupOutcome === 'show' && showBNoteAction === 'take'
+                ? 'max-w-2xl'
+                : 'max-w-md'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">
+                {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+              </h3>
+              <button
+                type="button"
+                onClick={closeClosePopupBooking}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Outcome — Show or No-show. Required first choice. */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                {locale === 'fr' ? 'Comment s\'est passée la séance ?' : 'How did this session go?'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setClosePopupOutcome('show')}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium border transition ${
+                    closePopupOutcome === 'show'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                  }`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Présent' : 'Show'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClosePopupOutcome('no_show')}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium border transition ${
+                    closePopupOutcome === 'no_show'
+                      ? 'bg-amber-600 text-white border-amber-600'
+                      : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                  }`}
+                >
+                  <XCircle className="w-4 h-4" />
+                  {locale === 'fr' ? 'Absent' : 'No show'}
+                </button>
+              </div>
+            </div>
+
+            {/* ─── Show branch ─── */}
+            {closePopupOutcome === 'show' && (
+              <>
+                {/* Section 1 — Payment */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Paiement' : 'Payment'}
+                  </p>
+                  <div className="flex gap-2">
+                    {(['paid', 'unpaid'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setShowBPayment(opt)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                          showBPayment === opt
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {opt === 'paid'
+                          ? (locale === 'fr' ? 'Payé' : 'Paid')
+                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 2 — Note. Uses RichTextEditor to match the
+                    SessionsTab Close popup. memberId may be null for
+                    guest bookings; pass empty string so the editor still
+                    renders (member-specific features just no-op). */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Note de séance' : 'Session note'}
+                  </p>
+                  {showBNoteAction === 'has' ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>{locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}</span>
+                    </div>
+                  ) : showBNoteAction === 'take' ? (
+                    <div>
+                      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <RichTextEditor
+                          value={showBNoteDraft}
+                          onChange={setShowBNoteDraft}
+                          placeholder={locale === 'fr' ? 'Rédigez votre note de séance...' : 'Write your session note...'}
+                          memberId={closePopupBooking?.member_id || ''}
+                          locale={locale}
+                          autoFocus
+                          memberName={closePopupBooking?.client_name?.split(' ')[0]}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setShowBNoteAction('skip'); setShowBNoteDraft('') }}
+                        className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                      >
+                        {locale === 'fr' ? '← Sans note' : '← No note'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowBNoteAction('take')}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                      >
+                        <PenLine className="w-4 h-4 text-gray-500" />
+                        {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowBNoteAction('skip')}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 border border-gray-200 text-gray-600"
+                      >
+                        {locale === 'fr' ? 'Aucune note' : 'No notes'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+              </>
+            )}
+
+            {/* ─── No-show branch ─── */}
+            {closePopupOutcome === 'no_show' && (
+              <>
+                {/* Section 1 — Payment */}
+                <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Paiement' : 'Payment'}
+                  </p>
+                  <div className="flex gap-2">
+                    {(['paid', 'unpaid'] as const).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setNoShowBPayment(opt)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                          noShowBPayment === opt
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {opt === 'paid'
+                          ? (locale === 'fr' ? 'Payé' : 'Paid')
+                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section 2 — Reason + comments */}
+                <div className="mb-6">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Raison' : 'Reason'}
+                  </p>
+                  <select
+                    value={noShowBReason}
+                    onChange={(e) => setNoShowBReason(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    <option value="" disabled>
+                      {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
+                    </option>
+                    {([
+                      ['no_communication', locale === 'fr' ? 'Aucune communication' : 'No communication'],
+                      ['client_request', locale === 'fr' ? 'Demande du patient' : 'Client request'],
+                      ['late_cancellation', locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'],
+                      ['illness', locale === 'fr' ? 'Maladie' : 'Illness'],
+                      ['forgot', locale === 'fr' ? 'Patient a oublié' : 'Client forgot'],
+                      ['emergency', locale === 'fr' ? 'Urgence' : 'Emergency'],
+                      ['technical_issue', locale === 'fr' ? 'Problème technique' : 'Technical issue'],
+                      ['scheduling_conflict', locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'],
+                      ['practitioner_unavailable', locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'],
+                      ['other', locale === 'fr' ? 'Autre' : 'Other'],
+                    ] as const).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={noShowBComments}
+                    onChange={(e) => setNoShowBComments(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
+                    rows={3}
+                    className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="ghost" onClick={closeClosePopupBooking} disabled={closePopupSaving}>
+                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+              </Button>
+              <Button
+                onClick={confirmClosePopupBooking}
+                disabled={
+                  closePopupSaving ||
+                  !closePopupOutcome ||
+                  (closePopupOutcome === 'show'   && (showBPayment === null || showBNoteAction === null)) ||
+                  (closePopupOutcome === 'no_show' && (noShowBPayment === null || !noShowBReason))
+                }
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                {closePopupSaving
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : (locale === 'fr' ? 'Confirmer' : 'Confirm')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Schedule-next follow-up — appears after a Show close ─── */}
+      {scheduleNextPromptOpenB && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onClick={() => setScheduleNextPromptOpenB(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {locale === 'fr' ? 'Planifier la prochaine séance ?' : 'Schedule next session?'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {locale === 'fr'
+                ? 'Voulez-vous planifier un nouveau rendez-vous maintenant ?'
+                : 'Would you like to schedule a new booking now?'}
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setScheduleNextPromptOpenB(false)}
+              >
+                {locale === 'fr' ? 'Non' : 'No'}
+              </Button>
+              <Button
+                onClick={() => { setScheduleNextPromptOpenB(false); setShowScheduleModal(true) }}
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                {locale === 'fr' ? 'Oui, planifier' : 'Yes, schedule'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule-next modal — opens after the prompt's Yes. */}
+      <ScheduleSessionModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSuccess={() => {
+          setShowScheduleModal(false)
+          fetchBookings()
+        }}
+      />
 
       {/* Availability Saved Confirmation Modal */}
       {showSavedModal && (

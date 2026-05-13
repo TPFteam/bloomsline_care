@@ -13,11 +13,14 @@ interface Props {
   locale: 'en' | 'fr' | 'es'
 }
 
+// Completed / cancelled / no_show all collapse into muted gray so the
+// practitioner's eye is drawn to what's coming next. Scheduled is the
+// only "highlighted" state.
 const STATUS_VISUAL: Record<string, { bg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
   scheduled:  { bg: 'bg-blue-50',     text: 'text-blue-700',     icon: Clock },
-  completed:  { bg: 'bg-emerald-50',  text: 'text-emerald-700',  icon: CheckCircle },
-  cancelled:  { bg: 'bg-gray-100',    text: 'text-gray-500',     icon: XCircle },
-  no_show:    { bg: 'bg-amber-50',    text: 'text-amber-700',    icon: Ban },
+  completed:  { bg: 'bg-gray-100',    text: 'text-gray-500',     icon: CheckCircle },
+  cancelled:  { bg: 'bg-gray-100',    text: 'text-gray-400',     icon: XCircle },
+  no_show:    { bg: 'bg-gray-100',    text: 'text-gray-400',     icon: Ban },
 }
 
 export function SeriesDetailDrawer({ isOpen, onClose, sessions, memberName, locale }: Props) {
@@ -125,6 +128,7 @@ export function SeriesDetailDrawer({ isOpen, onClose, sessions, memberName, loca
             {ordered.map((s) => {
               const visual = STATUS_VISUAL[s.status] || STATUS_VISUAL.scheduled
               const Icon = visual.icon
+              const isPast = s.status !== 'scheduled'
               const date = new Date(s.scheduled_at)
               const dateLabel = date.toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', {
                 weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
@@ -137,13 +141,13 @@ export function SeriesDetailDrawer({ isOpen, onClose, sessions, memberName, loca
                   key={s.id}
                   className="flex items-start gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="text-[11px] font-mono text-gray-400 w-7 pt-1 shrink-0 text-right">
+                  <div className={`text-[11px] font-mono w-7 pt-1 shrink-0 text-right ${isPast ? 'text-gray-300' : 'text-violet-500'}`}>
                     {s.series_position}/{s.series_total}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-gray-900">{dateLabel}</p>
-                      <span className="text-xs text-gray-500">{timeLabel}</span>
+                      <p className={`text-sm font-medium ${isPast ? 'text-gray-400 line-through decoration-gray-200' : 'text-gray-900'}`}>{dateLabel}</p>
+                      <span className={`text-xs ${isPast ? 'text-gray-300' : 'text-gray-500'}`}>{timeLabel}</span>
                       {s.detached_from_series && (
                         <span className="px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 text-[10px] font-medium" title={t('Moved away from the series', 'Déplacée hors de la série', 'Movida fuera de la serie')}>
                           {t('Moved', 'Déplacée', 'Movida')}
