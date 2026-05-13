@@ -314,7 +314,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
   const isProspect = member?.status === 'prospect'
 
   const sessionsAndNotesLabel = locale === 'fr'
-    ? 'Séances'
+    ? 'Suivi'
     : locale === 'es'
       ? 'Sesiones'
       : 'Sessions'
@@ -577,7 +577,7 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                   <div className="flex items-center gap-6 mb-5 border-b border-gray-200">
                     {([
                       { id: 'sessions' as const, label: t.members.profile.sessions, icon: Clock },
-                      { id: 'notes' as const, label: locale === 'fr' ? 'Rechercher' : locale === 'es' ? 'Buscar' : 'Find', icon: StickyNote },
+                      { id: 'notes' as const, label: locale === 'fr' ? 'Parcourir' : locale === 'es' ? 'Buscar' : 'Find', icon: StickyNote },
                     ]).map(sub => {
                       const SubIcon = sub.icon
                       const isActive = activeSubTab === sub.id
