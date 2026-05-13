@@ -27,6 +27,13 @@ export async function POST(
     // For series bookings: 'this' moves only this occurrence (creates an
     // exception instance on Google); 'following' is not yet supported in v1.
     const seriesScope: 'this' | 'following' = body.series_scope === 'following' ? 'following' : 'this';
+    // Optional — practitioner can change session type / format as part of
+    // the reschedule. Undefined means "keep what's already on the row".
+    const sessionTypeId: string | undefined = typeof body.sessionTypeId === 'string' ? body.sessionTypeId : undefined;
+    const sessionFormat: 'in_person' | 'virtual' | undefined =
+      body.sessionFormat === 'in_person' || body.sessionFormat === 'virtual'
+        ? body.sessionFormat
+        : undefined;
 
     if (!newSlotStart || !newSlotEnd) {
       return NextResponse.json({ error: 'New slot start and end are required' }, { status: 400 });
@@ -83,6 +90,8 @@ export async function POST(
           end_time: newSlotEnd,
           detached_from_series: true,
           updated_at: updateNow,
+          ...(sessionTypeId ? { session_type: sessionTypeId } : {}),
+          ...(sessionFormat ? { session_format: sessionFormat } : {}),
         })
         .eq('id', id);
 
@@ -93,6 +102,8 @@ export async function POST(
           duration_minutes: newDuration,
           detached_from_series: true,
           updated_at: updateNow,
+          ...(sessionTypeId ? { session_type: sessionTypeId } : {}),
+          ...(sessionFormat ? { session_format: sessionFormat } : {}),
         })
         .eq('practitioner_id', user.id)
         .eq('member_id', booking.member_id)
@@ -219,6 +230,11 @@ export async function POST(
       }
     }
 
+    // Resolve effective session type / format — practitioner-provided
+    // overrides win, otherwise inherit from the old booking row.
+    const effectiveSessionType = sessionTypeId ?? booking.session_type;
+    const effectiveSessionFormat = sessionFormat ?? booking.session_format;
+
     // Create new booking
     const { data: newBooking, error: createError } = await adminSupabase
       .from('bookings')
@@ -228,7 +244,8 @@ export async function POST(
         client_name: booking.client_name,
         client_email: booking.client_email,
         client_phone: booking.client_phone,
-        session_type: booking.session_type,
+        session_type: effectiveSessionType,
+        session_format: effectiveSessionFormat,
         start_time: newSlotStart,
         end_time: newSlotEnd,
         timezone: booking.timezone,
@@ -259,11 +276,15 @@ export async function POST(
       'group': 'group',
     };
 
+    // Map the configured session-type ID to a session enum, with the
+    // practitioner-overridden value taking precedence over the inherited
+    // booking value.
+    const sessionEnumSource = sessionTypeMap[effectiveSessionType] || effectiveSessionType
     await adminSupabase.from('sessions').insert({
       practitioner_id: user.id,
       member_id: booking.member_id,
-      session_type: sessionTypeMap[booking.session_type] || 'check_in',
-      session_format: 'virtual',
+      session_type: sessionEnumSource || 'check_in',
+      session_format: effectiveSessionFormat || 'virtual',
       scheduled_at: newSlotStart,
       duration_minutes: durationMinutes,
       status: 'scheduled',

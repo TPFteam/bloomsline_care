@@ -29,6 +29,10 @@ interface SessionType {
 interface TimeSlot {
   slot_start: string
   slot_end: string
+  // API tags slots that fall outside the practitioner's configured
+  // schedule (after-hours, weekends, etc.) with this flag so the UI
+  // can render them as secondary while keeping them bookable.
+  outside_availability?: boolean
 }
 
 interface RescheduleBooking {
@@ -63,7 +67,9 @@ interface ScheduleSessionModalProps {
   preselectedOutsideHours?: boolean
 }
 
-type Step = 'member' | 'session' | 'format' | 'datetime' | 'confirm'
+// Session type + format used to be two separate steps; they're merged
+// into 'session' so the practitioner picks both on one screen.
+type Step = 'member' | 'session' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
 export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime, preselectedOutsideHours }: ScheduleSessionModalProps) {
@@ -78,6 +84,15 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   const [loading, setLoading] = useState(false)
   const [selectedSessionFormat, setSelectedSessionFormat] = useState<'in_person' | 'video' | null>(null)
+  // Ref on the format-picker block so we can scroll it into view the
+  // moment a session type is chosen (the picker reveals beneath the
+  // type grid; without auto-scroll it can land below the modal's fold).
+  const formatPickerRef = useRef<HTMLDivElement>(null)
+  // Ref on the first within-hours slot so we can scroll the list to
+  // it when the datetime step opens — keeps the focus on the
+  // practitioner's working hours while still letting them scroll up
+  // for after-hours bookings.
+  const firstInsideSlotRef = useRef<HTMLButtonElement>(null)
   const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
@@ -491,6 +506,15 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             // Series rows always move just this occurrence; cancel-and-rebook
             // a new series is the path for "all future".
             series_scope: rescheduleData.series_id ? 'this' : undefined,
+            // Updated session type / format if the practitioner picked
+            // new values in the reschedule modal. The API applies these
+            // to both the booking and the matching session row.
+            sessionTypeId: selectedSessionType?.id,
+            sessionFormat: selectedSessionFormat === 'in_person'
+              ? 'in_person'
+              : selectedSessionFormat === 'video'
+                ? 'virtual'
+                : undefined,
           }),
         })
         const data = await response.json()
@@ -884,6 +908,31 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     }
   }
 
+  // Auto-scroll the format picker into view when it first appears
+  // (i.e. when a type has just been picked on the session step).
+  useEffect(() => {
+    if (step !== 'session') return
+    const hasType = scheduleMode === 'manual' ? !!manualSessionType : !!selectedSessionType
+    if (!hasType) return
+    // Small delay so the picker is in the DOM before we scroll to it.
+    const tm = setTimeout(() => {
+      formatPickerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 80)
+    return () => clearTimeout(tm)
+  }, [step, scheduleMode, selectedSessionType, manualSessionType])
+
+  // When the datetime step's slots arrive, scroll to the first slot
+  // inside the practitioner's working hours so the focus lands there
+  // rather than at midnight.
+  useEffect(() => {
+    if (step !== 'datetime') return
+    if (!availableSlots.length) return
+    const tm = setTimeout(() => {
+      firstInsideSlotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 80)
+    return () => clearTimeout(tm)
+  }, [step, availableSlots])
+
   const filteredMembers = members.filter(member => {
     const fullName = `${member.first_name} ${member.last_name}`.toLowerCase()
     return fullName.includes(searchQuery.toLowerCase())
@@ -892,20 +941,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const goBack = () => {
     setShowSlotCalendar(false)
     if (step === 'session' && !preselectedMember) setStep('member')
-    else if (step === 'format') setStep('session')
-    else if (step === 'datetime') setStep('format')
-    // Mirror the forward-skip from format → confirm for after-hours
-    else if (step === 'confirm' && preselectedOutsideHours) setStep('format')
+    else if (step === 'datetime') setStep('session')
     else if (step === 'confirm') setStep('datetime')
   }
 
   const canProceed = () => {
     if (step === 'member') return !!selectedMember
     if (step === 'session') {
-      if (scheduleMode === 'manual') return !!manualSessionType && manualDuration > 0
-      return !!selectedSessionType
+      // Type + format both required before moving on.
+      if (scheduleMode === 'manual') return !!manualSessionType && manualDuration > 0 && !!selectedSessionFormat
+      return !!selectedSessionType && !!selectedSessionFormat
     }
-    if (step === 'format') return !!selectedSessionFormat
     if (step === 'datetime') {
       if (scheduleMode === 'manual') return !!manualTime
       return !!selectedTime
@@ -968,10 +1014,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center justify-center">
               {(isReschedule
-                ? ['session', 'format', 'datetime', 'confirm']
+                ? ['session', 'datetime', 'confirm']
                 : preselectedMember
-                ? ['session', 'format', 'datetime', 'confirm']
-                : ['member', 'session', 'format', 'datetime', 'confirm']
+                ? ['session', 'datetime', 'confirm']
+                : ['member', 'session', 'datetime', 'confirm']
               ).map((s, index, arr) => {
                 const currentIndex = arr.indexOf(step)
                 return (
@@ -1145,6 +1191,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   </div>
                 )}
 
+                {/* Type + Format on one screen.
+                    Picking a session type reveals the format options
+                    below — keeps the step count lower without losing
+                    the linearity of "type → format". */}
                 {scheduleMode === 'calendar' && sessionTypes.length === 0 ? (
                   <div className="py-6 text-center">
                     <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
@@ -1218,52 +1268,55 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Step: Format */}
-            {step === 'format' && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  {locale === 'fr' ? 'Format de séance' : 'Session Format'}
-                </p>
-                {availSessionFormats.includes('in_person') && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSessionFormat('in_person')}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                      selectedSessionFormat === 'in_person'
-                        ? 'border-mint-500 bg-mint-50/50'
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Building2 className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium text-gray-900">{locale === 'fr' ? 'En personne' : 'In person'}</p>
-                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Au cabinet' : "At the office"}</p>
-                      </div>
-                    </div>
-                  </button>
-                )}
-                {availSessionFormats.includes('video') && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSessionFormat('video')}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                      selectedSessionFormat === 'video'
-                        ? 'border-mint-500 bg-mint-50/50'
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Video className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium text-gray-900">{locale === 'fr' ? 'Vidéo' : 'Video call'}</p>
-                        <p className="text-xs text-gray-500">{locale === 'fr' ? 'Séance à distance' : 'Remote session'}</p>
-                      </div>
-                    </div>
-                  </button>
+                {/* Format picker — appears after a session type has been
+                    chosen so the user sees the natural "type → format"
+                    cascade without a separate wizard step. */}
+                {((scheduleMode === 'calendar' && selectedSessionType) ||
+                  (scheduleMode === 'manual' && manualSessionType)) && (
+                  <div ref={formatPickerRef} className="space-y-3 pt-3 border-t border-gray-100 scroll-mt-6">
+                    <p className="text-sm font-medium text-gray-700">
+                      {locale === 'fr' ? 'Format de séance' : locale === 'es' ? 'Formato de sesión' : 'Session Format'}
+                    </p>
+                    {availSessionFormats.includes('in_person') && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSessionFormat('in_person')}
+                        className={`w-full p-3.5 rounded-xl border-2 text-left transition-all ${
+                          selectedSessionFormat === 'in_person'
+                            ? 'border-mint-500 bg-mint-50/50'
+                            : 'border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Building2 className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">{locale === 'fr' ? 'En personne' : locale === 'es' ? 'En persona' : 'In person'}</p>
+                            <p className="text-xs text-gray-500">{locale === 'fr' ? 'Au cabinet' : locale === 'es' ? 'En el consultorio' : 'At the office'}</p>
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                    {availSessionFormats.includes('video') && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSessionFormat('video')}
+                        className={`w-full p-3.5 rounded-xl border-2 text-left transition-all ${
+                          selectedSessionFormat === 'video'
+                            ? 'border-mint-500 bg-mint-50/50'
+                            : 'border-gray-100 hover:border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Video className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">{locale === 'fr' ? 'Vidéo' : locale === 'es' ? 'Videollamada' : 'Video call'}</p>
+                            <p className="text-xs text-gray-500">{locale === 'fr' ? 'Séance à distance' : locale === 'es' ? 'Sesión remota' : 'Remote session'}</p>
+                          </div>
+                        </div>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -1534,36 +1587,93 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                         <div className="py-4 text-center text-gray-500">
                           <p className="text-sm">{locale === 'fr' ? 'Aucun créneau disponible' : 'No available slots'}</p>
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {availableSlots.map((slot) => {
-                            const slotDate = new Date(slot.slot_start)
-                            const tz = practitionerTz || 'UTC'
-                            const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
-                              timeZone: tz,
-                              hour: 'numeric',
-                              minute: '2-digit',
-                              hour12: !use24Hour,
-                            })
-                            const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
-                            const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
-                            const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
-                            return (
-                              <button
-                                key={slot.slot_start}
-                                onClick={() => setSelectedTime(timeStr)}
-                                className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                                  selectedTime === timeStr
-                                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      ) : (() => {
+                        // Split into three groups: before-hours (outside),
+                        // inside-hours (primary), after-hours (outside).
+                        // Each group gets its own divider header so the
+                        // separation between primary and after-hours is
+                        // a real visual break, not just a colour change.
+                        const firstInsideIdx = availableSlots.findIndex(s => !s.outside_availability)
+                        const lastInsideIdx = availableSlots.length - 1 - [...availableSlots].reverse().findIndex(s => !s.outside_availability)
+                        const hasInside = firstInsideIdx !== -1
+                        const beforeHours = hasInside ? availableSlots.slice(0, firstInsideIdx) : []
+                        const insideHours = hasInside ? availableSlots.slice(firstInsideIdx, lastInsideIdx + 1) : []
+                        const afterHours = hasInside ? availableSlots.slice(lastInsideIdx + 1) : availableSlots
+
+                        const renderSlot = (slot: TimeSlot, opts: { isFirstInside?: boolean }) => {
+                          const slotDate = new Date(slot.slot_start)
+                          const tz = practitionerTz || 'UTC'
+                          const timeDisplay = slotDate.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                            timeZone: tz,
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: !use24Hour,
+                          })
+                          const h = parseInt(slotDate.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+                          const m = slotDate.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+                          const timeStr = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+                          const isOutside = !!slot.outside_availability
+                          const isSelected = selectedTime === timeStr
+                          return (
+                            <button
+                              ref={opts.isFirstInside ? firstInsideSlotRef : undefined}
+                              key={slot.slot_start}
+                              onClick={() => setSelectedTime(timeStr)}
+                              title={isOutside ? (locale === 'fr' ? 'Hors heures de travail' : 'Outside working hours') : undefined}
+                              className={`px-3 py-2 rounded-lg border text-sm font-medium transition-all scroll-mt-16 ${
+                                isSelected
+                                  ? 'border-teal-500 bg-teal-50 text-teal-700'
+                                  : isOutside
+                                    ? 'border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200 hover:text-gray-600'
                                     : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                              >
-                                {timeDisplay}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
+                              }`}
+                            >
+                              {timeDisplay}
+                            </button>
+                          )
+                        }
+
+                        const Divider = ({ label }: { label: string }) => (
+                          <div className="flex items-center gap-3 my-4">
+                            <div className="flex-1 h-px bg-gray-200" />
+                            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-medium whitespace-nowrap">{label}</span>
+                            <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        )
+
+                        const beforeLabel = locale === 'fr' ? 'Avant les heures de travail' : locale === 'es' ? 'Antes del horario laboral' : 'Before working hours'
+                        const insideLabel = locale === 'fr' ? 'Heures de travail' : locale === 'es' ? 'Horario laboral' : 'Working hours'
+                        const afterLabel  = locale === 'fr' ? 'Après les heures de travail' : locale === 'es' ? 'Después del horario laboral' : 'After working hours'
+
+                        return (
+                          <div>
+                            {beforeHours.length > 0 && (
+                              <>
+                                <Divider label={beforeLabel} />
+                                <div className="grid grid-cols-3 gap-2">
+                                  {beforeHours.map(s => renderSlot(s, {}))}
+                                </div>
+                              </>
+                            )}
+                            {insideHours.length > 0 && (
+                              <>
+                                <Divider label={insideLabel} />
+                                <div className="grid grid-cols-3 gap-2">
+                                  {insideHours.map((s, i) => renderSlot(s, { isFirstInside: i === 0 }))}
+                                </div>
+                              </>
+                            )}
+                            {afterHours.length > 0 && (
+                              <>
+                                <Divider label={afterLabel} />
+                                <div className="grid grid-cols-3 gap-2">
+                                  {afterHours.map(s => renderSlot(s, {}))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1836,13 +1946,12 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <button
                 onClick={() => {
                   if (step === 'member') setStep('session')
-                  else if (step === 'session') setStep('format')
                   // After-hours bookings carry their own date+time from the
                   // calendar click — skip the datetime step so the practitioner
                   // doesn't have to re-pick. Still goes through calendar-mode
                   // submit, so Google Calendar sync runs normally.
-                  else if (step === 'format' && preselectedOutsideHours && selectedDate && selectedTime) setStep('confirm')
-                  else if (step === 'format') setStep('datetime')
+                  else if (step === 'session' && preselectedOutsideHours && selectedDate && selectedTime) setStep('confirm')
+                  else if (step === 'session') setStep('datetime')
                   else if (step === 'datetime') setStep('confirm')
                 }}
                 disabled={!canProceed()}

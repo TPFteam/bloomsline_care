@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Clock,
@@ -142,20 +142,22 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // need their parent booking looked up for the Google/Manual chip.
   const [allBookings, setAllBookings] = useState<any[]>([])
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      const { data } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('member_id', memberId)
-        .order('start_time', { ascending: true })
-      const rows = data || []
-      setAllBookings(rows)
-      const now = new Date().toISOString()
-      setPendingBookings(rows.filter(b => ['pending', 'confirmed'].includes(b.status) && b.start_time >= now))
-    }
-    fetchBookings()
-  }, [memberId])
+  // Extracted so callers (reschedule success, etc.) can refresh the
+  // local cache after mutating bookings — otherwise the next match by
+  // timestamp uses stale start_times and silently fails.
+  const refetchBookings = useCallback(async () => {
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('start_time', { ascending: true })
+    const rows = data || []
+    setAllBookings(rows)
+    const now = new Date().toISOString()
+    setPendingBookings(rows.filter(b => ['pending', 'confirmed'].includes(b.status) && b.start_time >= now))
+  }, [memberId, supabase])
+
+  useEffect(() => { refetchBookings() }, [refetchBookings])
 
   // Match a session to its parent booking by timestamp (within 1 min).
   const getBookingForSession = (scheduledAt: string) => {
@@ -292,24 +294,30 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // Shared reschedule launcher — used by the menu item on every row and
   // by the bookings page equivalent.
   const openRescheduleForSession = (session: Session) => {
-    const matchingBooking = allBookings.find(b =>
-      Math.floor(new Date(b.start_time).getTime() / 60000) === Math.floor(new Date(session.scheduled_at).getTime() / 60000)
-    )
+    // The reschedule modal POSTs to /api/bookings/[id]/reschedule, so
+    // we must hand it a real booking row id. Match within a 2-minute
+    // window on start_time + same member; otherwise abort with a clear
+    // message instead of 404ing the API.
+    const sessionMin = Math.floor(new Date(session.scheduled_at).getTime() / 60000)
+    const matchingBooking = allBookings.find(b => {
+      const bookingMin = Math.floor(new Date(b.start_time).getTime() / 60000)
+      return Math.abs(bookingMin - sessionMin) <= 1 &&
+        (!session.member_id || b.member_id === session.member_id)
+    })
+    if (!matchingBooking) {
+      toast.error(
+        locale === 'fr'
+          ? "Aucun rendez-vous lié — modifiez la date directement via « Modifier la séance »."
+          : locale === 'es'
+            ? 'No hay reserva vinculada — edita la fecha desde "Editar sesión".'
+            : 'No linked booking — edit the date directly via "Edit session".'
+      )
+      return
+    }
     const fullName = `${member.first_name} ${member.last_name}`
     const sessionEnd = new Date(new Date(session.scheduled_at).getTime() + session.duration_minutes * 60000).toISOString()
-    setRescheduleSession(matchingBooking ? {
+    setRescheduleSession({
       id: matchingBooking.id,
-      practitioner_id: session.practitioner_id,
-      member_id: session.member_id,
-      client_name: fullName,
-      client_email: member.email || '',
-      session_type: session.session_type,
-      session_format: session.session_format,
-      start_time: session.scheduled_at,
-      end_time: sessionEnd,
-      series_id: session.series_id,
-    } : {
-      id: session.id,
       practitioner_id: session.practitioner_id,
       member_id: session.member_id,
       client_name: fullName,
@@ -2425,6 +2433,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         onSuccess={() => {
           setRescheduleSession(null)
           onSessionsUpdate()
+          // Refetch so a second reschedule attempt can locate the
+          // booking by its new start_time instead of using stale rows.
+          refetchBookings()
         }}
         rescheduleBooking={rescheduleSession}
       />
