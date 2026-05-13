@@ -188,7 +188,9 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   }, [])
 
   // Category & selection
-  const [activeCategory, setActiveCategory] = useState<ActiveCategory>('sessions')
+  // Default to the Browse view ('observations' internally) — the
+  // Observations sub-tab was removed; this is now the only surface.
+  const [activeCategory, setActiveCategory] = useState<ActiveCategory>('observations')
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   // External highlight (e.g. from Pulse citation click) — switch to Browse subtab,
@@ -1643,31 +1645,11 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '500px', maxHeight: 'calc(100vh - 200px)' }}>
-      {/* Category tabs + zoom — always full width at top */}
+      {/* Top bar — Observations sub-tab removed; this surface is now
+          the only one (the parent-page tab is labelled "Find").
+          activeCategory is force-pinned to 'observations' (internal name
+          for the Browse view) on mount via a useEffect below. */}
       <div className="flex items-center border-b border-gray-100 bg-white flex-shrink-0">
-        {([
-          { key: 'sessions' as const, icon: FileText, label: 'Observations' },
-          { key: 'observations' as const, icon: Search, label: locale === 'fr' ? 'Parcourir' : 'Browse' },
-          // { key: 'browse' as const, icon: List, label: locale === 'fr' ? 'Parcourir+' : 'Browse+' },
-        ]).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => {
-              setActiveCategory(tab.key)
-              setSelectedItemId(null)
-              setEditingNoteId(null)
-              setDeletingNoteId(null)
-            }}
-            className={`flex items-center justify-center gap-1.5 px-6 py-2.5 text-xs font-medium transition-all border-b-2 ${
-              activeCategory === tab.key
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-400 hover:text-gray-600'
-            }`}
-            >
-              <tab.icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          ))}
         {/* Tutorial + Zoom controls */}
         <div className="flex items-center gap-1 ml-auto pr-3">
           <TutorialVideo
