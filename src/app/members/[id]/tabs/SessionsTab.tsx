@@ -177,24 +177,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       .update({ status: action })
       .eq('id', bookingId)
     if (!error) {
-      // When confirming, also create a session record so it shows in the sessions list
+      // Session row is created automatically by the bookings→sessions
+      // trigger when the booking status flips to 'confirmed'. We just
+      // need to refresh the parent list so the UI picks it up.
       if (action === 'confirmed' && booking) {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        if (authUser) {
-          const duration = Math.round((new Date(booking.end_time).getTime() - new Date(booking.start_time).getTime()) / 60000)
-          const { error: sessionError } = await supabase.from('sessions').insert({
-            member_id: memberId,
-            practitioner_id: authUser.id,
-            session_type: 'follow_up',
-            session_format: 'in_person',
-            scheduled_at: booking.start_time,
-            duration_minutes: duration,
-            status: 'scheduled',
-            notes: booking.notes || null,
-          })
-          if (sessionError) console.error('Failed to create session:', sessionError)
-          onSessionsUpdate() // refresh sessions list
-        }
+        onSessionsUpdate()
       }
       setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
       toast.success(action === 'confirmed'

@@ -380,24 +380,10 @@ export async function POST(
         (new Date(newSlotEnd).getTime() - new Date(newSlotStart).getTime()) / 60000
       );
 
-      const sessionTypeMap: Record<string, string> = {
-        'initial_consultation': 'initial_consultation',
-        'follow_up': 'follow_up',
-        'check_in': 'check_in',
-        'crisis': 'crisis',
-        'group': 'group',
-      };
-
-      await adminSupabase.from('sessions').insert({
-        practitioner_id: booking.practitioner_id,
-        member_id: booking.member_id,
-        session_type: sessionTypeMap[booking.session_type] || 'check_in',
-        session_format: booking.session_format === 'in_person' ? 'in_person' : 'virtual',
-        scheduled_at: newSlotStart,
-        duration_minutes: durationMinutes,
-        status: 'scheduled',
-        member_confirmed: true,
-      });
+      // Base session row is created automatically by the
+      // bookings→sessions trigger when the new booking is inserted
+      // above. No explicit session insert needed here.
+      void durationMinutes;
       }
 
       // Sync new booking to Google Calendar (skip if pending approval)

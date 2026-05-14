@@ -276,20 +276,10 @@ export async function POST(
       'group': 'group',
     };
 
-    // Map the configured session-type ID to a session enum, with the
-    // practitioner-overridden value taking precedence over the inherited
-    // booking value.
-    const sessionEnumSource = sessionTypeMap[effectiveSessionType] || effectiveSessionType
-    await adminSupabase.from('sessions').insert({
-      practitioner_id: user.id,
-      member_id: booking.member_id,
-      session_type: sessionEnumSource || 'check_in',
-      session_format: effectiveSessionFormat || 'virtual',
-      scheduled_at: newSlotStart,
-      duration_minutes: durationMinutes,
-      status: 'scheduled',
-      member_confirmed: true,
-    });
+    // Base session row is created automatically by the
+    // bookings→sessions trigger when the new booking is inserted
+    // above. No explicit session insert needed here.
+    void sessionTypeMap; void durationMinutes;
 
     // Sync new booking to Google Calendar (only for future bookings)
     const isFutureNewBooking = new Date(newSlotStart).getTime() > Date.now();

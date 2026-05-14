@@ -742,28 +742,31 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               .eq('series_id', seriesId)
           }
 
-          // Mirror into sessions table for member-tracking. Same series fields.
-          const sessionsRows = seriesPreview.map((occStart, idx) => ({
-            practitioner_id: userId,
-            member_id: selectedMember.id,
-            session_type: sessionEnum,
-            custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
-            session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
-            scheduled_at: occStart.toISOString(),
-            duration_minutes: durationToUse,
-            status: 'scheduled',
-            notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
-            price: calendarPrice,
-            series_id: seriesId,
-            series_parent_id: anchorBooking?.id || null,
-            series_position: idx + 1,
-            series_total: total,
-            recurrence_rule: idx === 0 ? rrule : null,
-          }))
+          // Base session rows for every occurrence in the series are
+          // created by the bookings→sessions trigger. Backfill the
+          // session-only extras (series fields, custom_session_type,
+          // notes, price) — one UPDATE per occurrence, matched by the
+          // scheduled_at the trigger used.
           try {
-            await supabase.from('sessions').insert(sessionsRows)
+            for (let idx = 0; idx < seriesPreview.length; idx++) {
+              const occStart = seriesPreview[idx]
+              await supabase.from('sessions')
+                .update({
+                  custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
+                  notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
+                  price: calendarPrice,
+                  series_id: seriesId,
+                  series_parent_id: anchorBooking?.id || null,
+                  series_position: idx + 1,
+                  series_total: total,
+                  recurrence_rule: idx === 0 ? rrule : null,
+                })
+                .eq('practitioner_id', userId)
+                .eq('member_id', selectedMember.id)
+                .eq('scheduled_at', occStart.toISOString())
+            }
           } catch (sessionErr) {
-            console.warn('Could not create session series entries:', sessionErr)
+            console.warn('Could not backfill session series extras:', sessionErr)
           }
 
           // Sync ONLY the anchor booking — Google creates one recurring event,
@@ -833,22 +836,22 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
           console.log('Booking created:', data)
 
-          // 2. Create session entry (for member tracking — only after booking succeeds)
+          // 2. The base session row is created automatically by the
+          // bookings→sessions DB trigger. Backfill the session-only
+          // extras (custom_session_type, notes, price) that the trigger
+          // can't know about.
           try {
-            await supabase.from('sessions').insert({
-              practitioner_id: userId,
-              member_id: selectedMember.id,
-              session_type: sessionEnum,
-              custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
-              session_format: selectedSessionFormat === 'in_person' ? 'in_person' : 'virtual',
-              scheduled_at: startTime.toISOString(),
-              duration_minutes: durationToUse,
-              status: 'scheduled',
-              notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
-              price: calendarPrice,
-            })
+            await supabase.from('sessions')
+              .update({
+                custom_session_type: sessionEnum === 'other' ? selectedSessionType!.name : null,
+                notes: notes ? `${selectedSessionType!.name}\n\n${notes}` : selectedSessionType!.name,
+                price: calendarPrice,
+              })
+              .eq('practitioner_id', userId)
+              .eq('member_id', selectedMember.id)
+              .eq('scheduled_at', startTime.toISOString())
           } catch (sessionErr) {
-            console.warn('Could not create session entry:', sessionErr)
+            console.warn('Could not backfill session extras:', sessionErr)
           }
 
           // Sync to Google Calendar via API

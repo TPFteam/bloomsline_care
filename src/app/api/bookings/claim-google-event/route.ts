@@ -186,26 +186,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
-    // 2. Insert session for the member's profile timeline. If the chosen
-    //    session type is practitioner-defined (enum collapses to 'other'),
-    //    keep the human name in custom_session_type so the UI doesn't
-    //    fall back to a generic "Other" label.
+    // 2. Base session row is created automatically by the
+    //    bookings→sessions trigger from the booking insert above.
+    //    Backfill the session-only extras the trigger can't know
+    //    (custom_session_type for "other"-mapped types, notes, price).
     try {
       const sessionEnum = toSessionEnum(resolvedSessionTypeId)
-      await adminSupabase.from('sessions').insert({
-        practitioner_id: user.id,
-        member_id: member.id,
-        session_type: sessionEnum,
-        custom_session_type: sessionEnum === 'other' ? resolvedTypeName : null,
-        session_format: sessionFormat === 'in_person' ? 'in_person' : 'virtual',
-        scheduled_at: startIso,
-        duration_minutes: durationMinutes,
-        status: sessionStatus,
-        notes: event.description ? `${resolvedTypeName}\n\n${event.description}` : resolvedTypeName,
-        price,
-      })
+      await adminSupabase.from('sessions')
+        .update({
+          custom_session_type: sessionEnum === 'other' ? resolvedTypeName : null,
+          notes: event.description ? `${resolvedTypeName}\n\n${event.description}` : resolvedTypeName,
+          price,
+        })
+        .eq('practitioner_id', user.id)
+        .eq('member_id', member.id)
+        .eq('scheduled_at', startIso)
+      void sessionStatus; void durationMinutes;
     } catch (sessionErr) {
-      console.warn('[claim-google-event] session insert failed (booking created):', sessionErr)
+      console.warn('[claim-google-event] session backfill failed (booking created):', sessionErr)
     }
 
     // 3. Refresh sync timestamp.
