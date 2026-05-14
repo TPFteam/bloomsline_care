@@ -1136,6 +1136,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ status: 'cancelled' }),
             })
+            // Drop the booking from local caches so the synthetic
+            // "bookingsAsSessions" row stops re-appearing in Upcoming
+            // before the next page refresh.
+            setPendingBookings(prev => prev.filter(b => b.id !== matchingBooking.id))
+            setAllBookings(prev => prev.filter(b => b.id !== matchingBooking.id))
           }
         } catch (bookingErr) {
           console.warn('Could not cancel matching booking:', bookingErr)
