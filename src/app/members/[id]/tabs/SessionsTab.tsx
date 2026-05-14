@@ -1584,7 +1584,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           {locale === 'fr' ? 'Manuelle' : 'Manual'}
                         </span>
                       )}
-                      {session.member_confirmed && (
+                      {session.member_confirmed && session.status === 'scheduled' && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium text-[10px]">
                           <Check className="w-2.5 h-2.5" />
                           {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
