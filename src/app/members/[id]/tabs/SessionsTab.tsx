@@ -415,6 +415,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   // Delete state
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  // True while the Delete-confirm modal's request is in flight. Drives
+  // the spinner / disabled state on the confirm dialog so the user
+  // doesn't feel like nothing is happening and start clicking again.
+  const [confirmDeleting, setConfirmDeleting] = useState(false)
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
   // Only Delete still flows through this generic confirm dialog —
   // complete, cancel, and no_show all go through the Close session
@@ -2039,7 +2043,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         return (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setConfirmAction(null)}
+          onClick={() => { if (!confirmDeleting) setConfirmAction(null) }}
         >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -2049,17 +2053,36 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               {locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.'}
             </p>
             <div className="flex gap-3 justify-end mt-6">
-              <Button variant="outline" onClick={() => setConfirmAction(null)} className="rounded-xl">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmAction(null)}
+                disabled={confirmDeleting}
+                className="rounded-xl"
+              >
                 {locale === 'fr' ? 'Retour' : 'Back'}
               </Button>
               <Button
                 onClick={async () => {
-                  await handleDeleteSession(confirmAction.sessionId)
-                  setConfirmAction(null)
+                  if (confirmDeleting) return
+                  setConfirmDeleting(true)
+                  try {
+                    await handleDeleteSession(confirmAction.sessionId)
+                  } finally {
+                    setConfirmDeleting(false)
+                    setConfirmAction(null)
+                  }
                 }}
-                className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
+                disabled={confirmDeleting}
+                className="rounded-xl bg-red-600 hover:bg-red-700 text-white disabled:opacity-80 disabled:cursor-not-allowed min-w-[88px]"
               >
-                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                {confirmDeleting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {locale === 'fr' ? 'Suppression…' : 'Deleting…'}
+                  </span>
+                ) : (
+                  locale === 'fr' ? 'Supprimer' : 'Delete'
+                )}
               </Button>
             </div>
           </div>
