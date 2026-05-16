@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { format, parseISO, isToday, isTomorrow, isSameDay, startOfWeek, addDays } from 'date-fns'
+import { format, parseISO, isToday, isTomorrow, isYesterday, isSameDay, startOfWeek, addDays } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -107,6 +107,15 @@ function DashboardInner() {
   }
   const [recentShares, setRecentShares] = useState<RecentShare[]>([])
 
+  // Keys of past sessions (member_id|start_time_ms) that already carry a
+  // session_summary progress note. Used to compute the "Notes à écrire"
+  // card so we only surface sessions still waiting for a write-up.
+  const [notedSessionKeys, setNotedSessionKeys] = useState<Set<string>>(new Set())
+
+  // Compose-note modal state — opened from the home composer line.
+  const [showNoteComposer, setShowNoteComposer] = useState(false)
+  const [noteComposerSearch, setNoteComposerSearch] = useState('')
+
   // Auth gate, profile bootstrap, consent state, then data fetch.
   useEffect(() => {
     let cancelled = false
@@ -136,18 +145,49 @@ function DashboardInner() {
       // ?action=schedule (back-compat with existing CTAs across the app).
       if (searchParams.get('action') === 'schedule') setShowSchedule(true)
 
-      // Pull this-week + 2 weeks ahead so the mini calendar can render
-      // even on quiet weeks.
+      // Pull 14 days back + 21 days ahead so:
+      //   - the mini calendar can render even on quiet weeks (forward)
+      //   - the "Notes à écrire" card has past sessions to surface (back)
       const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+      const horizonStart = addDays(weekStart, -14).toISOString()
       const horizonEnd = addDays(weekStart, 21).toISOString()
       const { data: bk } = await supabase
         .from('bookings')
         .select('*')
         .eq('practitioner_id', authUser.id)
-        .gte('start_time', weekStart.toISOString())
+        .gte('start_time', horizonStart)
         .lt('start_time', horizonEnd)
         .order('start_time', { ascending: true })
       if (!cancelled && bk) setBookings(bk as DashBooking[])
+
+      // Which past sessions already have a session_summary note? Build a
+      // set of "member_id|start_time_ms" keys so the awaiting-notes
+      // computation is a simple Set lookup against bookings.
+      const noteWindowStart = addDays(new Date(), -14).toISOString()
+      const nowIso = new Date().toISOString()
+      const { data: pastSessions } = await supabase
+        .from('sessions')
+        .select('id, member_id, scheduled_at')
+        .eq('practitioner_id', authUser.id)
+        .gte('scheduled_at', noteWindowStart)
+        .lt('scheduled_at', nowIso)
+      if (!cancelled && pastSessions && pastSessions.length > 0) {
+        const sessionIds = pastSessions.map((s: any) => s.id as string)
+        const { data: notes } = await supabase
+          .from('progress_notes')
+          .select('session_id')
+          .eq('note_type', 'session_summary')
+          .in('session_id', sessionIds)
+        const notedSessionIds = new Set((notes || []).map((n: any) => n.session_id as string))
+        const keys = new Set(
+          pastSessions
+            .filter((s: any) => s.member_id && notedSessionIds.has(s.id))
+            .map((s: any) => `${s.member_id}|${Math.floor(new Date(s.scheduled_at).getTime() / 1000)}`),
+        )
+        setNotedSessionKeys(keys)
+      } else if (!cancelled) {
+        setNotedSessionKeys(new Set())
+      }
 
       // Practitioner's members — used by the Share-resource picker.
       const { data: membersData } = await supabase
@@ -415,6 +455,26 @@ function DashboardInner() {
     [bookings, now],
   )
 
+  // Past bookings (within the 14-day fetch window) that have a member
+  // and an outcome-relevant status, but no session_summary note yet.
+  // Powers the "Notes à écrire" card so the practitioner doesn't have
+  // to navigate patient → details → sessions to find what's waiting.
+  const awaitingNotes = useMemo(() => {
+    const fourteenDaysAgo = addDays(now, -14).getTime()
+    return bookings
+      .filter(b => {
+        if (!b.member_id) return false
+        if (!(b.status === 'confirmed' || b.status === 'completed')) return false
+        const startMs = parseISO(b.start_time).getTime()
+        if (startMs >= now.getTime()) return false
+        if (startMs < fourteenDaysAgo) return false
+        const key = `${b.member_id}|${Math.floor(startMs / 1000)}`
+        return !notedSessionKeys.has(key)
+      })
+      .sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime())
+      .slice(0, 6)
+  }, [bookings, notedSessionKeys, now])
+
   // Mini week — 7 day cells Mon→Sun for the current week.
   const weekStart = startOfWeek(now, { weekStartsOn: 1 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -591,26 +651,59 @@ function DashboardInner() {
             </div>
           </section>
 
-          {/* ── Zone 2: Up next + mini week calendar ── */}
+          {/* ── Zone 2: Up next + Notes to write (left) | mini week calendar + resources (right) ── */}
           <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8 items-start">
-            <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 p-6">
-              <header className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
-                <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
-                  {t('View all', 'Voir tout', 'Ver todo')}
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </header>
-              {loading ? (
-                <div className="space-y-3">
-                  {[0, 1, 2].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-lg" />)}
-                </div>
-              ) : upNext.length === 0 ? (
-                <EmptyUpNext t={t} />
-              ) : (
-                <ul className="space-y-2">
-                  {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
-                </ul>
+            <div className="lg:col-span-3 flex flex-col gap-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <header className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
+                  <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
+                    {t('View all', 'Voir tout', 'Ver todo')}
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </header>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-lg" />)}
+                  </div>
+                ) : upNext.length === 0 ? (
+                  <EmptyUpNext t={t} />
+                ) : (
+                  <ul className="space-y-2">
+                    {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
+                  </ul>
+                )}
+              </div>
+
+              {/* Quick-note composer — one slim line. Click anywhere on
+                  the row → modal opens with the searchable list of
+                  sessions that don't have a session_summary note yet.
+                  Selecting a session opens the same floating editor as
+                  the Up-next "Take notes" button. */}
+              {!loading && (
+                <button
+                  type="button"
+                  onClick={() => { setNoteComposerSearch(''); setShowNoteComposer(true) }}
+                  className="w-full flex items-center gap-3 bg-white hover:bg-amber-50/40 border border-gray-200 hover:border-amber-300 rounded-2xl px-5 py-3.5 text-left transition-colors group"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
+                      {awaitingNotes.length > 0
+                        ? t('Take a quick note…', 'Prendre une note rapide…', 'Tomar una nota rápida…')
+                        : t('All caught up — no sessions waiting for notes.',
+                            'Vous êtes à jour — aucune séance en attente.',
+                            'Al día — sin sesiones esperando notas.')}
+                    </p>
+                  </div>
+                  {awaitingNotes.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium tabular-nums shrink-0">
+                      {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
+                    </span>
+                  )}
+                </button>
               )}
             </div>
 
@@ -745,11 +838,24 @@ function DashboardInner() {
             </div>
           </section>
 
+
         </div>
       </main>
 
       {/* ── Modals ── */}
       <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
+
+      <NoteComposerPicker
+        isOpen={showNoteComposer}
+        onClose={() => setShowNoteComposer(false)}
+        awaitingNotes={awaitingNotes}
+        search={noteComposerSearch}
+        onSearchChange={setNoteComposerSearch}
+        locale={locale}
+        t={t}
+        sessionTypeMap={sessionTypeMap}
+        onPick={(b) => { setShowNoteComposer(false); handleTakeNotes(b) }}
+      />
 
       <ScheduleSessionModal
         isOpen={showSchedule}
@@ -1436,6 +1542,228 @@ function UpNextRow({
           )}
         </div>
       )}
+    </li>
+  )
+}
+
+function NoteComposerPicker({
+  isOpen, onClose, awaitingNotes, search, onSearchChange, locale, t, sessionTypeMap, onPick,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  awaitingNotes: DashBooking[]
+  search: string
+  onSearchChange: (s: string) => void
+  locale: string
+  t: (en: string, fr: string, es: string) => string
+  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
+  onPick: (b: DashBooking) => void
+}) {
+  if (!isOpen) return null
+  const q = search.trim().toLowerCase()
+  const filtered = q.length === 0
+    ? awaitingNotes
+    : awaitingNotes.filter(b =>
+        (b.client_name || '').toLowerCase().includes(q) ||
+        (b.client_email || '').toLowerCase().includes(q),
+      )
+  return (
+    <AnimatePresence>
+      <motion.div
+        key="note-composer-backdrop"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.12 }}
+        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center p-4 pt-24"
+        onClick={onClose}
+      >
+        <motion.div
+          key="note-composer-panel"
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.15 }}
+          className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <header className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-semibold text-gray-900">
+                {t('Pick a session to note', 'Choisir une séance', 'Elegir una sesión')}
+              </h2>
+              {awaitingNotes.length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold tabular-nums">
+                  {awaitingNotes.length}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded hover:bg-gray-100 text-gray-500"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </header>
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={t('Search patient…', 'Rechercher un patient…', 'Buscar paciente…')}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
+              />
+            </div>
+          </div>
+          <div className="max-h-[55vh] overflow-y-auto">
+            {filtered.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">
+                <Sparkles className="w-5 h-5 mx-auto mb-2 text-emerald-300" />
+                <p className="text-sm">
+                  {awaitingNotes.length === 0
+                    ? t('All caught up.', 'Vous êtes à jour.', 'Al día.')
+                    : t('No matches.', 'Aucun résultat.', 'Sin coincidencias.')}
+                </p>
+              </div>
+            ) : (
+              <ul className="py-1">
+                {filtered.map(b => (
+                  <NoteComposerRow
+                    key={b.id}
+                    booking={b}
+                    locale={locale}
+                    t={t}
+                    sessionTypeMap={sessionTypeMap}
+                    onPick={onPick}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+function NoteComposerRow({
+  booking, locale, t, sessionTypeMap, onPick,
+}: {
+  booking: DashBooking
+  locale: string
+  t: (en: string, fr: string, es: string) => string
+  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
+  onPick: (b: DashBooking) => void
+}) {
+  const start = parseISO(booking.start_time)
+  const displayName = booking.client_name || t('Unnamed patient', 'Patient sans nom', 'Paciente sin nombre')
+  const dateLabel = isToday(start)
+    ? t('Today', "Aujourd'hui", 'Hoy')
+    : isYesterday(start)
+      ? t('Yesterday', 'Hier', 'Ayer')
+      : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+  const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
+  const typeMeta = sessionTypeMap[booking.session_type]
+  const enumDefaults: Record<string, { en: string; fr: string; es: string }> = {
+    initial_consultation: { en: 'Initial consultation', fr: 'Première séance', es: 'Consulta inicial' },
+    follow_up:            { en: 'Follow-up',            fr: 'Suivi',           es: 'Seguimiento' },
+    check_in:             { en: 'Check-in',             fr: 'Bilan',           es: 'Revisión' },
+    crisis:               { en: 'Crisis',               fr: 'Crise',           es: 'Crisis' },
+    group:                { en: 'Group',                fr: 'Groupe',          es: 'Grupo' },
+    other:                { en: 'Other',                fr: 'Autre',           es: 'Otro' },
+  }
+  const enumDefault = enumDefaults[booking.session_type]
+  const sessionLabel = typeMeta
+    ? (locale === 'fr' ? (typeMeta.name_fr || typeMeta.name) : typeMeta.name)
+    : enumDefault
+      ? enumDefault[locale as 'en' | 'fr' | 'es'] || enumDefault.en
+      : booking.session_type
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onPick(booking)}
+        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50/40 text-left transition-colors"
+      >
+        <div className="w-14 px-2 h-9 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center text-xs font-semibold shrink-0 tabular-nums">
+          {format(start, timeFmt)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            <span className="text-gray-700">{dateLabel}</span>
+            <span className="text-gray-400"> · </span>
+            <span>{sessionLabel}</span>
+          </p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+      </button>
+    </li>
+  )
+}
+
+function AwaitingNoteRow({
+  booking, locale, t, sessionTypeMap, onTakeNotes,
+}: {
+  booking: DashBooking
+  locale: string
+  t: (en: string, fr: string, es: string) => string
+  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
+  onTakeNotes: (b: DashBooking) => void
+}) {
+  const start = parseISO(booking.start_time)
+  const displayName = booking.client_name || t('Unnamed patient', 'Patient sans nom', 'Paciente sin nombre')
+  const dateLabel = isToday(start)
+    ? t('Today', "Aujourd'hui", 'Hoy')
+    : isYesterday(start)
+      ? t('Yesterday', 'Hier', 'Ayer')
+      : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+  const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
+  const typeMeta = sessionTypeMap[booking.session_type]
+  const enumDefaults: Record<string, { en: string; fr: string; es: string }> = {
+    initial_consultation: { en: 'Initial consultation', fr: 'Première séance', es: 'Consulta inicial' },
+    follow_up:            { en: 'Follow-up',            fr: 'Suivi',           es: 'Seguimiento' },
+    check_in:             { en: 'Check-in',             fr: 'Bilan',           es: 'Revisión' },
+    crisis:               { en: 'Crisis',               fr: 'Crise',           es: 'Crisis' },
+    group:                { en: 'Group',                fr: 'Groupe',          es: 'Grupo' },
+    other:                { en: 'Other',                fr: 'Autre',           es: 'Otro' },
+  }
+  const enumDefault = enumDefaults[booking.session_type]
+  const sessionLabel =
+    typeMeta
+      ? (locale === 'fr' ? (typeMeta.name_fr || typeMeta.name) : typeMeta.name)
+      : enumDefault
+        ? enumDefault[locale as 'en' | 'fr' | 'es'] || enumDefault.en
+        : booking.session_type
+  return (
+    <li className="flex items-center gap-4 py-2.5 px-3 rounded-lg hover:bg-gray-50 transition">
+      <div className="px-2.5 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-xs font-semibold shrink-0 tabular-nums">
+        {format(start, timeFmt)}
+      </div>
+      <div className="flex-1 min-w-0">
+        {booking.member_id ? (
+          <Link href={`/members/${booking.member_id}`} className="text-sm font-medium text-gray-900 hover:text-violet-700 truncate inline-block">
+            {displayName}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium text-gray-900 truncate inline-block">{displayName}</span>
+        )}
+        <p className="text-xs text-gray-500 mt-0.5">
+          <span className="text-gray-700 font-medium">{dateLabel}</span>
+          <span className="text-gray-400"> · </span>
+          <span>{sessionLabel}</span>
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onTakeNotes(booking)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 rounded-md transition-colors shrink-0"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        {t('Take notes', 'Prendre des notes', 'Tomar notas')}
+      </button>
     </li>
   )
 }
