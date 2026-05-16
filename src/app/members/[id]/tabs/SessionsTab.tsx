@@ -280,17 +280,52 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   // Shared reschedule launcher — used by the menu item on every row and
   // by the bookings page equivalent.
-  const openRescheduleForSession = (session: Session) => {
+  const openRescheduleForSession = async (session: Session) => {
     // The reschedule modal POSTs to /api/bookings/[id]/reschedule, so
     // we must hand it a real booking row id. Match within a 2-minute
-    // window on start_time + same member; otherwise abort with a clear
-    // message instead of 404ing the API.
-    const sessionMin = Math.floor(new Date(session.scheduled_at).getTime() / 60000)
-    const matchingBooking = allBookings.find(b => {
+    // window on start_time + same member, and skip already-cancelled
+    // rows (so the row we just cancelled in a prior reschedule can't be
+    // matched). If the local cache misses, fall back to a direct DB
+    // query before erroring — without this fallback a quick second
+    // reschedule click hits the toast because `refetchBookings()` from
+    // the previous onSuccess hasn't returned yet.
+    const sessionMs = new Date(session.scheduled_at).getTime()
+    const sessionMin = Math.floor(sessionMs / 60000)
+    const findMatch = (rows: any[]) => rows.find(b => {
+      if (b.status === 'cancelled') return false
       const bookingMin = Math.floor(new Date(b.start_time).getTime() / 60000)
       return Math.abs(bookingMin - sessionMin) <= 1 &&
         (!session.member_id || b.member_id === session.member_id)
     })
+
+    let matchingBooking = findMatch(allBookings)
+
+    if (!matchingBooking) {
+      // Cache miss — refresh from the DB and retry. Common right after
+      // a reschedule: parent refresh + local refetch are both in flight
+      // when the user clicks again.
+      const lo = new Date(sessionMs - 60_000).toISOString()
+      const hi = new Date(sessionMs + 60_000).toISOString()
+      let q = supabase
+        .from('bookings')
+        .select('*')
+        .eq('practitioner_id', session.practitioner_id)
+        .gte('start_time', lo)
+        .lte('start_time', hi)
+        .neq('status', 'cancelled')
+      if (session.member_id) q = q.eq('member_id', session.member_id)
+      const { data } = await q
+      if (data && data.length > 0) {
+        matchingBooking = findMatch(data) || data[0]
+        // Patch the local cache so the next match doesn't have to re-query.
+        setAllBookings(prev => {
+          const seen = new Set(prev.map(b => b.id))
+          const additions = data.filter(b => !seen.has(b.id))
+          return additions.length > 0 ? [...prev, ...additions] : prev
+        })
+      }
+    }
+
     if (!matchingBooking) {
       toast.error(
         locale === 'fr'
