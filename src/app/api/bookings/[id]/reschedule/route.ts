@@ -175,67 +175,33 @@ export async function POST(
     const sessionType = sessionTypes.find(st => st.id === booking.session_type);
     const sessionTypeName = sessionType?.name || booking.session_type;
 
-    // Cancel old booking
-    await adminSupabase
-      .from('bookings')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: 'practitioner',
-        cancellation_reason: reason ? `Rescheduled: ${reason.trim()}` : 'Rescheduled by practitioner',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    // Cancel linked session
-    await adminSupabase
-      .from('sessions')
-      .update({ status: 'cancelled' })
-      .eq('practitioner_id', user.id)
-      .eq('scheduled_at', booking.start_time)
-      .eq('status', 'scheduled');
-
-    // Delete old Google Calendar event (only for future bookings)
-    // Patch description with reschedule reason first so the cancellation email shows why.
-    if (booking.google_event_id && isFutureBooking) {
-      const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
-      if (googleAuth) {
-        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
-        const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
-        try {
-          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
-          const isFr = pUser?.preferred_language === 'fr';
-          const reasonText = reason?.trim() || '';
-          const rescheduleNote = reasonText
-            ? (isFr ? `\n\n⟳ Séance reprogrammée — Raison : ${reasonText}` : `\n\n⟳ Session rescheduled — Reason: ${reasonText}`)
-            : (isFr ? '\n\n⟳ Séance reprogrammée' : '\n\n⟳ Session rescheduled');
-
-          const eventRes = await fetch(calendarUrl, { headers: authHeaders });
-          if (eventRes.ok) {
-            const event = await eventRes.json();
-            await fetch(`${calendarUrl}?sendUpdates=none`, {
-              method: 'PATCH',
-              headers: authHeaders,
-              body: JSON.stringify({ description: (event.description || '') + rescheduleNote }),
-            });
-          }
-
-          await fetch(`${calendarUrl}?sendUpdates=all`, {
-            method: 'DELETE',
-            headers: authHeaders,
-          });
-        } catch (err) {
-          console.error('Failed to delete old calendar event:', err);
-        }
-      }
-    }
+    // ─── Reordered for fail-safety ─────────────────────────────────
+    // Old order: cancel-old (DB) → delete-old-event (sends cancel email)
+    //            → insert-new (DB) → create-new-event (sends invite)
+    // Problem: if insert-new or create-new-event failed, the patient
+    // already had the cancellation in their inbox with no rebook.
+    //
+    // New order: insert-new (DB) → create-new-event → cancel-old (DB)
+    //            → delete-old-event. Any failure before the cancel-old
+    //            step leaves the patient seeing nothing changed.
+    // ────────────────────────────────────────────────────────────────
 
     // Resolve effective session type / format — practitioner-provided
     // overrides win, otherwise inherit from the old booking row.
+    //
+    // bookings.session_format uses the Google-Calendar vocabulary
+    // ('in_person' | 'video' | 'phone'). The front-end and our session
+    // table use 'virtual' as a synonym for 'video', so map it back
+    // here before the insert — otherwise the bookings check
+    // constraint rejects the row.
     const effectiveSessionType = sessionTypeId ?? booking.session_type;
-    const effectiveSessionFormat = sessionFormat ?? booking.session_format;
+    const rawSessionFormat = sessionFormat ?? booking.session_format;
+    const effectiveSessionFormat =
+      rawSessionFormat === 'virtual' ? 'video' : rawSessionFormat;
 
-    // Create new booking
+    // ─── Step 1: Insert the new booking ────────────────────────────
+    // If this fails (constraint, RLS, trigger throwing), nothing on the
+    // patient's calendar has been touched yet.
     const { data: newBooking, error: createError } = await adminSupabase
       .from('bookings')
       .insert({
@@ -263,29 +229,22 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to create new booking' }, { status: 500 });
     }
 
-    // Create new session record
-    const durationMinutes = Math.round(
-      (new Date(newSlotEnd).getTime() - new Date(newSlotStart).getTime()) / 60000
-    );
+    // Base session row at the new slot is created automatically by the
+    // bookings→sessions trigger from the insert above.
 
-    const sessionTypeMap: Record<string, string> = {
-      'initial_consultation': 'initial_consultation',
-      'follow_up': 'follow_up',
-      'check_in': 'check_in',
-      'crisis': 'crisis',
-      'group': 'group',
-    };
-
-    // Base session row is created automatically by the
-    // bookings→sessions trigger when the new booking is inserted
-    // above. No explicit session insert needed here.
-    void sessionTypeMap; void durationMinutes;
-
-    // Sync new booking to Google Calendar (only for future bookings)
+    // ─── Step 2: Create the new Google Calendar event ──────────────
+    // If this fails for a future booking, bail out without touching
+    // the old event. The new booking is in our DB; the practitioner
+    // can retry the Google sync from the bookings page.
     const isFutureNewBooking = new Date(newSlotStart).getTime() > Date.now();
+    let newGoogleEventCreated = !isFutureNewBooking; // backdated → no Google sync needed, treat as "done"
     if (isFutureNewBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
-      if (googleAuth) {
+      if (!googleAuth) {
+        // No Google connection → nothing to create on Google, but the
+        // DB-level reschedule still proceeds.
+        newGoogleEventCreated = true;
+      } else {
         try {
           const response = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
@@ -319,10 +278,85 @@ export async function POST(
           );
           if (response.ok) {
             const event = await response.json();
-            await adminSupabase.from('bookings').update({ google_event_id: event.id, meet_link: event.hangoutLink || null }).eq('id', newBooking.id);
+            await adminSupabase
+              .from('bookings')
+              .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+              .eq('id', newBooking.id);
+            newGoogleEventCreated = true;
+          } else {
+            const errText = await response.text().catch(() => '');
+            console.error('New Google event create failed:', response.status, errText);
           }
         } catch (err) {
           console.error('Failed to create new calendar event:', err);
+        }
+      }
+    }
+
+    if (!newGoogleEventCreated) {
+      // Old event is intact, old booking still confirmed. The new booking
+      // is in our DB without a Google event. Surface this so the
+      // practitioner can retry the calendar sync rather than leaving the
+      // patient with a cancelled appointment and no rebook.
+      return NextResponse.json({
+        error: 'New booking created but Google Calendar invite failed. The original appointment is still active — please retry calendar sync from the bookings page.',
+        newBookingId: newBooking.id,
+        calendarSyncFailed: true,
+      }, { status: 502 });
+    }
+
+    // ─── Step 3: Cancel the old booking + linked session ───────────
+    await adminSupabase
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: 'practitioner',
+        cancellation_reason: reason ? `Rescheduled: ${reason.trim()}` : 'Rescheduled by practitioner',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    await adminSupabase
+      .from('sessions')
+      .update({ status: 'cancelled' })
+      .eq('practitioner_id', user.id)
+      .eq('scheduled_at', booking.start_time)
+      .eq('status', 'scheduled');
+
+    // ─── Step 4: Delete the old Google event ───────────────────────
+    // Patch description with reschedule reason first so the
+    // cancellation email shows why. Errors here are non-fatal — the
+    // new booking + event are already in place.
+    if (booking.google_event_id && isFutureBooking) {
+      const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
+      if (googleAuth) {
+        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
+        const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
+        try {
+          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
+          const isFr = pUser?.preferred_language === 'fr';
+          const reasonText = reason?.trim() || '';
+          const rescheduleNote = reasonText
+            ? (isFr ? `\n\n⟳ Séance reprogrammée — Raison : ${reasonText}` : `\n\n⟳ Session rescheduled — Reason: ${reasonText}`)
+            : (isFr ? '\n\n⟳ Séance reprogrammée' : '\n\n⟳ Session rescheduled');
+
+          const eventRes = await fetch(calendarUrl, { headers: authHeaders });
+          if (eventRes.ok) {
+            const event = await eventRes.json();
+            await fetch(`${calendarUrl}?sendUpdates=none`, {
+              method: 'PATCH',
+              headers: authHeaders,
+              body: JSON.stringify({ description: (event.description || '') + rescheduleNote }),
+            });
+          }
+
+          await fetch(`${calendarUrl}?sendUpdates=all`, {
+            method: 'DELETE',
+            headers: authHeaders,
+          });
+        } catch (err) {
+          console.error('Failed to delete old calendar event:', err);
         }
       }
     }
