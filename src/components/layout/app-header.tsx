@@ -17,14 +17,20 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { useRouter } from 'next/navigation'
 import type { User as UserType } from '@/types/user'
 import { BloomInlineChat } from '@/components/bloom/bloom-inline-chat'
+import { isAdmin as checkIsAdminId } from '@/lib/admin'
 
 interface AppHeaderProps {
   user: UserType | null
   leftContent?: React.ReactNode
+  // Optional override. If omitted, admin status is auto-detected from
+  // the user's id against the fallback admin list. Every page used to
+  // need to pass this explicitly, and most didn't — so the "Manage
+  // Practitioners" menu only appeared while already on the admin page.
   isAdmin?: boolean
 }
 
-export function AppHeader({ user, leftContent, isAdmin = false }: AppHeaderProps) {
+export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
+  const resolvedIsAdmin = isAdmin ?? (user?.id ? checkIsAdminId(user.id) : false)
   const { locale, setLocale } = useLanguage()
   const router = useRouter()
   const supabase = createClient()
@@ -133,7 +139,7 @@ export function AppHeader({ user, leftContent, isAdmin = false }: AppHeaderProps
                         <Settings className="w-4 h-4" />
                         <span>{locale === 'fr' ? 'Paramètres' : locale === 'es' ? 'Configuración' : 'Settings'}</span>
                       </Link>
-                      {isAdmin && (
+                      {resolvedIsAdmin && (
                         <Link
                           href="/admin/practitioners"
                           onClick={() => setShowProfileMenu(false)}
