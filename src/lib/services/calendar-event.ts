@@ -198,8 +198,23 @@ export function buildCalendarEvent(params: CalendarEventParams) {
       dateTime: endTime,
       timeZone: timezone,
     },
+    // Explicit reminder override on the organizer's copy of the event.
+    // We deliberately do NOT inherit the practitioner's calendar
+    // defaults — some practitioners have stacked multiple email
+    // reminders at the calendar level (24h + 4h + 1h …), which would
+    // pile up on every Bloomsline event without anyone realizing.
+    //
+    // Caveat: Google scopes `reminders.overrides` to the organizer
+    // only. Each attendee sees reminders based on THEIR own calendar
+    // defaults — the organizer cannot reduce or remove an attendee's
+    // personal reminders. If a patient is getting too many emails, it's
+    // their own Google Calendar settings; only they can change it.
     reminders: {
-      useDefault: true,
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 }, // 1 email, 24h before
+        { method: 'popup', minutes: 30 },      // 1 popup,  30min before
+      ],
     },
   }
 
