@@ -68,9 +68,12 @@ export function FloatingNotesPanel() {
     }
   }, [floatingNote?.memberId, floatingNote?.mode])
 
-  // Toggle a larger, more modal-like layout for distraction-free note
-  // taking. Re-centres so it lands neatly regardless of where the user
-  // had dragged the smaller panel.
+  // Toggle between the large modal-style layout (distraction-free
+  // writing) and the compact bottom-right docked panel (lets the
+  // practitioner reference the page underneath while taking notes).
+  //   - Expanding  → centre the panel
+  //   - Collapsing → dock to the bottom-right corner with a 16px gutter
+  // The practitioner can still drag it anywhere afterwards.
   const toggleExpand = useCallback(() => {
     if (typeof window === 'undefined') return
     setIsExpanded(prev => {
@@ -78,10 +81,17 @@ export function FloatingNotesPanel() {
       const targetW = next ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96)) : DEFAULT_WIDTH
       const targetH = next ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96)) : DEFAULT_HEIGHT
       setSize({ w: targetW, h: targetH })
-      setPos({
-        x: Math.max(16, (window.innerWidth - targetW) / 2),
-        y: Math.max(16, (window.innerHeight - targetH) / 2),
-      })
+      setPos(
+        next
+          ? {
+              x: Math.max(16, (window.innerWidth - targetW) / 2),
+              y: Math.max(16, (window.innerHeight - targetH) / 2),
+            }
+          : {
+              x: Math.max(16, window.innerWidth - targetW - 16),
+              y: Math.max(16, window.innerHeight - targetH - 16),
+            }
+      )
       return next
     })
   }, [])
