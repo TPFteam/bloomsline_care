@@ -45,6 +45,13 @@ interface SessionFiltersProps {
   paymentFilters: Set<string>
   onPaymentFiltersChange: (next: Set<string>) => void
 
+  // Optional patient/member filter. When omitted, the chip stays
+  // hidden — used by the bookings page (which spans all patients)
+  // but not the SessionsTab (already scoped to a single patient).
+  memberOptions?: FilterOption[]
+  memberFilters?: Set<string>
+  onMemberFiltersChange?: (next: Set<string>) => void
+
   locale: string
   onReset: () => void
 }
@@ -110,7 +117,7 @@ function MultiSelectDropdown({
         <ChevronDown className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 min-w-[200px] py-1">
+        <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 min-w-[220px] max-h-80 overflow-y-auto py-1">
           {options.map(opt => {
             const active = selected.has(opt.key)
             return (
@@ -154,6 +161,7 @@ export function SessionFilters({
   statusOptions, statusFilters, onStatusFiltersChange,
   typeOptions, typeFilters, onTypeFiltersChange,
   paymentOptions, paymentFilters, onPaymentFiltersChange,
+  memberOptions, memberFilters, onMemberFiltersChange,
   locale, onReset,
 }: SessionFiltersProps) {
   const t = (en: string, fr: string, es: string) =>
@@ -179,7 +187,8 @@ export function SessionFilters({
     dateRange !== 'all' ||
     statusFilters.size > 0 ||
     typeFilters.size > 0 ||
-    paymentFilters.size > 0
+    paymentFilters.size > 0 ||
+    (memberFilters?.size ?? 0) > 0
 
   const dateLabel = DATE_LABELS[dateRange][locale] || DATE_LABELS[dateRange].en
 
@@ -275,6 +284,17 @@ export function SessionFilters({
         accentClass="bg-emerald-600 border-emerald-600 text-white"
         locale={locale}
       />
+
+      {memberOptions && memberFilters && onMemberFiltersChange && (
+        <MultiSelectDropdown
+          label={t('Patient', 'Patient', 'Paciente')}
+          options={memberOptions}
+          selected={memberFilters}
+          onChange={onMemberFiltersChange}
+          accentClass="bg-blue-600 border-blue-600 text-white"
+          locale={locale}
+        />
+      )}
 
       {isFiltering && (
         <button

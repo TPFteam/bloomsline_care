@@ -298,6 +298,7 @@ export default function BookingsPage() {
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set())
   const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set())
   const [paymentFilters, setPaymentFilters] = useState<Set<string>>(new Set())
+  const [memberFilters, setMemberFilters] = useState<Set<string>>(new Set())
   // Tracks which bookings (keyed by `${member_id}::${minute}`) have a
   // saved session_summary progress note. Drives the "Take notes" vs
   // "View notes" label on History rows.
@@ -309,6 +310,7 @@ export default function BookingsPage() {
     setStatusFilters(new Set())
     setTypeFilters(new Set())
     setPaymentFilters(new Set())
+    setMemberFilters(new Set())
   }
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
@@ -1443,6 +1445,10 @@ export default function BookingsPage() {
                   if (statusFilters.size > 0 && !statusFilters.has(bookingStatusKey(b))) return false
                   if (typeFilters.size > 0 && !typeFilters.has(b.session_type as string)) return false
                   if (paymentFilters.size > 0 && !paymentFilters.has(b.payment_status || 'unpaid')) return false
+                  // Patient filter — guest bookings (no member_id) are
+                  // excluded when filtering by patient since they can't
+                  // belong to a selected member.
+                  if (memberFilters.size > 0 && (!b.member_id || !memberFilters.has(b.member_id))) return false
                   return true
                 }
                 const upcomingBookingsRaw = bookings
@@ -1843,6 +1849,20 @@ export default function BookingsPage() {
                         ]}
                         paymentFilters={paymentFilters}
                         onPaymentFiltersChange={setPaymentFilters}
+                        memberOptions={(() => {
+                          // Build patient options from the live memberNames
+                          // map (current names, not snapshot from booking
+                          // creation). Sorted alphabetically by display name.
+                          const opts: { key: string; label: string }[] = []
+                          for (const [id, name] of memberNames.entries()) {
+                            opts.push({ key: id, label: name })
+                          }
+                          return opts.sort((a, b) =>
+                            a.label.localeCompare(b.label, locale === 'fr' ? 'fr' : 'en')
+                          )
+                        })()}
+                        memberFilters={memberFilters}
+                        onMemberFiltersChange={setMemberFilters}
                         locale={locale}
                         onReset={resetFilters}
                       />
