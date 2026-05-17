@@ -1170,11 +1170,23 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           const { data: matchingBooking } = await bookingQuery.maybeSingle()
 
           if (matchingBooking) {
+            // 1. PATCH to cancelled — this fires the Google Calendar
+            //    cancellation email with the reschedule/cancel reason
+            //    note and removes the event from the calendar.
             await fetch(`/api/bookings/${matchingBooking.id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ status: 'cancelled' }),
             })
+            // 2. Hard-delete the booking row. The user explicitly
+            //    asked us to delete the session — keeping a cancelled
+            //    booking around makes it reappear in the global
+            //    bookings History as "Cancelled", which is confusing.
+            //    Patient already got the cancellation email from step 1.
+            await supabase
+              .from('bookings')
+              .delete()
+              .eq('id', matchingBooking.id)
             // Drop the booking from local caches so the synthetic
             // "bookingsAsSessions" row stops re-appearing in Upcoming
             // before the next page refresh.
