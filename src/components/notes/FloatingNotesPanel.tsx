@@ -44,16 +44,27 @@ export function FloatingNotesPanel() {
 
   // Reset position when a new floating note opens — centred on the
   // viewport so it reads like a modal rather than a docked toast. The
-  // practitioner can still drag it anywhere afterwards.
+  // practitioner can still drag and resize it (or toggle to compact
+  // via the icon) afterwards.
+  //
+  // Defaults to the EXPANDED size: practitioners want room to write,
+  // and the compact toast-style panel makes them squint. The toggle
+  // button remains for anyone who prefers the smaller footprint.
   useEffect(() => {
     if (floatingNote) {
+      const targetW = typeof window !== 'undefined'
+        ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96))
+        : DEFAULT_WIDTH
+      const targetH = typeof window !== 'undefined'
+        ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96))
+        : DEFAULT_HEIGHT
       setPos({
-        x: Math.max(16, (window.innerWidth - DEFAULT_WIDTH) / 2),
-        y: Math.max(16, (window.innerHeight - DEFAULT_HEIGHT) / 2),
+        x: Math.max(16, (window.innerWidth - targetW) / 2),
+        y: Math.max(16, (window.innerHeight - targetH) / 2),
       })
-      setSize({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT })
+      setSize({ w: targetW, h: targetH })
       setShowConfirm(false)
-      setIsExpanded(false)
+      setIsExpanded(true)
     }
   }, [floatingNote?.memberId, floatingNote?.mode])
 
