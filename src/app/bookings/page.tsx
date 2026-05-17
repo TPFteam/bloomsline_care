@@ -888,9 +888,60 @@ export default function BookingsPage() {
     try {
       setProcessingId(bookingId)
       const sb = createClient()
-      // Delete the booking. Request exact count so we can detect the
-      // RLS-silently-blocked case (no error, but 0 rows affected) and
-      // surface it instead of fake-succeeding.
+      const booking = bookings.find(b => b.id === bookingId)
+
+      // 1. If still active and on Google Calendar, cancel via API
+      //    first. The PATCH endpoint removes the Google event and
+      //    notifies the patient (cancellation email). Skip when the
+      //    booking is already cancelled to avoid hitting Google with a
+      //    delete on an event that's already gone.
+      if (booking && booking.status !== 'cancelled' && booking.google_event_id) {
+        try {
+          await fetch(`/api/bookings/${bookingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
+          })
+        } catch (cancelErr) {
+          console.warn('Booking cancel-before-delete failed (continuing):', cancelErr)
+        }
+      }
+
+      // 2. Find the matching session and detach any progress_notes
+      //    from it before we remove the session row, so notes survive
+      //    as standalone observations under the patient. Mirrors the
+      //    "keep notes" path on the SessionsTab delete flow.
+      if (booking?.member_id) {
+        const { data: sess } = await sb
+          .from('sessions')
+          .select('id')
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('member_id', booking.member_id)
+          .eq('scheduled_at', booking.start_time)
+          .maybeSingle()
+        if (sess?.id) {
+          await sb
+            .from('progress_notes')
+            .update({ session_id: null })
+            .eq('session_id', sess.id)
+        }
+      }
+
+      // 3. Delete the matching session row. Always scope by member_id
+      //    when present so we don't sweep up a different patient's
+      //    session that happens to be at the same time on the same
+      //    practitioner's calendar.
+      if (booking) {
+        let q = sb.from('sessions').delete()
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('scheduled_at', booking.start_time)
+        if (booking.member_id) q = q.eq('member_id', booking.member_id)
+        await q
+      }
+
+      // 4. Delete the booking row. Request exact count so we can
+      //    detect the RLS-silently-blocked case (no error, 0 rows
+      //    affected) and surface it instead of fake-succeeding.
       const { error, count } = await sb
         .from('bookings')
         .delete({ count: 'exact' })
@@ -899,13 +950,7 @@ export default function BookingsPage() {
       if ((count ?? 0) === 0) {
         throw new Error('Delete matched 0 rows — likely RLS or wrong practitioner_id')
       }
-      // Also delete matching session if exists
-      const booking = bookings.find(b => b.id === bookingId)
-      if (booking) {
-        await sb.from('sessions').delete()
-          .eq('practitioner_id', booking.practitioner_id)
-          .eq('scheduled_at', booking.start_time)
-      }
+
       setBookings(prev => prev.filter(b => b.id !== bookingId))
       setDeleteConfirmBooking(null)
       toast.success(locale === 'fr' ? 'Rendez-vous supprimé' : 'Booking deleted')
