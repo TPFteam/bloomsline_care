@@ -29,6 +29,21 @@ export function FloatingNotesPanel() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
+  // Brief attention glow on the docked pill — fires when the panel
+  // transitions from open → minimized so the practitioner sees where
+  // it landed in the bottom-right corner.
+  const [pillAttention, setPillAttention] = useState(false)
+  const prevMinimizedRef = useRef(isMinimized)
+  useEffect(() => {
+    if (!prevMinimizedRef.current && isMinimized) {
+      setPillAttention(true)
+      const t = setTimeout(() => setPillAttention(false), 1900)
+      prevMinimizedRef.current = isMinimized
+      return () => clearTimeout(t)
+    }
+    prevMinimizedRef.current = isMinimized
+  }, [isMinimized])
+
   // Drag state
   const dragging = useRef(false)
   const dragOffset = useRef({ x: 0, y: 0 })
@@ -217,7 +232,9 @@ export function FloatingNotesPanel() {
   if (isMinimized) {
     return createPortal(
       <div
-        className="fixed bottom-4 right-4 z-[90] flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+        className={`fixed bottom-4 right-4 z-[90] flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-lg cursor-pointer hover:shadow-xl transition-shadow${
+          pillAttention ? ' animate-bloom-attention' : ''
+        }`}
         onClick={() => setMinimized(false)}
       >
         <FileText className="w-4 h-4 text-gray-500" />
