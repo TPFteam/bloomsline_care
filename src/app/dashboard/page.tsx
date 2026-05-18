@@ -629,14 +629,14 @@ function DashboardInner() {
               <QuickIcon
                 icon={Calendar}
                 color="amber"
-                label={t('Add patient', 'Nouveau patient', 'Nuevo paciente')}
-                onClick={openAddMember}
+                label={t('Book session', 'Planifier', 'Reservar')}
+                onClick={() => setShowSchedule(true)}
               />
               <QuickIcon
                 icon={UserPlus}
                 color="teal"
-                label={t('Book session', 'Planifier', 'Reservar')}
-                onClick={() => setShowSchedule(true)}
+                label={t('Add patient', 'Nouveau patient', 'Nuevo paciente')}
+                onClick={openAddMember}
               />
               <QuickIcon
                 icon={Share2}
