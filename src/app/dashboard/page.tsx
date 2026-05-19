@@ -361,10 +361,13 @@ function DashboardInner() {
   // Create the member, optionally fire the welcome email, then close modal.
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+    // Email is optional — some practitioners see in-person-only patients
+    // who don't want or don't have an email on file. Only first + last
+    // name are required so we can identify the row.
+    if (!newMember.firstName.trim() || !newMember.lastName.trim()) {
       toast.error(locale === 'fr'
-        ? "Le prénom, le nom et l'email sont requis"
-        : 'First name, last name, and email are required')
+        ? "Le prénom et le nom sont requis"
+        : 'First name and last name are required')
       return
     }
     setSavingMember(true)
@@ -372,11 +375,12 @@ function DashboardInner() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) { router.push('/sign-in'); return }
 
+      const trimmedEmail = newMember.email.trim()
       const memberData = {
         practitioner_id: authUser.id,
         first_name: newMember.firstName.trim(),
         last_name: newMember.lastName.trim(),
-        email: newMember.email.trim(),
+        email: trimmedEmail || null,
         phone: newMember.phone.trim() || null,
         status: 'pending' as const,
         engagement_level: 'medium' as const,
@@ -395,7 +399,7 @@ function DashboardInner() {
         )
       }
 
-      if (sendInvite && memberResult?.id) {
+      if (sendInvite && memberResult?.id && trimmedEmail) {
         try {
           const { data: practitionerProfile } = await supabase
             .from('users')
@@ -406,7 +410,7 @@ function DashboardInner() {
             body: {
               memberName: newMember.firstName.trim(),
               memberLastName: newMember.lastName.trim(),
-              memberEmail: newMember.email.trim(),
+              memberEmail: trimmedEmail,
               practitionerName: practitionerProfile?.full_name || 'Your practitioner',
               practitionerAvatarUrl: practitionerProfile?.avatar_url || null,
               locale,
@@ -967,7 +971,8 @@ function DashboardInner() {
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      Email *
+                      Email
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
                     </label>
                     <input
                       type="email"
@@ -975,8 +980,12 @@ function DashboardInner() {
                       onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
                       placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
-                      required
                     />
+                    <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                      {locale === 'fr'
+                        ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
+                        : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
+                    </p>
                   </div>
 
                   <div>
@@ -1009,10 +1018,13 @@ function DashboardInner() {
                 </label>
 
                 <div
-                  onClick={() => setSendInvite(!sendInvite)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all mt-4 ${
-                    sendInvite ? 'border-teal-200 bg-teal-50/50' : 'border-gray-100 bg-gray-50/50'
+                  onClick={() => { if (newMember.email.trim()) setSendInvite(!sendInvite) }}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all mt-4 ${
+                    !newMember.email.trim()
+                      ? 'border-gray-100 bg-gray-50/30 opacity-50 cursor-not-allowed'
+                      : `cursor-pointer ${sendInvite ? 'border-teal-200 bg-teal-50/50' : 'border-gray-100 bg-gray-50/50'}`
                   }`}
+                  title={!newMember.email.trim() ? (locale === 'fr' ? 'Un email est nécessaire pour envoyer l\'invitation' : 'An email is required to send the invitation') : undefined}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     sendInvite ? 'bg-teal-100' : 'bg-gray-100'

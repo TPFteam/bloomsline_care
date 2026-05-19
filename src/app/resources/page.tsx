@@ -403,10 +403,10 @@ export default function MyResourcesPage() {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!newMember.firstName.trim() || !newMember.lastName.trim() || !newMember.email.trim()) {
+    if (!newMember.firstName.trim() || !newMember.lastName.trim()) {
       toast.error(locale === 'fr'
-        ? 'Le prénom, le nom et l\'email sont requis'
-        : 'First name, last name, and email are required')
+        ? 'Le prénom et le nom sont requis'
+        : 'First name and last name are required')
       return
     }
 
@@ -423,7 +423,7 @@ export default function MyResourcesPage() {
         practitioner_id: authUser.id,
         first_name: newMember.firstName.trim(),
         last_name: newMember.lastName.trim(),
-        email: newMember.email.trim(),
+        email: newMember.email.trim() || null,
         phone: newMember.phone.trim() || null,
         status: 'active' as const,
         engagement_level: 'medium' as const,
@@ -1039,7 +1039,8 @@ export default function MyResourcesPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      Email *
+                      Email
+                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
                     </label>
                     <input
                       type="email"
@@ -1047,7 +1048,6 @@ export default function MyResourcesPage() {
                       onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
                       placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
-                      required
                     />
                   </div>
 
