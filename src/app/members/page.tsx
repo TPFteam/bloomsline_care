@@ -1940,7 +1940,19 @@ export default function MembersPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate">{member.first_name} {member.last_name}</h3>
-                        <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                        {member.email ? (
+                          <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                        ) : (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-medium"
+                            title={locale === 'fr'
+                              ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
+                              : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
+                          >
+                            <Mail className="w-2.5 h-2.5" />
+                            {locale === 'fr' ? 'Sans email' : 'No email'}
+                          </span>
+                        )}
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-600 border border-teal-200">
                         {locale === 'fr' ? 'Nouveau' : 'New'}
