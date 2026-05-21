@@ -25,6 +25,7 @@ import {
 import { useLanguage } from '@/lib/i18n/context'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
 import { ResponseValueDisplay } from '@/lib/resources/render-response'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { MemberFeedbackIcon, feedbackLabel, type MemberFeedback } from '@/components/resources/MemberFeedbackIcon'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import {
@@ -677,88 +678,80 @@ export default function SharedResourcesPage() {
                                   </span>
                                 ) : null
                               })()}
-                              <div className="relative">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setExpandedResource(expandedResource === record.id ? null : record.id) }}
-                                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                                >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </button>
-                                {expandedResource === record.id && (
-                                  <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setExpandedResource(null)} />
-                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
-                                      {(() => {
-                                        const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
-                                        const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
-                                        return canRemind ? (
-                                          <button
-                                            onClick={() => { setExpandedResource(null); setConfirmRemind(record) }}
-                                            disabled={sendingReminder === record.id}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                          >
-                                            <Bell className="w-3.5 h-3.5 text-amber-500" />
-                                            {locale === 'fr' ? 'Rappeler' : 'Remind'}
-                                          </button>
-                                        ) : null
-                                      })()}
-                                      <button
-                                        onClick={() => { setExpandedResource(null); router.push(`/resources/${record.resource_id}`) }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              {/* Three-dot menu — Radix Portal escapes any
+                                  parent overflow so options stay visible
+                                  even when the row sits near a container
+                                  edge. */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                    aria-label={locale === 'fr' ? 'Plus d\'options' : 'More options'}
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  {(() => {
+                                    const lastReminder = record.last_reminder_at ? new Date(record.last_reminder_at) : null
+                                    const canRemind = !record.response_status && (!lastReminder || (Date.now() - lastReminder.getTime()) / (60 * 60 * 1000) >= 24)
+                                    return canRemind ? (
+                                      <DropdownMenuItem
+                                        onClick={() => setConfirmRemind(record)}
+                                        disabled={sendingReminder === record.id}
                                       >
-                                        <Eye className="w-3.5 h-3.5 text-gray-400" />
-                                        Preview
-                                      </button>
-                                      <button
-                                        onClick={() => { setExpandedResource(null); router.push(`/members/${record.member_id}?tab=shared`) }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                        <Bell className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                                        {locale === 'fr' ? 'Rappeler' : 'Remind'}
+                                      </DropdownMenuItem>
+                                    ) : null
+                                  })()}
+                                  <DropdownMenuItem onClick={() => router.push(`/resources/${record.resource_id}`)}>
+                                    <Eye className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                                    {locale === 'fr' ? 'Aperçu' : 'Preview'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => router.push(`/members/${record.member_id}?tab=shared`)}>
+                                    <Users className="w-3.5 h-3.5 mr-2 text-gray-400" />
+                                    {locale === 'fr' ? 'Voir le patient' : 'View member'}
+                                  </DropdownMenuItem>
+                                  {record.response_status && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => handleDownloadPdf(record)}
+                                        disabled={downloadingId === record.id}
                                       >
-                                        <Users className="w-3.5 h-3.5 text-gray-400" />
-                                        {locale === 'fr' ? 'Voir le patient' : 'View member'}
-                                      </button>
-                                      {record.response_status && (
-                                        <>
-                                          <div className="border-t border-gray-100 my-1" />
-                                          <button
-                                            onClick={() => { setExpandedResource(null); handleDownloadPdf(record) }}
-                                            disabled={downloadingId === record.id}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                          >
-                                            {downloadingId === record.id
-                                              ? <Loader2 className="w-3.5 h-3.5 text-teal-600 animate-spin" />
-                                              : <Download className="w-3.5 h-3.5 text-teal-600" />}
-                                            {locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
-                                          </button>
-                                          <button
-                                            onClick={() => { setExpandedResource(null); setDeleteConfirm(record) }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-700 hover:bg-amber-50"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5 text-amber-600" />
-                                            {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
-                                          </button>
-                                        </>
-                                      )}
-                                      {/* Remove resource — wipes the share + cascades the
-                                          response. Hidden once a submission is submitted/
-                                          reviewed so completed patient data can't be
-                                          accidentally wiped via cascade. The practitioner
-                                          would have to explicitly Delete response first. */}
-                                      {(record.response_status !== 'submitted' && record.response_status !== 'reviewed') && (
-                                        <>
-                                          <div className="border-t border-gray-100 my-1" />
-                                          <button
-                                            onClick={() => { setExpandedResource(null); setUnshareConfirm(record) }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                                          >
-                                            <Link2Off className="w-3.5 h-3.5" />
-                                            {locale === 'fr' ? 'Retirer le support' : 'Remove resource'}
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
+                                        {downloadingId === record.id
+                                          ? <Loader2 className="w-3.5 h-3.5 mr-2 text-teal-600 animate-spin" />
+                                          : <Download className="w-3.5 h-3.5 mr-2 text-teal-600" />}
+                                        {locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => setDeleteConfirm(record)}
+                                        className="text-amber-700 focus:text-amber-800 focus:bg-amber-50"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                                        {locale === 'fr' ? 'Supprimer la réponse' : 'Delete response'}
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {/* Remove resource — hidden once submitted/
+                                      reviewed so patient data isn't wiped via
+                                      cascade. */}
+                                  {(record.response_status !== 'submitted' && record.response_status !== 'reviewed') && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => setUnshareConfirm(record)}
+                                        className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                      >
+                                        <Link2Off className="w-3.5 h-3.5 mr-2" />
+                                        {locale === 'fr' ? 'Retirer le support' : 'Remove resource'}
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               </div>
                             </div>
                             {/* Inline — no response yet */}
