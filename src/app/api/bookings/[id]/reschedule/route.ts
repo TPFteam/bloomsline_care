@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { getNotificationContent } from '@/lib/notifications/templates';
-import { generateEmailHtml } from '@/lib/notifications/email';
-import { sendEmail } from '@/lib/email';
-import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
-import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 /**
  * POST /api/bookings/[id]/reschedule
@@ -155,17 +150,7 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Format dates for notifications
-    const formatDate = (dateStr: string) =>
-      new Date(dateStr).toLocaleString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', hour12: true,
-      });
-
-    const originalTime = formatDate(booking.start_time);
-    const newTime = formatDate(newSlotStart);
-
-    // Get session type name
+    // Get session type name (used by buildCalendarEvent if we PATCH Google).
     const { data: settings } = await adminSupabase
       .from('booking_settings')
       .select('session_types')
@@ -173,79 +158,59 @@ export async function POST(
       .single();
 
     const sessionTypes = (settings?.session_types as Array<{ id: string; name: string }>) || [];
-    const sessionType = sessionTypes.find(st => st.id === booking.session_type);
-    const sessionTypeName = sessionType?.name || booking.session_type;
+    const sessionType = sessionTypes.find(st => st.id === (sessionTypeId ?? booking.session_type));
+    const sessionTypeName = sessionType?.name || (sessionTypeId ?? booking.session_type);
 
-    // ─── Reordered for fail-safety ─────────────────────────────────
-    // Old order: cancel-old (DB) → delete-old-event (sends cancel email)
-    //            → insert-new (DB) → create-new-event (sends invite)
-    // Problem: if insert-new or create-new-event failed, the patient
-    // already had the cancellation in their inbox with no rebook.
+    // ────────────────────────────────────────────────────────────────────
+    // In-place reschedule.
     //
-    // New order: insert-new (DB) → create-new-event → cancel-old (DB)
-    //            → delete-old-event. Any failure before the cancel-old
-    //            step leaves the patient seeing nothing changed.
-    // ────────────────────────────────────────────────────────────────
-
-    // Resolve effective session type / format — practitioner-provided
-    // overrides win, otherwise inherit from the old booking row.
+    // Previously we inserted a new booking row at the new time and
+    // cancelled the old row. That left a "Rescheduled by practitioner"
+    // ghost in Historique and sent the patient TWO emails (cancellation
+    // + new invitation). The patient sees one move; they should receive
+    // one email and we should keep one row.
+    //
+    // Now: UPDATE the existing booking in place. The bookings→sessions
+    // trigger (migration 20260514_sync_sessions_with_bookings) moves
+    // the paired session row in lockstep. Then PATCH the Google event
+    // with the new start/end + refreshed description. Patient gets
+    // exactly one "appointment updated" email.
     //
     // bookings.session_format uses the Google-Calendar vocabulary
-    // ('in_person' | 'video' | 'phone'). The front-end and our session
-    // table use 'virtual' as a synonym for 'video', so map it back
-    // here before the insert — otherwise the bookings check
-    // constraint rejects the row.
+    // ('in_person' | 'video' | 'phone'). The front-end uses 'virtual'
+    // as a synonym for 'video', so map it back before the update.
+    // ────────────────────────────────────────────────────────────────────
     const effectiveSessionType = sessionTypeId ?? booking.session_type;
     const rawSessionFormat = sessionFormat ?? booking.session_format;
     const effectiveSessionFormat =
       rawSessionFormat === 'virtual' ? 'video' : rawSessionFormat;
 
-    // ─── Step 1: Insert the new booking ────────────────────────────
-    // If this fails (constraint, RLS, trigger throwing), nothing on the
-    // patient's calendar has been touched yet.
-    const { data: newBooking, error: createError } = await adminSupabase
+    const updateNow = new Date().toISOString();
+    const { error: updateError } = await adminSupabase
       .from('bookings')
-      .insert({
-        practitioner_id: user.id,
-        member_id: booking.member_id,
-        client_name: booking.client_name,
-        client_email: booking.client_email,
-        client_phone: booking.client_phone,
-        session_type: effectiveSessionType,
-        session_format: effectiveSessionFormat,
+      .update({
         start_time: newSlotStart,
         end_time: newSlotEnd,
-        timezone: booking.timezone,
-        status: 'confirmed',
-        notes: booking.notes,
-        practitioner_notes: booking.practitioner_notes,
-        rescheduled_from: id,
-        rescheduled_by: 'practitioner',
+        ...(sessionTypeId ? { session_type: effectiveSessionType } : {}),
+        ...(sessionFormat ? { session_format: effectiveSessionFormat } : {}),
+        updated_at: updateNow,
       })
-      .select()
-      .single();
+      .eq('id', id);
 
-    if (createError) {
-      console.error('Failed to create rescheduled booking:', createError);
-      return NextResponse.json({ error: 'Failed to create new booking' }, { status: 500 });
+    if (updateError) {
+      console.error('Failed to update booking for reschedule:', updateError);
+      return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 });
     }
 
-    // Base session row at the new slot is created automatically by the
-    // bookings→sessions trigger from the insert above.
-
-    // ─── Step 2: Create the new Google Calendar event ──────────────
-    // If this fails for a future booking, bail out without touching
-    // the old event. The new booking is in our DB; the practitioner
-    // can retry the Google sync from the bookings page.
+    // PATCH the Google event so the patient sees the new time. One
+    // notification email gets sent ("Event updated"), not a cancel +
+    // invite pair. Errors are non-fatal — the practitioner can retry
+    // the Google sync from the bookings page if it fails.
     const isFutureNewBooking = new Date(newSlotStart).getTime() > Date.now();
-    let newGoogleEventCreated = !isFutureNewBooking; // backdated → no Google sync needed, treat as "done"
-    if (isFutureNewBooking) {
+    let calendarSyncFailed = false;
+    if (booking.google_event_id && (isFutureBooking || isFutureNewBooking)) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
-      if (!googleAuth) {
-        // No Google connection → nothing to create on Google, but the
-        // DB-level reschedule still proceeds.
-        newGoogleEventCreated = true;
-      } else {
+      if (googleAuth) {
         try {
           const practAddr = await getPractitionerAddress(user.id, adminSupabase);
           const { data: titleSettings } = await adminSupabase
@@ -254,8 +219,8 @@ export async function POST(
             .eq('user_id', user.id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-          const calendarEvent = buildCalendarEvent({
-            bookingId: newBooking.id,
+          const rebuilt = buildCalendarEvent({
+            bookingId: booking.id,
             practitionerName: await getPractitionerName(user.id, adminSupabase),
             clientName: booking.client_name,
             clientEmail: booking.client_email,
@@ -271,104 +236,54 @@ export async function POST(
             practitionerAddress: practAddr.address,
             practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
             titleTemplate,
-          });
+          }) as { start: unknown; end: unknown; summary: string; description: string; location?: string };
 
-          const result = await postGoogleEvent({
-            accessToken: googleAuth.accessToken,
-            calendarId: googleAuth.calendarId,
-            payload: calendarEvent,
-            sessionFormat: effectiveSessionFormat,
+          // Inject the optional reason just after the "Session rescheduled"
+          // header so the patient sees why in the same email.
+          let description = rebuilt.description;
+          const reasonText = reason?.trim();
+          if (reasonText) {
+            const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
+            const isFr = pUser?.preferred_language === 'fr';
+            const reasonLine = isFr ? `Raison : ${reasonText}` : `Reason: ${reasonText}`;
+            description = description.replace(
+              /(⟳ (?:Séance reprogrammée|Rescheduled session))/,
+              `$1\n${reasonLine}`,
+            );
+          }
+
+          const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
+          const patchRes = await fetch(`${calendarUrl}?sendUpdates=${ownSendUpdates}`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${googleAuth.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              start: rebuilt.start,
+              end: rebuilt.end,
+              summary: rebuilt.summary,
+              description,
+              ...(rebuilt.location ? { location: rebuilt.location } : {}),
+            }),
           });
-          if (result.ok) {
-            const event = result.event;
-            const isVideo = effectiveSessionFormat === 'video';
-            await adminSupabase
-              .from('bookings')
-              .update({ google_event_id: event.id, meet_link: isVideo ? (event.hangoutLink || null) : null })
-              .eq('id', newBooking.id);
-            newGoogleEventCreated = true;
-          } else {
-            console.error('New Google event create failed:', result.status, result.errorText);
+          if (!patchRes.ok) {
+            const errText = await patchRes.text().catch(() => '');
+            console.error('Reschedule Google PATCH failed:', patchRes.status, errText);
+            calendarSyncFailed = true;
           }
         } catch (err) {
-          console.error('Failed to create new calendar event:', err);
+          console.error('Reschedule Google PATCH errored:', err);
+          calendarSyncFailed = true;
         }
       }
     }
 
-    if (!newGoogleEventCreated) {
-      // Old event is intact, old booking still confirmed. The new booking
-      // is in our DB without a Google event. Surface this so the
-      // practitioner can retry the calendar sync rather than leaving the
-      // patient with a cancelled appointment and no rebook.
-      return NextResponse.json({
-        error: 'New booking created but Google Calendar invite failed. The original appointment is still active — please retry calendar sync from the bookings page.',
-        newBookingId: newBooking.id,
-        calendarSyncFailed: true,
-      }, { status: 502 });
-    }
-
-    // ─── Step 3: Cancel the old booking + linked session ───────────
-    await adminSupabase
-      .from('bookings')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: 'practitioner',
-        cancellation_reason: reason ? `Rescheduled: ${reason.trim()}` : 'Rescheduled by practitioner',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    await adminSupabase
-      .from('sessions')
-      .update({ status: 'cancelled' })
-      .eq('practitioner_id', user.id)
-      .eq('scheduled_at', booking.start_time)
-      .eq('status', 'scheduled');
-
-    // ─── Step 4: Delete the old Google event ───────────────────────
-    // Patch description with reschedule reason first so the
-    // cancellation email shows why. Errors here are non-fatal — the
-    // new booking + event are already in place.
-    if (booking.google_event_id && isFutureBooking) {
-      const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
-      if (googleAuth) {
-        const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
-        const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
-        try {
-          const { data: pUser } = await adminSupabase.from('users').select('preferred_language').eq('id', user.id).single();
-          const isFr = pUser?.preferred_language === 'fr';
-          const reasonText = reason?.trim() || '';
-          const rescheduleNote = reasonText
-            ? (isFr ? `\n\n⟳ Séance reprogrammée — Raison : ${reasonText}` : `\n\n⟳ Session rescheduled — Reason: ${reasonText}`)
-            : (isFr ? '\n\n⟳ Séance reprogrammée' : '\n\n⟳ Session rescheduled');
-
-          const eventRes = await fetch(calendarUrl, { headers: authHeaders });
-          if (eventRes.ok) {
-            const event = await eventRes.json();
-            await fetch(`${calendarUrl}?sendUpdates=none`, {
-              method: 'PATCH',
-              headers: authHeaders,
-              body: JSON.stringify({ description: (event.description || '') + rescheduleNote }),
-            });
-          }
-
-          await fetch(`${calendarUrl}?sendUpdates=all`, {
-            method: 'DELETE',
-            headers: authHeaders,
-          });
-        } catch (err) {
-          console.error('Failed to delete old calendar event:', err);
-        }
-      }
-    }
-
-    // No Bloomsline emails — Google Calendar handles notifications:
-    // - Old event DELETE with sendUpdates=all → cancellation email (with reason)
-    // - New event POST with sendUpdates=all → invitation email (with new time)
-
-    return NextResponse.json({ success: true, newBookingId: newBooking.id });
+    return NextResponse.json({
+      success: true,
+      newBookingId: id,
+      ...(calendarSyncFailed ? { calendarSyncFailed: true } : {}),
+    });
   } catch (err) {
     console.error('Practitioner reschedule error:', err);
     return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 });
