@@ -135,8 +135,8 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     ? `Rendez-vous ${practitionerName} <> ${clientName}`
     : `Appointment ${practitionerName} <> ${clientName}`
   const sessionFormatLabel = isInPerson
-    ? (isFr ? 'en personne' : 'in person')
-    : (isFr ? 'virtuel' : 'virtual')
+    ? (isFr ? '🏢 en personne' : '🏢 in person')
+    : (isFr ? '💻 En visio' : '💻 virtual')
   const title = titleTemplate && titleTemplate.trim()
     ? renderTitle(titleTemplate, {
         practitioner: practitionerName,

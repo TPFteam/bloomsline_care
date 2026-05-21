@@ -2294,7 +2294,7 @@ export default function BookingsPage() {
                     const practitioner = user?.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')
                     const client = locale === 'fr' ? 'Sonia Lebari' : 'John Doe'
                     const sessionType = locale === 'fr' ? 'Suivi' : 'Follow-up'
-                    const sessionFormat = locale === 'fr' ? 'en personne' : 'in person'
+                    const sessionFormat = locale === 'fr' ? '🏢 en personne' : '🏢 in person'
                     const renderPreview = (tmpl: string) => {
                       if (!tmpl) {
                         return locale === 'fr'
