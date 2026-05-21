@@ -2283,12 +2283,18 @@ export default function BookingsPage() {
                         label: locale === 'fr' ? 'Praticien & client' : 'Practitioner & client',
                         template: '{practitioner} & {client}',
                       },
+                      {
+                        id: 'client_practitioner_format',
+                        label: locale === 'fr' ? 'Client, praticien + format' : 'Client, practitioner + format',
+                        template: '{client} & {practitioner} — {session_format}',
+                      },
                     ]
                     const currentTemplate = (bookingSettings?.calendar_event_title_template ?? '').trim()
                     const selectedPreset = presets.find(p => p.template === currentTemplate) ?? presets[0]
                     const practitioner = user?.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')
                     const client = locale === 'fr' ? 'Sonia Lebari' : 'John Doe'
                     const sessionType = locale === 'fr' ? 'Suivi' : 'Follow-up'
+                    const sessionFormat = locale === 'fr' ? 'en personne' : 'in person'
                     const renderPreview = (tmpl: string) => {
                       if (!tmpl) {
                         return locale === 'fr'
@@ -2299,6 +2305,7 @@ export default function BookingsPage() {
                         .replace(/\{practitioner(?:_name)?\}/gi, practitioner)
                         .replace(/\{client(?:_name)?\}/gi, client)
                         .replace(/\{session_type\}/gi, sessionType)
+                        .replace(/\{session_format\}/gi, sessionFormat)
                     }
                     return (
                       <>

@@ -90,12 +90,13 @@ export interface CalendarEventParams {
 // Google Calendar header.
 function renderTitle(
   template: string,
-  vars: { practitioner: string; client: string; session_type: string },
+  vars: { practitioner: string; client: string; session_type: string; session_format: string },
 ): string {
   return template
     .replace(/\{practitioner(?:_name)?\}/gi, vars.practitioner)
     .replace(/\{client(?:_name)?\}/gi, vars.client)
     .replace(/\{session_type\}/gi, vars.session_type)
+    .replace(/\{session_format\}/gi, vars.session_format)
     .trim()
 }
 
@@ -133,11 +134,15 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   const defaultTitle = isFr
     ? `Rendez-vous ${practitionerName} <> ${clientName}`
     : `Appointment ${practitionerName} <> ${clientName}`
+  const sessionFormatLabel = isInPerson
+    ? (isFr ? 'en personne' : 'in person')
+    : (isFr ? 'virtuel' : 'virtual')
   const title = titleTemplate && titleTemplate.trim()
     ? renderTitle(titleTemplate, {
         practitioner: practitionerName,
         client: clientName,
         session_type: sessionTypeName,
+        session_format: sessionFormatLabel,
       }) || defaultTitle
     : defaultTitle
 
