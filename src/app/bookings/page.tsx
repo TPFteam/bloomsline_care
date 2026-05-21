@@ -845,6 +845,37 @@ export default function BookingsPage() {
     setClosePopupSaving(true)
     try {
       const sb = createClient()
+      // Mirror the booking close to the paired session row so the
+      // member page's Sessions tab doesn't keep the row as "scheduled"
+      // while the bookings page has already marked it closed.
+      // 'show'    → both rows status='completed'
+      // 'no_show' → both rows status='cancelled' (no_show is just a
+      //             reason; we store it as cancelled per founder's call).
+      const mirrorToSession = async (
+        sessionStatus: 'completed' | 'cancelled',
+        paymentStatus: 'paid' | 'unpaid',
+        cancellationReason?: string,
+      ) => {
+        if (!booking.member_id) return
+        try {
+          const sessionUpdates: Record<string, unknown> = {
+            status: sessionStatus,
+            payment_status: paymentStatus,
+            updated_at: new Date().toISOString(),
+          }
+          if (cancellationReason) sessionUpdates.cancellation_reason = cancellationReason
+          await sb
+            .from('sessions')
+            .update(sessionUpdates)
+            .eq('practitioner_id', booking.practitioner_id)
+            .eq('member_id', booking.member_id)
+            .eq('scheduled_at', booking.start_time)
+            .not('status', 'in', '("completed","cancelled")')
+        } catch (sessErr) {
+          console.warn('Could not propagate close to matching session:', sessErr)
+        }
+      }
+
       if (closePopupOutcome === 'show') {
         // Required fields: payment + note choice. Guard against null.
         if (showBPayment === null || showBNoteAction === null) return
@@ -862,6 +893,7 @@ export default function BookingsPage() {
         }
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
+        await mirrorToSession('completed', showBPayment)
         await fetchBookings()
         emitBookingsChanged()
         closeClosePopupBooking()
@@ -885,6 +917,7 @@ export default function BookingsPage() {
         }
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
+        await mirrorToSession('cancelled', noShowBPayment, noShowBReason)
         await fetchBookings()
         emitBookingsChanged()
         closeClosePopupBooking()

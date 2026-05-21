@@ -941,12 +941,47 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      // When cancelling, also cancel the matching booking so the patient
-      // gets a cancellation email + Google Calendar event is updated.
-      // The booking PATCH endpoint handles both of those (and propagates to
-      // sibling rows when series_scope='following').
+      // When closing as completed (or no-show, which we store as
+      // cancelled), mirror the new status to the paired booking row so
+      // the bookings page doesn't keep showing "Clôturer la séance".
+      // Cancelled goes through the PATCH endpoint below to also trigger
+      // Google Calendar updates; completed is local-only (the event
+      // already happened, nothing to sync to Google).
       let cancelledBookingId: string | null = null
       const sessionRow = sessions.find(s => s.id === sessionId)
+      if (newStatus === 'completed' && sessionRow) {
+        try {
+          const { data: matchingBooking } = await supabase
+            .from('bookings')
+            .select('id, payment_status')
+            .eq('practitioner_id', sessionRow.practitioner_id)
+            .eq('member_id', memberId)
+            .eq('start_time', sessionRow.scheduled_at)
+            .neq('status', 'cancelled')
+            .neq('status', 'completed')
+            .maybeSingle()
+          if (matchingBooking) {
+            // Read the just-updated session row to pick up the new
+            // payment_status the practitioner set in the close popup
+            // (written immediately before this handler ran).
+            const { data: freshSession } = await supabase
+              .from('sessions')
+              .select('payment_status')
+              .eq('id', sessionId)
+              .maybeSingle()
+            const updates: Record<string, unknown> = {
+              status: 'completed',
+              updated_at: new Date().toISOString(),
+            }
+            if (freshSession?.payment_status && freshSession.payment_status !== matchingBooking.payment_status) {
+              updates.payment_status = freshSession.payment_status
+            }
+            await supabase.from('bookings').update(updates).eq('id', matchingBooking.id)
+          }
+        } catch (bookingErr) {
+          console.warn('Could not propagate completed to matching booking:', bookingErr)
+        }
+      }
       if (newStatus === 'cancelled') {
         try {
           if (sessionRow) {
