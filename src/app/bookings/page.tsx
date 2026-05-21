@@ -1167,6 +1167,7 @@ export default function BookingsPage() {
       currency: bookingSettings?.currency ?? 'EUR',
       send_own_calendar_emails: (bookingSettings as any)?.send_own_calendar_emails ?? true,
       booking_page_language: bookingSettings?.booking_page_language ?? null,
+      calendar_event_title_template: (bookingSettings as any)?.calendar_event_title_template?.trim() || null,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -2234,6 +2235,69 @@ export default function BookingsPage() {
                 </CardContent>
               </Card>
               )}
+
+              {/* Calendar event title template — controls the title that
+                  appears on Google Calendar events created by Bloomsline. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Titre des événements Google Agenda' : 'Google Calendar event title'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr'
+                      ? "Personnalisez le titre que vos rendez-vous affichent dans Google Agenda. Laissez vide pour utiliser le titre par défaut."
+                      : 'Customize the title your appointments show in Google Calendar. Leave empty to use the default.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <input
+                    type="text"
+                    value={bookingSettings?.calendar_event_title_template ?? ''}
+                    onChange={(e) => setBookingSettings((prev) => ({ ...(prev as any), calendar_event_title_template: e.target.value } as any))}
+                    placeholder={locale === 'fr'
+                      ? 'Rendez-vous {practitioner} <> {client}'
+                      : 'Appointment {practitioner} <> {client}'}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-300 outline-none font-mono"
+                  />
+                  <div className="text-xs text-gray-500">
+                    <p className="mb-1.5">
+                      <span className="font-medium text-gray-700">{locale === 'fr' ? 'Aperçu : ' : 'Preview: '}</span>
+                      <span className="font-mono text-gray-900">
+                        {(() => {
+                          const tmpl = bookingSettings?.calendar_event_title_template?.trim()
+                          const practitioner = user?.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')
+                          const client = locale === 'fr' ? 'Sonia Lebari' : 'John Doe'
+                          const sessionType = locale === 'fr' ? 'Suivi' : 'Follow-up'
+                          if (!tmpl) {
+                            return locale === 'fr'
+                              ? `Rendez-vous ${practitioner} <> ${client}`
+                              : `Appointment ${practitioner} <> ${client}`
+                          }
+                          return tmpl
+                            .replace(/\{practitioner(?:_name)?\}/gi, practitioner)
+                            .replace(/\{client(?:_name)?\}/gi, client)
+                            .replace(/\{session_type\}/gi, sessionType)
+                            .trim() || (locale === 'fr' ? '(titre vide)' : '(empty title)')
+                        })()}
+                      </span>
+                    </p>
+                    <p className="leading-snug">
+                      {locale === 'fr' ? 'Variables disponibles : ' : 'Available placeholders: '}
+                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{practitioner}'}</code>
+                      {' · '}
+                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{client}'}</code>
+                      {' · '}
+                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{session_type}'}</code>
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-2">
+                      {locale === 'fr'
+                        ? "S'applique uniquement aux nouveaux rendez-vous. Les événements existants dans Google Agenda ne sont pas modifiés."
+                        : 'Applies only to new appointments. Existing Google Calendar events are not modified.'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
               </>)}
 

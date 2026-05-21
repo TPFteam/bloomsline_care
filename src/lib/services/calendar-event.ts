@@ -77,6 +77,26 @@ export interface CalendarEventParams {
    *  When set, Google creates a single recurring event so the patient receives
    *  one invite for the whole series, with per-occurrence reminders. */
   recurrenceRule?: string | null
+  /** Optional per-practitioner title template stored in
+   *  booking_settings.calendar_event_title_template. Supports placeholders:
+   *  {practitioner}, {client}, {session_type}. Empty/null → use the default
+   *  "Rendez-vous {practitioner} <> {client}" / "Appointment ..." pattern. */
+  titleTemplate?: string | null
+}
+
+// Substitute placeholder tokens in a title template. Unknown tokens are
+// left as-is so the practitioner can see them and fix the typo. Trims
+// whitespace at the edges so an accidental newline doesn't ruin the
+// Google Calendar header.
+function renderTitle(
+  template: string,
+  vars: { practitioner: string; client: string; session_type: string },
+): string {
+  return template
+    .replace(/\{practitioner(?:_name)?\}/gi, vars.practitioner)
+    .replace(/\{client(?:_name)?\}/gi, vars.client)
+    .replace(/\{session_type\}/gi, vars.session_type)
+    .trim()
 }
 
 export function buildCalendarEvent(params: CalendarEventParams) {
@@ -99,6 +119,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     practitionerEmail,
     practitionerPhone,
     recurrenceRule,
+    titleTemplate,
   } = params
 
   const isInPerson = sessionFormat === 'in_person'
@@ -106,10 +127,19 @@ export function buildCalendarEvent(params: CalendarEventParams) {
   const isFr = locale === 'fr'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bloomsline.com'
 
-  // Title
-  const title = isFr
+  // Title — use the practitioner's custom template when provided,
+  // otherwise fall back to the default "Rendez-vous {practitioner} <>
+  // {client}" / "Appointment …" pattern.
+  const defaultTitle = isFr
     ? `Rendez-vous ${practitionerName} <> ${clientName}`
     : `Appointment ${practitionerName} <> ${clientName}`
+  const title = titleTemplate && titleTemplate.trim()
+    ? renderTitle(titleTemplate, {
+        practitioner: practitionerName,
+        client: clientName,
+        session_type: sessionTypeName,
+      }) || defaultTitle
+    : defaultTitle
 
   // Format date/time in practitioner's locale
   const startDate = new Date(startTime)

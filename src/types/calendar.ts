@@ -70,6 +70,9 @@ export interface BookingSettings {
   allow_patient_cancel?: boolean;
   allow_patient_reschedule?: boolean;
   modification_notice_hours?: number;
+  // Custom title template for Google Calendar events. Supports
+  // {practitioner} / {client} / {session_type}. Null = use default.
+  calendar_event_title_template?: string | null;
   created_at: string;
   updated_at: string;
 }

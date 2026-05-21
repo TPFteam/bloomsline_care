@@ -134,12 +134,13 @@ export async function POST(
           try {
             const { data: settings } = await adminSupabase
               .from('booking_settings')
-              .select('session_types')
+              .select('session_types, calendar_event_title_template')
               .eq('user_id', user.id)
               .maybeSingle();
             const sessionTypes = (settings?.session_types as Array<{ id: string; name: string }>) || [];
             const sessionType = sessionTypes.find(st => st.id === booking.session_type);
             const sessionTypeName = sessionType?.name || (booking.session_type as string);
+            const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
             const practAddr = await getPractitionerAddress(user.id, adminSupabase);
 
             const calendarEvent = buildCalendarEvent({
@@ -157,6 +158,7 @@ export async function POST(
               locale: 'fr',
               practitionerAddress: practAddr.address,
               practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+              titleTemplate,
             });
 
             const response = await fetch(

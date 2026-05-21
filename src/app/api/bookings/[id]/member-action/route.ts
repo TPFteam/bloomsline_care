@@ -400,6 +400,12 @@ export async function POST(
               },
               body: JSON.stringify(await (async () => {
                 const practAddr = await getPractitionerAddress(booking.practitioner_id, adminSupabase);
+                const { data: titleSettings } = await adminSupabase
+                  .from('booking_settings')
+                  .select('calendar_event_title_template')
+                  .eq('user_id', booking.practitioner_id)
+                  .maybeSingle();
+                const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
                 return buildCalendarEvent({
                   bookingId: newBooking.id,
                   practitionerName: await getPractitionerName(booking.practitioner_id, adminSupabase),
@@ -416,6 +422,7 @@ export async function POST(
                   isRescheduled: true,
                   practitionerAddress: practAddr.address,
                   practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+                  titleTemplate,
                 });
               })()),
             }

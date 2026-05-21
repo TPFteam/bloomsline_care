@@ -214,13 +214,14 @@ export async function PATCH(
         try {
           const { data: settings } = await adminSupabase
             .from('booking_settings')
-            .select('session_types')
+            .select('session_types, calendar_event_title_template')
             .eq('user_id', user.id)
             .single();
 
           const sessionTypes = settings?.session_types as Array<{ id: string; name: string }> || [];
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
+          const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
 
           // Get practitioner name (robust fallback) and locale
           const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
@@ -244,6 +245,7 @@ export async function PATCH(
             practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
             practitionerEmail: practUser?.email,
             practitionerPhone: practUser?.phone,
+            titleTemplate,
           });
 
           const response = await fetch(

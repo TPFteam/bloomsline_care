@@ -251,6 +251,12 @@ export async function POST(request: NextRequest) {
           const eventTimezone = scheduleData?.timezone || body.timezone;
 
           const practAddr = await getPractitionerAddress(body.practitioner_id, supabase);
+          const { data: titleSettings } = await supabase
+            .from('booking_settings')
+            .select('calendar_event_title_template')
+            .eq('user_id', body.practitioner_id)
+            .maybeSingle();
+          const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName,
@@ -266,6 +272,7 @@ export async function POST(request: NextRequest) {
             locale: practitionerLocale,
             practitionerAddress: practAddr.address,
             practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+            titleTemplate,
           });
 
           const response = await fetch(
