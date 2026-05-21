@@ -256,6 +256,17 @@ function renderPillRow(total: number, selectedIndex: number | null, startAt = 0)
   return `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${pills}</div>`
 }
 
+/**
+ * Render the "1 = X · N = Y" hint below a pill row. Only emitted when
+ * at least one endpoint label is provided — silent otherwise.
+ */
+function renderMinMaxNote(min: number, max: number, minLabel?: string, maxLabel?: string): string {
+  if (!minLabel && !maxLabel) return ''
+  const left = minLabel ? `${min} = ${escapeHtml(minLabel)}` : `${min}`
+  const right = maxLabel ? `${max} = ${escapeHtml(maxLabel)}` : `${max}`
+  return `<div style="font-size:11px;color:#6b7280;margin-top:4px">${left} · ${right}</div>`
+}
+
 /** Render the labeled Likert ladder. */
 function renderLikertSteps(labels: string[], selectedIndex: number | null): string {
   return `<div style="display:flex;flex-wrap:wrap;gap:6px">${labels.map((lab, i) => {
@@ -466,42 +477,48 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
       }
 
       case 'scale': {
-        // Plain numeric scale (e.g. 1..10) — no labels.
-        const b = block as unknown as { scaleMin?: number; scaleMax?: number }
+        // Plain numeric scale (e.g. 1..10).
+        const b = block as unknown as { scaleMin?: number; scaleMax?: number; scaleMinLabel?: string; scaleMaxLabel?: string; scaleLabels?: string[] }
         const min = b.scaleMin ?? 1
         const max = b.scaleMax ?? 10
         const idx = parseIndex(response)
-        // idx here is the *value* not an index — adjust selection mapping.
-        return renderPillRow(max - min + 1, idx !== null ? idx - min : null, min)
+        const labels = Array.isArray(b.scaleLabels) ? b.scaleLabels : []
+        const minLabel = b.scaleMinLabel || labels[0]
+        const maxLabel = b.scaleMaxLabel || labels[labels.length - 1]
+        return renderPillRow(max - min + 1, idx !== null ? idx - min : null, min) + renderMinMaxNote(min, max, minLabel, maxLabel)
       }
 
       case 'likert': {
-        const { index, label, total } = resolveLikert(block, response)
+        const { index, total } = resolveLikert(block, response)
         const b = block as unknown as {
           scaleLabels?: string[]
           scaleType?: string
           scaleMin?: number
           scaleMax?: number
           scaleRange?: number
+          likertLabels?: { start?: string; end?: string }
         }
         // Mood: show the localized mood label rather than a pill row.
         if (b.scaleType === 'mood') {
           const moods = locale === 'fr'
             ? ['Épanoui', 'Bien', 'Neutre', 'Fragile', 'Difficile']
             : ['Thriving', 'Good', 'Okay', 'Low', 'Struggling']
-          const moodLabel = moods[(index ?? 0)] || label || `${(index ?? 0) + 1}`
+          const moodLabel = moods[(index ?? 0)] || `${(index ?? 0) + 1}`
           return `<div style="font-size:13px;color:#374151">${escapeHtml(moodLabel)} (${(index ?? 0) + 1}/${total || 5})</div>`
         }
-        // Labelled likert (5-point: Jamais / Rarement / …) — only when
-        // labels actually match the scale length, so a stale 5-label
-        // array can't mis-render a 10-point answer.
+        // Labelled likert (e.g. true 5-point Jamais / Rarement / …) —
+        // only when labels actually match the scale length.
         if (Array.isArray(b.scaleLabels) && b.scaleLabels.length > 0 && b.scaleLabels.length === total) {
           return renderLikertSteps(b.scaleLabels, index)
         }
-        // Default: numbered pills. Mirrors the editor/patient render so
-        // stars never appear in the PDF for a 1-N scale answer.
+        // Default: numbered pills + min/max note below. Mirrors the
+        // editor's "1 = X · N = Y" hint so practitioners always know
+        // what the endpoints mean.
+        const labels = Array.isArray(b.scaleLabels) ? b.scaleLabels : []
+        const minLabel = labels[0] || b.likertLabels?.start
+        const maxLabel = labels[labels.length - 1] || b.likertLabels?.end
         const min = b.scaleMin ?? 0
-        return renderPillRow(total, index, min) + (label ? `<div style="font-size:11px;color:#6b7280;margin-top:4px">${escapeHtml(label)}</div>` : '')
+        return renderPillRow(total, index, min) + renderMinMaxNote(1, total, minLabel, maxLabel)
       }
 
       case 'slider':

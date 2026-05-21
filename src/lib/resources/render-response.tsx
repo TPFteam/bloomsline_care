@@ -80,8 +80,10 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
       const max = (block as any).scaleMax ?? (block as any).sliderMax ?? 10
       const min = (block as any).scaleMin ?? (block as any).sliderMin ?? 0
       const range = max - min + 1
-      const minLabel = (block as any).scaleMinLabel ?? (block as any).sliderMinLabel
-      const maxLabel = (block as any).scaleMaxLabel ?? (block as any).sliderMaxLabel
+      const rawLabels = (block as any).scaleLabels
+      const labels: string[] = Array.isArray(rawLabels) ? rawLabels : []
+      const minLabel = (block as any).scaleMinLabel ?? (block as any).sliderMinLabel ?? labels[0]
+      const maxLabel = (block as any).scaleMaxLabel ?? (block as any).sliderMaxLabel ?? labels[labels.length - 1]
       if (range > 12 || block.type === 'slider') {
         const pct = Math.round(((num - min) / Math.max(max - min, 1)) * 100)
         return (
@@ -95,23 +97,30 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
         )
       }
       return (
-        <div className="flex flex-wrap gap-1.5">
-          {Array.from({ length: range }).map((_, i) => {
-            const pillValue = min + i
-            const selected = pillValue === num
-            return (
-              <span
-                key={i}
-                className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-md text-xs font-semibold border ${
-                  selected
-                    ? 'bg-teal-500 text-white border-teal-500'
-                    : 'bg-white text-gray-500 border-gray-200'
-                }`}
-              >
-                {pillValue}
-              </span>
-            )
-          })}
+        <div>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: range }).map((_, i) => {
+              const pillValue = min + i
+              const selected = pillValue === num
+              return (
+                <span
+                  key={i}
+                  className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-md text-xs font-semibold border ${
+                    selected
+                      ? 'bg-teal-500 text-white border-teal-500'
+                      : 'bg-white text-gray-500 border-gray-200'
+                  }`}
+                >
+                  {pillValue}
+                </span>
+              )
+            })}
+          </div>
+          {(minLabel || maxLabel) && (
+            <p className="text-[11px] text-gray-500 mt-1">
+              {min} = {minLabel ?? min} · {max} = {maxLabel ?? max}
+            </p>
+          )}
         </div>
       )
     }
@@ -130,32 +139,40 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
         return <span className={`text-sm font-medium ${colors[num] || 'text-gray-600'}`}>{locale === 'fr' ? moodsFr[num] : moods[num]} ({num + 1}/5)</span>
       }
       const scaleRange = (block as any).scaleRange || (block as any).likertScale || 5
-      const rawLabels = (block as any).scaleLabels || (block as any).likertLabels || []
-      const labels: string[] = Array.isArray(rawLabels) ? rawLabels : []
+      const rawScaleLabels = (block as any).scaleLabels
+      const labels: string[] = Array.isArray(rawScaleLabels) ? rawScaleLabels : []
       const useLabels = labels.length === scaleRange
-      // The patient-facing UI is 1-indexed (numbers run 1..scaleRange,
-      // selected when num === pillValue). Match that here.
+      const likertLabels = (block as any).likertLabels || {}
+      const minLabel = labels[0] || likertLabels.start
+      const maxLabel = labels[labels.length - 1] || likertLabels.end
       // Patient values are 1-indexed (BlockRenderer fires onChange(i+1)).
       // Match that exactly — don't also highlight `num === i`, that's
       // what produced the "two pills lit" bug.
       return (
-        <div className="flex flex-wrap gap-1.5">
-          {Array.from({ length: scaleRange }).map((_, i) => {
-            const pillValue = i + 1
-            const selected = num === pillValue
-            return (
-              <span
-                key={i}
-                className={`inline-flex items-center justify-center ${useLabels ? 'px-3' : 'min-w-[28px] px-2'} h-7 rounded-md text-xs font-semibold border ${
-                  selected
-                    ? 'bg-teal-500 text-white border-teal-500'
-                    : 'bg-white text-gray-500 border-gray-200'
-                }`}
-              >
-                {useLabels ? labels[i] : pillValue}
-              </span>
-            )
-          })}
+        <div>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: scaleRange }).map((_, i) => {
+              const pillValue = i + 1
+              const selected = num === pillValue
+              return (
+                <span
+                  key={i}
+                  className={`inline-flex items-center justify-center ${useLabels ? 'px-3' : 'min-w-[28px] px-2'} h-7 rounded-md text-xs font-semibold border ${
+                    selected
+                      ? 'bg-teal-500 text-white border-teal-500'
+                      : 'bg-white text-gray-500 border-gray-200'
+                  }`}
+                >
+                  {useLabels ? labels[i] : pillValue}
+                </span>
+              )
+            })}
+          </div>
+          {!useLabels && (minLabel || maxLabel) && (
+            <p className="text-[11px] text-gray-500 mt-1">
+              1 = {minLabel ?? '1'} · {scaleRange} = {maxLabel ?? scaleRange}
+            </p>
+          )}
         </div>
       )
     }
