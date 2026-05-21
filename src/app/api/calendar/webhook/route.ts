@@ -163,7 +163,7 @@ async function reconcileEvent(
 
   const { data: candidates } = await supabase
     .from('bookings')
-    .select('id, start_time, end_time, status, series_id, member_id, client_email')
+    .select('id, start_time, end_time, status, series_id, series_position, member_id, client_email')
     .eq('practitioner_id', userId)
     .eq('google_event_id', lookupId)
 
@@ -203,8 +203,14 @@ async function reconcileEvent(
           updated_at: new Date().toISOString(),
         })
         .eq('id', target.id)
-      // Mirror the same change on the sessions row.
-      await supabase
+      // Mirror the same change on the sessions row. Prefer matching by
+      // (series_id + series_position) when available — a practitioner
+      // may have independently edited the session's scheduled_at via
+      // "Edit session", in which case the old timestamp on the booking
+      // no longer matches the session's current scheduled_at and the
+      // old equality lookup would silently miss. Fall back to
+      // scheduled_at for non-series bookings.
+      let sessionUpdate = supabase
         .from('sessions')
         .update({
           scheduled_at: new Date(evt.start.dateTime).toISOString(),
@@ -213,7 +219,14 @@ async function reconcileEvent(
         })
         .eq('practitioner_id', userId)
         .eq('member_id', target.member_id)
-        .eq('scheduled_at', target.start_time)
+      if (target.series_id && typeof target.series_position === 'number') {
+        sessionUpdate = sessionUpdate
+          .eq('series_id', target.series_id)
+          .eq('series_position', target.series_position)
+      } else {
+        sessionUpdate = sessionUpdate.eq('scheduled_at', target.start_time)
+      }
+      await sessionUpdate
     }
   }
 

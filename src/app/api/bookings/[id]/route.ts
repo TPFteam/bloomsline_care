@@ -414,9 +414,16 @@ export async function PATCH(
 
     // Series + scope='following': cancel every later sibling in our DB so the
     // practitioner's session list reflects the same state Google will show.
+    //
+    // Prefer matching by `series_position` (1-indexed sequence number)
+    // rather than `start_time` / `scheduled_at`. A session can be
+    // independently edited via "Edit session" — its scheduled_at moves
+    // but the series_position stays. The position-based predicate
+    // catches those edited rows; the timestamp-based one used to miss
+    // them, leaving sessions "scheduled" after the booking was cancelled.
     if (status === 'cancelled' && booking.series_id && seriesScope === 'following') {
       try {
-        await adminSupabase
+        let cancelBookings = adminSupabase
           .from('bookings')
           .update({
             status: 'cancelled',
@@ -425,16 +432,27 @@ export async function PATCH(
             updated_at: new Date().toISOString(),
           })
           .eq('series_id', booking.series_id)
-          .gte('start_time', booking.start_time)
           .neq('id', booking.id)
           .neq('status', 'cancelled');
-        await adminSupabase
+        if (typeof booking.series_position === 'number') {
+          cancelBookings = cancelBookings.gte('series_position', booking.series_position);
+        } else {
+          cancelBookings = cancelBookings.gte('start_time', booking.start_time);
+        }
+        await cancelBookings;
+
+        let cancelSessions = adminSupabase
           .from('sessions')
           .update({ status: 'cancelled', updated_at: new Date().toISOString() })
           .eq('practitioner_id', booking.practitioner_id)
           .eq('series_id', booking.series_id)
-          .gte('scheduled_at', booking.start_time)
           .in('status', ['scheduled', 'confirmed']);
+        if (typeof booking.series_position === 'number') {
+          cancelSessions = cancelSessions.gte('series_position', booking.series_position);
+        } else {
+          cancelSessions = cancelSessions.gte('scheduled_at', booking.start_time);
+        }
+        await cancelSessions;
       } catch (err) {
         console.warn('Could not cancel following series rows:', err);
       }

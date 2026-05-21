@@ -463,8 +463,12 @@ function DashboardInner() {
   // ── Derived counts ──
   const now = new Date()
   const pendingCount = useMemo(
-    () => bookings.filter(b => b.status === 'pending').length,
-    [bookings],
+    // Only count future pending bookings — a backdated pending row
+    // (rare but possible) shows up here otherwise but is filtered out
+    // of the bookings page Up next, leaving the practitioner unable
+    // to find what the chip is pointing at.
+    () => bookings.filter(b => b.status === 'pending' && parseISO(b.start_time) > now).length,
+    [bookings, now],
   )
   const awaitingCount = useMemo(
     () => bookings.filter(b => b.status === 'confirmed' && parseISO(b.start_time) < now).length,
