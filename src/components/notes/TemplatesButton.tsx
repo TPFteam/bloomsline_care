@@ -227,7 +227,24 @@ function TemplateEditor({
   const [content, setContent] = useState(template?.content || '')
   const [saving, setSaving] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const initialRef = useRef({ name: template?.name || '', content: template?.content || '' })
   const supabase = createClient()
+
+  // Confirm before discarding unsaved edits — covers backdrop click,
+  // the X button, and Cancel. Save uses onSaved → onClose directly,
+  // bypassing this guard.
+  const requestClose = () => {
+    const dirty = name !== initialRef.current.name || content !== initialRef.current.content
+    if (dirty) {
+      const ok = window.confirm(
+        fr
+          ? 'Vous avez des modifications non enregistrées. Les abandonner ?'
+          : 'You have unsaved changes. Discard them?'
+      )
+      if (!ok) return
+    }
+    onClose()
+  }
 
   // Prepend `# ` or `## ` to the start of the line the cursor is on
   // (or wrap the current selection's first line). Lets the practitioner
@@ -297,7 +314,7 @@ function TemplateEditor({
   return createPortal(
     <div
       className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={requestClose}
     >
       <div
         className="bg-white rounded-2xl w-full max-w-lg shadow-2xl"
@@ -308,7 +325,7 @@ function TemplateEditor({
             {template ? (fr ? 'Modifier le modèle' : 'Edit template') : (fr ? 'Nouveau modèle' : 'New template')}
           </h2>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="p-1 rounded hover:bg-gray-100 text-gray-500"
             aria-label="Close"
           >
@@ -372,7 +389,7 @@ function TemplateEditor({
         </div>
         <footer className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
           >
             {fr ? 'Annuler' : 'Cancel'}
