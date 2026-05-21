@@ -48,7 +48,9 @@ export async function GET(request: NextRequest) {
       meetLink: e.hangoutLink || null,
     }));
 
-    // Backfill meet_link for existing bookings that have a google_event_id but no meet_link
+    // Backfill meet_link for existing bookings that have a google_event_id
+    // but no meet_link. Restricted to session_format='video' so Google's
+    // auto-attached Meet links on in_person events never leak into our DB.
     try {
       const meetLinks = items
         .filter((e: any) => e.hangoutLink)
@@ -57,8 +59,9 @@ export async function GET(request: NextRequest) {
         const googleIds = meetLinks.map((m: any) => m.id);
         const { data: bookingsToUpdate } = await supabase
           .from('bookings')
-          .select('id, google_event_id')
+          .select('id, google_event_id, session_format')
           .in('google_event_id', googleIds)
+          .eq('session_format', 'video')
           .is('meet_link', null);
         if (bookingsToUpdate?.length) {
           const linkMap = Object.fromEntries(meetLinks.map((m: any) => [m.id, m.link]));

@@ -8,6 +8,7 @@ import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
 export async function PATCH(
@@ -248,25 +249,21 @@ export async function PATCH(
             titleTemplate,
           });
 
-          const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${googleAuth.accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(calendarEvent),
-            }
-          );
+          const result = await postGoogleEvent({
+            accessToken: googleAuth.accessToken,
+            calendarId: googleAuth.calendarId,
+            payload: calendarEvent,
+            sessionFormat: booking.session_format,
+          });
 
-          if (response.ok) {
-            const event = await response.json();
+          if (result.ok) {
+            const event = result.event;
             calendarSynced = true;
 
+            const isVideo = booking.session_format === 'video';
             await adminSupabase
               .from('bookings')
-              .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+              .update({ google_event_id: event.id, meet_link: isVideo ? (event.hangoutLink || null) : null })
               .eq('id', id);
 
             await adminSupabase
@@ -274,9 +271,8 @@ export async function PATCH(
               .update({ last_synced_at: new Date().toISOString() })
               .eq('user_id', user.id);
           } else {
-            const errorData = await response.json();
-            console.error('Google Calendar API error:', response.status, errorData);
-            calendarError = errorData.error?.message || 'Failed to create calendar event';
+            console.error('Google Calendar API error:', result.status, result.errorText);
+            calendarError = result.errorText || 'Failed to create calendar event';
           }
         } catch (err) {
           console.error('Failed to create calendar event:', err);

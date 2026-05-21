@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 // POST /api/bookings/[id]/sync-calendar - Sync a booking to Google Calendar
 export async function POST(
@@ -139,24 +140,25 @@ export async function POST(
       const isBackdated = new Date(booking.start_time).getTime() < Date.now();
       const sendUpdates = isBackdated ? 'none' : 'all';
 
-      const response = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=${sendUpdates}&conferenceDataVersion=1`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${googleAuth.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(calendarEvent),
-        }
-      );
+      const result = await postGoogleEvent({
+        accessToken: googleAuth.accessToken,
+        calendarId: googleAuth.calendarId,
+        payload: calendarEvent,
+        sessionFormat: booking.session_format,
+        initialSendUpdates: sendUpdates as 'all' | 'none',
+      });
 
-      if (response.ok) {
-        const event = await response.json();
+      if (result.ok) {
+        const event = result.event;
 
+        // Only persist hangoutLink for video sessions — Google's
+        // "auto-add Meet" practitioner setting can attach one to
+        // in_person events too.
+        const isVideo = booking.session_format === 'video';
+        const meetLinkValue = isVideo ? (event.hangoutLink || null) : null;
         await adminSupabase
           .from('bookings')
-          .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+          .update({ google_event_id: event.id, meet_link: meetLinkValue })
           .eq('id', id);
 
         // Series anchor: propagate google_event_id + meet_link to every sibling
@@ -164,7 +166,7 @@ export async function POST(
         if (booking.series_id && booking.recurrence_rule) {
           await adminSupabase
             .from('bookings')
-            .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+            .update({ google_event_id: event.id, meet_link: meetLinkValue })
             .eq('series_id', booking.series_id)
             .neq('id', id);
         }
@@ -181,11 +183,10 @@ export async function POST(
           debug: { practitionerName, practUserFound: !!practUser, practFullName: practUser?.full_name, practErr: practErr?.message },
         });
       } else {
-        const errorData = await response.json();
-        console.error('Google Calendar API error:', response.status, errorData);
+        console.error('Google Calendar API error:', result.status, result.errorText);
         return NextResponse.json({
           calendarSynced: false,
-          calendarError: errorData.error?.message || 'Failed to create calendar event',
+          calendarError: result.errorText || 'Failed to create calendar event',
         });
       }
     } catch (err) {

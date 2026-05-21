@@ -8,6 +8,7 @@ import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { postGoogleEvent } from '@/lib/services/google-event-create';
 import { waitUntil } from '@vercel/functions';
 
 // POST /api/bookings - Create a new booking (public)
@@ -275,27 +276,23 @@ export async function POST(request: NextRequest) {
             titleTemplate,
           });
 
-          const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${googleAuth.accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(calendarEvent),
-            }
-          );
+          const isVideo = (body.session_format || 'video') === 'video';
+          const result = await postGoogleEvent({
+            accessToken: googleAuth.accessToken,
+            calendarId: googleAuth.calendarId,
+            payload: calendarEvent,
+            sessionFormat: body.session_format || 'video',
+          });
 
-          if (response.ok) {
-            const event = await response.json();
+          if (result.ok) {
+            const event = result.event;
             calendarSynced = true;
 
             await supabase
               .from('bookings')
               .update({
                 google_event_id: event.id,
-                meet_link: event.hangoutLink || null,
+                meet_link: isVideo ? (event.hangoutLink || null) : null,
               })
               .eq('id', booking.id);
 
@@ -304,9 +301,8 @@ export async function POST(request: NextRequest) {
               .update({ last_synced_at: new Date().toISOString() })
               .eq('user_id', body.practitioner_id);
           } else {
-            const errorData = await response.json();
-            console.error('Google Calendar API error:', response.status, errorData);
-            calendarError = errorData.error?.message || 'Failed to create calendar event';
+            console.error('Google Calendar API error:', result.status, result.errorText);
+            calendarError = result.errorText || 'Failed to create calendar event';
           }
         } catch (err) {
           console.error('Failed to create calendar event:', err);

@@ -6,6 +6,7 @@ import { generateEmailHtml } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 /**
  * POST /api/bookings/[id]/reschedule
@@ -246,53 +247,48 @@ export async function POST(
         newGoogleEventCreated = true;
       } else {
         try {
-          const response = await fetch(
-            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${googleAuth.accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(await (async () => {
-                const practAddr = await getPractitionerAddress(user.id, adminSupabase);
-                const { data: titleSettings } = await adminSupabase
-                  .from('booking_settings')
-                  .select('calendar_event_title_template')
-                  .eq('user_id', user.id)
-                  .maybeSingle();
-                const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-                return buildCalendarEvent({
-                  bookingId: newBooking.id,
-                  practitionerName: await getPractitionerName(user.id, adminSupabase),
-                  clientName: booking.client_name,
-                  clientEmail: booking.client_email,
-                  clientPhone: booking.client_phone,
-                  sessionTypeName,
-                  sessionFormat: booking.session_format,
-                  startTime: newSlotStart,
-                  endTime: newSlotEnd,
-                  timezone: booking.timezone,
-                  notes: booking.notes,
-                  locale: 'fr',
-                  isRescheduled: true,
-                  practitionerAddress: practAddr.address,
-                  practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
-                  titleTemplate,
-                });
-              })()),
-            }
-          );
-          if (response.ok) {
-            const event = await response.json();
+          const practAddr = await getPractitionerAddress(user.id, adminSupabase);
+          const { data: titleSettings } = await adminSupabase
+            .from('booking_settings')
+            .select('calendar_event_title_template')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
+          const calendarEvent = buildCalendarEvent({
+            bookingId: newBooking.id,
+            practitionerName: await getPractitionerName(user.id, adminSupabase),
+            clientName: booking.client_name,
+            clientEmail: booking.client_email,
+            clientPhone: booking.client_phone,
+            sessionTypeName,
+            sessionFormat: effectiveSessionFormat,
+            startTime: newSlotStart,
+            endTime: newSlotEnd,
+            timezone: booking.timezone,
+            notes: booking.notes,
+            locale: 'fr',
+            isRescheduled: true,
+            practitionerAddress: practAddr.address,
+            practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+            titleTemplate,
+          });
+
+          const result = await postGoogleEvent({
+            accessToken: googleAuth.accessToken,
+            calendarId: googleAuth.calendarId,
+            payload: calendarEvent,
+            sessionFormat: effectiveSessionFormat,
+          });
+          if (result.ok) {
+            const event = result.event;
+            const isVideo = effectiveSessionFormat === 'video';
             await adminSupabase
               .from('bookings')
-              .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+              .update({ google_event_id: event.id, meet_link: isVideo ? (event.hangoutLink || null) : null })
               .eq('id', newBooking.id);
             newGoogleEventCreated = true;
           } else {
-            const errText = await response.text().catch(() => '');
-            console.error('New Google event create failed:', response.status, errText);
+            console.error('New Google event create failed:', result.status, result.errorText);
           }
         } catch (err) {
           console.error('Failed to create new calendar event:', err);

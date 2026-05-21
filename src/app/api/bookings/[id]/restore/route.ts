@@ -21,6 +21,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 export async function POST(
   request: NextRequest,
@@ -161,26 +162,21 @@ export async function POST(
               titleTemplate,
             });
 
-            const response = await fetch(
-              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
-              {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${googleAuth.accessToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(calendarEvent),
-              }
-            );
-            if (response.ok) {
-              const event = await response.json();
+            const result = await postGoogleEvent({
+              accessToken: googleAuth.accessToken,
+              calendarId: googleAuth.calendarId,
+              payload: calendarEvent,
+              sessionFormat: booking.session_format,
+            });
+            if (result.ok) {
+              const event = result.event;
+              const isVideo = booking.session_format === 'video';
               await adminSupabase
                 .from('bookings')
-                .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+                .update({ google_event_id: event.id, meet_link: isVideo ? (event.hangoutLink || null) : null })
                 .eq('id', id);
             } else {
-              const errText = await response.text().catch(() => '');
-              console.warn('Restore: Google event create failed:', response.status, errText);
+              console.warn('Restore: Google event create failed:', result.status, result.errorText);
             }
           } catch (err) {
             console.warn('Restore: Google event create errored:', err);
