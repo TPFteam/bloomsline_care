@@ -42,6 +42,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { useSearchParams } from 'next/navigation'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
+import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { EditSessionModal } from '@/components/EditSessionModal'
 import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
@@ -159,6 +160,22 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   useEffect(() => { refetchBookings() }, [refetchBookings])
 
+  // Cross-page / cross-tab sync — when any other surface (bookings
+  // page, another tab) mutates a booking or session, refetch ours.
+  // The listener calls the RAW prop without emitting back, otherwise
+  // we'd create a broadcast loop between tabs.
+  useBookingsChanged(() => {
+    refetchBookings()
+    onSessionsUpdate()
+  })
+
+  // Wrap onSessionsUpdate so every local mutation also broadcasts to
+  // other open surfaces (bookings page, dashboard, other tabs).
+  const notifyMutation = () => {
+    onSessionsUpdate()
+    emitBookingsChanged()
+  }
+
   // Match a session to its parent booking by timestamp (within 1 min).
   const getBookingForSession = (scheduledAt: string) => {
     const sessionTime = Math.floor(new Date(scheduledAt).getTime() / 60000)
@@ -181,7 +198,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       // trigger when the booking status flips to 'confirmed'. We just
       // need to refresh the parent list so the UI picks it up.
       if (action === 'confirmed' && booking) {
-        onSessionsUpdate()
+        notifyMutation()
       }
       setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
       toast.success(action === 'confirmed'
@@ -903,7 +920,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       setShowAddSession(false)
       setScheduledAt('')
       setSummary('')
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error adding session:', error)
       toast.error(t.members.errors.sessionSaveFailed)
@@ -983,7 +1000,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   const r = await fetch(`/api/bookings/${cancelledBookingId}/restore`, { method: 'POST' })
                   if (!r.ok) throw new Error('restore failed')
                   toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
-                  onSessionsUpdate()
+                  notifyMutation()
                 } catch {
                   toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
                 }
@@ -994,7 +1011,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       } else {
         toast.success(t.members.success.sessionUpdated)
       }
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error updating session:', error)
       toast.error(t.members.errors.sessionSaveFailed)
@@ -1032,7 +1049,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         return
       }
       toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
-      onSessionsUpdate()
+      notifyMutation()
     } catch (err) {
       console.error('Reopen session error:', err)
       toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
@@ -1093,7 +1110,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       toast.success(t.members.success.sessionUpdated)
       setEditingSession(null)
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error updating session:', error)
       toast.error(t.members.errors.sessionSaveFailed)
@@ -1244,7 +1261,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       toast.success(successMsg)
       setDeletingSessionId(null)
       setNotesPrompt(null)
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error deleting session:', error)
       toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete session')
@@ -1289,7 +1306,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       setProposingSession(null)
       setProposedDate('')
       setProposedTime('')
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error proposing new date:', error)
       toast.error(locale === 'fr' ? 'Impossible de proposer une nouvelle date' : 'Failed to propose new date')
@@ -1316,7 +1333,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (error) throw error
 
       toast.success(locale === 'fr' ? 'Report accepté — séance mise à jour avec la date suggérée par le membre' : 'Reschedule accepted - session updated to member\'s suggested date')
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error accepting reschedule:', error)
       toast.error(locale === 'fr' ? 'Impossible d\'accepter le report' : 'Failed to accept reschedule')
@@ -1337,7 +1354,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (error) throw error
 
       toast.success(locale === 'fr' ? 'Demande de report refusée' : 'Reschedule request declined')
-      onSessionsUpdate()
+      notifyMutation()
     } catch (error) {
       console.error('Error declining reschedule:', error)
       toast.error(locale === 'fr' ? 'Impossible de refuser le report' : 'Failed to decline reschedule')
@@ -2530,7 +2547,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         isOpen={showScheduleModal}
         onClose={() => setShowScheduleModal(false)}
         onSuccess={() => {
-          onSessionsUpdate()
+          notifyMutation()
         }}
         preselectedMember={member}
       />
@@ -2541,7 +2558,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         onClose={() => setRescheduleSession(null)}
         onSuccess={() => {
           setRescheduleSession(null)
-          onSessionsUpdate()
+          notifyMutation()
           // Refetch so a second reschedule attempt can locate the
           // booking by its new start_time instead of using stale rows.
           refetchBookings()

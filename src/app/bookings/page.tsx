@@ -48,6 +48,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
+import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
@@ -692,6 +693,7 @@ export default function BookingsPage() {
       setBookings(prev =>
         prev.map(b => (b.id === bookingId ? { ...b, status: 'cancelled' } : b))
       )
+      emitBookingsChanged()
 
       setMessage({ type: 'success', text: locale === 'fr' ? 'Rendez-vous annulé.' : 'Booking rejected.' })
     } catch (err) {
@@ -721,6 +723,7 @@ export default function BookingsPage() {
       setBookings(prev =>
         prev.map(b => (b.id === bookingId ? { ...b, status } : b))
       )
+      emitBookingsChanged()
 
       setMessage({ type: 'success', text: locale === 'fr' ? `Rendez-vous marqué comme ${STATUS_LABELS[status]?.fr?.toLowerCase()}.` : `Booking marked as ${STATUS_LABELS[status]?.en?.toLowerCase()}.` })
     } catch (err) {
@@ -766,6 +769,15 @@ export default function BookingsPage() {
   // opens at its member-picker step (consistent with the existing Reschedule
   // path) rather than auto-preselecting.
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+
+  // Refetch when any other surface (patient detail, dashboard, another
+  // tab) mutates a booking or session. Keeps the page in sync without
+  // requiring a manual refresh.
+  useBookingsChanged(() => {
+    if (userId) {
+      void fetchBookings()
+    }
+  })
 
   // Refresh bookings list — shared by every status-changing handler.
   // Mirrors SessionsTab's onSessionsUpdate pattern.
@@ -851,6 +863,7 @@ export default function BookingsPage() {
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await fetchBookings()
+        emitBookingsChanged()
         closeClosePopupBooking()
         // Hand off to the small follow-up prompt.
         setScheduleNextPromptOpenB(true)
@@ -873,6 +886,7 @@ export default function BookingsPage() {
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await fetchBookings()
+        emitBookingsChanged()
         closeClosePopupBooking()
         toast.success(locale === 'fr' ? 'Rendez-vous marqué comme annulé' : 'Booking marked as cancelled')
       }
@@ -952,6 +966,7 @@ export default function BookingsPage() {
       }
 
       setBookings(prev => prev.filter(b => b.id !== bookingId))
+      emitBookingsChanged()
       setDeleteConfirmBooking(null)
       toast.success(locale === 'fr' ? 'Rendez-vous supprimé' : 'Booking deleted')
     } catch (err: any) {
@@ -984,6 +999,7 @@ export default function BookingsPage() {
           ? { ...b, status: 'confirmed' as const, cancelled_at: null, cancelled_by: null, cancellation_reason: null }
           : b
       ))
+      emitBookingsChanged()
       toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
     } catch (err) {
       console.error('Reopen booking error:', err)
@@ -1043,10 +1059,10 @@ export default function BookingsPage() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to reschedule')
 
-      // Refresh bookings
-      setBookings(prev =>
-        prev.map(b => (b.id === rescheduleBooking.id ? { ...b, status: 'cancelled' as const } : b))
-      )
+      // Refresh bookings — full refetch so the new booking row created
+      // server-side shows up too, not just the cancelled old one.
+      await fetchBookings()
+      emitBookingsChanged()
       setRescheduleBooking(null)
       toast.success(locale === 'fr' ? 'Séance reprogrammée' : 'Session rescheduled')
     } catch (err) {

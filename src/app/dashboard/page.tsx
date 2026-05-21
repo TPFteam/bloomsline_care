@@ -30,6 +30,7 @@ import { ConsentModal } from '@/components/consent-modal'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { useBookingsChanged } from '@/lib/bookings-events'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import type { User } from '@/types/user'
 
@@ -106,6 +107,27 @@ function DashboardInner() {
     resource_type: string | null
   }
   const [recentShares, setRecentShares] = useState<RecentShare[]>([])
+
+  // Refetch bookings when any other surface (bookings page, patient
+  // detail, another tab) mutates a booking or session. Keeps the
+  // dashboard's Up next + "Notes à écrire" + Cette semaine views in
+  // sync without requiring a manual refresh.
+  useBookingsChanged(() => {
+    if (!user?.id) return
+    void (async () => {
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+      const horizonStart = addDays(weekStart, -14).toISOString()
+      const horizonEnd = addDays(weekStart, 21).toISOString()
+      const { data: bk } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('practitioner_id', user.id)
+        .gte('start_time', horizonStart)
+        .lt('start_time', horizonEnd)
+        .order('start_time', { ascending: true })
+      if (bk) setBookings(bk as DashBooking[])
+    })()
+  })
 
   // Keys of past sessions (member_id|start_time_ms) that already carry a
   // session_summary progress note. Used to compute the "Notes à écrire"
