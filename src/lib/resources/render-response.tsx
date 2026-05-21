@@ -135,11 +135,14 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
       const useLabels = labels.length === scaleRange
       // The patient-facing UI is 1-indexed (numbers run 1..scaleRange,
       // selected when num === pillValue). Match that here.
+      // Patient values are 1-indexed (BlockRenderer fires onChange(i+1)).
+      // Match that exactly — don't also highlight `num === i`, that's
+      // what produced the "two pills lit" bug.
       return (
         <div className="flex flex-wrap gap-1.5">
           {Array.from({ length: scaleRange }).map((_, i) => {
             const pillValue = i + 1
-            const selected = num === pillValue || num === i
+            const selected = num === pillValue
             return (
               <span
                 key={i}
