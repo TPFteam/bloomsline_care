@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, FileUp, Loader2, Type, Target, Tag, Quote, X, Eye, EyeOff, Undo2, Redo2, Lock, Plus, Pencil, Trash2, ImagePlus, ZoomIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
+import { TemplatesButton } from '@/components/notes/TemplatesButton'
 
 // Inline style colors for goal marks (hex so they persist in stored HTML)
 const GOAL_COLORS: Record<string, { bg: string; border: string }> = {
@@ -1932,6 +1933,18 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) handleImportTextFile(file)
+          }}
+        />
+
+        <TemplatesButton
+          fr={fr}
+          isEditorEmpty={() => !editorRef.current?.textContent?.trim()}
+          onInsert={(html) => {
+            if (editorRef.current) {
+              editorRef.current.innerHTML += html
+              handleInput()
+              setTimeout(() => editorRef.current?.focus(), 100)
+            }
           }}
         />
 
