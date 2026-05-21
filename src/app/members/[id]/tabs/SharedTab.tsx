@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
 import { getSubmissionBlocks } from '@/lib/resources/render-blocks'
+import { ResponseValueDisplay } from '@/lib/resources/render-response'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -439,39 +440,10 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
     }
   }
 
-  const renderResponseValue = (block: ResourceBlock, value: unknown): string => {
-    if (value === undefined || value === null) return '-'
-    switch (block.type) {
-      case 'prompt': return String(value)
-      case 'multiple_choice': {
-        const options: (string | { label?: string })[] = ('options' in block && Array.isArray(block.options)) ? block.options :
-          ('choices' in block && Array.isArray(block.choices)) ? block.choices : []
-        const index = Number(value)
-        const option = options[index]
-        return typeof option === 'string' ? option : option?.label || `Option ${index + 1}`
-      }
-      case 'yes_no': return value === 'yes' ? (locale === 'fr' ? 'Oui' : 'Yes') : (locale === 'fr' ? 'Non' : 'No')
-      case 'checklist': {
-        const items: (string | { text: string })[] = ('items' in block && Array.isArray(block.items)) ? block.items : []
-        const indices = Array.isArray(value) ? value : []
-        return indices.map((i: number) => { const item = items[i]; return typeof item === 'string' ? item : item?.text || String(i) }).join(', ') || '-'
-      }
-      case 'scale': case 'likert': case 'numeric': case 'slider': case 'mood': return String(value)
-      case 'matrix_rating': {
-        const matrixItems = ('matrixItems' in block && Array.isArray(block.matrixItems)) ? block.matrixItems : []
-        const ratings = value as Record<string, number>
-        return Object.entries(ratings).map(([idx, rating]) => `${matrixItems[Number(idx)] || idx}: ${rating}`).join(', ')
-      }
-      case 'table_exercise': {
-        const rows = Array.isArray(value) ? value : []
-        return `${rows.length} ${locale === 'fr' ? 'entrées' : 'entries'}`
-      }
-      case 'date_picker': return value ? new Date(String(value)).toLocaleDateString() : '-'
-      case 'time_input': return String(value)
-      case 'list_input': return Array.isArray(value) ? value.filter(Boolean).join(', ') : '-'
-      default: return JSON.stringify(value)
-    }
-  }
+  // Response value rendering now lives in @/lib/resources/render-response.
+  // The shared component ensures the same answer (e.g. 1-10 scale) looks
+  // identical here, in the resource detail page, in the submissions tab,
+  // and in the PDF export.
 
   const handleShareStory = async () => {
     if (!selectedStory) {
@@ -1277,9 +1249,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                       return (
                                         <div key={block.id} className="rounded-xl bg-gray-50 px-3 py-2.5">
                                           <p className="text-xs text-gray-500">{typeof block.content === 'string' ? block.content : `Q${idx + 1}`}</p>
-                                          <p className={`text-sm mt-0.5 ${hasResponse ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-                                            {hasResponse ? renderResponseValue(block, response) : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
-                                          </p>
+                                          <div className="text-sm mt-0.5">
+                                            {hasResponse
+                                              ? <ResponseValueDisplay block={block} value={response} locale={locale} />
+                                              : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>}
+                                          </div>
                                         </div>
                                       )
                                     }) : (

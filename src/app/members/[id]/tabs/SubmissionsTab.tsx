@@ -22,6 +22,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { MemberFeedbackIcon, feedbackLabel } from '@/components/resources/MemberFeedbackIcon'
 import type { Member } from '@/types/member'
 import type { Resource, ResourceBlock, ResourceResponse } from '@/types/resource'
+import { ResponseValueDisplay } from '@/lib/resources/render-response'
 
 interface SubmissionWithResource extends ResourceResponse {
   resource: Resource
@@ -131,66 +132,9 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
     }
   }
 
-  const renderResponseValue = (block: ResourceBlock, value: unknown): string => {
-    if (value === undefined || value === null) return '-'
-
-    switch (block.type) {
-      case 'prompt':
-        return String(value)
-
-      case 'multiple_choice': {
-        // Support both 'options' and 'choices' field names
-        const options: (string | { label?: string })[] = ('options' in block && Array.isArray(block.options)) ? block.options :
-          ('choices' in block && Array.isArray(block.choices)) ? block.choices : []
-        const index = Number(value)
-        const option = options[index]
-        return typeof option === 'string' ? option : option?.label || `Option ${index + 1}`
-      }
-
-      case 'yes_no':
-        return value === 'yes'
-          ? (locale === 'fr' ? 'Oui' : 'Yes')
-          : (locale === 'fr' ? 'Non' : 'No')
-
-      case 'checklist': {
-        const items: (string | { text: string })[] = ('items' in block && Array.isArray(block.items)) ? block.items : []
-        const indices = Array.isArray(value) ? value : []
-        return indices
-          .map((i: number) => {
-            const item = items[i]
-            return typeof item === 'string' ? item : item?.text || String(i)
-          })
-          .join(', ') || '-'
-      }
-
-      case 'scale':
-      case 'likert':
-      case 'numeric':
-      case 'slider':
-      case 'mood':
-        return String(value)
-
-      case 'matrix_rating': {
-        const matrixItems = ('matrixItems' in block && Array.isArray(block.matrixItems)) ? block.matrixItems : []
-        const ratings = value as Record<string, number>
-        return Object.entries(ratings)
-          .map(([idx, rating]) => `${matrixItems[Number(idx)] || idx}: ${rating}`)
-          .join(', ')
-      }
-
-      case 'date_picker':
-        return value ? new Date(String(value)).toLocaleDateString() : '-'
-
-      case 'time_input':
-        return String(value)
-
-      case 'list_input':
-        return Array.isArray(value) ? value.filter(Boolean).join(', ') : '-'
-
-      default:
-        return JSON.stringify(value)
-    }
-  }
+  // Response rendering lives in @/lib/resources/render-response so every
+  // surface (this tab, SharedTab, resource detail, PDF) shows the same
+  // answer the same way.
 
   if (loading) {
     return (
@@ -360,11 +304,11 @@ export default function SubmissionsTab({ member }: SubmissionsTabProps) {
                                   <p className="text-sm font-medium text-gray-700 mb-1">
                                     Q{index + 1}: {typeof block.content === 'string' ? block.content : ''}
                                   </p>
-                                  <p className={`text-sm ${hasResponse ? 'text-gray-900' : 'text-red-500 italic'}`}>
+                                  <div className="text-sm">
                                     {hasResponse
-                                      ? renderResponseValue(block, response)
-                                      : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
-                                  </p>
+                                      ? <ResponseValueDisplay block={block} value={response} locale={locale} />
+                                      : <span className="text-red-500 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>}
+                                  </div>
                                 </div>
                               )
                             })}

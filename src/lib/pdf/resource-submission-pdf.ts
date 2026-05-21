@@ -469,11 +469,39 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
 
       case 'likert': {
         const { index, label, total } = resolveLikert(block, response)
-        const b = block as unknown as { scaleLabels?: string[]; scaleType?: string; scaleMin?: number; scaleMax?: number }
-        if (Array.isArray(b.scaleLabels) && b.scaleLabels.length > 0) {
+        const b = block as unknown as {
+          scaleLabels?: string[]
+          scaleType?: string
+          scaleMin?: number
+          scaleMax?: number
+          scaleRange?: number
+        }
+        const scaleType = b.scaleType
+        // 'rating' = stars UI on the web. Render as ★ row in PDF.
+        if (scaleType === 'rating') {
+          const max = b.scaleRange || total || 5
+          const filled = Math.max(0, Math.min(max, (index ?? 0) + 1))
+          const stars =
+            `<span style="color:#fbbf24;font-size:14px">${'★'.repeat(filled)}</span>` +
+            `<span style="color:#e5e7eb;font-size:14px">${'★'.repeat(Math.max(0, max - filled))}</span>`
+          return `<div>${stars}</div>`
+        }
+        // 'mood' = mood label + index on the web. Render the label.
+        if (scaleType === 'mood') {
+          const moods = locale === 'fr'
+            ? ['Épanoui', 'Bien', 'Neutre', 'Fragile', 'Difficile']
+            : ['Thriving', 'Good', 'Okay', 'Low', 'Struggling']
+          const moodLabel = moods[(index ?? 0)] || label || `${(index ?? 0) + 1}`
+          return `<div style="font-size:13px;color:#374151">${escapeHtml(moodLabel)} (${(index ?? 0) + 1}/${total || 5})</div>`
+        }
+        // Default likert: only render labels as Likert steps if they
+        // actually match the scale's length. Mismatched legacy labels
+        // (e.g. a 5-item Jamais/Rarement/… array on a 10-point block)
+        // would otherwise mis-render every answer as one of 5 badges.
+        if (Array.isArray(b.scaleLabels) && b.scaleLabels.length > 0 && b.scaleLabels.length === total) {
           return renderLikertSteps(b.scaleLabels, index)
         }
-        // No labels → numeric rating row.
+        // No labels (or mismatched) → numeric rating row.
         const min = b.scaleMin ?? 0
         return renderPillRow(total, index, min) + (label ? `<div style="font-size:11px;color:#6b7280;margin-top:4px">${escapeHtml(label)}</div>` : '')
       }

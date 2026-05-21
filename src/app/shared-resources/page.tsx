@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { downloadResourceSubmissionPDF } from '@/lib/pdf/resource-submission-pdf'
+import { ResponseValueDisplay } from '@/lib/resources/render-response'
 import { MemberFeedbackIcon, feedbackLabel, type MemberFeedback } from '@/components/resources/MemberFeedbackIcon'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import {
@@ -1076,19 +1077,22 @@ export default function SharedResourcesPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {responseModal.blocks
-                .filter((b: any) => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'list_input', 'numeric', 'slider', 'mood', 'fill_blank'].includes(b.type))
+                .filter((b: any) => ['prompt', 'multiple_choice', 'yes_no', 'checklist', 'scale', 'likert', 'list_input', 'numeric', 'slider', 'mood', 'matrix_rating', 'date_picker', 'time_input'].includes(b.type))
                 .map((block: any, i: number) => {
                   const answer = responseModal.response.responses?.[block.id]
+                  const questionLabel = (typeof block.content === 'string' ? block.content : null)
+                    || block.content?.question
+                    || block.content?.label
+                    || block.content?.title
+                    || `Q${i + 1}`
                   return (
                     <div key={block.id || i}>
-                      <p className="text-xs font-medium text-gray-500 mb-1">
-                        {block.content?.question || block.content?.label || block.content?.title || `Q${i + 1}`}
-                      </p>
-                      <p className={`text-sm ${answer ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-                        {answer
-                          ? (typeof answer === 'object' ? (Array.isArray(answer) ? answer.join(', ') : JSON.stringify(answer)) : String(answer))
-                          : (locale === 'fr' ? 'Non répondu' : 'Not answered')}
-                      </p>
+                      <p className="text-xs font-medium text-gray-500 mb-1">{questionLabel}</p>
+                      <div className="text-sm">
+                        {answer !== undefined && answer !== null
+                          ? <ResponseValueDisplay block={block} value={answer} locale={locale} />
+                          : <span className="text-gray-400 italic">{locale === 'fr' ? 'Non répondu' : 'Not answered'}</span>}
+                      </div>
                     </div>
                   )
                 })}
