@@ -1,23 +1,26 @@
 /**
  * POST /api/bookings/[id]/restore
  *
- * Undo path for a single-occurrence cancel (`series_scope: 'this'`).
- * Restores the booking + matching session to confirmed/scheduled and tries
- * to flip the Google Calendar instance back to `confirmed`.
+ * Reopen a cancelled booking. Used both as the toast-level undo right
+ * after a cancellation AND as a "I cancelled this by mistake" recovery
+ * affordance from the row menu hours/days later.
  *
- * Caveat: between the original cancel and this restore, Google has already
- * delivered a "your appointment was cancelled" email to the patient. The
- * restore re-confirms the slot in their calendar but Google sends a fresh
- * "appointment updated" notification. The practitioner is told this in the
- * toast UI before they click Undo.
- *
- * Limited to bookings that were cancelled within the last 5 minutes — this
- * is a UX undo, not a general-purpose restoration.
+ * Behaviour:
+ *   - Flip booking row back to confirmed (clears cancellation fields)
+ *   - Flip the paired session row back to scheduled
+ *   - Recreate the Google event:
+ *       · Series instance: PATCH the instance back to confirmed
+ *       · Single non-series booking: POST a fresh event (the original was
+ *         deleted on cancel) so the patient gets a new invitation
+ *   - Refuses when a reschedule-successor exists (would create a duplicate
+ *     appointment for the patient at two times). The practitioner should
+ *     cancel the successor first or restore that instead.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
 
 export async function POST(
   request: NextRequest,
@@ -52,12 +55,20 @@ export async function POST(
       return NextResponse.json({ error: 'Booking is not cancelled' }, { status: 400 });
     }
 
-    // Sanity-check: don't restore bookings cancelled long ago.
-    if (booking.cancelled_at) {
-      const minutesSinceCancel = (Date.now() - new Date(booking.cancelled_at).getTime()) / 60_000;
-      if (minutesSinceCancel > 5) {
-        return NextResponse.json({ error: 'Undo window expired' }, { status: 410 });
-      }
+    // Refuse if a reschedule-successor exists. Restoring would create
+    // two active appointments for the same patient at different times,
+    // and the patient already has the successor in their calendar.
+    const { data: successor } = await adminSupabase
+      .from('bookings')
+      .select('id, start_time, status')
+      .eq('rescheduled_from', id)
+      .neq('status', 'cancelled')
+      .maybeSingle();
+    if (successor) {
+      return NextResponse.json({
+        error: 'This booking was rescheduled — the new booking is still active. Cancel the new one before restoring this one.',
+        successorBookingId: successor.id,
+      }, { status: 409 });
     }
 
     const nowIso = new Date().toISOString();
@@ -85,32 +96,93 @@ export async function POST(
         .eq('status', 'cancelled');
     }
 
-    // 3. Restore the Google instance (only if it's a series row and we have
-    //    the parent google_event_id). Single-booking restores would need a
-    //    full event recreate — not in scope for v1.
-    if (booking.google_event_id && booking.series_id) {
+    // 3. Restore the Google event.
+    //    - Series instance with parent event still present → PATCH back to confirmed.
+    //    - Single non-series booking → original event was deleted on cancel;
+    //      POST a fresh event and update the booking with the new id.
+    //    Backdated bookings skip Google sync (historical record only).
+    const isFutureBooking = new Date(booking.start_time).getTime() > Date.now();
+    if (isFutureBooking) {
       const googleAuth = await getValidGoogleToken(user.id, adminSupabase);
       if (googleAuth) {
-        const startUtc = new Date(booking.start_time);
-        const yyyy = startUtc.getUTCFullYear();
-        const mm = String(startUtc.getUTCMonth() + 1).padStart(2, '0');
-        const dd = String(startUtc.getUTCDate()).padStart(2, '0');
-        const hh = String(startUtc.getUTCHours()).padStart(2, '0');
-        const mi = String(startUtc.getUTCMinutes()).padStart(2, '0');
-        const ss = String(startUtc.getUTCSeconds()).padStart(2, '0');
-        const instanceId = `${booking.google_event_id}_${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
-        const instanceUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${instanceId}`;
-        try {
-          await fetch(`${instanceUrl}?sendUpdates=all`, {
-            method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${googleAuth.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'confirmed' }),
-          });
-        } catch (err) {
-          console.warn('Failed to restore Google instance:', err);
+        if (booking.google_event_id && booking.series_id) {
+          // Series occurrence — flip the instance back to confirmed.
+          const startUtc = new Date(booking.start_time);
+          const yyyy = startUtc.getUTCFullYear();
+          const mm = String(startUtc.getUTCMonth() + 1).padStart(2, '0');
+          const dd = String(startUtc.getUTCDate()).padStart(2, '0');
+          const hh = String(startUtc.getUTCHours()).padStart(2, '0');
+          const mi = String(startUtc.getUTCMinutes()).padStart(2, '0');
+          const ss = String(startUtc.getUTCSeconds()).padStart(2, '0');
+          const instanceId = `${booking.google_event_id}_${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
+          const instanceUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${instanceId}`;
+          try {
+            await fetch(`${instanceUrl}?sendUpdates=all`, {
+              method: 'PATCH',
+              headers: {
+                Authorization: `Bearer ${googleAuth.accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ status: 'confirmed' }),
+            });
+          } catch (err) {
+            console.warn('Failed to restore Google instance:', err);
+          }
+        } else {
+          // Single non-series — the original event was DELETEd. Create a
+          // new one so the patient gets a fresh invitation.
+          try {
+            const { data: settings } = await adminSupabase
+              .from('booking_settings')
+              .select('session_types')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            const sessionTypes = (settings?.session_types as Array<{ id: string; name: string }>) || [];
+            const sessionType = sessionTypes.find(st => st.id === booking.session_type);
+            const sessionTypeName = sessionType?.name || (booking.session_type as string);
+            const practAddr = await getPractitionerAddress(user.id, adminSupabase);
+
+            const calendarEvent = buildCalendarEvent({
+              bookingId: booking.id,
+              practitionerName: await getPractitionerName(user.id, adminSupabase),
+              clientName: booking.client_name,
+              clientEmail: booking.client_email,
+              clientPhone: booking.client_phone,
+              sessionTypeName,
+              sessionFormat: booking.session_format,
+              startTime: booking.start_time,
+              endTime: booking.end_time,
+              timezone: booking.timezone,
+              notes: booking.notes,
+              locale: 'fr',
+              practitionerAddress: practAddr.address,
+              practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
+            });
+
+            const response = await fetch(
+              `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events?sendUpdates=all&conferenceDataVersion=1`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${googleAuth.accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(calendarEvent),
+              }
+            );
+            if (response.ok) {
+              const event = await response.json();
+              await adminSupabase
+                .from('bookings')
+                .update({ google_event_id: event.id, meet_link: event.hangoutLink || null })
+                .eq('id', id);
+            } else {
+              const errText = await response.text().catch(() => '');
+              console.warn('Restore: Google event create failed:', response.status, errText);
+            }
+          } catch (err) {
+            console.warn('Restore: Google event create errored:', err);
+          }
         }
       }
     }

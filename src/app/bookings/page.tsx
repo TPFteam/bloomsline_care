@@ -966,6 +966,33 @@ export default function BookingsPage() {
       setProcessingId(null)
     }
   }
+
+  // Reopen a cancelled booking — accidental-cancel recovery from the
+  // three-dot menu. /restore flips the rows back AND recreates the
+  // Google event so the patient gets a fresh invitation.
+  const handleReopenBooking = async (booking: Booking) => {
+    try {
+      setProcessingId(booking.id)
+      const res = await fetch(`/api/bookings/${booking.id}/restore`, { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null as any)
+        toast.error(body?.error || (locale === 'fr' ? 'Échec de la restauration' : 'Restore failed'))
+        return
+      }
+      setBookings(prev => prev.map(b =>
+        b.id === booking.id
+          ? { ...b, status: 'confirmed' as const, cancelled_at: null, cancelled_by: null, cancellation_reason: null }
+          : b
+      ))
+      toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
+    } catch (err) {
+      console.error('Reopen booking error:', err)
+      toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduleTime, setRescheduleTime] = useState('')
   const [rescheduleReason, setRescheduleReason] = useState('')
@@ -1809,12 +1836,16 @@ export default function BookingsPage() {
                                 no dedicated edit-booking flow. */}
                             {(() => {
                               const isClosedB = booking.status !== 'pending' && booking.status !== 'confirmed'
+                              const isCancelledB = booking.status === 'cancelled'
                               return (
                                 <RowMenu items={[
                                   ...(isClosedB ? [] : [
                                     { label: locale === 'fr' ? 'Clôturer la séance' : 'Close session', icon: CheckCircle, onClick: () => openClosePopupBooking(booking), tone: 'success' as const },
                                     { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
                                   ]),
+                                  ...(isCancelledB ? [
+                                    { label: locale === 'fr' ? 'Restaurer la séance' : 'Reopen session', icon: RefreshCw, onClick: () => handleReopenBooking(booking), tone: 'success' as const },
+                                  ] : []),
                                   { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => setDeleteConfirmBooking(booking), danger: true },
                                 ]} />
                               )

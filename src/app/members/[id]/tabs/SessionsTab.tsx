@@ -1001,6 +1001,44 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
+  // Reopen a cancelled session — affordance for "I cancelled this by
+  // mistake." Finds the cancelled booking that pairs with this session
+  // (by member + scheduled_at) and calls the /restore endpoint, which
+  // flips both rows back AND recreates the Google event so the patient
+  // gets a fresh invitation.
+  const handleReopenSession = async (session: Session) => {
+    try {
+      const { data: matchingBooking } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('practitioner_id', session.practitioner_id)
+        .eq('start_time', session.scheduled_at)
+        .eq('status', 'cancelled')
+        .order('cancelled_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!matchingBooking?.id) {
+        toast.error(
+          locale === 'fr'
+            ? 'Impossible de trouver la réservation associée à restaurer.'
+            : 'Could not find the matching booking to restore.'
+        )
+        return
+      }
+      const res = await fetch(`/api/bookings/${matchingBooking.id}/restore`, { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null as any)
+        toast.error(body?.error || (locale === 'fr' ? 'Échec de la restauration' : 'Restore failed'))
+        return
+      }
+      toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
+      onSessionsUpdate()
+    } catch (err) {
+      console.error('Reopen session error:', err)
+      toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
+    }
+  }
+
   const handleStartEdit = (session: Session) => {
     setEditingSession(session)
     setEditSessionType(session.session_type)
@@ -1539,7 +1577,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           // Menu shape depends on whether the session is still open.
           // Closed sessions (completed/cancelled/no_show) can only be
           // edited or deleted — Close + Reschedule don't apply anymore.
+          // Cancelled rows also get a "Reopen" affordance for accidental
+          // cancellations.
           const isClosed = session.status !== 'scheduled'
+          const isCancelled = session.status === 'cancelled'
           const menuItems: RowMenuItem[] = [
             {
               label: locale === 'fr' ? 'Modifier la séance' : 'Edit session',
@@ -1559,6 +1600,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 onClick: () => openRescheduleForSession(session),
               },
             ]),
+            ...(isCancelled ? [{
+              label: locale === 'fr' ? 'Restaurer la séance' : 'Reopen session',
+              icon: RefreshCw,
+              onClick: () => handleReopenSession(session),
+              tone: 'success' as const,
+            }] : []),
             {
               label: locale === 'fr' ? 'Supprimer' : 'Delete',
               icon: Trash2,
