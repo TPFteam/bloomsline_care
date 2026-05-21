@@ -66,28 +66,61 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
       )
     }
 
+    case 'numeric': {
+      // Numeric input is freeform — just show the value clearly.
+      return <span className="text-lg font-bold text-gray-900">{String(value)}</span>
+    }
+
     case 'scale':
-    case 'numeric':
     case 'slider': {
+      // Mirror the patient/editor rendering: numbered pills with the
+      // chosen value highlighted. Large ranges (sliders) fall back to a
+      // bar to avoid 100 pills on screen.
       const num = Number(value)
-      const max = (block as any).scaleMax ?? (block as any).sliderMax ?? (block as any).maxValue ?? 10
-      const min = (block as any).scaleMin ?? (block as any).sliderMin ?? (block as any).minValue ?? 0
-      const range = Math.max(max - min, 1)
-      const pct = Math.round(((num - min) / range) * 100)
-      const minLabel = (block as any).scaleMinLabel ?? (block as any).sliderMinLabel ?? min
-      const maxLabel = (block as any).scaleMaxLabel ?? (block as any).sliderMaxLabel ?? max
-      return (
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-gray-900">{num}</span>
-          <div className="flex-1 h-2 bg-gray-100 rounded-full max-w-[200px]">
-            <div className="h-2 bg-teal-500 rounded-full" style={{ width: `${pct}%` }} />
+      const max = (block as any).scaleMax ?? (block as any).sliderMax ?? 10
+      const min = (block as any).scaleMin ?? (block as any).sliderMin ?? 0
+      const range = max - min + 1
+      const minLabel = (block as any).scaleMinLabel ?? (block as any).sliderMinLabel
+      const maxLabel = (block as any).scaleMaxLabel ?? (block as any).sliderMaxLabel
+      if (range > 12 || block.type === 'slider') {
+        const pct = Math.round(((num - min) / Math.max(max - min, 1)) * 100)
+        return (
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-bold text-gray-900">{num}</span>
+            <div className="flex-1 h-2 bg-gray-100 rounded-full max-w-[200px]">
+              <div className="h-2 bg-teal-500 rounded-full" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs text-gray-400">{minLabel ?? min} — {maxLabel ?? max}</span>
           </div>
-          <span className="text-xs text-gray-400">{minLabel} — {maxLabel}</span>
+        )
+      }
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from({ length: range }).map((_, i) => {
+            const pillValue = min + i
+            const selected = pillValue === num
+            return (
+              <span
+                key={i}
+                className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-md text-xs font-semibold border ${
+                  selected
+                    ? 'bg-teal-500 text-white border-teal-500'
+                    : 'bg-white text-gray-500 border-gray-200'
+                }`}
+              >
+                {pillValue}
+              </span>
+            )
+          })}
         </div>
       )
     }
 
     case 'likert': {
+      // Mirror the patient/editor rendering — numbered (or labelled)
+      // pills with the chosen step highlighted. Stars are out; the
+      // editor never shows stars, so the response shouldn't either.
+      // Mood blocks keep their dedicated label rendering.
       const scaleType = (block as any).scaleType
       const num = Number(value)
       if (scaleType === 'mood') {
@@ -96,21 +129,32 @@ export function ResponseValueDisplay({ block, value, locale }: Props) {
         const colors = ['text-emerald-500', 'text-teal-500', 'text-amber-500', 'text-orange-500', 'text-red-500']
         return <span className={`text-sm font-medium ${colors[num] || 'text-gray-600'}`}>{locale === 'fr' ? moodsFr[num] : moods[num]} ({num + 1}/5)</span>
       }
-      if (scaleType === 'rating') {
-        const max = (block as any).scaleRange || 5
-        return (
-          <div className="flex gap-0.5">
-            {Array.from({ length: max }).map((_, i) => (
-              <span key={i} className={`text-lg ${i <= num ? 'text-amber-400' : 'text-gray-200'}`}>★</span>
-            ))}
-          </div>
-        )
-      }
-      // Default likert — show label if available (5-point: Jamais / Rarement / …)
-      const labels = (block as any).scaleLabels || (block as any).likertLabels || []
-      return labels[num]
-        ? <span className="inline-flex px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">{labels[num]}</span>
-        : <span className="text-lg font-bold text-gray-900">{num + 1}</span>
+      const scaleRange = (block as any).scaleRange || (block as any).likertScale || 5
+      const rawLabels = (block as any).scaleLabels || (block as any).likertLabels || []
+      const labels: string[] = Array.isArray(rawLabels) ? rawLabels : []
+      const useLabels = labels.length === scaleRange
+      // The patient-facing UI is 1-indexed (numbers run 1..scaleRange,
+      // selected when num === pillValue). Match that here.
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from({ length: scaleRange }).map((_, i) => {
+            const pillValue = i + 1
+            const selected = num === pillValue || num === i
+            return (
+              <span
+                key={i}
+                className={`inline-flex items-center justify-center ${useLabels ? 'px-3' : 'min-w-[28px] px-2'} h-7 rounded-md text-xs font-semibold border ${
+                  selected
+                    ? 'bg-teal-500 text-white border-teal-500'
+                    : 'bg-white text-gray-500 border-gray-200'
+                }`}
+              >
+                {useLabels ? labels[i] : pillValue}
+              </span>
+            )
+          })}
+        </div>
+      )
     }
 
     case 'mood':

@@ -203,9 +203,17 @@ function resolveChecklistLabels(block: ResourceBlock, response: unknown): string
 
 /** Likert / scale label resolution. Index is mapped against scaleLabels (preferred) or numeric range. */
 function resolveLikert(block: ResourceBlock, response: unknown): { index: number | null; label: string | null; total: number } {
-  const b = block as unknown as { scaleLabels?: string[]; scaleRange?: number; scaleMin?: number; scaleMax?: number }
+  const b = block as unknown as { scaleLabels?: string[]; scaleRange?: number; likertScale?: number; scaleMin?: number; scaleMax?: number }
   const labels = Array.isArray(b.scaleLabels) ? b.scaleLabels : []
-  const total = labels.length || b.scaleRange || (b.scaleMax !== undefined && b.scaleMin !== undefined ? b.scaleMax - b.scaleMin + 1 : 5)
+  // Prefer the block's declared scale length over labels.length. A
+  // common authoring state is a 10-point scaleRange with a stale 5-item
+  // scaleLabels left over from a Likert template — using labels.length
+  // there would silently shrink the scale to 5 and mis-render answers.
+  const total = b.scaleRange
+    || b.likertScale
+    || (b.scaleMax !== undefined && b.scaleMin !== undefined ? b.scaleMax - b.scaleMin + 1 : 0)
+    || labels.length
+    || 5
   const idx = parseIndex(response)
   if (idx !== null) {
     return { index: idx, label: labels[idx] ?? null, total }
@@ -476,32 +484,22 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
           scaleMax?: number
           scaleRange?: number
         }
-        const scaleType = b.scaleType
-        // 'rating' = stars UI on the web. Render as ★ row in PDF.
-        if (scaleType === 'rating') {
-          const max = b.scaleRange || total || 5
-          const filled = Math.max(0, Math.min(max, (index ?? 0) + 1))
-          const stars =
-            `<span style="color:#fbbf24;font-size:14px">${'★'.repeat(filled)}</span>` +
-            `<span style="color:#e5e7eb;font-size:14px">${'★'.repeat(Math.max(0, max - filled))}</span>`
-          return `<div>${stars}</div>`
-        }
-        // 'mood' = mood label + index on the web. Render the label.
-        if (scaleType === 'mood') {
+        // Mood: show the localized mood label rather than a pill row.
+        if (b.scaleType === 'mood') {
           const moods = locale === 'fr'
             ? ['Épanoui', 'Bien', 'Neutre', 'Fragile', 'Difficile']
             : ['Thriving', 'Good', 'Okay', 'Low', 'Struggling']
           const moodLabel = moods[(index ?? 0)] || label || `${(index ?? 0) + 1}`
           return `<div style="font-size:13px;color:#374151">${escapeHtml(moodLabel)} (${(index ?? 0) + 1}/${total || 5})</div>`
         }
-        // Default likert: only render labels as Likert steps if they
-        // actually match the scale's length. Mismatched legacy labels
-        // (e.g. a 5-item Jamais/Rarement/… array on a 10-point block)
-        // would otherwise mis-render every answer as one of 5 badges.
+        // Labelled likert (5-point: Jamais / Rarement / …) — only when
+        // labels actually match the scale length, so a stale 5-label
+        // array can't mis-render a 10-point answer.
         if (Array.isArray(b.scaleLabels) && b.scaleLabels.length > 0 && b.scaleLabels.length === total) {
           return renderLikertSteps(b.scaleLabels, index)
         }
-        // No labels (or mismatched) → numeric rating row.
+        // Default: numbered pills. Mirrors the editor/patient render so
+        // stars never appear in the PDF for a 1-N scale answer.
         const min = b.scaleMin ?? 0
         return renderPillRow(total, index, min) + (label ? `<div style="font-size:11px;color:#6b7280;margin-top:4px">${escapeHtml(label)}</div>` : '')
       }
