@@ -66,13 +66,22 @@ export function TemplatesButton({ fr, onInsert, isEditorEmpty }: TemplatesButton
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [open])
 
-  // Plain text → HTML paragraphs. Mirrors the import-file conversion
-  // so the inserted template renders the same way.
+  // Plain text → HTML. Lines starting with `## ` become <h2>, lines
+  // starting with `# ` become <h1>, everything else is a <p>. Blank
+  // lines render as empty paragraphs so spacing is preserved.
   const textToHtml = (text: string): string => {
     const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     return text
       .split('\n')
-      .map(line => (line.trim() ? `<p>${escape(line)}</p>` : '<p><br></p>'))
+      .map(rawLine => {
+        const line = rawLine.trimEnd()
+        if (!line.trim()) return '<p><br></p>'
+        const h2 = line.match(/^##\s+(.+)$/)
+        if (h2) return `<h2>${escape(h2[1])}</h2>`
+        const h1 = line.match(/^#\s+(.+)$/)
+        if (h1) return `<h1>${escape(h1[1])}</h1>`
+        return `<p>${escape(line)}</p>`
+      })
       .join('')
   }
 
@@ -217,7 +226,34 @@ function TemplateEditor({
   const [name, setName] = useState(template?.name || '')
   const [content, setContent] = useState(template?.content || '')
   const [saving, setSaving] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const supabase = createClient()
+
+  // Prepend `# ` or `## ` to the start of the line the cursor is on
+  // (or wrap the current selection's first line). Lets the practitioner
+  // add a heading with one click instead of remembering the syntax.
+  const applyHeading = (prefix: '# ' | '## ') => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const pos = ta.selectionStart
+    const value = ta.value
+    const lineStart = value.lastIndexOf('\n', pos - 1) + 1
+    const lineEnd = value.indexOf('\n', pos)
+    const endIdx = lineEnd === -1 ? value.length : lineEnd
+    const line = value.slice(lineStart, endIdx)
+    // Strip any existing leading "# " / "## " so toggling between H1/H2
+    // doesn't stack prefixes.
+    const stripped = line.replace(/^#{1,2}\s+/, '')
+    const newLine = prefix + stripped
+    const newValue = value.slice(0, lineStart) + newLine + value.slice(endIdx)
+    setContent(newValue)
+    // Restore caret to the end of the modified line on the next tick.
+    setTimeout(() => {
+      const caret = lineStart + newLine.length
+      ta.focus()
+      ta.setSelectionRange(caret, caret)
+    }, 0)
+  }
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -294,22 +330,43 @@ function TemplateEditor({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              {fr ? 'Contenu' : 'Content'}
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-gray-700">
+                {fr ? 'Contenu' : 'Content'}
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => applyHeading('# ')}
+                  className="px-1.5 py-0.5 rounded text-[11px] font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  title={fr ? 'Titre' : 'Heading'}
+                >
+                  H1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyHeading('## ')}
+                  className="px-1.5 py-0.5 rounded text-[11px] font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  title={fr ? 'Sous-titre' : 'Subheading'}
+                >
+                  H2
+                </button>
+              </div>
+            </div>
             <textarea
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={fr
-                ? 'Motif de consultation\n—\n\nHistorique\n—\n\nObjectifs\n—'
-                : 'Presenting concern\n—\n\nHistory\n—\n\nGoals\n—'}
+                ? '# Première séance\n\nMotif de consultation\n—\n\n## Historique\n—\n\n## Objectifs\n—'
+                : '# Intake interview\n\nPresenting concern\n—\n\n## History\n—\n\n## Goals\n—'}
               rows={12}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 outline-none font-mono"
             />
             <p className="text-[11px] text-gray-400 mt-1 leading-snug">
               {fr
-                ? 'Astuce : utilisez des titres et des tirets — pour structurer le modèle.'
-                : 'Tip: use headings and dashes — to structure the template.'}
+                ? 'Astuce : commencez une ligne par # pour un titre, ## pour un sous-titre.'
+                : 'Tip: start a line with # for a heading, ## for a subheading.'}
             </p>
           </div>
         </div>
