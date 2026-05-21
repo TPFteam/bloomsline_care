@@ -2246,56 +2246,100 @@ export default function BookingsPage() {
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr'
-                      ? "Personnalisez le titre que vos rendez-vous affichent dans Google Agenda. Laissez vide pour utiliser le titre par défaut."
-                      : 'Customize the title your appointments show in Google Calendar. Leave empty to use the default.'}
+                      ? "Choisissez le format du titre que vos rendez-vous affichent dans Google Agenda."
+                      : 'Choose how your appointments are titled in Google Calendar.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <input
-                    type="text"
-                    value={bookingSettings?.calendar_event_title_template ?? ''}
-                    onChange={(e) => setBookingSettings((prev) => ({ ...(prev as any), calendar_event_title_template: e.target.value } as any))}
-                    placeholder={locale === 'fr'
-                      ? 'Rendez-vous {practitioner} <> {client}'
-                      : 'Appointment {practitioner} <> {client}'}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-300 outline-none font-mono"
-                  />
-                  <div className="text-xs text-gray-500">
-                    <p className="mb-1.5">
-                      <span className="font-medium text-gray-700">{locale === 'fr' ? 'Aperçu : ' : 'Preview: '}</span>
-                      <span className="font-mono text-gray-900">
-                        {(() => {
-                          const tmpl = bookingSettings?.calendar_event_title_template?.trim()
-                          const practitioner = user?.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')
-                          const client = locale === 'fr' ? 'Sonia Lebari' : 'John Doe'
-                          const sessionType = locale === 'fr' ? 'Suivi' : 'Follow-up'
-                          if (!tmpl) {
-                            return locale === 'fr'
-                              ? `Rendez-vous ${practitioner} <> ${client}`
-                              : `Appointment ${practitioner} <> ${client}`
-                          }
-                          return tmpl
-                            .replace(/\{practitioner(?:_name)?\}/gi, practitioner)
-                            .replace(/\{client(?:_name)?\}/gi, client)
-                            .replace(/\{session_type\}/gi, sessionType)
-                            .trim() || (locale === 'fr' ? '(titre vide)' : '(empty title)')
-                        })()}
-                      </span>
-                    </p>
-                    <p className="leading-snug">
-                      {locale === 'fr' ? 'Variables disponibles : ' : 'Available placeholders: '}
-                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{practitioner}'}</code>
-                      {' · '}
-                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{client}'}</code>
-                      {' · '}
-                      <code className="text-[11px] bg-gray-100 px-1 py-0.5 rounded">{'{session_type}'}</code>
-                    </p>
-                    <p className="text-[11px] text-gray-400 mt-2">
-                      {locale === 'fr'
-                        ? "S'applique uniquement aux nouveaux rendez-vous. Les événements existants dans Google Agenda ne sont pas modifiés."
-                        : 'Applies only to new appointments. Existing Google Calendar events are not modified.'}
-                    </p>
-                  </div>
+                  {(() => {
+                    const presets = [
+                      {
+                        id: 'default',
+                        label: locale === 'fr' ? 'Par défaut' : 'Default',
+                        template: '',
+                      },
+                      {
+                        id: 'client_only',
+                        label: locale === 'fr' ? 'Nom du client uniquement' : 'Client name only',
+                        template: '{client}',
+                      },
+                      {
+                        id: 'client_and_type',
+                        label: locale === 'fr' ? 'Client + type de séance' : 'Client + session type',
+                        template: '{client} — {session_type}',
+                      },
+                      {
+                        id: 'session_with_client',
+                        label: locale === 'fr' ? 'Séance avec le client' : 'Session with client',
+                        template: locale === 'fr' ? 'Séance avec {client}' : 'Session with {client}',
+                      },
+                      {
+                        id: 'client_and_practitioner',
+                        label: locale === 'fr' ? 'Client & praticien' : 'Client & practitioner',
+                        template: '{client} & {practitioner}',
+                      },
+                      {
+                        id: 'practitioner_and_client',
+                        label: locale === 'fr' ? 'Praticien & client' : 'Practitioner & client',
+                        template: '{practitioner} & {client}',
+                      },
+                    ]
+                    const currentTemplate = (bookingSettings?.calendar_event_title_template ?? '').trim()
+                    const selectedPreset = presets.find(p => p.template === currentTemplate) ?? presets[0]
+                    const practitioner = user?.full_name || (locale === 'fr' ? 'Praticien' : 'Practitioner')
+                    const client = locale === 'fr' ? 'Sonia Lebari' : 'John Doe'
+                    const sessionType = locale === 'fr' ? 'Suivi' : 'Follow-up'
+                    const renderPreview = (tmpl: string) => {
+                      if (!tmpl) {
+                        return locale === 'fr'
+                          ? `Rendez-vous ${practitioner} <> ${client}`
+                          : `Appointment ${practitioner} <> ${client}`
+                      }
+                      return tmpl
+                        .replace(/\{practitioner(?:_name)?\}/gi, practitioner)
+                        .replace(/\{client(?:_name)?\}/gi, client)
+                        .replace(/\{session_type\}/gi, sessionType)
+                    }
+                    return (
+                      <>
+                        <select
+                          value={selectedPreset.id}
+                          onChange={(e) => {
+                            const chosen = presets.find(p => p.id === e.target.value) ?? presets[0]
+                            setBookingSettings((prev) => ({ ...(prev as any), calendar_event_title_template: chosen.template } as any))
+                          }}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-300 outline-none bg-white"
+                        >
+                          {presets.map(p => (
+                            <option key={p.id} value={p.id}>{p.label}</option>
+                          ))}
+                        </select>
+                        <div className="text-xs text-gray-500">
+                          <p className="mb-1.5">
+                            <span className="font-medium text-gray-700">{locale === 'fr' ? 'Aperçu : ' : 'Preview: '}</span>
+                            <span className="font-mono text-gray-900">{renderPreview(selectedPreset.template)}</span>
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-2">
+                            {locale === 'fr'
+                              ? "S'applique uniquement aux nouveaux rendez-vous. Les événements existants dans Google Agenda ne sont pas modifiés."
+                              : 'Applies only to new appointments. Existing Google Calendar events are not modified.'}
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <Button
+                            onClick={handleSaveBookingSettings}
+                            disabled={isSavingSettings}
+                            className="bg-gray-900 hover:bg-gray-800 text-white"
+                          >
+                            {isSavingSettings ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : null}
+                            {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                          </Button>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </CardContent>
               </Card>
 
