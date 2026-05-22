@@ -58,6 +58,7 @@ export type MemberFormFieldKey =
   | 'address'
   | 'emergency_contact'
   | 'background_notes'
+  | 'add_to_group'
 
 export type MemberFormFieldState = 'optional' | 'required'
 

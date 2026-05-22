@@ -82,6 +82,10 @@ export interface Member {
   referral_name: string | null
   referral_email: string | null
 
+  // Self-reported gender (free text — practitioners use whatever
+  // vocabulary fits their patient population).
+  gender: string | null
+
   // Flags
   is_demo: boolean // Identifies demo/example profiles for new practitioners
   is_minor: boolean // Student/minor flag

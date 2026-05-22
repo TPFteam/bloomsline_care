@@ -37,6 +37,7 @@ import {
   EMPTY_EXTRAS,
   validateExtras,
   extrasToMemberColumns,
+  shouldShowAddToGroup,
   type MemberExtras,
 } from '@/components/members/MemberFormExtras'
 import type { MemberFormFieldsConfig } from '@/types/calendar'
@@ -982,7 +983,11 @@ function DashboardInner() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl w-full max-w-md shadow-xl"
+              className={`bg-white rounded-xl w-full shadow-xl max-h-[90vh] overflow-y-auto ${
+                !showFieldsConfig && memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  ? 'max-w-3xl'
+                  : 'max-w-md'
+              }`}
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -1050,79 +1055,94 @@ function DashboardInner() {
                 </div>
               ) : (
               <form onSubmit={handleAddMember} className="p-5">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Prénom' : 'First Name'} *
-                      </label>
-                      <input
-                        type="text"
-                        value={newMember.firstName}
-                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
-                        required
-                        autoFocus
+                {(() => {
+                  const hasExtras = !!memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  const basics = (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            {locale === 'fr' ? 'Prénom' : 'First Name'} *
+                          </label>
+                          <input
+                            type="text"
+                            value={newMember.firstName}
+                            onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                            placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                            required
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            {locale === 'fr' ? 'Nom' : 'Last Name'} *
+                          </label>
+                          <input
+                            type="text"
+                            value={newMember.lastName}
+                            onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                            placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-gray-400" />
+                          Email
+                          <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={newMember.email}
+                          onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                          placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                          {locale === 'fr'
+                            ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
+                            : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-gray-400" />
+                          {locale === 'fr' ? 'Téléphone' : 'Phone'}
+                          <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                        </label>
+                        <PhoneInput
+                          value={newMember.phone}
+                          onChange={(v) => setNewMember({ ...newMember, phone: v })}
+                        />
+                      </div>
+                    </div>
+                  )
+                  const extras = (
+                    <div className="space-y-4">
+                      <MemberFormExtras
+                        config={memberFormFieldsConfig}
+                        value={newMemberExtras}
+                        onChange={setNewMemberExtras}
+                        locale={locale}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {locale === 'fr' ? 'Nom' : 'Last Name'} *
-                      </label>
-                      <input
-                        type="text"
-                        value={newMember.lastName}
-                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
-                        required
-                      />
+                  )
+                  return hasExtras ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-gray-100">
+                      <div className="md:pr-6">{basics}</div>
+                      <div className="md:pl-6">{extras}</div>
                     </div>
-                  </div>
+                  ) : (
+                    basics
+                  )
+                })()}
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      Email
-                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={newMember.email}
-                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1 leading-snug">
-                      {locale === 'fr'
-                        ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
-                        : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-gray-400" />
-                      {locale === 'fr' ? 'Téléphone' : 'Phone'}
-                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
-                    </label>
-                    <PhoneInput
-                      value={newMember.phone}
-                      onChange={(v) => setNewMember({ ...newMember, phone: v })}
-                    />
-                  </div>
-
-                  {/* Configurable extras — same component as /members popup. */}
-                  <MemberFormExtras
-                    config={memberFormFieldsConfig}
-                    value={newMemberExtras}
-                    onChange={setNewMemberExtras}
-                    locale={locale}
-                  />
-                </div>
-
-                <label className="flex items-center gap-3 cursor-pointer mt-2">
+                <label className="flex items-center gap-3 cursor-pointer mt-6 pt-6 border-t border-gray-100">
                   <div className="relative">
                     <input
                       type="checkbox"
@@ -1168,7 +1188,7 @@ function DashboardInner() {
                   </div>
                 </div>
 
-                {memberGroups.length > 0 && (
+                {memberGroups.length > 0 && shouldShowAddToGroup(memberFormFieldsConfig) && (
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       {locale === 'fr' ? 'Ajouter à un groupe' : 'Add to a Group'}

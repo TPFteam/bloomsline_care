@@ -237,6 +237,29 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
   const [editingReferral, setEditingReferral] = useState(false)
   const hasReferralSaved = !!(member.referral_source || member.referral_name)
 
+  // Gender — same in-place edit pattern as Referral.
+  const [gender, setGender] = useState<string>(member.gender || '')
+  const [savingGender, setSavingGender] = useState(false)
+  const [editingGender, setEditingGender] = useState(false)
+  const hasGenderSaved = !!member.gender
+  const handleSaveGender = async () => {
+    setSavingGender(true)
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ gender: gender.trim() || null })
+        .eq('id', memberId)
+      if (error) throw error
+      toast.success(locale === 'fr' ? 'Genre enregistré' : 'Gender saved')
+      setEditingGender(false)
+      onMemberUpdate()
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur lors de la sauvegarde' : 'Failed to save')
+    } finally {
+      setSavingGender(false)
+    }
+  }
+
   const handleSaveReferral = async () => {
     setSavingReferral(true)
     try {
@@ -1051,6 +1074,80 @@ export default function FilesTab({ memberId, member, onMemberUpdate, highlightFi
               </div>
             </div>
           )}
+
+          {/* Gender — inline editable dropdown, matches the rest of
+              the Contact Information cards. Stored as a short code
+              ('woman', 'man', etc) so cross-locale display stays clean. */}
+          {(() => {
+            const GENDERS: { code: string; en: string; fr: string }[] = [
+              { code: 'woman',             en: 'Woman',             fr: 'Femme' },
+              { code: 'man',               en: 'Man',               fr: 'Homme' },
+              { code: 'non_binary',        en: 'Non-binary',        fr: 'Non-binaire' },
+              { code: 'other',             en: 'Other',             fr: 'Autre' },
+              { code: 'prefer_not_to_say', en: 'Prefer not to say', fr: 'Préfère ne pas dire' },
+            ]
+            const label = (code: string | null) => {
+              if (!code) return null
+              const m = GENDERS.find(g => g.code === code)
+              return m ? (locale === 'fr' ? m.fr : m.en) : code
+            }
+            const persisted = member.gender || ''
+            return (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider">{locale === 'fr' ? 'Genre' : 'Gender'}</p>
+                    {editingGender ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(e.target.value)}
+                          className="px-2 py-1 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none text-sm bg-white"
+                        >
+                          <option value="">{locale === 'fr' ? 'Sélectionner…' : 'Select…'}</option>
+                          {GENDERS.map(g => (
+                            <option key={g.code} value={g.code}>{locale === 'fr' ? g.fr : g.en}</option>
+                          ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveGender}
+                          disabled={savingGender}
+                          className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8"
+                        >
+                          {savingGender ? <Loader2 className="w-3 h-3 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setGender(member.gender || ''); setEditingGender(false) }}
+                          className="rounded-lg h-8 text-gray-500"
+                        >
+                          {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                        </Button>
+                      </div>
+                    ) : persisted ? (
+                      <p className="text-sm font-medium text-gray-900 mt-0.5">{label(persisted)}</p>
+                    ) : (
+                      <p className="text-sm text-gray-400 mt-0.5">{locale === 'fr' ? 'Non renseigné' : 'Not set'}</p>
+                    )}
+                  </div>
+                </div>
+                {!editingGender && (
+                  <button
+                    onClick={() => { setGender(member.gender || ''); setEditingGender(true) }}
+                    className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white opacity-0 group-hover:opacity-100 [@media(any-pointer:coarse)]:opacity-100 transition-all shrink-0"
+                    title={locale === 'fr' ? 'Modifier' : 'Edit'}
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Time Connected */}
           <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">

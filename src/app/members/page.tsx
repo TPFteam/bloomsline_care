@@ -55,6 +55,7 @@ import {
   EMPTY_EXTRAS,
   validateExtras,
   extrasToMemberColumns,
+  shouldShowAddToGroup,
   type MemberExtras,
 } from '@/components/members/MemberFormExtras'
 import type { MemberFormFieldsConfig } from '@/types/calendar'
@@ -2917,7 +2918,14 @@ export default function MembersPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl w-full max-w-md shadow-xl"
+              className={`bg-white rounded-xl w-full shadow-xl max-h-[90vh] overflow-y-auto ${
+                // Wider 2-col layout only when extras are enabled — keeps
+                // the default popup compact for practitioners who haven't
+                // turned anything on.
+                !showFieldsConfig && memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  ? 'max-w-3xl'
+                  : 'max-w-md'
+              }`}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -2988,81 +2996,98 @@ export default function MembersPage() {
                 </div>
               ) : (
               <form onSubmit={handleAddMember} className="p-5">
-                <div className="space-y-4">
-                  {/* Name Row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {t.members.form.firstName} *
-                      </label>
-                      <input
-                        type="text"
-                        value={newMember.firstName}
-                        onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                        placeholder={locale === 'fr' ? 'Jean' : 'John'}
-                        required
-                        autoFocus
+                {(() => {
+                  const hasExtras = !!memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  // ── Basics column: hard-coded fields that are always shown.
+                  const basics = (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            {t.members.form.firstName} *
+                          </label>
+                          <input
+                            type="text"
+                            value={newMember.firstName}
+                            onChange={(e) => setNewMember({ ...newMember, firstName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                            placeholder={locale === 'fr' ? 'Jean' : 'John'}
+                            required
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            {t.members.form.lastName} *
+                          </label>
+                          <input
+                            type="text"
+                            value={newMember.lastName}
+                            onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                            placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-gray-400" />
+                          {t.members.form.email}
+                          <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={newMember.email}
+                          onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
+                          placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1 leading-snug">
+                          {locale === 'fr'
+                            ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
+                            : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-gray-400" />
+                          {t.members.form.phone}
+                          <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
+                        </label>
+                        <PhoneInput
+                          value={newMember.phone}
+                          onChange={(v) => setNewMember({ ...newMember, phone: v })}
+                        />
+                      </div>
+                    </div>
+                  )
+                  // ── Extras column: practitioner-configured optional fields.
+                  const extras = (
+                    <div className="space-y-4">
+                      <MemberFormExtras
+                        config={memberFormFieldsConfig}
+                        value={newMemberExtras}
+                        onChange={setNewMemberExtras}
+                        locale={locale}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        {t.members.form.lastName} *
-                      </label>
-                      <input
-                        type="text"
-                        value={newMember.lastName}
-                        onChange={(e) => setNewMember({ ...newMember, lastName: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                        placeholder={locale === 'fr' ? 'Dupont' : 'Doe'}
-                        required
-                      />
+                  )
+                  // Two-column when extras are enabled; single column otherwise
+                  // so the popup stays compact in the default state.
+                  return hasExtras ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:divide-x md:divide-gray-100">
+                      <div className="md:pr-6">{basics}</div>
+                      <div className="md:pl-6">{extras}</div>
                     </div>
-                  </div>
+                  ) : (
+                    basics
+                  )
+                })()}
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      {t.members.form.email}
-                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={newMember.email}
-                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                      placeholder={locale === 'fr' ? 'jean@exemple.com' : 'john@example.com'}
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1 leading-snug">
-                      {locale === 'fr'
-                        ? 'Sans email : pas d\'app patient, pas d\'invitations Google Agenda, pas de rappels.'
-                        : 'Without email: no patient app, no Google Calendar invites, no reminders.'}
-                    </p>
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-gray-400" />
-                      {t.members.form.phone}
-                      <span className="text-gray-400 font-normal text-xs">({locale === 'fr' ? 'optionnel' : 'optional'})</span>
-                    </label>
-                    <PhoneInput
-                      value={newMember.phone}
-                      onChange={(v) => setNewMember({ ...newMember, phone: v })}
-                    />
-                  </div>
-
-                  {/* Configurable extras (DOB, referral, gender, etc) —
-                      whichever the practitioner enabled via the gear icon. */}
-                  <MemberFormExtras
-                    config={memberFormFieldsConfig}
-                    value={newMemberExtras}
-                    onChange={setNewMemberExtras}
-                    locale={locale}
-                  />
-
+                <div className="space-y-4 mt-6 pt-6 border-t border-gray-100">
                   {/* Minor/Student Toggle */}
                   <label className="flex items-center gap-3 cursor-pointer group/minor">
                     <div className="relative">
@@ -3110,8 +3135,10 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  {/* Group selector */}
-                  {memberGroups.length > 0 && (
+                  {/* Group selector — gated by the configurable
+                      add_to_group field so practitioners who don't use
+                      groups can hide this section entirely. */}
+                  {memberGroups.length > 0 && shouldShowAddToGroup(memberFormFieldsConfig) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-0.5">
                         {locale === 'fr' ? 'Ajouter à un groupe' : locale === 'es' ? 'Añadir a un grupo' : 'Add to a Group'}

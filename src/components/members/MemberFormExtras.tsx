@@ -17,7 +17,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { MemberFormFieldKey, MemberFormFieldState, MemberFormFieldsConfig } from '@/types/calendar'
+import type { MemberFormFieldKey, MemberFormFieldsConfig } from '@/types/calendar'
 
 export interface MemberExtras {
   dateOfBirth: string
@@ -60,6 +60,7 @@ const FIELD_ORDER: MemberFormFieldKey[] = [
   'address',
   'emergency_contact',
   'background_notes',
+  'add_to_group',
 ]
 
 function fieldLabel(key: MemberFormFieldKey, locale: string): string {
@@ -71,44 +72,37 @@ function fieldLabel(key: MemberFormFieldKey, locale: string): string {
     case 'address':           return isFr ? 'Adresse' : 'Address'
     case 'emergency_contact': return isFr ? 'Contact d\'urgence' : 'Emergency Contact'
     case 'background_notes':  return isFr ? 'Notes contextuelles' : 'Background notes'
+    case 'add_to_group':      return isFr ? 'Ajouter à un groupe' : 'Add to a Group'
   }
+}
+
+// Helper for popups that don't render group selection through
+// <MemberFormExtras> (the group section is bespoke in each popup);
+// they call this to decide whether to render their own group block.
+//
+// add_to_group is special: it was a default-visible section before we
+// made it configurable, so it stays ON unless the practitioner
+// explicitly toggled it off (= stored as 'hidden'). Other fields use
+// the standard "missing key = hidden" convention.
+export function shouldShowAddToGroup(config: { add_to_group?: unknown } | null | undefined): boolean {
+  if (!config) return true
+  return config.add_to_group !== 'hidden'
 }
 
 // ─── Validation ─────────────────────────────────────────────────────
 
-/** Returns null if all required fields are filled; otherwise the locale-
- *  appropriate error string for the first missing one. */
+/**
+ * Configurable fields are show-or-hide only — there's no "required"
+ * concept any more, so validation is always a pass. Kept as a no-op
+ * function so callers don't need to change their flow if we ever
+ * reintroduce per-field rules.
+ */
 export function validateExtras(
-  config: MemberFormFieldsConfig | null | undefined,
-  extras: MemberExtras,
-  locale: string,
+  _config: MemberFormFieldsConfig | null | undefined,
+  _extras: MemberExtras,
+  _locale: string,
 ): string | null {
-  if (!config) return null
-  const isFr = locale === 'fr'
-  const required = (key: MemberFormFieldKey, ok: boolean): string | null => {
-    if (config[key] !== 'required' || ok) return null
-    return isFr
-      ? `Le champ « ${fieldLabel(key, locale)} » est obligatoire.`
-      : `"${fieldLabel(key, locale)}" is required.`
-  }
-  const referralFilled =
-    !!extras.referralSource.trim() ||
-    !!extras.referralName.trim() ||
-    !!extras.referralEmail.trim()
-  const emergencyFilled =
-    !!extras.emergencyContactName.trim() ||
-    !!extras.emergencyContactRelationship.trim() ||
-    !!extras.emergencyContactPhone.trim() ||
-    !!extras.emergencyContactEmail.trim() ||
-    !!extras.emergencyContactNotes.trim()
-  return (
-    required('date_of_birth',     !!extras.dateOfBirth.trim()) ||
-    required('referral_source',   referralFilled) ||
-    required('gender',            !!extras.gender.trim()) ||
-    required('address',           !!extras.address.trim()) ||
-    required('emergency_contact', emergencyFilled) ||
-    required('background_notes',  !!extras.backgroundNotes.trim())
-  )
+  return null
 }
 
 /** Map the form state to columns/JSON ready for an `insert into members`. */
@@ -123,23 +117,32 @@ export function extrasToMemberColumns(
   if (visible('date_of_birth') && extras.dateOfBirth.trim()) {
     out.date_of_birth = extras.dateOfBirth
   }
+  // Referral writes to the EXISTING referral_source / referral_name /
+  // referral_email columns so the FilesTab Referred by card picks up
+  // what was entered in the Add popup.
   if (visible('referral_source')) {
     const source = extras.referralSource.trim()
     const name = extras.referralName.trim()
     const email = extras.referralEmail.trim()
-    if (source || name || email) {
-      out.referred_by = {
-        source: source || null,
-        name: name || null,
-        email: email || null,
-      }
-    }
+    if (source) out.referral_source = source
+    if (name) out.referral_name = name
+    if (email) out.referral_email = email
   }
   if (visible('gender') && extras.gender.trim()) {
     out.gender = extras.gender.trim()
   }
+  // Address writes to additional_contacts (the JSONB array FilesTab
+  // already renders via the "Additional contacts" section). On the
+  // insert path additional_contacts starts empty, so seeding it with a
+  // single address entry is safe; the orphan-update path is for
+  // members that haven't been linked to any practitioner yet, so they
+  // also tend not to have existing entries.
   if (visible('address') && extras.address.trim()) {
-    out.address = extras.address.trim()
+    out.additional_contacts = [{
+      type: 'address',
+      label: 'Address',
+      value: extras.address.trim(),
+    }]
   }
   if (visible('emergency_contact')) {
     const name = extras.emergencyContactName.trim()
@@ -178,11 +181,12 @@ export function MemberFormExtras({
   locale: string
 }) {
   if (!config) return null
+  // 'required' is legacy data (older configs saved before we dropped
+  // the concept) — treat it the same as 'optional' (just shown).
   const visible = (key: MemberFormFieldKey) => config[key] === 'optional' || config[key] === 'required'
-  const isReq = (key: MemberFormFieldKey) => config[key] === 'required'
   const labelEl = (key: MemberFormFieldKey) => (
     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-      {fieldLabel(key, locale)} {isReq(key) && <span className="text-rose-500">*</span>}
+      {fieldLabel(key, locale)}
     </label>
   )
   const input = 'w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm'
@@ -201,17 +205,18 @@ export function MemberFormExtras({
         </div>
       )}
       {visible('referral_source') && (() => {
-        // Canonical referral source list — kept in English in the
-        // database (stored value) but rendered in the practitioner's
-        // locale so the dropdown reads naturally for everyone.
+        // Canonical referral source codes — match FilesTab's Referred
+        // by select so what's entered here renders correctly in the
+        // member detail card. Stored value = the short code; label
+        // shown to the practitioner is locale-aware.
         const sourceOptions: { value: string; en: string; fr: string }[] = [
-          { value: 'Another practitioner',     en: 'Another practitioner',     fr: 'Autre praticien' },
-          { value: 'Existing patient',         en: 'Existing patient',         fr: 'Patient existant' },
-          { value: 'Online search',            en: 'Online search',            fr: 'Recherche en ligne' },
-          { value: 'Social media',             en: 'Social media',             fr: 'Réseaux sociaux' },
-          { value: 'Word of mouth',            en: 'Word of mouth',            fr: 'Bouche-à-oreille' },
-          { value: 'Insurance / health network', en: 'Insurance / health network', fr: 'Assurance / réseau de santé' },
-          { value: 'Other',                    en: 'Other',                    fr: 'Autre' },
+          { value: 'practitioner',   en: 'Another practitioner',         fr: 'Autre praticien' },
+          { value: 'patient',        en: 'Existing patient',             fr: 'Patient existant' },
+          { value: 'online',         en: 'Online search',                fr: 'Recherche en ligne' },
+          { value: 'social_media',   en: 'Social media',                 fr: 'Réseaux sociaux' },
+          { value: 'word_of_mouth',  en: 'Word of mouth',                fr: 'Bouche-à-oreille' },
+          { value: 'insurance',      en: 'Insurance / health network',   fr: 'Assurance / réseau santé' },
+          { value: 'other',          en: 'Other',                        fr: 'Autre' },
         ]
         return (
           <div>
@@ -249,18 +254,34 @@ export function MemberFormExtras({
           </div>
         )
       })()}
-      {visible('gender') && (
-        <div>
-          {labelEl('gender')}
-          <input
-            type="text"
-            value={value.gender}
-            onChange={(e) => onChange({ ...value, gender: e.target.value })}
-            className={input}
-            placeholder={locale === 'fr' ? 'Femme, homme, non-binaire…' : 'Woman, man, non-binary…'}
-          />
-        </div>
-      )}
+      {visible('gender') && (() => {
+        // Same codes as the Contact Information gender dropdown on
+        // the member detail page (FilesTab).
+        const genderOptions: { value: string; en: string; fr: string }[] = [
+          { value: 'woman',             en: 'Woman',             fr: 'Femme' },
+          { value: 'man',               en: 'Man',               fr: 'Homme' },
+          { value: 'non_binary',        en: 'Non-binary',        fr: 'Non-binaire' },
+          { value: 'other',             en: 'Other',             fr: 'Autre' },
+          { value: 'prefer_not_to_say', en: 'Prefer not to say', fr: 'Préfère ne pas dire' },
+        ]
+        return (
+          <div>
+            {labelEl('gender')}
+            <select
+              value={value.gender}
+              onChange={(e) => onChange({ ...value, gender: e.target.value })}
+              className={`${input} bg-white`}
+            >
+              <option value="">{locale === 'fr' ? 'Sélectionner…' : 'Select…'}</option>
+              {genderOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {locale === 'fr' ? opt.fr : opt.en}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
+      })()}
       {visible('address') && (
         <div>
           {labelEl('address')}
@@ -350,53 +371,59 @@ export function MemberFormFieldsConfigPanel({
 }) {
   const [draft, setDraft] = useState<MemberFormFieldsConfig>(() => ({ ...(initial || {}) }))
 
-  const setField = (key: MemberFormFieldKey, state: MemberFormFieldState | null) => {
+  // Binary toggle: shown = 'optional', hidden = key absent.
+  //
+  // add_to_group is the exception — it was visible before we made it
+  // configurable, so a missing key means SHOWN (legacy default). To
+  // hide it, we store 'hidden' explicitly. Other fields keep the
+  // standard "missing = hidden" convention.
+  const setVisible = (key: MemberFormFieldKey, shown: boolean) => {
     setDraft(prev => {
       const next = { ...prev }
-      if (state === null) delete next[key]
-      else next[key] = state
+      if (key === 'add_to_group') {
+        if (shown) delete next[key]
+        else (next as Record<string, string>)[key] = 'hidden'
+      } else if (shown) {
+        next[key] = 'optional'
+      } else {
+        delete next[key]
+      }
       return next
     })
   }
 
-  const currentOf = (key: MemberFormFieldKey): MemberFormFieldState | 'hidden' => draft[key] || 'hidden'
-
-  const tabs: { id: MemberFormFieldState | 'hidden'; label: string }[] = [
-    { id: 'hidden',   label: locale === 'fr' ? 'Masqué' : 'Hidden' },
-    { id: 'optional', label: locale === 'fr' ? 'Optionnel' : 'Optional' },
-    { id: 'required', label: locale === 'fr' ? 'Obligatoire' : 'Required' },
-  ]
+  const isShown = (key: MemberFormFieldKey) => {
+    if (key === 'add_to_group') return (draft as Record<string, unknown>)[key] !== 'hidden'
+    return !!draft[key]
+  }
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500 leading-snug">
         {locale === 'fr'
-          ? 'Choisissez les champs additionnels qui apparaîtront dans le formulaire d\'ajout. « Obligatoire » empêche la création tant que le champ est vide.'
-          : 'Choose which extra fields appear in the Add form. "Required" blocks creation until the field is filled.'}
+          ? 'Choisissez les champs additionnels qui apparaîtront dans le formulaire d\'ajout.'
+          : 'Choose which extra fields appear in the Add form.'}
       </p>
       {FIELD_ORDER.map(key => {
-        const state = currentOf(key)
+        const shown = isShown(key)
         return (
           <div key={key} className="flex items-center justify-between gap-3 py-1.5">
             <span className="text-sm text-gray-800">{fieldLabel(key, locale)}</span>
-            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setField(key, tab.id === 'hidden' ? null : tab.id)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                    state === tab.id
-                      ? (tab.id === 'required' ? 'bg-rose-50 text-rose-700' :
-                         tab.id === 'optional' ? 'bg-white shadow-sm text-gray-900' :
-                         'bg-white shadow-sm text-gray-500')
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={() => setVisible(key, !shown)}
+              role="switch"
+              aria-checked={shown}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                shown ? 'bg-teal-500' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block w-4 h-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                  shown ? 'translate-x-[18px]' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
           </div>
         )
       })}
