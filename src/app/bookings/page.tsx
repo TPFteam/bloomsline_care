@@ -287,7 +287,7 @@ export default function BookingsPage() {
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
-  const [bookingView, setBookingView] = useState<'list' | 'calendar'>('list')
+  const [bookingView, setBookingView] = useState<'list' | 'calendar'>('calendar')
   const [processingId, setProcessingId] = useState<string | null>(null)
   // Recurring-series drawer — opened from the "View all sessions" button
   // on any series-anchor row. Mirrors the SessionsTab behaviour.
@@ -1493,19 +1493,20 @@ export default function BookingsPage() {
                     </>
                   )
                 })()}
-                {/* View toggle */}
+                {/* View toggle — Calendar comes first since it's the
+                    default view; List is one click away. */}
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
-                  <button
-                    onClick={() => setBookingView('list')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
-                  >
-                    {locale === 'fr' ? 'Liste' : 'List'}
-                  </button>
                   <button
                     onClick={() => setBookingView('calendar')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                  </button>
+                  <button
+                    onClick={() => setBookingView('list')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {locale === 'fr' ? 'Liste' : 'List'}
                   </button>
                 </div>
               </div>

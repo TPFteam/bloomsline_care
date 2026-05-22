@@ -247,12 +247,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4">
-        {/* Legend */}
+        {/* Legend — "Confirmed" entry dropped; confirmed is the default
+            state and the dedicated label was confusing alongside the
+            "Completed" tag we use post-session. */}
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-teal-100 border border-teal-200" />
-            {locale === 'fr' ? 'Confirmé' : 'Confirmed'}
-          </span>
           <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <span className="w-2 h-2 rounded-full bg-amber-100 border border-amber-300" />
             {locale === 'fr' ? 'En attente' : 'Pending'}
@@ -560,15 +558,17 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
 
                           {/* Body */}
                           <div className="px-4 py-3 space-y-2.5">
-                            {/* Status pills */}
+                            {/* Status pills — 'confirmed' is the default
+                                state and rendering it as a pill is redundant
+                                with "Completed", so only show pending and
+                                exceptional statuses. */}
                             {(event.status || event.sessionType || (event.source === 'booking' && event.bookingId)) && (
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                {event.status && (
+                                {event.status && event.status !== 'confirmed' && (
                                   <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                    isPending ? 'bg-amber-100 text-amber-700' : event.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'
+                                    isPending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                                   }`}>
                                     {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
-                                      : event.status === 'confirmed' ? (locale === 'fr' ? 'Confirmé' : 'Confirmed')
                                       : event.status}
                                   </span>
                                 )}
