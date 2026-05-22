@@ -56,6 +56,7 @@ import {
   validateExtras,
   extrasToMemberColumns,
   shouldShowAddToGroup,
+  hasVisibleColumnExtras,
   type MemberExtras,
 } from '@/components/members/MemberFormExtras'
 import type { MemberFormFieldsConfig } from '@/types/calendar'
@@ -2919,10 +2920,12 @@ export default function MembersPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
               className={`bg-white rounded-xl w-full shadow-xl max-h-[90vh] overflow-y-auto ${
-                // Wider 2-col layout only when extras are enabled — keeps
-                // the default popup compact for practitioners who haven't
-                // turned anything on.
-                !showFieldsConfig && memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                // Wider 2-col layout only when at least one column-extra
+                // is enabled. add_to_group (a separate footer section)
+                // doesn't trigger the wide layout — otherwise hiding it
+                // while leaving everything else off produces an empty
+                // right column.
+                !showFieldsConfig && hasVisibleColumnExtras(memberFormFieldsConfig)
                   ? 'max-w-3xl'
                   : 'max-w-md'
               }`}
@@ -2997,7 +3000,7 @@ export default function MembersPage() {
               ) : (
               <form onSubmit={handleAddMember} className="p-5">
                 {(() => {
-                  const hasExtras = !!memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  const hasExtras = hasVisibleColumnExtras(memberFormFieldsConfig)
                   // ── Basics column: hard-coded fields that are always shown.
                   const basics = (
                     <div className="space-y-4">

@@ -38,6 +38,7 @@ import {
   validateExtras,
   extrasToMemberColumns,
   shouldShowAddToGroup,
+  hasVisibleColumnExtras,
   type MemberExtras,
 } from '@/components/members/MemberFormExtras'
 import type { MemberFormFieldsConfig } from '@/types/calendar'
@@ -984,7 +985,7 @@ function DashboardInner() {
               exit={{ opacity: 0, scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
               className={`bg-white rounded-xl w-full shadow-xl max-h-[90vh] overflow-y-auto ${
-                !showFieldsConfig && memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                !showFieldsConfig && hasVisibleColumnExtras(memberFormFieldsConfig)
                   ? 'max-w-3xl'
                   : 'max-w-md'
               }`}
@@ -1056,7 +1057,7 @@ function DashboardInner() {
               ) : (
               <form onSubmit={handleAddMember} className="p-5">
                 {(() => {
-                  const hasExtras = !!memberFormFieldsConfig && Object.keys(memberFormFieldsConfig).length > 0
+                  const hasExtras = hasVisibleColumnExtras(memberFormFieldsConfig)
                   const basics = (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-3">

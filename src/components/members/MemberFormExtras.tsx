@@ -89,6 +89,19 @@ export function shouldShowAddToGroup(config: { add_to_group?: unknown } | null |
   return config.add_to_group !== 'hidden'
 }
 
+// True when at least one of the six column-extras (the ones rendered
+// by <MemberFormExtras />) is set to visible. add_to_group doesn't
+// count here — it's a separate section at the bottom of each popup,
+// not part of the two-column extras layout.
+export function hasVisibleColumnExtras(config: MemberFormFieldsConfig | null | undefined): boolean {
+  if (!config) return false
+  const keys: MemberFormFieldKey[] = [
+    'date_of_birth', 'referral_source', 'gender', 'address',
+    'emergency_contact', 'background_notes',
+  ]
+  return keys.some(k => config[k] === 'optional' || config[k] === 'required')
+}
+
 // ─── Validation ─────────────────────────────────────────────────────
 
 /**
