@@ -85,6 +85,11 @@ export interface BookingSettings {
   allow_patient_cancel?: boolean;
   allow_patient_reschedule?: boolean;
   modification_notice_hours?: number;
+  // Late-cancellation policy. When > 0, a patient cancellation within
+  // this many hours of the session start is flagged as a late cancel:
+  // payment_status auto-set to 'unpaid' + late_cancellation = true on
+  // the booking row. 0 disables the policy.
+  late_cancellation_hours?: number;
   // Custom title template for Google Calendar events. Supports
   // {practitioner} / {client} / {session_type}. Null = use default.
   calendar_event_title_template?: string | null;
@@ -111,6 +116,11 @@ export interface Booking {
   payment_status: 'paid' | 'unpaid';
   notes: string | null;
   practitioner_notes: string | null;
+  // True if this row was cancelled by the patient inside the
+  // practitioner's late-cancellation window. Surfaced as a "Late cancel"
+  // badge on bookings/Sessions tab so the practitioner sees what's
+  // still owed.
+  late_cancellation?: boolean | null;
   google_event_id: string | null;
   meet_link: string | null;
   outlook_event_id: string | null;

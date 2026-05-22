@@ -1196,6 +1196,7 @@ export default function BookingsPage() {
       allow_patient_cancel: (bookingSettings as any)?.allow_patient_cancel ?? false,
       allow_patient_reschedule: (bookingSettings as any)?.allow_patient_reschedule ?? false,
       modification_notice_hours: (bookingSettings as any)?.modification_notice_hours ?? 48,
+      late_cancellation_hours: (bookingSettings as any)?.late_cancellation_hours ?? 0,
       hour_aligned_slots: (bookingSettings as any)?.hour_aligned_slots ?? false,
       currency: bookingSettings?.currency ?? 'EUR',
       send_own_calendar_emails: (bookingSettings as any)?.send_own_calendar_emails ?? true,
@@ -1709,6 +1710,15 @@ export default function BookingsPage() {
                                   />
                                 )
                               })()}
+                              {/* Late-cancel marker — set by the patient
+                                  cancel flow when they cancelled inside
+                                  the practitioner's policy window. Flags
+                                  the row for billing follow-up. */}
+                              {(booking as any).late_cancellation && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-medium text-[10px]" title={locale === 'fr' ? "Annulée tardivement par le patient — facturable selon votre politique" : 'Late cancellation by patient — chargeable per your policy'}>
+                                  {locale === 'fr' ? 'Annulation tardive' : 'Late cancel'}
+                                </span>
+                              )}
                               {/* Origin / sync indicator */}
                               {booking.google_event_id ? (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[10px]" title={locale === 'fr' ? 'Synchronisé avec Google Agenda' : 'Synced with Google Calendar'}>
@@ -2920,6 +2930,60 @@ export default function BookingsPage() {
                           </p>
                         </div>
                       </label>
+                      {/* Late-cancellation policy — only shown when patient
+                          cancellation is allowed. 0 = no policy (today's
+                          behavior); >0 hours = patient sees a warning in
+                          the cancel popup and the booking is flagged as
+                          still owed. */}
+                      {(bookingSettings as any)?.allow_patient_cancel && (
+                        <div className="pl-13">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {locale === 'fr' ? 'Facturer une annulation tardive si annulée dans les' : 'Charge for late cancellation if cancelled within'}
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={168}
+                              step={1}
+                              // Stored value 0 renders as empty so the practitioner can
+                              // backspace and type a new number; on blur we re-normalize
+                              // anything blank/invalid back to 0.
+                              value={(bookingSettings as any)?.late_cancellation_hours ?? ''}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                if (v === '') {
+                                  setBookingSettings((prev: any) => ({ ...prev!, late_cancellation_hours: null }))
+                                  return
+                                }
+                                const raw = parseInt(v, 10)
+                                if (Number.isFinite(raw)) {
+                                  setBookingSettings((prev: any) => ({
+                                    ...prev!,
+                                    late_cancellation_hours: Math.max(0, Math.min(168, raw)),
+                                  }))
+                                }
+                              }}
+                              onBlur={() => {
+                                setBookingSettings((prev: any) => {
+                                  const v = prev?.late_cancellation_hours
+                                  if (v == null || !Number.isFinite(v)) {
+                                    return { ...prev!, late_cancellation_hours: 0 }
+                                  }
+                                  return prev
+                                })
+                              }}
+                              className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            />
+                            <span className="text-sm text-gray-600">{locale === 'fr' ? 'heures avant la séance' : 'hours before the session'}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {locale === 'fr'
+                              ? '0 = pas de politique. Sinon, le patient verra un avertissement et la séance restera marquée impayée.'
+                              : '0 = no policy. Otherwise the patient sees a warning and the session is marked unpaid for follow-up.'}
+                          </p>
+                        </div>
+                      )}
                       <label className="flex items-start gap-3 cursor-pointer">
                         <div
                           className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}

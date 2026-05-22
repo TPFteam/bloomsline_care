@@ -26,6 +26,12 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const { action, reason, newSlotStart, newSlotEnd } = body;
+    // Mobile sends true when the patient cancelled inside the
+    // practitioner's late_cancellation_hours window. Flagged here so
+    // the practitioner can see what's still owed. Re-validate against
+    // the actual policy + booking time below to prevent a malicious
+    // client from sending false.
+    const lateCancellationClaim: boolean = body.lateCancellation === true;
 
     if (!action || !['cancel', 'reschedule'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -91,7 +97,7 @@ export async function POST(
     // Check practitioner settings
     const { data: settings } = await adminSupabase
       .from('booking_settings')
-      .select('allow_patient_reschedule, allow_patient_cancel, modification_notice_hours, session_types, require_approval')
+      .select('allow_patient_reschedule, allow_patient_cancel, modification_notice_hours, late_cancellation_hours, session_types, require_approval')
       .eq('user_id', booking.practitioner_id)
       .single();
 
@@ -154,16 +160,35 @@ export async function POST(
     const sessionTypeName = sessionType?.name || booking.session_type;
 
     if (action === 'cancel') {
-      // Cancel the booking
+      // Server-side recheck of the late-cancellation window. The mobile
+      // client tells us whether it thinks the cancellation is late, but
+      // we recompute from authoritative data (settings + booking
+      // start_time) so a tampered client can't either falsely flag a
+      // booking or hide a real late cancel.
+      const lateCancellationHours = (settings as { late_cancellation_hours?: number } | null)?.late_cancellation_hours ?? 0
+      const hoursUntilSession = (new Date(booking.start_time).getTime() - Date.now()) / 3_600_000
+      const isLateCancellation = lateCancellationHours > 0
+        && hoursUntilSession > 0
+        && hoursUntilSession < lateCancellationHours
+      // If the client claimed late but the server says no, drop the
+      // claim silently. The reverse (client said no, server says yes)
+      // is the more important case — we set the flag anyway.
+      void lateCancellationClaim
+
+      const cancelUpdate: Record<string, unknown> = {
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: 'member',
+        cancellation_reason: reason.trim(),
+        updated_at: new Date().toISOString(),
+      }
+      if (isLateCancellation) {
+        cancelUpdate.late_cancellation = true
+        cancelUpdate.payment_status = 'unpaid'
+      }
       await adminSupabase
         .from('bookings')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          cancelled_by: 'member',
-          cancellation_reason: reason.trim(),
-          updated_at: new Date().toISOString(),
-        })
+        .update(cancelUpdate)
         .eq('id', id);
 
       // Cancel linked session if any
