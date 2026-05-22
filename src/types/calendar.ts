@@ -49,6 +49,20 @@ export interface SessionType {
   notesRequired?: boolean; // Whether "Additional Notes" is mandatory for this session type
 }
 
+// The set of optional fields the Add-member popup can render. Order
+// here matches the order they appear in the form.
+export type MemberFormFieldKey =
+  | 'date_of_birth'
+  | 'referral_source'
+  | 'gender'
+  | 'address'
+  | 'emergency_contact'
+  | 'background_notes'
+
+export type MemberFormFieldState = 'optional' | 'required'
+
+export type MemberFormFieldsConfig = Partial<Record<MemberFormFieldKey, MemberFormFieldState>>
+
 export interface BookingSettings {
   id: string;
   user_id: string;
@@ -73,6 +87,10 @@ export interface BookingSettings {
   // Custom title template for Google Calendar events. Supports
   // {practitioner} / {client} / {session_type}. Null = use default.
   calendar_event_title_template?: string | null;
+  // Per-practitioner configuration for the "Add a new person" popup.
+  // Keys → 'optional' | 'required'. Missing key = field hidden. See
+  // migration 20260522_member_form_fields_config.sql.
+  member_form_fields?: MemberFormFieldsConfig | null;
   created_at: string;
   updated_at: string;
 }

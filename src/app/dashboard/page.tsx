@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar, ChevronRight, UserPlus, Share2, Video, X,
   AlertCircle, ArrowUpRight, Sparkles, Loader2,
-  Search, FileText, Send, Mail, Phone, Save,
+  Search, FileText, Send, Mail, Phone, Save, Settings,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
@@ -31,6 +31,15 @@ import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { useBookingsChanged } from '@/lib/bookings-events'
+import {
+  MemberFormExtras,
+  MemberFormFieldsConfigPanel,
+  EMPTY_EXTRAS,
+  validateExtras,
+  extrasToMemberColumns,
+  type MemberExtras,
+} from '@/components/members/MemberFormExtras'
+import type { MemberFormFieldsConfig } from '@/types/calendar'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import type { User } from '@/types/user'
 
@@ -78,8 +87,13 @@ function DashboardInner() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [sendInvite, setSendInvite] = useState(true)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
+  const [newMemberExtras, setNewMemberExtras] = useState<MemberExtras>(EMPTY_EXTRAS)
   const [savingMember, setSavingMember] = useState(false)
   const [memberGroups, setMemberGroups] = useState<{ id: string; name: string; color: string }[]>([])
+  // Configurable extra fields — same source of truth as /members popup.
+  const [memberFormFieldsConfig, setMemberFormFieldsConfig] = useState<MemberFormFieldsConfig | null>(null)
+  const [showFieldsConfig, setShowFieldsConfig] = useState(false)
+  const [savingFieldsConfig, setSavingFieldsConfig] = useState(false)
 
   // Member picker (step 1 of the share-resource flow)
   const [showMemberPicker, setShowMemberPicker] = useState(false)
@@ -359,11 +373,24 @@ function DashboardInner() {
     return new Date(timestamp).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' })
   }
 
-  // Open Add Member modal + lazily load groups for the chip selector.
+  // Open Add Member modal + lazily load groups for the chip selector
+  // and the practitioner's optional-field configuration.
   const openAddMember = () => {
     setShowAddMemberModal(true)
     supabase.from('member_groups').select('id, name, color').order('name').then(({ data }) => {
       if (data) setMemberGroups(data)
+    })
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (!authUser) return
+      supabase
+        .from('booking_settings')
+        .select('member_form_fields')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          const cfg = (data as { member_form_fields?: MemberFormFieldsConfig | null } | null)?.member_form_fields
+          setMemberFormFieldsConfig(cfg ?? {})
+        })
     })
   }
 
@@ -392,6 +419,11 @@ function DashboardInner() {
         : 'First name and last name are required')
       return
     }
+    const extrasError = validateExtras(memberFormFieldsConfig, newMemberExtras, locale)
+    if (extrasError) {
+      toast.error(extrasError)
+      return
+    }
     setSavingMember(true)
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
@@ -407,6 +439,7 @@ function DashboardInner() {
         status: 'pending' as const,
         engagement_level: 'medium' as const,
         is_minor: newMember.isMinor,
+        ...extrasToMemberColumns(memberFormFieldsConfig, newMemberExtras),
       }
       const { data: memberResult, error } = await supabase
         .from('members')
@@ -448,6 +481,7 @@ function DashboardInner() {
       }
 
       setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
+      setNewMemberExtras(EMPTY_EXTRAS)
       setSendInvite(true)
       setShowAddMemberModal(false)
       toast.success(locale === 'fr' ? 'Patient créé avec succès!' : 'Member created successfully!')
@@ -952,16 +986,69 @@ function DashboardInner() {
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person'}
+                  {showFieldsConfig
+                    ? (locale === 'fr' ? 'Configurer les champs' : 'Configure fields')
+                    : (locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person')}
                 </h2>
-                <button
-                  onClick={() => setShowAddMemberModal(false)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {!showFieldsConfig && (
+                    <button
+                      onClick={() => setShowFieldsConfig(true)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                      title={locale === 'fr' ? 'Configurer les champs additionnels' : 'Configure additional fields'}
+                      aria-label={locale === 'fr' ? 'Configurer les champs' : 'Configure fields'}
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowAddMemberModal(false); setShowFieldsConfig(false) }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
+              {showFieldsConfig ? (
+                <div className="p-5">
+                  <MemberFormFieldsConfigPanel
+                    initial={memberFormFieldsConfig}
+                    onCancel={() => setShowFieldsConfig(false)}
+                    saving={savingFieldsConfig}
+                    onSave={async (next) => {
+                      try {
+                        setSavingFieldsConfig(true)
+                        const { data: { user: authUser } } = await supabase.auth.getUser()
+                        if (!authUser) return
+                        const { data: existing } = await supabase
+                          .from('booking_settings')
+                          .select('id')
+                          .eq('user_id', authUser.id)
+                          .maybeSingle()
+                        if (existing) {
+                          await supabase
+                            .from('booking_settings')
+                            .update({ member_form_fields: next })
+                            .eq('user_id', authUser.id)
+                        } else {
+                          await supabase
+                            .from('booking_settings')
+                            .insert({ user_id: authUser.id, member_form_fields: next })
+                        }
+                        setMemberFormFieldsConfig(next)
+                        setShowFieldsConfig(false)
+                      } catch (err) {
+                        console.error('Failed to save member form config:', err)
+                        toast.error(locale === 'fr' ? 'Échec de l\'enregistrement' : 'Save failed')
+                      } finally {
+                        setSavingFieldsConfig(false)
+                      }
+                    }}
+                    locale={locale}
+                  />
+                </div>
+              ) : (
               <form onSubmit={handleAddMember} className="p-5">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -1025,6 +1112,14 @@ function DashboardInner() {
                       onChange={(v) => setNewMember({ ...newMember, phone: v })}
                     />
                   </div>
+
+                  {/* Configurable extras — same component as /members popup. */}
+                  <MemberFormExtras
+                    config={memberFormFieldsConfig}
+                    value={newMemberExtras}
+                    onChange={setNewMemberExtras}
+                    locale={locale}
+                  />
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer mt-2">
@@ -1136,6 +1231,7 @@ function DashboardInner() {
                   </Button>
                 </div>
               </form>
+              )}
             </motion.div>
           </motion.div>
         )}

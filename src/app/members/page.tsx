@@ -37,6 +37,7 @@ import {
   ArrowUpDown,
   CalendarPlus,
   UserCheck,
+  Settings,
 } from 'lucide-react'
 import { MaskedContact } from '@/components/ui/masked-contact'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,15 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { EditMemberModal } from '@/components/members/EditMemberModal'
+import {
+  MemberFormExtras,
+  MemberFormFieldsConfigPanel,
+  EMPTY_EXTRAS,
+  validateExtras,
+  extrasToMemberColumns,
+  type MemberExtras,
+} from '@/components/members/MemberFormExtras'
+import type { MemberFormFieldsConfig } from '@/types/calendar'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 import type { MemberGroup } from '@/types/member-group'
@@ -196,8 +206,15 @@ export default function MembersPage() {
   // Add Member Modal
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
+  const [newMemberExtras, setNewMemberExtras] = useState<MemberExtras>(EMPTY_EXTRAS)
   const [sendInvite, setSendInvite] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Per-practitioner config for which extra fields show. Loaded from
+  // booking_settings.member_form_fields on the same fetch that loads
+  // session types etc.
+  const [memberFormFieldsConfig, setMemberFormFieldsConfig] = useState<MemberFormFieldsConfig | null>(null)
+  const [showFieldsConfig, setShowFieldsConfig] = useState(false)
+  const [savingFieldsConfig, setSavingFieldsConfig] = useState(false)
 
   // Groups
   const [memberGroups, setMemberGroups] = useState<MemberGroup[]>([])
@@ -254,7 +271,18 @@ export default function MembersPage() {
         // Load sort preference
         const savedSort = (userProfile as any).ui_preferences?.members_sort
         if (savedSort) setSortBy(savedSort)
-      } else {
+      }
+
+      // Load the Add-member popup field configuration.
+      const { data: bsRow } = await supabase
+        .from('booking_settings')
+        .select('member_form_fields')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+      const cfg = (bsRow as { member_form_fields?: MemberFormFieldsConfig | null } | null)?.member_form_fields
+      setMemberFormFieldsConfig(cfg ?? {})
+
+      if (!userProfile) {
         setUser({
           id: authUser.id,
           email: authUser.email!,
@@ -749,6 +777,15 @@ export default function MembersPage() {
       return
     }
 
+    // Validate any practitioner-configured required extras (DOB,
+    // referral, etc). Blocks submission with a precise error message
+    // for the first missing required field.
+    const extrasError = validateExtras(memberFormFieldsConfig, newMemberExtras, locale)
+    if (extrasError) {
+      toast.error(extrasError)
+      return
+    }
+
     setSaving(true)
 
     try {
@@ -805,6 +842,7 @@ export default function MembersPage() {
               phone: newMember.phone.trim() || null,
               status: 'active' as const,
               updated_at: new Date().toISOString(),
+              ...extrasToMemberColumns(memberFormFieldsConfig, newMemberExtras),
             })
             .eq('id', orphanRecord.id)
             .select()
@@ -825,6 +863,7 @@ export default function MembersPage() {
           calculateStats(updatedMembers)
 
           setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
+          setNewMemberExtras(EMPTY_EXTRAS)
           setShowAddModal(false)
           toast.success(t.members.success.memberCreated)
           fetchMembers() // refresh group counts
@@ -849,6 +888,7 @@ export default function MembersPage() {
         status: 'active' as const,
         engagement_level: 'medium' as const,
         is_minor: newMember.isMinor,
+        ...extrasToMemberColumns(memberFormFieldsConfig, newMemberExtras),
       }
       if (existingUserId) memberData.user_id = existingUserId
 
@@ -885,6 +925,7 @@ export default function MembersPage() {
 
       // Reset form and close modal
       setNewMember({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] })
+      setNewMemberExtras(EMPTY_EXTRAS)
       setShowAddModal(false)
       toast.success(t.members.success.memberCreated)
       analytics.memberAdded({ total_count: updatedMembers.length })
@@ -2881,17 +2922,71 @@ export default function MembersPage() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person'}
+                  {showFieldsConfig
+                    ? (locale === 'fr' ? 'Configurer les champs' : 'Configure fields')
+                    : (locale === 'fr' ? 'Ajouter un nouveau patient / client' : 'Add a New Person')}
                 </h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {!showFieldsConfig && (
+                    <button
+                      onClick={() => setShowFieldsConfig(true)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                      title={locale === 'fr' ? 'Configurer les champs additionnels' : 'Configure additional fields'}
+                      aria-label={locale === 'fr' ? 'Configurer les champs' : 'Configure fields'}
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setShowAddModal(false); setShowFieldsConfig(false) }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Form */}
+              {showFieldsConfig ? (
+                <div className="p-5">
+                  <MemberFormFieldsConfigPanel
+                    initial={memberFormFieldsConfig}
+                    onCancel={() => setShowFieldsConfig(false)}
+                    saving={savingFieldsConfig}
+                    onSave={async (next) => {
+                      try {
+                        setSavingFieldsConfig(true)
+                        const { data: { user: authUser } } = await supabase.auth.getUser()
+                        if (!authUser) return
+                        // Upsert keyed on user_id — booking_settings has one row per practitioner.
+                        const { data: existing } = await supabase
+                          .from('booking_settings')
+                          .select('id')
+                          .eq('user_id', authUser.id)
+                          .maybeSingle()
+                        if (existing) {
+                          await supabase
+                            .from('booking_settings')
+                            .update({ member_form_fields: next })
+                            .eq('user_id', authUser.id)
+                        } else {
+                          await supabase
+                            .from('booking_settings')
+                            .insert({ user_id: authUser.id, member_form_fields: next })
+                        }
+                        setMemberFormFieldsConfig(next)
+                        setShowFieldsConfig(false)
+                      } catch (err) {
+                        console.error('Failed to save member form config:', err)
+                        toast.error(locale === 'fr' ? 'Échec de l\'enregistrement' : 'Save failed')
+                      } finally {
+                        setSavingFieldsConfig(false)
+                      }
+                    }}
+                    locale={locale}
+                  />
+                </div>
+              ) : (
               <form onSubmit={handleAddMember} className="p-5">
                 <div className="space-y-4">
                   {/* Name Row */}
@@ -2958,6 +3053,15 @@ export default function MembersPage() {
                       onChange={(v) => setNewMember({ ...newMember, phone: v })}
                     />
                   </div>
+
+                  {/* Configurable extras (DOB, referral, gender, etc) —
+                      whichever the practitioner enabled via the gear icon. */}
+                  <MemberFormExtras
+                    config={memberFormFieldsConfig}
+                    value={newMemberExtras}
+                    onChange={setNewMemberExtras}
+                    locale={locale}
+                  />
 
                   {/* Minor/Student Toggle */}
                   <label className="flex items-center gap-3 cursor-pointer group/minor">
@@ -3076,6 +3180,7 @@ export default function MembersPage() {
                   </Button>
                 </div>
               </form>
+              )}
             </motion.div>
           </motion.div>
         )}
