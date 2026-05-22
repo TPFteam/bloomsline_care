@@ -514,11 +514,18 @@ function renderAnswer(block: ResourceBlock, response: unknown, locale: Locale): 
         // Default: numbered pills + min/max note below. Mirrors the
         // editor's "1 = X · N = Y" hint so practitioners always know
         // what the endpoints mean.
+        //
+        // Likert values are 1-indexed (BlockRenderer fires onChange(i+1)),
+        // and the pill labels render as `min..min+total-1`. So the array
+        // position of the selected pill is `index - min` — passing the
+        // raw `index` highlighted the wrong pill (off-by-one) and made
+        // value=10 fall off the end entirely.
         const labels = Array.isArray(b.scaleLabels) ? b.scaleLabels : []
         const minLabel = labels[0] || b.likertLabels?.start
         const maxLabel = labels[labels.length - 1] || b.likertLabels?.end
-        const min = b.scaleMin ?? 0
-        return renderPillRow(total, index, min) + renderMinMaxNote(1, total, minLabel, maxLabel)
+        const min = b.scaleMin ?? 1
+        const selectedPillIndex = index !== null ? index - min : null
+        return renderPillRow(total, selectedPillIndex, min) + renderMinMaxNote(min, min + total - 1, minLabel, maxLabel)
       }
 
       case 'slider':
