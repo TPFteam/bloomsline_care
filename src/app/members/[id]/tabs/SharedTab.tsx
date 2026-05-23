@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -296,6 +296,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const searchParams = useSearchParams()
   const openShareIdFromUrl = searchParams.get('openShareId')
   const shareTabFromUrl = searchParams.get('shareTab')
+  const openMomentIdFromUrl = searchParams.get('openMomentId')
 
   useEffect(() => {
     if (shareTabFromUrl === 'moments' || shareTabFromUrl === 'stories' || shareTabFromUrl === 'resources') {
@@ -347,6 +348,14 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [momentComments, setMomentComments] = useState<MomentComment[]>([])
   const [newMomentComment, setNewMomentComment] = useState('')
   const [postingMomentComment, setPostingMomentComment] = useState(false)
+  const momentModalScrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollMomentModalToBottom = () => {
+    setTimeout(() => {
+      const el = momentModalScrollRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }, 60)
+  }
 
   // Scroll to highlighted resource or section
   useEffect(() => {
@@ -381,6 +390,19 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       openPatientStory(share)
     }
   }, [openShareIdFromUrl, patientStories])
+
+  // Auto-open shared moment when navigated from a moment_shared or
+  // moment_comment notification. Scroll the modal to the latest
+  // comment so the practitioner lands on the message they were
+  // notified about.
+  useEffect(() => {
+    if (!openMomentIdFromUrl || sharedMoments.length === 0) return
+    const m = sharedMoments.find(x => x.id === openMomentIdFromUrl)
+    if (m) {
+      setActiveShareTab('moments')
+      openSharedMoment(m, { scrollToLatestComment: true })
+    }
+  }, [openMomentIdFromUrl, sharedMoments])
 
   const openQuickShare = async () => {
     setShowQuickShare(true)
@@ -558,7 +580,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
     setStoryComments((data || []) as StoryShareComment[])
   }
 
-  const openSharedMoment = async (moment: SharedMoment) => {
+  const openSharedMoment = async (moment: SharedMoment, opts?: { scrollToLatestComment?: boolean }) => {
     setViewingSharedMoment(moment)
     setMomentComments([])
     setNewMomentComment('')
@@ -567,7 +589,11 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       .select('*')
       .eq('moment_id', moment.id)
       .order('created_at', { ascending: true })
-    setMomentComments((data || []) as MomentComment[])
+    const rows = (data || []) as MomentComment[]
+    setMomentComments(rows)
+    if (opts?.scrollToLatestComment && rows.length > 0) {
+      scrollMomentModalToBottom()
+    }
   }
 
   const postMomentComment = async () => {
@@ -589,6 +615,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       if (error) throw error
       setMomentComments(prev => [...prev, data as MomentComment])
       setNewMomentComment('')
+      scrollMomentModalToBottom()
 
       // Notify member. moment.user_id IS the member's auth uid, so we
       // can use it directly without a members lookup.
@@ -1888,7 +1915,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 </div>
                 <button onClick={() => setViewingSharedMoment(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div ref={momentModalScrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
                 {(hasMedia || m.type === 'voice') && <SharedMomentFullMedia moment={m} />}
                 {moods.length > 0 && (
                   <div className="flex flex-wrap gap-2">
