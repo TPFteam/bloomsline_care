@@ -410,6 +410,26 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : `New comment on "${m.storyTitle}"`,
   },
 
+  moment_comment: {
+    title: (_m, locale) =>
+      locale === 'fr' ? 'Nouveau commentaire' : 'New comment',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? (m.memberName
+          ? `${m.memberName} a répondu sur un moment partagé`
+          : `Votre praticien a répondu sur un moment partagé`)
+        : (m.memberName
+          ? `${m.memberName} replied on a shared moment`
+          : `Your practitioner replied on a shared moment`),
+    actionUrl: (m) => m.memberId
+      ? `/members/${m.memberId}?tab=shared&shareTab=moments&openMomentId=${m.momentId || ''}`
+      : `/`,
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? 'Nouveau commentaire sur un moment'
+        : 'New comment on a moment',
+  },
+
   moment_shared: {
     title: (_m, locale) =>
       locale === 'fr' ? 'Moment partagé' : 'Moment shared',

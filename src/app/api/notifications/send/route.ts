@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Notification types that should NOT trigger an email (in-app only)
-    const SKIP_EMAIL_TYPES = new Set(['story_comment'])
+    const SKIP_EMAIL_TYPES = new Set(['story_comment', 'moment_comment'])
 
     // Send email (awaited, not fire-and-forget)
     let emailSent = false

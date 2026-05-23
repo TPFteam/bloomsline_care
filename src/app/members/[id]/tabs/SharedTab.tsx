@@ -115,6 +115,15 @@ interface StoryShareComment {
   created_at: string
 }
 
+interface MomentComment {
+  id: string
+  moment_id: string
+  author_id: string
+  author_type: 'practitioner' | 'member'
+  content: string
+  created_at: string
+}
+
 interface SharedMoment {
   id: string
   user_id: string
@@ -335,6 +344,9 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [sharedMoments, setSharedMoments] = useState<SharedMoment[]>([])
   const [momentsViewMode, setMomentsViewMode] = useState<'stacked' | 'grid'>('stacked')
   const [viewingSharedMoment, setViewingSharedMoment] = useState<SharedMoment | null>(null)
+  const [momentComments, setMomentComments] = useState<MomentComment[]>([])
+  const [newMomentComment, setNewMomentComment] = useState('')
+  const [postingMomentComment, setPostingMomentComment] = useState(false)
 
   // Scroll to highlighted resource or section
   useEffect(() => {
@@ -544,6 +556,65 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
       .eq('share_id', share.id)
       .order('created_at', { ascending: true })
     setStoryComments((data || []) as StoryShareComment[])
+  }
+
+  const openSharedMoment = async (moment: SharedMoment) => {
+    setViewingSharedMoment(moment)
+    setMomentComments([])
+    setNewMomentComment('')
+    const { data } = await supabase
+      .from('moment_comments')
+      .select('*')
+      .eq('moment_id', moment.id)
+      .order('created_at', { ascending: true })
+    setMomentComments((data || []) as MomentComment[])
+  }
+
+  const postMomentComment = async () => {
+    if (!viewingSharedMoment || !newMomentComment.trim()) return
+    setPostingMomentComment(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data, error } = await supabase
+        .from('moment_comments')
+        .insert({
+          moment_id: viewingSharedMoment.id,
+          author_id: user.id,
+          author_type: 'practitioner',
+          content: newMomentComment.trim(),
+        })
+        .select()
+        .single()
+      if (error) throw error
+      setMomentComments(prev => [...prev, data as MomentComment])
+      setNewMomentComment('')
+
+      // Notify member. moment.user_id IS the member's auth uid, so we
+      // can use it directly without a members lookup.
+      const session = (await supabase.auth.getSession()).data.session
+      if (session) {
+        fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            userId: viewingSharedMoment.user_id,
+            userType: 'member',
+            type: 'moment_comment',
+            entityType: 'member',
+            entityId: memberId,
+            metadata: {
+              momentId: viewingSharedMoment.id,
+              memberId,
+            },
+          }),
+        }).catch(() => {})
+      }
+    } catch {
+      toast.error(locale === 'fr' ? 'Erreur' : 'Failed to post comment')
+    } finally {
+      setPostingMomentComment(false)
+    }
   }
 
   const postStoryComment = async () => {
@@ -1663,7 +1734,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                         moment={moment}
                         index={index}
                         compact
-                        onClick={() => setViewingSharedMoment(moment)}
+                        onClick={() => openSharedMoment(moment)}
                         locale={locale}
                       />
                     ))}
@@ -1689,7 +1760,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                     moment={moment}
                                     index={index}
                                     compact
-                                    onClick={() => setViewingSharedMoment(moment)}
+                                    onClick={() => openSharedMoment(moment)}
                                     locale={locale}
                                   />
                                 </div>
@@ -1705,7 +1776,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                                     moment={moment}
                                     index={index}
                                     compact
-                                    onClick={() => setViewingSharedMoment(moment)}
+                                    onClick={() => openSharedMoment(moment)}
                                     locale={locale}
                                   />
                                 </div>
@@ -1845,6 +1916,51 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
                   {locale === 'fr' ? 'Capturé le ' : 'Captured '}{capturedAt}
                 </p>
+
+                {/* Conversation */}
+                <div className="pt-4 mt-2 border-t border-gray-100">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                    {locale === 'fr' ? 'Conversation' : 'Conversation'}
+                  </div>
+                  {momentComments.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">
+                      {locale === 'fr' ? 'Pas encore de commentaires' : 'No comments yet'}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {momentComments.map(c => {
+                        const mine = c.author_type === 'practitioner'
+                        const when = new Date(c.created_at).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                        return (
+                          <div key={c.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                            <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${mine ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                              <p className="whitespace-pre-wrap break-words">{c.content}</p>
+                            </div>
+                            <span className="text-[10px] text-gray-400 mt-1 px-1">{when}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3 shrink-0 bg-gray-50/40">
+                <input
+                  type="text"
+                  value={newMomentComment}
+                  onChange={e => setNewMomentComment(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && newMomentComment.trim()) { e.preventDefault(); postMomentComment() } }}
+                  placeholder={locale === 'fr' ? 'Écrire un commentaire...' : 'Write a comment...'}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent"
+                  disabled={postingMomentComment}
+                />
+                <Button
+                  onClick={postMomentComment}
+                  disabled={!newMomentComment.trim() || postingMomentComment}
+                  className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-5"
+                >
+                  {postingMomentComment ? (locale === 'fr' ? '...' : '...') : (locale === 'fr' ? 'Envoyer' : 'Send')}
+                </Button>
               </div>
             </div>
           </div>

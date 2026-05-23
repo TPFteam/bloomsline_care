@@ -231,6 +231,7 @@ export function getEmailContent(
     story_shared: { en: 'Read Story', fr: 'Lire l\'histoire', es: 'Leer historia' },
     story_comment: { en: 'View Comment', fr: 'Voir le commentaire', es: 'Ver comentario' },
     moment_shared: { en: 'View Moment', fr: 'Voir le moment', es: 'Ver momento' },
+    moment_comment: { en: 'View Comment', fr: 'Voir le commentaire', es: 'Ver comentario' },
     booking_request: { en: 'Review Request', fr: 'Voir la demande', es: 'Revisar solicitud' },
     reschedule_requested: { en: 'Respond', fr: 'Répondre', es: 'Responder' },
   }
