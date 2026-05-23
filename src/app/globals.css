@@ -591,3 +591,27 @@ mark[data-verbatim]:empty {
   display: inline-block;
   cursor: pointer;
 }
+
+/* Booking-row highlight (notification deep-link to /bookings). Soft
+   teal halo with a pulsing outer glow — rounded so it follows the
+   natural card shape instead of looking like a square selection box.
+   Auto-removed after 3s by the bookings page effect. */
+@keyframes booking-highlight-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(20, 184, 166, 0.35),
+      0 0 18px 2px rgba(20, 184, 166, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(20, 184, 166, 0.45),
+      0 0 28px 6px rgba(20, 184, 166, 0.5);
+  }
+}
+.booking-highlight-glow {
+  border-radius: 18px;
+  padding: 8px;
+  margin: -8px;
+  animation: booking-highlight-pulse 1.4s ease-in-out infinite;
+  transition: box-shadow 0.5s ease-out;
+}

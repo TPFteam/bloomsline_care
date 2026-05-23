@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Calendar,
@@ -246,6 +246,7 @@ interface AvailabilitySlot {
 export default function BookingsPage() {
   const { locale } = useLanguage()
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   // Main tab state — read from URL query param (e.g. ?tab=settings after calendar OAuth callback)
   const [mainTab, setMainTab] = useState<MainTab>(() => {
@@ -267,7 +268,10 @@ export default function BookingsPage() {
   // Appointments state
   const [bookings, setBookings] = useState<Booking[]>([])
 
-  // Highlight a specific booking (from notification deep link)
+  // Highlight a specific booking (from notification deep link). Uses
+  // a rounded teal halo with a soft outer glow rather than the older
+  // square ring — feels like a gentle "look here" rather than a hard
+  // selection box.
   const [highlightId, setHighlightId] = useState<string | null>(searchParams.get('highlight'))
   useEffect(() => {
     if (highlightId && bookings.length > 0) {
@@ -275,9 +279,9 @@ export default function BookingsPage() {
         const el = document.getElementById(`booking-${highlightId}`)
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          el.classList.add('ring-2', 'ring-teal-400', 'ring-offset-2', 'transition-all')
+          el.classList.add('booking-highlight-glow')
           setTimeout(() => {
-            el.classList.remove('ring-2', 'ring-teal-400', 'ring-offset-2')
+            el.classList.remove('booking-highlight-glow')
             setHighlightId(null)
           }, 3000)
         }

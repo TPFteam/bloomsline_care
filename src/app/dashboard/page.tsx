@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { useBookingsChanged } from '@/lib/bookings-events'
+import { CloseSessionPopup, type CloseSessionBooking } from '@/components/bookings/CloseSessionPopup'
 import {
   MemberFormExtras,
   MemberFormFieldsConfigPanel,
@@ -259,6 +260,10 @@ function DashboardInner() {
   // Compose-note modal state — opened from the home composer line.
   const [showNoteComposer, setShowNoteComposer] = useState(false)
   const [noteComposerSearch, setNoteComposerSearch] = useState('')
+  // Opens a list of past sessions awaiting closure. Tapping a row
+  // opens the close-session popup inline (no navigation).
+  const [showAwaitingClosure, setShowAwaitingClosure] = useState(false)
+  const [closingBooking, setClosingBooking] = useState<CloseSessionBooking | null>(null)
 
   // Practitioner-configured dashboard layout. Null until loaded; the
   // DnD-enabled section falls back to the default until then.
@@ -666,10 +671,16 @@ function DashboardInner() {
     () => bookings.filter(b => b.status === 'pending' && parseISO(b.start_time) > now).length,
     [bookings, now],
   )
-  const awaitingCount = useMemo(
-    () => bookings.filter(b => b.status === 'confirmed' && parseISO(b.start_time) < now).length,
+  // Past appointments still in 'confirmed' status — the practitioner
+  // hasn't marked them completed / cancelled yet. Powers the "N to
+  // close" pill in the header and the popup that lists them.
+  const awaitingClosure = useMemo(
+    () => bookings
+      .filter(b => b.status === 'confirmed' && parseISO(b.start_time) < now)
+      .sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime()),
     [bookings, now],
   )
+  const awaitingCount = awaitingClosure.length
   const todayCount = useMemo(
     () => bookings.filter(b => isSameDay(parseISO(b.start_time), now) && b.status !== 'cancelled').length,
     [bookings, now],
@@ -846,7 +857,7 @@ function DashboardInner() {
               {todaysFlowLine && (
                 <p className="text-base text-gray-600 mt-1 mb-4">{todaysFlowLine}</p>
               )}
-              <UrgencyRow pending={pendingCount} awaiting={awaitingCount} t={t} loading={loading} />
+              <UrgencyRow pending={pendingCount} awaiting={awaitingCount} t={t} loading={loading} onAwaitingClick={() => setShowAwaitingClosure(true)} />
             </div>
             {/* Quick actions — icon buttons aligned with the headline
                 level, slightly larger so they feel like a primary
@@ -2017,6 +2028,126 @@ function DashboardInner() {
         )}
       </AnimatePresence>
 
+      {/* "Sessions to close" popup — list of past bookings still in
+          'confirmed' state. Click a row → jump to /bookings list view
+          with that booking pre-highlighted; bottom "Go to bookings"
+          link opens the bookings list directly. */}
+      {showAwaitingClosure && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-4"
+          onClick={() => setShowAwaitingClosure(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">
+                  {t('Sessions to close', 'Séances à clôturer', 'Sesiones por cerrar')}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {awaitingClosure.length === 1
+                    ? t('1 past session needs an outcome',
+                        '1 séance passée à clôturer',
+                        '1 sesión pendiente de cierre')
+                    : t(`${awaitingClosure.length} past sessions need an outcome`,
+                        `${awaitingClosure.length} séances passées à clôturer`,
+                        `${awaitingClosure.length} sesiones pendientes de cierre`)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAwaitingClosure(false)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2">
+              {awaitingClosure.length === 0 ? (
+                <p className="text-sm text-gray-400 italic text-center py-6">
+                  {t('Nothing to close right now.', 'Rien à clôturer pour le moment.', 'Nada por cerrar ahora.')}
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {awaitingClosure.map(b => {
+                    const start = parseISO(b.start_time)
+                    const dateLabel = isToday(start)
+                      ? t('Today', "Aujourd'hui", 'Hoy')
+                      : isYesterday(start)
+                        ? t('Yesterday', 'Hier', 'Ayer')
+                        : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+                    const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
+                    return (
+                      <li key={b.id}>
+                        <button
+                          type="button"
+                          // Open the close-session popup *on the
+                          // dashboard* — no navigation. Practitioner
+                          // never leaves the page they're on.
+                          onClick={() => {
+                            setShowAwaitingClosure(false)
+                            setClosingBooking({
+                              id: b.id,
+                              practitioner_id: b.practitioner_id,
+                              member_id: b.member_id,
+                              client_name: b.client_name,
+                              start_time: b.start_time,
+                              practitioner_notes: (b as any).practitioner_notes ?? null,
+                            })
+                          }}
+                          className="w-full flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 text-left transition group"
+                        >
+                          <div className="px-2 h-9 rounded-lg bg-orange-50 text-orange-700 flex flex-col items-center justify-center text-[10px] font-semibold shrink-0 tabular-nums leading-tight">
+                            <span>{format(start, timeFmt)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {b.client_name || t('Unnamed', 'Sans nom', 'Sin nombre')}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{dateLabel}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAwaitingClosure(false)
+                  router.push('/bookings')
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium transition-colors"
+              >
+                {t('Go to bookings', 'Aller aux réservations', 'Ir a reservas')}
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Close-session popup — opens on the dashboard itself, no
+          navigation. Same component the bookings page uses. */}
+      <CloseSessionPopup
+        booking={closingBooking}
+        onClose={() => setClosingBooking(null)}
+        onSaved={(result) => {
+          // Patch the local bookings cache so the "Sessions to close"
+          // count drops immediately without waiting for a refetch.
+          setBookings(prev => prev.map(b => b.id === result.bookingId
+            ? { ...b, status: result.status, payment_status: result.payment_status }
+            : b))
+        }}
+        locale={locale}
+      />
+
       {/* Full calendar modal */}
       {showCalendar && (
         <div
@@ -2067,12 +2198,15 @@ export default function DashboardPage() {
 // ─────────────────────────────────────────────────────────────────
 
 function UrgencyRow({
-  pending, awaiting, t, loading,
+  pending, awaiting, t, loading, onAwaitingClick,
 }: {
   pending: number
   awaiting: number
   t: (en: string, fr: string, es: string) => string
   loading: boolean
+  // The "N to close" pill is now a button that opens a popup listing
+  // the sessions — let the parent own the modal state.
+  onAwaitingClick: () => void
 }) {
   if (loading) return null
   if (pending + awaiting === 0) return null
@@ -2085,10 +2219,14 @@ function UrgencyRow({
         </Link>
       )}
       {awaiting > 0 && (
-        <Link href="/bookings#history-section" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium hover:bg-orange-100 transition">
+        <button
+          type="button"
+          onClick={onAwaitingClick}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium hover:bg-orange-100 transition"
+        >
           <AlertCircle className="w-3.5 h-3.5" />
           {t(`${awaiting} to close`, `${awaiting} à clôturer`, `${awaiting} por cerrar`)}
-        </Link>
+        </button>
       )}
     </div>
   )
