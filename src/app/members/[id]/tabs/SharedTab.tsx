@@ -29,6 +29,8 @@ import {
   MoreVertical,
   Link2Off,
   Mic,
+  GalleryVerticalEnd,
+  LayoutGrid,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -136,12 +138,13 @@ const MOMENT_MOOD_COLORS: Record<string, string> = {
   overwhelmed: '#C084FC', lonely: '#9CA3AF',
 }
 
-function SharedMomentMedia({ moment }: { moment: SharedMoment }) {
+function SharedMomentMedia({ moment, tall }: { moment: SharedMoment; tall?: boolean }) {
   const signed = useSignedUrl('moments_media', moment.thumbnail_path ?? moment.media_path ?? moment.thumbnail_url ?? moment.media_url)
-  if (!signed) return <div className="w-full h-40 bg-gray-100 rounded-xl" />
+  const heightCls = tall ? 'h-64' : 'h-40'
+  if (!signed) return <div className={`w-full ${heightCls} bg-gray-100 rounded-xl`} />
   return (
     <div className="relative rounded-xl overflow-hidden bg-gray-100">
-      <img src={signed} alt="" className="w-full h-40 object-cover" />
+      <img src={signed} alt="" className={`w-full ${heightCls} object-cover`} />
       {moment.type === 'video' && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center">
@@ -240,6 +243,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
   const [activeShareTab, setActiveShareTab] = useState<'resources' | 'stories' | 'moments'>('resources')
   const [sharedMoments, setSharedMoments] = useState<SharedMoment[]>([])
+  const [momentsViewMode, setMomentsViewMode] = useState<'stacked' | 'grid'>('stacked')
 
   // Scroll to highlighted resource or section
   useEffect(() => {
@@ -1532,8 +1536,39 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                       : 'When this member shares a moment, it will appear here.'}
                   </p>
                 </div>
-              ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+              ) : (<>
+                {/* View-mode toggle — same affordance as the patient
+                    Moments tab so the practitioner can switch between
+                    a stacked / timeline reading view and a denser grid. */}
+                <div className="flex items-center justify-end gap-1 p-4 pb-0">
+                  <div className="inline-flex bg-gray-100 rounded-xl p-1">
+                    <button
+                      type="button"
+                      onClick={() => setMomentsViewMode('stacked')}
+                      className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
+                        momentsViewMode === 'stacked' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      aria-label="Stacked view"
+                    >
+                      <GalleryVerticalEnd className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMomentsViewMode('grid')}
+                      className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
+                        momentsViewMode === 'grid' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      aria-label="Grid view"
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className={`grid gap-4 p-4 ${
+                  momentsViewMode === 'stacked'
+                    ? 'grid-cols-1'
+                    : 'sm:grid-cols-2 lg:grid-cols-3'
+                }`}>
                   {sharedMoments.map((moment, index) => {
                     const mood = moment.moods?.[0]
                     const moodColor = mood ? (MOMENT_MOOD_COLORS[mood] || '#94A3B8') : null
@@ -1549,7 +1584,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                         transition={{ delay: 0.04 * index }}
                         className="rounded-2xl border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all overflow-hidden bg-white"
                       >
-                        {hasImage && <SharedMomentMedia moment={moment} />}
+                        {hasImage && <SharedMomentMedia moment={moment} tall={momentsViewMode === 'stacked'} />}
                         {isVoice && (
                           <div className="p-5 flex items-center gap-3">
                             <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
@@ -1596,7 +1631,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                     )
                   })}
                 </div>
-              )}
+              </>)}
             </motion.div>
           )}
         </>
