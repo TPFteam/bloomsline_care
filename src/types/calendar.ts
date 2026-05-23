@@ -90,6 +90,9 @@ export interface BookingSettings {
   // payment_status auto-set to 'unpaid' + late_cancellation = true on
   // the booking row. 0 disables the policy.
   late_cancellation_hours?: number;
+  // When false, the mobile patient app hides the Paid / Unpaid badge
+  // on session cards. Defaults true.
+  show_payment_to_patient?: boolean;
   // Custom title template for Google Calendar events. Supports
   // {practitioner} / {client} / {session_type}. Null = use default.
   calendar_event_title_template?: string | null;
