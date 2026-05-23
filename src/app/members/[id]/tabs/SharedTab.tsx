@@ -1566,7 +1566,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                 </div>
                 <div className={`grid gap-4 p-4 ${
                   momentsViewMode === 'stacked'
-                    ? 'grid-cols-1'
+                    ? 'grid-cols-1 max-w-md mx-auto'
                     : 'sm:grid-cols-2 lg:grid-cols-3'
                 }`}>
                   {sharedMoments.map((moment, index) => {
