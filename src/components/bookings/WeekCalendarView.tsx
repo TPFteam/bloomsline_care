@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
@@ -43,6 +43,18 @@ interface WeekCalendarViewProps {
   onReject?: (id: string) => void
   processingId?: string | null
   onSlotClick?: (day: Date, time: string, options?: { outsideHours?: boolean }) => void
+  // When true, the toolbar (legend / week nav / Today / Availability)
+  // is skipped entirely — only the day strip + time grid render.
+  hideToolbar?: boolean
+  // When true, render the toolbar but skip the legend chips on its
+  // left side. Keeps week navigation, Today, timezone, and
+  // Availability. Used by the dashboard embed where the legend is
+  // noise but the practitioner still needs to navigate weeks.
+  hideLegend?: boolean
+  // Override for the internal grid's max-height (default 560). The
+  // dashboard embed sets a smaller value to keep the widget at the
+  // same height as a populated "Up next" list.
+  gridMaxHeight?: number
 }
 
 const HOUR_HEIGHT = 56
@@ -50,7 +62,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -60,6 +72,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
   const [showAvailability, setShowAvailability] = useState(false)
+  const [legendOpen, setLegendOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
@@ -245,27 +258,75 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4">
+      {/* Header — toolbar with legend, week nav, Today, Availability.
+          hideToolbar drops the whole bar; hideLegend keeps the bar
+          but drops the legend chips (used by the dashboard embed). */}
+      {!hideToolbar && (
+      // hideLegend reverses the row so the nav controls slot to the
+      // left and the right edge stays free for the dashboard embed's
+      // expand button.
+      <div className={`flex items-center justify-between px-6 py-4 ${hideLegend ? 'flex-row-reverse' : ''}`}>
         {/* Legend — "Confirmed" entry dropped; confirmed is the default
             state and the dedicated label was confusing alongside the
             "Completed" tag we use post-session. */}
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-amber-100 border border-amber-300" />
-            {locale === 'fr' ? 'En attente' : 'Pending'}
-          </span>
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-white border border-dashed border-gray-400" />
-            {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
-          </span>
-          {googleConnected && (
-            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-              <span className="w-2 h-2 rounded-full bg-blue-100 border border-blue-200" />
-              Google Calendar
-            </span>
+        {hideLegend ? <div /> : (
+        // Collapsed legend — palette icon opens a small popover with
+        // the color key. Keeps the toolbar uncluttered while still
+        // exposing what each color means on demand.
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setLegendOpen(o => !o)}
+            title={locale === 'fr' ? 'Légende des couleurs' : 'Color legend'}
+            aria-label={locale === 'fr' ? 'Légende des couleurs' : 'Color legend'}
+            aria-expanded={legendOpen}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+              legendOpen ? 'bg-gray-100 text-gray-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700'
+            }`}
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+          {legendOpen && (
+            <>
+              {/* Click-away catcher */}
+              <button
+                type="button"
+                onClick={() => setLegendOpen(false)}
+                aria-hidden
+                tabIndex={-1}
+                className="fixed inset-0 z-30 cursor-default"
+              />
+              <div className="absolute top-full left-0 mt-2 z-40 w-56 bg-white border border-gray-200 rounded-xl shadow-lg p-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">
+                  {locale === 'fr' ? 'Légende' : 'Legend'}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-3 h-3 rounded-full bg-teal-50 border border-teal-200 shrink-0" />
+                  {locale === 'fr' ? 'Prévue' : 'Scheduled'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-3 h-3 rounded-full bg-teal-100 border border-teal-300 shrink-0" />
+                  {locale === 'fr' ? 'Terminée' : 'Completed'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-3 h-3 rounded-full bg-amber-100 border border-amber-300 shrink-0" />
+                  {locale === 'fr' ? 'En attente' : 'Pending'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-3 h-3 rounded-full bg-white border border-dashed border-gray-400 shrink-0" />
+                  {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
+                </div>
+                {googleConnected && (
+                  <div className="flex items-center gap-2 text-xs text-gray-700">
+                    <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-200 shrink-0" />
+                    Google Calendar
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
+        )}
         {/* Week navigation */}
         <div className="flex items-center gap-2">
           <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
@@ -299,6 +360,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           </button>
         </div>
       </div>
+      )}
 
       {/* Day headers */}
       <div className="grid grid-cols-[56px_repeat(7,1fr)] border-t border-gray-100">
@@ -339,7 +401,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           </div>
         </div>
       )}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: '560px' }}>
+      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: `${gridMaxHeight ?? 560}px` }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div key={i} className="flex items-start justify-end pr-3 pt-0.5" style={{ height: HOUR_HEIGHT }}>
@@ -513,7 +575,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                           : isPending
                             ? `bg-amber-50 border-amber-300 text-amber-800 ${isSelected ? 'ring-amber-300' : ''}`
                             : event.status === 'completed'
-                              ? `bg-gray-50 border-gray-200/60 text-gray-500 ${isSelected ? 'ring-gray-300' : ''}`
+                              // Deeper teal so completed reads as "done well" rather
+                              // than washed-out / cancelled. Same hue family as
+                              // confirmed (bg-teal-50) so the calendar stays in one
+                              // visual key.
+                              ? `bg-teal-100 border-teal-300 text-teal-800 ${isSelected ? 'ring-teal-400' : ''}`
                               : `bg-teal-50 border-teal-200/60 text-teal-700 ${isSelected ? 'ring-teal-300' : ''}`
                       }`}
                       style={{ top, height: Math.max(height, 26), left: `calc(${left} + 4px)`, width: `calc(${width} - 2px)` }}

@@ -20,7 +20,17 @@ import {
   Calendar, ChevronRight, UserPlus, Share2, Video, X,
   AlertCircle, ArrowUpRight, Sparkles, Loader2,
   Search, FileText, Send, Mail, Phone, Save, Settings,
+  GripVertical, RotateCcw,
 } from 'lucide-react'
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
@@ -59,6 +69,102 @@ interface DashBooking {
   google_event_id?: string | null
   meet_link?: string | null
   payment_status?: string | null
+}
+
+// ── Dashboard layout (drag-and-drop) ────────────────────────────────
+//
+// Four fixed slots — practitioners can swap which widget renders in
+// each one. The slot positions and sizes never change; only the
+// `widget` assignment per slot is configurable. Layout persists per
+// practitioner in users.dashboard_layout (jsonb, nullable).
+type DashboardWidgetId = 'up_next' | 'this_week' | 'recent_resources' | 'quick_note'
+type DashboardSlotId = 'bigLeft' | 'wideBottomLeft' | 'smallTopRight' | 'smallBottomRight'
+type DashboardLayout = Record<DashboardSlotId, DashboardWidgetId>
+
+const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = {
+  bigLeft:          'up_next',
+  wideBottomLeft:   'quick_note',
+  smallTopRight:    'this_week',
+  smallBottomRight: 'recent_resources',
+}
+
+const DASHBOARD_SLOTS: DashboardSlotId[] = ['bigLeft', 'wideBottomLeft', 'smallTopRight', 'smallBottomRight']
+const DASHBOARD_WIDGETS: DashboardWidgetId[] = ['up_next', 'this_week', 'recent_resources', 'quick_note']
+
+// Each slot's *shape* — drives the widget's render variant so a
+// calendar dropped into the strip slot collapses to a one-line
+// summary rather than a cramped grid.
+type DashboardSlotShape = 'tall' | 'short' | 'strip'
+const SLOT_SHAPE: Record<DashboardSlotId, DashboardSlotShape> = {
+  bigLeft:          'tall',
+  smallTopRight:    'short',
+  smallBottomRight: 'short',
+  wideBottomLeft:   'strip',
+}
+
+// Sanity-check a layout read from the DB. Must have all four slots
+// AND each widget id present exactly once. Bad data → fall back to
+// default so a corrupt row never breaks the dashboard.
+function validateDashboardLayout(input: unknown): DashboardLayout | null {
+  if (!input || typeof input !== 'object') return null
+  const obj = input as Record<string, unknown>
+  const result = {} as DashboardLayout
+  const seenWidgets = new Set<DashboardWidgetId>()
+  for (const slot of DASHBOARD_SLOTS) {
+    const v = obj[slot]
+    if (typeof v !== 'string' || !DASHBOARD_WIDGETS.includes(v as DashboardWidgetId)) return null
+    if (seenWidgets.has(v as DashboardWidgetId)) return null
+    seenWidgets.add(v as DashboardWidgetId)
+    result[slot] = v as DashboardWidgetId
+  }
+  return result
+}
+
+// A single dashboard slot: droppable target + draggable source. The
+// drag handle (top-right grip icon) is what the practitioner grabs;
+// clicking anywhere else inside the card still works as before
+// (PointerSensor with distance:6 disambiguates click vs drag).
+function DashboardSlot({
+  slotId,
+  isDraggingSelf,
+  children,
+}: {
+  slotId: DashboardSlotId
+  isDraggingSelf: boolean
+  children: React.ReactNode
+}) {
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: slotId })
+  const { setNodeRef: setDraggableRef, listeners, attributes } = useDraggable({ id: slotId })
+  const setRef = (el: HTMLDivElement | null) => {
+    setDroppableRef(el)
+    setDraggableRef(el)
+  }
+  return (
+    <div
+      ref={setRef}
+      className={`relative transition-opacity ${isDraggingSelf ? 'opacity-40' : ''} ${
+        isOver && !isDraggingSelf ? 'outline outline-2 outline-offset-2 outline-teal-400 rounded-2xl' : ''
+      }`}
+    >
+      {/* Drag handle — listeners attached only to this button so the
+          rest of the card stays clickable. */}
+      <button
+        {...listeners}
+        {...attributes}
+        type="button"
+        aria-label="Reorder"
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-grab active:cursor-grabbing"
+        // The handle itself isn't a draggable element — it's just the
+        // entry point. Prevent the inner click from triggering any
+        // parent click handlers (e.g. the This-week card is a full
+        // <button onClick=…>).
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      {children}
+    </div>
+  )
 }
 
 function DashboardInner() {
@@ -154,6 +260,13 @@ function DashboardInner() {
   const [showNoteComposer, setShowNoteComposer] = useState(false)
   const [noteComposerSearch, setNoteComposerSearch] = useState('')
 
+  // Practitioner-configured dashboard layout. Null until loaded; the
+  // DnD-enabled section falls back to the default until then.
+  const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>(DEFAULT_DASHBOARD_LAYOUT)
+  // Slot id currently being dragged — used to highlight valid drop
+  // targets and dim the source.
+  const [draggingSlot, setDraggingSlot] = useState<DashboardSlotId | null>(null)
+
   // Auth gate, profile bootstrap, consent state, then data fetch.
   useEffect(() => {
     let cancelled = false
@@ -178,6 +291,10 @@ function DashboardInner() {
       setUser(resolvedUser)
       setHasConsented(!!profile?.has_consented)
       if (profile?.preferred_language) setLocale(profile.preferred_language as any, false)
+
+      // Dashboard layout — validated to guard against corrupt rows.
+      const savedLayout = validateDashboardLayout((profile as { dashboard_layout?: unknown } | null)?.dashboard_layout)
+      if (savedLayout) setDashboardLayout(savedLayout)
 
       // Open the Schedule Session modal directly when arriving with
       // ?action=schedule (back-compat with existing CTAs across the app).
@@ -292,6 +409,49 @@ function DashboardInner() {
   const handleConsent = async () => {
     setHasConsented(true)
     if (user) await supabase.from('users').update({ has_consented: true }).eq('id', user.id)
+  }
+
+  // ── Dashboard layout helpers ──────────────────────────────────────
+  // Persist the layout to users.dashboard_layout. Optimistic — the UI
+  // updates first, the write is fire-and-forget. The next mount reads
+  // it back; a failed write just means the practitioner's swap won't
+  // survive a reload, not a worse failure.
+  const persistDashboardLayout = async (next: DashboardLayout) => {
+    if (!user) return
+    try {
+      await supabase.from('users').update({ dashboard_layout: next }).eq('id', user.id)
+    } catch (err) {
+      console.warn('Failed to persist dashboard layout:', err)
+    }
+  }
+  // Swap the widget at the source slot with whatever's currently at
+  // the target slot. The other two slots are untouched.
+  const swapDashboardWidgets = (source: DashboardSlotId, target: DashboardSlotId) => {
+    if (source === target) return
+    setDashboardLayout(prev => {
+      const next: DashboardLayout = { ...prev, [source]: prev[target], [target]: prev[source] }
+      persistDashboardLayout(next)
+      return next
+    })
+  }
+  const resetDashboardLayout = () => {
+    setDashboardLayout(DEFAULT_DASHBOARD_LAYOUT)
+    persistDashboardLayout(DEFAULT_DASHBOARD_LAYOUT)
+  }
+
+  const dndSensors = useSensors(
+    // Require a small pointer movement before initiating a drag so a
+    // simple click on the "Take notes" / "Join" buttons inside a card
+    // doesn't accidentally start a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  )
+  const handleDashboardDragEnd = (e: DragEndEvent) => {
+    setDraggingSlot(null)
+    const sourceSlot = e.active.id as DashboardSlotId | undefined
+    const targetSlot = e.over?.id as DashboardSlotId | undefined
+    if (!sourceSlot || !targetSlot) return
+    if (!DASHBOARD_SLOTS.includes(sourceSlot) || !DASHBOARD_SLOTS.includes(targetSlot)) return
+    swapDashboardWidgets(sourceSlot, targetSlot)
   }
 
   // Open the global floating note panel scoped to this session. Mirrors
@@ -717,74 +877,342 @@ function DashboardInner() {
             </div>
           </section>
 
-          {/* ── Zone 2: Up next + Notes to write (left) | mini week calendar + resources (right) ── */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8 items-start">
-            <div className="lg:col-span-3 flex flex-col gap-6">
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <header className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
-                  <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
-                    {t('View all', 'Voir tout', 'Ver todo')}
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
-                </header>
-                {loading ? (
-                  <div className="space-y-3">
-                    {[0, 1, 2].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-lg" />)}
-                  </div>
-                ) : upNext.length === 0 ? (
-                  <EmptyUpNext t={t} />
-                ) : (
-                  <ul className="space-y-2">
-                    {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
-                  </ul>
-                )}
-              </div>
-
-              {/* Quick-note composer — one slim line. Click anywhere on
-                  the row → modal opens with the searchable list of
-                  sessions that don't have a session_summary note yet.
-                  Selecting a session opens the same floating editor as
-                  the Up-next "Take notes" button. */}
-              {!loading && (
-                <button
-                  type="button"
-                  onClick={() => { setNoteComposerSearch(''); setShowNoteComposer(true) }}
-                  className="w-full flex items-center gap-3 bg-white hover:bg-amber-50/40 border border-gray-200 hover:border-amber-300 rounded-2xl px-5 py-3.5 text-left transition-colors group"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
+          {/* ── Zone 2: 4 swappable widgets — practitioner can drag
+                any widget into any slot. Layout persists per user. ── */}
+          {(() => {
+            // ── Widget renderers — three variants per widget so any
+            // widget can be dropped into any slot and still look right:
+            //   tall  → big-left      (lots of vertical room)
+            //   short → small-right   (compact card)
+            //   strip → wide-bottom   (single-row banner)
+            // Strip renderers reuse a common <StripBanner /> shape so
+            // all four widgets look consistent in that slot.
+            const formatRelative = (iso: string): string => {
+              const minsAgo = (Date.now() - parseISO(iso).getTime()) / 60000
+              if (minsAgo < 60) return `${Math.max(1, Math.floor(minsAgo))}m`
+              if (minsAgo < 60 * 24) return `${Math.floor(minsAgo / 60)}h`
+              if (minsAgo < 60 * 24 * 7) return `${Math.floor(minsAgo / (60 * 24))}d`
+              return format(parseISO(iso), locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+            }
+            // Reusable strip banner — single-row click target shared
+            // by every widget's strip variant so they're visually
+            // interchangeable in the wide-bottom slot.
+            const StripBanner = ({ icon: Icon, iconBg, iconColor, label, value, badge, onClick, href }: {
+              icon: typeof Calendar
+              iconBg: string
+              iconColor: string
+              label: string
+              value: string
+              badge?: { text: string; tone: 'amber' | 'gray' }
+              onClick?: () => void
+              href?: string
+            }) => {
+              const inner = (
+                <>
+                  <div className={`w-9 h-9 rounded-lg ${iconBg} ${iconColor} flex items-center justify-center shrink-0`}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
-                      {awaitingNotes.length > 0
-                        ? t('Take a quick note…', 'Prendre une note rapide…', 'Tomar una nota rápida…')
-                        : t('All caught up — no sessions waiting for notes.',
-                            'Vous êtes à jour — aucune séance en attente.',
-                            'Al día — sin sesiones esperando notas.')}
-                    </p>
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">{label}</p>
+                    <p className="text-sm text-gray-900 truncate">{value}</p>
                   </div>
-                  {awaitingNotes.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium tabular-nums shrink-0">
-                      {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
+                  {badge && (
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium tabular-nums shrink-0 ${
+                      badge.tone === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {badge.text}
                     </span>
                   )}
-                </button>
-              )}
-            </div>
-
-            <div className="lg:col-span-2 flex flex-col gap-6">
-            <button
-              type="button"
-              onClick={() => setShowCalendar(true)}
-              className="bg-white rounded-2xl border border-gray-200 p-6 text-left hover:border-gray-300 hover:shadow-sm transition group"
-            >
-              {/* Header: title + week total. Total reads at a glance so
-                  the practitioner doesn't have to count days. */}
-              {(() => {
-                const totalThisWeek = weekDays.reduce((acc, d) => acc + countForDay(d), 0)
+                  <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                </>
+              )
+              const cls = 'w-full flex items-center gap-3 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-2xl px-5 py-3.5 pr-12 text-left transition-colors'
+              if (href) return <Link href={href} className={cls}>{inner}</Link>
+              return <button type="button" onClick={onClick} className={cls}>{inner}</button>
+            }
+            // ─── Up Next ─────────────────────────────────────────────
+            const renderUpNext = (variant: DashboardSlotShape) => {
+              if (variant === 'strip') {
+                const next = upNext[0]
+                const valueText = loading
+                  ? t('Loading…', 'Chargement…', 'Cargando…')
+                  : next
+                    ? `${next.client_name} · ${format(parseISO(next.start_time), 'HH:mm', { locale: locale === 'fr' ? frLocale : undefined })}`
+                    : t('No upcoming sessions', 'Aucune séance à venir', 'Sin sesiones próximas')
                 return (
-                  <header className="flex items-center justify-between mb-4">
+                  <StripBanner
+                    icon={Calendar}
+                    iconBg="bg-blue-50"
+                    iconColor="text-blue-600"
+                    label={t('Up next', 'À venir', 'Próximas')}
+                    value={valueText}
+                    href="/bookings"
+                  />
+                )
+              }
+              // Short slots: minimal one-line-per-row rendering. No
+              // action buttons; tapping a row links to the patient.
+              if (variant === 'short') {
+                const items = upNext.slice(0, 4)
+                const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
+                return (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full">
+                    <header className="flex items-center justify-between mb-3 pr-8">
+                      <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
+                      <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
+                        {t('View all', 'Voir tout', 'Ver todo')}
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </header>
+                    {loading ? (
+                      <div className="space-y-2">
+                        {[0, 1, 2].map(i => <div key={i} className="h-9 bg-gray-50 animate-pulse rounded-lg" />)}
+                      </div>
+                    ) : items.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic py-2">
+                        {t('No upcoming sessions', 'Aucune séance à venir', 'Sin sesiones próximas')}
+                      </p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {items.map((b, i) => {
+                          const start = parseISO(b.start_time)
+                          const dateLabel = isToday(start)
+                            ? t('Today', "Aujourd'hui", 'Hoy')
+                            : isTomorrow(start)
+                              ? t('Tomorrow', 'Demain', 'Mañana')
+                              : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+                          // Show Join + Take-notes only on the very next
+                          // session — same rule the tall variant uses.
+                          // Icon-only here so we don't blow up the row.
+                          const isNext = i === 0
+                          const canJoin = isNext && b.meet_link && (b.status === 'confirmed' || b.status === 'pending')
+                          const canTakeNotes = isNext && b.member_id && (b.status === 'confirmed' || b.status === 'pending')
+                          return (
+                            <li key={b.id} className="flex items-center gap-1.5 py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 transition">
+                              <span className="text-[11px] font-semibold tabular-nums text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded shrink-0 min-w-[52px] text-center">
+                                {format(start, timeFmt)}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                {b.member_id ? (
+                                  <Link href={`/members/${b.member_id}`} className="text-sm text-gray-900 hover:text-violet-700 truncate leading-tight block">
+                                    {b.client_name || t('Unnamed', 'Sans nom', 'Sin nombre')}
+                                  </Link>
+                                ) : (
+                                  <span className="text-sm text-gray-900 truncate leading-tight block">
+                                    {b.client_name || t('Unnamed', 'Sans nom', 'Sin nombre')}
+                                  </span>
+                                )}
+                                <p className="text-[11px] text-gray-500 truncate leading-tight">{dateLabel}</p>
+                              </div>
+                              {canJoin && (
+                                <a
+                                  href={b.meet_link!}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={t('Join now', 'Rejoindre', 'Unirse')}
+                                  aria-label={t('Join now', 'Rejoindre', 'Unirse')}
+                                  className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                                >
+                                  <Video className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                              {canTakeNotes && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleTakeNotes(b)}
+                                  title={t('Take notes', 'Prendre des notes', 'Tomar notas')}
+                                  aria-label={t('Take notes', 'Prendre des notes', 'Tomar notas')}
+                                  className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 transition-colors"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                )
+              }
+              return (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full">
+                  <header className="flex items-center justify-between mb-4 pr-8">
+                    <h3 className="text-base font-semibold text-gray-900">{t('Up next', 'À venir', 'Próximas')}</h3>
+                    <Link href="/bookings" className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1">
+                      {t('View all', 'Voir tout', 'Ver todo')}
+                      <ChevronRight className="w-3 h-3" />
+                    </Link>
+                  </header>
+                  {loading ? (
+                    <div className="space-y-3">
+                      {[0, 1, 2].map(i => <div key={i} className="h-16 bg-gray-50 animate-pulse rounded-lg" />)}
+                    </div>
+                  ) : upNext.length === 0 ? (
+                    <EmptyUpNext t={t} />
+                  ) : (
+                    <ul className="space-y-2">
+                      {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
+                    </ul>
+                  )}
+                </div>
+              )
+            }
+            // ─── Quick Note ──────────────────────────────────────────
+            const renderQuickNote = (variant: DashboardSlotShape) => {
+              if (loading) {
+                return <div className={`bg-gray-50 animate-pulse rounded-2xl ${variant === 'strip' ? 'h-16' : 'h-full min-h-[120px]'}`} />
+              }
+              if (variant === 'strip') {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => { setNoteComposerSearch(''); setShowNoteComposer(true) }}
+                    className="w-full flex items-center gap-3 bg-white hover:bg-amber-50/40 border border-gray-200 hover:border-amber-300 rounded-2xl px-5 py-3.5 pr-12 text-left transition-colors group"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
+                        {awaitingNotes.length > 0
+                          ? t('Take a quick note…', 'Prendre une note rapide…', 'Tomar una nota rápida…')
+                          : t('All caught up — no sessions waiting for notes.',
+                              'Vous êtes à jour — aucune séance en attente.',
+                              'Al día — sin sesiones esperando notas.')}
+                      </p>
+                    </div>
+                    {awaitingNotes.length > 0 && (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium tabular-nums shrink-0">
+                        {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
+                      </span>
+                    )}
+                  </button>
+                )
+              }
+              // Card variant — show the button as a header + a short
+              // preview list of awaiting sessions so the practitioner
+              // can click straight into one. Tall slot fits more.
+              const previewCount = variant === 'tall' ? 5 : 2
+              const preview = awaitingNotes.slice(0, previewCount)
+              return (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full flex flex-col">
+                  <header className="flex items-center justify-between mb-4 pr-8">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-amber-600" />
+                      <h3 className="text-base font-semibold text-gray-900">{t('Notes to write', 'Notes à écrire', 'Notas pendientes')}</h3>
+                    </div>
+                    {awaitingNotes.length > 0 && (
+                      <span className="text-xs text-gray-500 tabular-nums">
+                        {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
+                      </span>
+                    )}
+                  </header>
+                  {awaitingNotes.length === 0 ? (
+                    <p className="text-xs text-gray-400 leading-snug">
+                      {t('All caught up — no sessions waiting for notes.',
+                         'Vous êtes à jour — aucune séance en attente.',
+                         'Al día — sin sesiones esperando notas.')}
+                    </p>
+                  ) : (
+                    <ul className="space-y-1 mb-3 flex-1 min-h-0 overflow-y-auto">
+                      {preview.map(n => (
+                        <li key={n.id}>
+                          <button
+                            type="button"
+                            // Directly open the floating editor for THIS
+                            // session — no intermediate picker. Picker is
+                            // still reachable via the bottom button.
+                            onClick={() => handleTakeNotes(n)}
+                            className="w-full flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-amber-50/60 text-left transition group/note"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 truncate">{n.client_name}</p>
+                              <p className="text-[11px] text-gray-500 truncate">
+                                {format(parseISO(n.start_time), locale === 'fr' ? 'EEE d MMM · HH:mm' : 'EEE MMM d · HH:mm', { locale: locale === 'fr' ? frLocale : undefined })}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setNoteComposerSearch(''); setShowNoteComposer(true) }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium transition-colors mt-auto"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    {t('Take a quick note', 'Prendre une note rapide', 'Tomar una nota rápida')}
+                  </button>
+                </div>
+              )
+            }
+            // ─── This Week ───────────────────────────────────────────
+            const totalThisWeek = weekDays.reduce((acc, d) => acc + countForDay(d), 0)
+            const renderThisWeek = (variant: DashboardSlotShape) => {
+              if (variant === 'strip') {
+                const valueText = totalThisWeek === 0
+                  ? t('No sessions this week', 'Aucune séance cette semaine', 'Sin sesiones esta semana')
+                  : totalThisWeek === 1
+                    ? t('1 session this week', '1 séance cette semaine', '1 sesión esta semana')
+                    : t(`${totalThisWeek} sessions this week`, `${totalThisWeek} séances cette semaine`, `${totalThisWeek} sesiones esta semana`)
+                return (
+                  <StripBanner
+                    icon={Calendar}
+                    iconBg="bg-violet-50"
+                    iconColor="text-violet-600"
+                    label={t('This week', 'Cette semaine', 'Esta semana')}
+                    value={valueText}
+                    onClick={() => setShowCalendar(true)}
+                  />
+                )
+              }
+              // Tall renders the full week-grid schedule (same widget
+              // /bookings uses). Short renders the day-count strip
+              // (today's behaviour).
+              if (variant === 'tall') {
+                // Minimal embed — legend hidden (keeps week nav, Today,
+                // timezone, Availability), grid capped, expand arrow
+                // sits in the legend's old spot at the toolbar's left
+                // and opens the full-screen calendar.
+                return (
+                  <div className="relative">
+                    <WeekCalendarView
+                      bookings={bookings as any}
+                      onApprove={async () => {}}
+                      onReject={async () => {}}
+                      processingId={null}
+                      onSlotClick={(day, time, options) => {
+                        setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
+                      }}
+                      hideLegend
+                      gridMaxHeight={280}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar(true)}
+                      title={t('Expand calendar', 'Agrandir le calendrier', 'Expandir calendario')}
+                      aria-label={t('Expand calendar', 'Agrandir le calendrier', 'Expandir calendario')}
+                      // Sit on the right side of the toolbar — the
+                      // hideLegend flag pushes the nav controls to the
+                      // left so this slot is free. right-14 leaves
+                      // breathing room for the DashboardSlot grip handle.
+                      className="absolute top-4 right-14 z-20 inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )
+              }
+              return (
+                <button
+                  type="button"
+                  onClick={() => setShowCalendar(true)}
+                  className="bg-white rounded-2xl border border-gray-200 p-6 text-left hover:border-gray-300 hover:shadow-sm transition group h-full w-full"
+                >
+                  <header className="flex items-center justify-between mb-4 pr-8">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-gray-500" />
                       <h3 className="text-base font-semibold text-gray-900">{t('This week', 'Cette semaine', 'Esta semana')}</h3>
@@ -800,109 +1228,165 @@ function DashboardInner() {
                       <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
                     </div>
                   </header>
-                )
-              })()}
-              <div className="grid grid-cols-7 gap-1">
-                {weekDays.map(day => {
-                  const count = countForDay(day)
-                  const isCurrentDay = isSameDay(day, now)
-                  return (
-                    <div key={day.toISOString()} className="flex flex-col items-center gap-1 py-2">
-                      <span className={`text-[10px] uppercase tracking-wide ${isCurrentDay ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
-                        {format(day, 'EEE', { locale: locale === 'fr' ? frLocale : undefined }).slice(0, 3)}
-                      </span>
-                      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
-                        isCurrentDay
-                          ? 'bg-gray-900 text-white'
-                          : count > 0
-                            ? 'text-gray-900'
-                            : 'text-gray-400'
-                      }`}>
-                        {format(day, 'd')}
-                      </span>
-                      {/* Session count below the date — "N session(s)"
-                          for non-empty days, nothing for empty ones. */}
-                      <span className={`text-[10px] tabular-nums leading-none mt-0.5 ${
-                        count === 0
-                          ? 'text-transparent select-none'
-                          : 'text-blue-600 font-medium'
-                      }`}>
-                        {count > 0
-                          ? (count === 1
-                              ? t('1 session', '1 séance', '1 sesión')
-                              : t(`${count} sessions`, `${count} séances`, `${count} sesiones`))
-                          : '0'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="text-[11px] text-gray-400 mt-3 text-center">
-                {t('Click anywhere to open the full calendar', 'Cliquez pour ouvrir le calendrier complet', 'Clic para abrir el calendario completo')}
-              </p>
-            </button>
-
-            {/* Recently shared resources — quick "what did I just send"
-                surface; complements the calendar by filling the space
-                under it. */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <header className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-gray-500" />
-                  <h3 className="text-base font-semibold text-gray-900">{t('Recent resources', 'Ressources récentes', 'Recursos recientes')}</h3>
-                </div>
-                <Link
-                  href="/resources"
-                  className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1"
-                >
-                  {t('View all', 'Voir tout', 'Ver todo')}
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </header>
-              {loading ? (
-                <div className="space-y-2">
-                  {[0, 1].map(i => <div key={i} className="h-12 bg-gray-50 animate-pulse rounded-lg" />)}
-                </div>
-              ) : recentShares.length === 0 ? (
-                <div className="text-center py-6 text-gray-400">
-                  <p className="text-xs">
-                    {t('No resources shared yet.', 'Aucune ressource partagée pour le moment.', 'Aún no se han compartido recursos.')}
+                  <div className="grid grid-cols-7 gap-1">
+                    {weekDays.map(day => {
+                      const count = countForDay(day)
+                      const isCurrentDay = isSameDay(day, now)
+                      return (
+                        <div key={day.toISOString()} className="flex flex-col items-center gap-1 py-2">
+                          <span className={`text-[10px] uppercase tracking-wide ${isCurrentDay ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                            {format(day, 'EEE', { locale: locale === 'fr' ? frLocale : undefined }).slice(0, 3)}
+                          </span>
+                          <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                            isCurrentDay
+                              ? 'bg-gray-900 text-white'
+                              : count > 0
+                                ? 'text-gray-900'
+                                : 'text-gray-400'
+                          }`}>
+                            {format(day, 'd')}
+                          </span>
+                          <span className={`text-[10px] tabular-nums leading-none mt-0.5 ${
+                            count === 0
+                              ? 'text-transparent select-none'
+                              : 'text-blue-600 font-medium'
+                          }`}>
+                            {count > 0
+                              ? (count === 1
+                                  ? t('1 session', '1 séance', '1 sesión')
+                                  : t(`${count} sessions`, `${count} séances`, `${count} sesiones`))
+                              : '0'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-3 text-center">
+                    {t('Click anywhere to open the full calendar', 'Cliquez pour ouvrir le calendrier complet', 'Clic para abrir el calendario completo')}
                   </p>
+                </button>
+              )
+            }
+            // ─── Recent Resources ────────────────────────────────────
+            const renderRecentResources = (variant: DashboardSlotShape) => {
+              if (variant === 'strip') {
+                const count = recentShares.length
+                const valueText = count === 0
+                  ? t('No recent shares', 'Aucun partage récent', 'Sin recursos compartidos')
+                  : count === 1
+                    ? t('1 resource shared recently', '1 ressource partagée récemment', '1 recurso compartido recientemente')
+                    : t(`${count} resources shared recently`, `${count} ressources partagées récemment`, `${count} recursos compartidos recientemente`)
+                return (
+                  <StripBanner
+                    icon={FileText}
+                    iconBg="bg-violet-50"
+                    iconColor="text-violet-600"
+                    label={t('Resources', 'Ressources', 'Recursos')}
+                    value={valueText}
+                    href="/resources"
+                  />
+                )
+              }
+              const itemCount = variant === 'tall' ? 8 : 3
+              return (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full">
+                  <header className="flex items-center justify-between mb-4 pr-8">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                      <h3 className="text-base font-semibold text-gray-900">{t('Recent resources', 'Ressources récentes', 'Recursos recientes')}</h3>
+                    </div>
+                    <Link
+                      href="/resources"
+                      className="text-xs text-gray-500 hover:text-gray-900 inline-flex items-center gap-1"
+                    >
+                      {t('View all', 'Voir tout', 'Ver todo')}
+                      <ChevronRight className="w-3 h-3" />
+                    </Link>
+                  </header>
+                  {loading ? (
+                    <div className="space-y-2">
+                      {[0, 1].map(i => <div key={i} className="h-12 bg-gray-50 animate-pulse rounded-lg" />)}
+                    </div>
+                  ) : recentShares.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400">
+                      <p className="text-xs">
+                        {t('No resources shared yet.', 'Aucune ressource partagée pour le moment.', 'Aún no se han compartido recursos.')}
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-1">
+                      {recentShares.slice(0, itemCount).map(s => (
+                        <li key={s.id}>
+                          <Link
+                            href={`/resources/${s.resource_id}`}
+                            className="flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 transition group/share"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 truncate group-hover/share:text-violet-700">
+                                {s.resource_title}
+                              </p>
+                              <p className="text-[11px] text-gray-500 truncate">
+                                {t(`Shared with ${s.member_first_name}`, `Partagée avec ${s.member_first_name}`, `Compartido con ${s.member_first_name}`)}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-gray-400 tabular-nums shrink-0">{formatRelative(s.shared_at)}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ) : (
-                <ul className="space-y-1">
-                  {recentShares.slice(0, 3).map(s => {
-                    const sharedAt = parseISO(s.shared_at)
-                    const minsAgo = (Date.now() - sharedAt.getTime()) / 60000
-                    const timeAgo =
-                      minsAgo < 60 ? `${Math.max(1, Math.floor(minsAgo))}m`
-                      : minsAgo < 60 * 24 ? `${Math.floor(minsAgo / 60)}h`
-                      : minsAgo < 60 * 24 * 7 ? `${Math.floor(minsAgo / (60 * 24))}d`
-                      : format(sharedAt, locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })
-                    return (
-                      <li key={s.id}>
-                        <Link
-                          href={`/resources/${s.resource_id}`}
-                          className="flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 transition group/share"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-900 truncate group-hover/share:text-violet-700">
-                              {s.resource_title}
-                            </p>
-                            <p className="text-[11px] text-gray-500 truncate">
-                              {t(`Shared with ${s.member_first_name}`, `Partagée avec ${s.member_first_name}`, `Compartido con ${s.member_first_name}`)}
-                            </p>
-                          </div>
-                          <span className="text-[10px] text-gray-400 tabular-nums shrink-0">{timeAgo}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </div>
-            </div>
-          </section>
+              )
+            }
+            const WIDGET_RENDERERS: Record<DashboardWidgetId, (variant: DashboardSlotShape) => React.ReactNode> = {
+              up_next:          renderUpNext,
+              quick_note:       renderQuickNote,
+              this_week:        renderThisWeek,
+              recent_resources: renderRecentResources,
+            }
+            const isCustomLayout = DASHBOARD_SLOTS.some(s => dashboardLayout[s] !== DEFAULT_DASHBOARD_LAYOUT[s])
+            return (
+              <DndContext
+                sensors={dndSensors}
+                onDragStart={(e) => setDraggingSlot(e.active.id as DashboardSlotId)}
+                onDragCancel={() => setDraggingSlot(null)}
+                onDragEnd={handleDashboardDragEnd}
+              >
+                <section className="mb-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+                    <div className="lg:col-span-3 flex flex-col gap-6">
+                      <DashboardSlot slotId="bigLeft" isDraggingSelf={draggingSlot === 'bigLeft'}>
+                        {WIDGET_RENDERERS[dashboardLayout.bigLeft](SLOT_SHAPE.bigLeft)}
+                      </DashboardSlot>
+                      <DashboardSlot slotId="wideBottomLeft" isDraggingSelf={draggingSlot === 'wideBottomLeft'}>
+                        {WIDGET_RENDERERS[dashboardLayout.wideBottomLeft](SLOT_SHAPE.wideBottomLeft)}
+                      </DashboardSlot>
+                    </div>
+                    <div className="lg:col-span-2 flex flex-col gap-6">
+                      <DashboardSlot slotId="smallTopRight" isDraggingSelf={draggingSlot === 'smallTopRight'}>
+                        {WIDGET_RENDERERS[dashboardLayout.smallTopRight](SLOT_SHAPE.smallTopRight)}
+                      </DashboardSlot>
+                      <DashboardSlot slotId="smallBottomRight" isDraggingSelf={draggingSlot === 'smallBottomRight'}>
+                        {WIDGET_RENDERERS[dashboardLayout.smallBottomRight](SLOT_SHAPE.smallBottomRight)}
+                      </DashboardSlot>
+                    </div>
+                  </div>
+                  {isCustomLayout && (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={resetDashboardLayout}
+                        className="inline-flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        {t('Reset layout', 'Réinitialiser la disposition', 'Restablecer disposición')}
+                      </button>
+                    </div>
+                  )}
+                </section>
+              </DndContext>
+            )
+          })()}
 
 
         </div>
