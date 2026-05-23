@@ -23,6 +23,7 @@ export type NotificationType =
   | 'resource_submitted'
   | 'story_shared'
   | 'story_comment'
+  | 'moment_shared'
   | 'resource_started'
   | 'booking_request'
   | 'session_confirmed'

@@ -410,6 +410,25 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         : `New comment on "${m.storyTitle}"`,
   },
 
+  moment_shared: {
+    title: (_m, locale) =>
+      locale === 'fr' ? 'Moment partagé' : 'Moment shared',
+    body: (m, locale) => {
+      const kind = (m.momentType as string) || 'moment'
+      const kindLabel = locale === 'fr'
+        ? ({ photo: 'une photo', video: 'une vidéo', voice: 'une note vocale', write: 'une note', mixed: 'un moment' } as Record<string, string>)[kind] || 'un moment'
+        : ({ photo: 'a photo', video: 'a video', voice: 'a voice note', write: 'a note', mixed: 'a moment' } as Record<string, string>)[kind] || 'a moment'
+      return locale === 'fr'
+        ? `${m.memberName} a partagé ${kindLabel} avec vous`
+        : `${m.memberName} shared ${kindLabel} with you`
+    },
+    actionUrl: (m) => `/members/${m.memberId}?tab=shared&shareTab=moments&openMomentId=${m.momentId || ''}`,
+    emailSubject: (m, locale) =>
+      locale === 'fr'
+        ? `${m.memberName} a partagé un moment`
+        : `${m.memberName} shared a moment with you`,
+  },
+
   resource_started: {
     title: (m, locale) =>
       locale === 'fr' ? 'Ressource commencée' : locale === 'es' ? 'Recurso iniciado' : 'Resource started',

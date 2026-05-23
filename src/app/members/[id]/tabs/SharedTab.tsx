@@ -28,6 +28,7 @@ import {
   Download,
   MoreVertical,
   Link2Off,
+  Mic,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -112,6 +113,46 @@ interface StoryShareComment {
   created_at: string
 }
 
+interface SharedMoment {
+  id: string
+  user_id: string
+  type: 'photo' | 'video' | 'voice' | 'write' | 'mixed'
+  media_path: string | null
+  media_url: string | null
+  thumbnail_path: string | null
+  thumbnail_url: string | null
+  text_content: string | null
+  caption: string | null
+  moods: string[] | null
+  duration_seconds: number | null
+  created_at: string
+  shared_with_practitioner_at: string
+}
+
+const MOMENT_MOOD_COLORS: Record<string, string> = {
+  joy: '#FCD34D', calm: '#5EEAD4', inspired: '#A78BFA', loved: '#FB7185',
+  proud: '#FB923C', grateful: '#86EFAC', curious: '#67E8F9', confident: '#FBBF24',
+  sad: '#94A3B8', anxious: '#FDA4AF', frustrated: '#F87171', tired: '#A8A29E',
+  overwhelmed: '#C084FC', lonely: '#9CA3AF',
+}
+
+function SharedMomentMedia({ moment }: { moment: SharedMoment }) {
+  const signed = useSignedUrl('moments_media', moment.thumbnail_path ?? moment.media_path ?? moment.thumbnail_url ?? moment.media_url)
+  if (!signed) return <div className="w-full h-40 bg-gray-100 rounded-xl" />
+  return (
+    <div className="relative rounded-xl overflow-hidden bg-gray-100">
+      <img src={signed} alt="" className="w-full h-40 object-cover" />
+      {moment.type === 'video' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center">
+            <div className="w-0 h-0 border-l-[10px] border-t-[7px] border-b-[7px] border-l-white border-t-transparent border-b-transparent ml-0.5" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Resource type icons
 const resourceTypeIcons: Record<string, React.ElementType> = {
   worksheet: FileText,
@@ -152,6 +193,13 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const supabase = createClient()
   const searchParams = useSearchParams()
   const openShareIdFromUrl = searchParams.get('openShareId')
+  const shareTabFromUrl = searchParams.get('shareTab')
+
+  useEffect(() => {
+    if (shareTabFromUrl === 'moments' || shareTabFromUrl === 'stories' || shareTabFromUrl === 'resources') {
+      setActiveShareTab(shareTabFromUrl)
+    }
+  }, [shareTabFromUrl])
 
 
   // Shared resources state
@@ -190,7 +238,8 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
 
   // Resource completion filter
   const [resourceFilter, setResourceFilter] = useState<'all' | 'completed' | 'not_completed'>('all')
-  const [activeShareTab, setActiveShareTab] = useState<'resources' | 'stories'>('resources')
+  const [activeShareTab, setActiveShareTab] = useState<'resources' | 'stories' | 'moments'>('resources')
+  const [sharedMoments, setSharedMoments] = useState<SharedMoment[]>([])
 
   // Scroll to highlighted resource or section
   useEffect(() => {
@@ -321,6 +370,22 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
         .eq('practitioner_id', user.id)
         .order('shared_at', { ascending: false })
       setPatientStories((patientShareData || []) as any)
+
+      // Fetch moments the patient shared with this practitioner. moments
+      // are keyed by user_id (auth uid), not member_id — resolve via the
+      // member prop.
+      if (member?.user_id) {
+        const { data: momentsData, error: momentsError } = await supabase
+          .from('moments')
+          .select('id, user_id, type, media_path, media_url, thumbnail_path, thumbnail_url, text_content, caption, moods, duration_seconds, created_at, shared_with_practitioner_at')
+          .eq('user_id', member.user_id)
+          .not('shared_with_practitioner_at', 'is', null)
+          .order('shared_with_practitioner_at', { ascending: false })
+        if (momentsError && momentsError.code !== '42P01' && momentsError.code !== '42703') {
+          console.error('Error fetching shared moments:', momentsError)
+        }
+        setSharedMoments((momentsData || []) as SharedMoment[])
+      }
 
       // Fetch available stories
       const sharedStoryIds = (sharedData || []).map(s => s.story_id)
@@ -708,6 +773,19 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
           {locale === 'fr' ? 'Histoires' : 'Stories'}
           {(patientStories.length + sharedResources.length) > 0 && (
             <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{patientStories.length + sharedResources.length}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveShareTab('moments')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-[2px] transition-colors ${
+            activeShareTab === 'moments'
+              ? 'border-teal-500 text-teal-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {locale === 'fr' ? 'Moments' : 'Moments'}
+          {sharedMoments.length > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">{sharedMoments.length}</span>
           )}
         </button>
       </div>
@@ -1431,6 +1509,95 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
               </>
             ) : null}
           </motion.div>
+          )}
+
+          {/* Shared Moments List (Moments tab only) */}
+          {activeShareTab === 'moments' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+            >
+              {sharedMoments.length === 0 ? (
+                <div className="p-16 text-center">
+                  <div className="w-20 h-20 bg-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <Share2 className="w-9 h-9 text-teal-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    {locale === 'fr' ? 'Aucun moment partagé' : 'No shared moments'}
+                  </h3>
+                  <p className="text-gray-500 max-w-md mx-auto">
+                    {locale === 'fr'
+                      ? 'Quand ce membre partagera un moment, il apparaîtra ici.'
+                      : 'When this member shares a moment, it will appear here.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {sharedMoments.map((moment, index) => {
+                    const mood = moment.moods?.[0]
+                    const moodColor = mood ? (MOMENT_MOOD_COLORS[mood] || '#94A3B8') : null
+                    const hasImage = !!(moment.media_path || moment.media_url) && (moment.type === 'photo' || moment.type === 'video' || moment.type === 'mixed')
+                    const isVoice = moment.type === 'voice'
+                    const isWrite = moment.type === 'write'
+                    const sharedDate = new Date(moment.shared_with_practitioner_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+                    return (
+                      <motion.div
+                        key={moment.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.04 * index }}
+                        className="rounded-2xl border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all overflow-hidden bg-white"
+                      >
+                        {hasImage && <SharedMomentMedia moment={moment} />}
+                        {isVoice && (
+                          <div className="p-5 flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+                              <Mic className="w-5 h-5 text-amber-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-700">
+                                {locale === 'fr' ? 'Note vocale' : 'Voice note'}
+                              </div>
+                              {moment.duration_seconds ? (
+                                <div className="text-xs text-gray-400 mt-0.5">
+                                  {Math.floor(moment.duration_seconds / 60)}:{String(Math.round(moment.duration_seconds % 60)).padStart(2, '0')}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        )}
+                        {isWrite && (
+                          <div className="p-5 bg-gray-50">
+                            <p className="text-sm text-gray-800 leading-relaxed line-clamp-4">
+                              {moment.text_content || moment.caption || ''}
+                            </p>
+                          </div>
+                        )}
+                        <div className="px-4 py-3 flex items-center justify-between border-t border-gray-50">
+                          {mood && moodColor ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${moodColor}1F`, color: moodColor }}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: moodColor }} />
+                              <span className="capitalize">{mood}</span>
+                            </span>
+                          ) : <span />}
+                          <span className="text-xs text-gray-400">
+                            {locale === 'fr' ? 'Partagé le ' : 'Shared '}{sharedDate}
+                          </span>
+                        </div>
+                        {hasImage && (moment.caption || moment.text_content) && (
+                          <div className="px-4 pb-3 -mt-1">
+                            <p className="text-xs text-gray-500 line-clamp-2">
+                              {moment.caption || moment.text_content}
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
           )}
         </>
       {/* Remind Confirmation Modal */}
