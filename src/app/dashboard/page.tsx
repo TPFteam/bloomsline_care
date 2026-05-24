@@ -773,10 +773,12 @@ function DashboardInner() {
   const seed = Math.abs(now.getDate() + hour)
 
   const timeOfDayHeadline = (() => {
+    // French collapses morning + afternoon into "Bonjour". Evening
+    // stays "Bonsoir". English and Spanish keep the three-way split.
     const tod = hour < 12
       ? t('Good morning', 'Bonjour', 'Buenos días')
       : hour < 18
-        ? t('Good afternoon', 'Bon après-midi', 'Buenas tardes')
+        ? t('Good afternoon', 'Bonjour', 'Buenas tardes')
         : t('Good evening', 'Bonsoir', 'Buenas noches')
     return firstName ? `${tod}, ${firstName}` : tod
   })()
