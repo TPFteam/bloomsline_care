@@ -374,7 +374,27 @@ export default function BookingsPage() {
         .eq('member_id', booking.member_id)
         .order('created_at'),
     ])
-    const sessionRow = sessionRowRes.data
+    let sessionRow: { id: string } | null = sessionRowRes.data as { id: string } | null
+    // Safety net for legacy bookings that pre-date the
+    // 20260514 bookings → sessions sync trigger, or where the trigger
+    // didn't fire for whatever reason: if no session exists yet,
+    // create one with the minimum required fields (defaults fill in
+    // session_type / session_format / duration). Without this the
+    // floating editor would save the note as note_type='general' with
+    // no session_id and the bookingsWithNotes lookup would never
+    // find it → the popover keeps saying "Take notes" forever.
+    if (!sessionRow?.id) {
+      const { data: created, error: createErr } = await sb
+        .from('sessions')
+        .insert({
+          practitioner_id: u.id,
+          member_id: booking.member_id,
+          scheduled_at: booking.start_time,
+        })
+        .select('id')
+        .single()
+      if (!createErr && created?.id) sessionRow = { id: created.id }
+    }
     const customTypes = (customTypesRes.data || [])
       .map(r => r.type_name as string)
       .filter(name => !name.startsWith('_hidden:'))
