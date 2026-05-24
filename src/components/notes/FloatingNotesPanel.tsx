@@ -217,6 +217,14 @@ export function FloatingNotesPanel() {
 
       toast.success(fr ? 'Note enregistrée' : 'Note saved')
       analytics.sessionNoteSaved()
+      // Tell every surface that lists bookings / notes (calendar
+      // popover, History tab, dashboard awaiting list) to refresh its
+      // "this booking has notes" lookup. Without this the popover
+      // would keep saying "Take notes" until a full page reload.
+      try {
+        const { emitBookingsChanged } = await import('@/lib/bookings-events')
+        emitBookingsChanged()
+      } catch {}
       closeFloat()
     } catch (error) {
       console.error('Error saving floating note:', error)
