@@ -1757,28 +1757,34 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                   return locale === 'fr' ? `Capturé le ${label}` : `Captured on ${label}`
                 }
                 return (<>
-                  {/* Controls row: sort-by toggle + view-mode toggle. */}
+                  {/* Controls row: sort-by dropdown + view-mode toggle. */}
                   <div className="flex items-center justify-end gap-3 p-4 pb-0">
-                    <div className="inline-flex bg-gray-100 rounded-xl p-1 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setMomentsSortBy('shared')}
-                        className={`px-3 h-8 rounded-lg font-medium transition-colors ${
-                          momentsSortBy === 'shared' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        {locale === 'fr' ? 'Partagé' : 'Shared'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMomentsSortBy('created')}
-                        className={`px-3 h-8 rounded-lg font-medium transition-colors ${
-                          momentsSortBy === 'created' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                      >
-                        {locale === 'fr' ? 'Capturé' : 'Captured'}
-                      </button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-700 transition-colors"
+                        >
+                          <span className="text-gray-400">
+                            {locale === 'fr' ? 'Trier :' : 'Sort:'}
+                          </span>
+                          <span>
+                            {momentsSortBy === 'shared'
+                              ? (locale === 'fr' ? 'Partagé' : 'Shared')
+                              : (locale === 'fr' ? 'Capturé' : 'Captured')}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[160px]">
+                        <DropdownMenuItem onClick={() => setMomentsSortBy('shared')}>
+                          {locale === 'fr' ? 'Date de partage' : 'Shared date'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMomentsSortBy('created')}>
+                          {locale === 'fr' ? 'Date de capture' : 'Captured date'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <div className="inline-flex bg-gray-100 rounded-xl p-1">
                       <button
                         type="button"
