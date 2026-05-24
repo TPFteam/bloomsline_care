@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
+import { fr as frLocale } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -333,7 +334,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
             <ChevronLeft className="w-4 h-4 text-gray-400" />
           </button>
           <h3 className="text-sm font-semibold text-gray-800">
-            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}
+            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: locale === 'fr' ? frLocale : undefined })}
           </h3>
           <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
             <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -367,7 +368,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
         <div />
         {days.map(day => (
           <div key={day.toISOString()} className="py-3 text-center">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{format(day, 'EEE')}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{format(day, 'EEE', { locale: locale === 'fr' ? frLocale : undefined })}</p>
             <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${todayCheck(day) ? 'bg-teal-600 text-white' : 'text-gray-800'}`}>
               <span className="text-sm font-semibold">{format(day, 'd')}</span>
             </div>
