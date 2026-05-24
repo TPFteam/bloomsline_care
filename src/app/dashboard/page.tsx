@@ -9,7 +9,7 @@
 // The previous /dashboard-preview route was the iteration sandbox for
 // this — same layout, real data fetches.
 
-import { useEffect, useMemo, useState, Suspense } from 'react'
+import { useEffect, useMemo, useState, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { format, parseISO, isToday, isTomorrow, isYesterday, isSameDay, startOfWeek, addDays } from 'date-fns'
@@ -17,7 +17,7 @@ import { fr as frLocale } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Calendar, ChevronRight, UserPlus, Share2, Video, X,
+  Calendar, ChevronRight, ChevronLeft, UserPlus, Share2, Video, X,
   AlertCircle, ArrowUpRight, Sparkles, Loader2,
   Search, FileText, Send, Mail, Phone, Save, Settings,
   GripVertical, RotateCcw,
@@ -263,6 +263,7 @@ function DashboardInner() {
   const [noteComposerSearch, setNoteComposerSearch] = useState('')
   const [quickNoteSearch, setQuickNoteSearch] = useState('')
   const [quickNoteFocused, setQuickNoteFocused] = useState(false)
+  const [quickNoteMember, setQuickNoteMember] = useState<MemberLite | null>(null)
   // Opens a list of past sessions awaiting closure. Tapping a row
   // opens the close-session popup inline (no navigation).
   const [showAwaitingClosure, setShowAwaitingClosure] = useState(false)
@@ -530,42 +531,6 @@ function DashboardInner() {
     })
   }
 
-  // Ad-hoc quick note for any patient — no session attached. Opens the
-  // floating note panel in 'quick' mode, which inserts into
-  // progress_notes (note_type='general') on save.
-  const handleQuickNoteForMember = async (member: { id: string; first_name?: string | null; last_name?: string | null }) => {
-    const { data: { user: u } } = await supabase.auth.getUser()
-    if (!u) return
-    const [customTypesRes, milestonesRes] = await Promise.all([
-      supabase.from('custom_note_types')
-        .select('type_name')
-        .eq('practitioner_id', u.id)
-        .order('created_at'),
-      supabase.from('milestones')
-        .select('id, title, status')
-        .eq('member_id', member.id)
-        .order('created_at'),
-    ])
-    const customTypes = (customTypesRes.data || [])
-      .map((r: any) => r.type_name as string)
-      .filter((name: string) => !name.startsWith('_hidden:'))
-    const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
-    const noteTypeMap = new Map<string, { type: string; label: string }>()
-    for (const tt of FIXED_NOTE_TYPES) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
-    for (const tt of DEFAULT_NOTE_TYPES) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
-    for (const tt of customTypes) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
-    const editorNoteTypes = Array.from(noteTypeMap.values())
-    openFloat({
-      mode: 'quick',
-      content: '',
-      memberId: member.id,
-      memberName: `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Patient',
-      noteType: 'general',
-      milestones,
-      editorNoteTypes,
-    })
-  }
-
   // Compact "Nh ago" / "Nd ago" used in the member picker.
   const formatTimeAgo = (timestamp: string) => {
     const diffMs = Date.now() - new Date(timestamp).getTime()
@@ -749,6 +714,39 @@ function DashboardInner() {
       })
       .sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime())
       .slice(0, 6)
+  }, [bookings, notedSessionKeys, now])
+
+  // Sessions a practitioner might want to note for a given patient.
+  // Buckets:
+  //   pending — past confirmed/completed sessions in the last 14 days
+  //             that don't have a session_summary note yet.
+  //   upcoming — confirmed sessions in the next 14 days (so the
+  //              practitioner can pre-draft a note if they want).
+  // Used by the Quick Note widget once a patient is picked.
+  const sessionsForMember = useCallback((memberId: string): { pending: DashBooking[]; upcoming: DashBooking[] } => {
+    const nowMs = now.getTime()
+    const fourteenAgo = addDays(now, -14).getTime()
+    const fourteenAhead = addDays(now, 14).getTime()
+    const pending: DashBooking[] = []
+    const upcoming: DashBooking[] = []
+    for (const b of bookings) {
+      if (b.member_id !== memberId) continue
+      const startMs = parseISO(b.start_time).getTime()
+      if (startMs < nowMs) {
+        if (startMs < fourteenAgo) continue
+        if (!(b.status === 'confirmed' || b.status === 'completed')) continue
+        const key = `${b.member_id}|${Math.floor(startMs / 1000)}`
+        if (notedSessionKeys.has(key)) continue
+        pending.push(b)
+      } else {
+        if (startMs > fourteenAhead) continue
+        if (b.status === 'cancelled' || b.status === 'no_show') continue
+        upcoming.push(b)
+      }
+    }
+    pending.sort((a, b) => parseISO(b.start_time).getTime() - parseISO(a.start_time).getTime())
+    upcoming.sort((a, b) => parseISO(a.start_time).getTime() - parseISO(b.start_time).getTime())
+    return { pending, upcoming }
   }, [bookings, notedSessionKeys, now])
 
   // Mini week — 7 day cells Mon→Sun for the current week.
@@ -1145,56 +1143,140 @@ function DashboardInner() {
                   </button>
                 )
               }
+              if (!quickNoteMember) {
+                return (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 h-full flex flex-col">
+                    <header className="flex items-center gap-2 mb-4 pr-8">
+                      <FileText className="w-4 h-4 text-amber-600" />
+                      <h3 className="text-base font-semibold text-gray-900">
+                        {t('Quick note', 'Note rapide', 'Nota rápida')}
+                      </h3>
+                    </header>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={quickNoteSearch}
+                        onChange={(e) => setQuickNoteSearch(e.target.value)}
+                        onFocus={() => setQuickNoteFocused(true)}
+                        onBlur={() => setTimeout(() => setQuickNoteFocused(false), 150)}
+                        placeholder={t('Find a patient…', 'Trouver un patient…', 'Buscar un paciente…')}
+                        className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
+                      />
+                      {quickNoteFocused && quickMembers.length > 0 && (
+                        <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 max-h-64 overflow-y-auto z-20 py-1">
+                          {quickMembers.map(({ m }) => {
+                            const full = `${m.first_name || ''} ${m.last_name || ''}`.trim() || t('Unnamed', 'Sans nom', 'Sin nombre')
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setQuickNoteMember(m)
+                                  setQuickNoteSearch('')
+                                  setQuickNoteFocused(false)
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-amber-50 text-left transition-colors"
+                              >
+                                <span className="text-sm text-gray-900 truncate flex-1">{full}</span>
+                                {m.last_session_at && (
+                                  <span className="text-[11px] text-gray-400 shrink-0">{formatTimeAgo(m.last_session_at)}</span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 leading-snug mt-3">
+                      {t('Pick a patient to see their sessions.',
+                         'Choisissez un patient pour voir ses séances.',
+                         'Elija un paciente para ver sus sesiones.')}
+                    </p>
+                  </div>
+                )
+              }
+              // Stage 2 — patient picked. Show their pending + upcoming
+              // sessions so the practitioner can pick one and note it.
+              const memberName = `${quickNoteMember.first_name || ''} ${quickNoteMember.last_name || ''}`.trim()
+                || t('Patient', 'Patient', 'Paciente')
+              const { pending, upcoming } = sessionsForMember(quickNoteMember.id)
+              const empty = pending.length === 0 && upcoming.length === 0
+              const fmtRow = (b: DashBooking) =>
+                format(parseISO(b.start_time), locale === 'fr' ? 'EEE d MMM · HH:mm' : 'EEE MMM d · HH:mm', { locale: locale === 'fr' ? frLocale : undefined })
               return (
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 h-full flex flex-col">
-                  <header className="flex items-center gap-2 mb-4 pr-8">
-                    <FileText className="w-4 h-4 text-amber-600" />
-                    <h3 className="text-base font-semibold text-gray-900">
-                      {t('Quick note', 'Note rapide', 'Nota rápida')}
-                    </h3>
+                  <header className="flex items-center justify-between mb-3 pr-8">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setQuickNoteMember(null)}
+                        className="p-1 -ml-1 rounded hover:bg-gray-100 text-gray-500 shrink-0"
+                        aria-label={t('Change patient', 'Changer de patient', 'Cambiar paciente')}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <h3 className="text-base font-semibold text-gray-900 truncate">{memberName}</h3>
+                    </div>
                   </header>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={quickNoteSearch}
-                      onChange={(e) => setQuickNoteSearch(e.target.value)}
-                      onFocus={() => setQuickNoteFocused(true)}
-                      onBlur={() => setTimeout(() => setQuickNoteFocused(false), 150)}
-                      placeholder={t('Find a patient…', 'Trouver un patient…', 'Buscar un paciente…')}
-                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
-                    />
-                    {quickNoteFocused && quickMembers.length > 0 && (
-                      <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 max-h-64 overflow-y-auto z-20 py-1">
-                        {quickMembers.map(({ m }) => {
-                          const full = `${m.first_name || ''} ${m.last_name || ''}`.trim() || t('Unnamed', 'Sans nom', 'Sin nombre')
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                handleQuickNoteForMember(m)
-                                setQuickNoteSearch('')
-                                setQuickNoteFocused(false)
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-amber-50 text-left transition-colors"
-                            >
-                              <span className="text-sm text-gray-900 truncate flex-1">{full}</span>
-                              {m.last_session_at && (
-                                <span className="text-[11px] text-gray-400 shrink-0">{formatTimeAgo(m.last_session_at)}</span>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 leading-snug mt-3">
-                    {t('Pick a patient and start writing — notes save automatically.',
-                       'Choisissez un patient et commencez à écrire — sauvegarde automatique.',
-                       'Elija un paciente y empiece a escribir — guardado automático.')}
-                  </p>
+                  {empty ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center px-2">
+                      <p className="text-sm text-gray-500 mb-1">
+                        {t('No sessions to note.', 'Aucune séance à noter.', 'No hay sesiones para notar.')}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {t('Schedule one to add a note.',
+                           'Planifiez-en une pour ajouter une note.',
+                           'Programe una para añadir una nota.')}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 min-h-0 overflow-y-auto -mx-1">
+                      {pending.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 px-1 mb-1.5">
+                            {t('Pending notes', 'Notes en attente', 'Notas pendientes')}
+                          </div>
+                          <ul className="space-y-0.5">
+                            {pending.map(b => (
+                              <li key={b.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTakeNotes(b)}
+                                  className="w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg hover:bg-amber-50/70 text-left transition-colors"
+                                >
+                                  <span className="text-sm text-gray-900 truncate">{fmtRow(b)}</span>
+                                  <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {upcoming.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1 mb-1.5">
+                            {t('Upcoming', 'À venir', 'Próximas')}
+                          </div>
+                          <ul className="space-y-0.5">
+                            {upcoming.map(b => (
+                              <li key={b.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTakeNotes(b)}
+                                  className="w-full flex items-center justify-between gap-2 px-2 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                                >
+                                  <span className="text-sm text-gray-900 truncate">{fmtRow(b)}</span>
+                                  <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             }
@@ -1452,7 +1534,8 @@ function DashboardInner() {
         onSearchChange={setNoteComposerSearch}
         locale={locale}
         t={t}
-        onPick={(m) => { setShowNoteComposer(false); handleQuickNoteForMember(m) }}
+        sessionsForMember={sessionsForMember}
+        onPickSession={(b) => { setShowNoteComposer(false); handleTakeNotes(b) }}
       />
 
       <ScheduleSessionModal
@@ -2361,7 +2444,7 @@ function UpNextRow({
 }
 
 function NoteComposerPicker({
-  isOpen, onClose, members, search, onSearchChange, locale, t, onPick,
+  isOpen, onClose, members, search, onSearchChange, locale, t, sessionsForMember, onPickSession,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -2370,8 +2453,13 @@ function NoteComposerPicker({
   onSearchChange: (s: string) => void
   locale: string
   t: (en: string, fr: string, es: string) => string
-  onPick: (m: MemberLite) => void
+  sessionsForMember: (memberId: string) => { pending: DashBooking[]; upcoming: DashBooking[] }
+  onPickSession: (b: DashBooking) => void
 }) {
+  const [pickedMember, setPickedMember] = useState<MemberLite | null>(null)
+  useEffect(() => {
+    if (!isOpen) setPickedMember(null)
+  }, [isOpen])
   if (!isOpen) return null
   const q = search.trim().toLowerCase()
   const filtered = (q.length === 0
@@ -2399,58 +2487,140 @@ function NoteComposerPicker({
           onClick={(e) => e.stopPropagation()}
         >
           <header className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-semibold text-gray-900">
-                {t('Pick a patient', 'Choisir un patient', 'Elegir un paciente')}
+            <div className="flex items-center gap-2 min-w-0">
+              {pickedMember && (
+                <button
+                  type="button"
+                  onClick={() => setPickedMember(null)}
+                  className="p-1 rounded hover:bg-gray-100 text-gray-500 shrink-0"
+                  aria-label={t('Back', 'Retour', 'Atrás')}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              <FileText className="w-4 h-4 text-amber-500 shrink-0" />
+              <h2 className="text-sm font-semibold text-gray-900 truncate">
+                {pickedMember
+                  ? `${pickedMember.first_name || ''} ${pickedMember.last_name || ''}`.trim()
+                  : t('Pick a patient', 'Choisir un patient', 'Elegir un paciente')}
               </h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded hover:bg-gray-100 text-gray-500"
+              className="p-1 rounded hover:bg-gray-100 text-gray-500 shrink-0"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
           </header>
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                autoFocus
-                type="text"
-                value={search}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={t('Search patient…', 'Rechercher un patient…', 'Buscar paciente…')}
-                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
-              />
-            </div>
-          </div>
-          <div className="max-h-[55vh] overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                <Sparkles className="w-5 h-5 mx-auto mb-2 text-emerald-300" />
-                <p className="text-sm">
-                  {q.length === 0
-                    ? t('No patients yet.', 'Aucun patient.', 'Sin pacientes.')
-                    : t('No matches.', 'Aucun résultat.', 'Sin coincidencias.')}
-                </p>
-              </div>
-            ) : (
-              <ul className="py-1">
-                {filtered.map(m => (
-                  <MemberPickerRow
-                    key={m.id}
-                    member={m}
-                    locale={locale}
-                    t={t}
-                    onPick={onPick}
+          {!pickedMember ? (
+            <>
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={search}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder={t('Search patient…', 'Rechercher un patient…', 'Buscar paciente…')}
+                    className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
                   />
-                ))}
-              </ul>
-            )}
-          </div>
+                </div>
+              </div>
+              <div className="max-h-[55vh] overflow-y-auto">
+                {filtered.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400">
+                    <Sparkles className="w-5 h-5 mx-auto mb-2 text-emerald-300" />
+                    <p className="text-sm">
+                      {q.length === 0
+                        ? t('No patients yet.', 'Aucun patient.', 'Sin pacientes.')
+                        : t('No matches.', 'Aucun résultat.', 'Sin coincidencias.')}
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="py-1">
+                    {filtered.map(m => (
+                      <MemberPickerRow
+                        key={m.id}
+                        member={m}
+                        locale={locale}
+                        t={t}
+                        onPick={setPickedMember}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          ) : (() => {
+            const { pending, upcoming } = sessionsForMember(pickedMember.id)
+            const empty = pending.length === 0 && upcoming.length === 0
+            const fmtRow = (b: DashBooking) =>
+              format(parseISO(b.start_time), locale === 'fr' ? 'EEE d MMM · HH:mm' : 'EEE MMM d · HH:mm', { locale: locale === 'fr' ? frLocale : undefined })
+            return (
+              <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
+                {empty ? (
+                  <div className="text-center py-10">
+                    <p className="text-sm text-gray-500 mb-1">
+                      {t('No sessions to note.', 'Aucune séance à noter.', 'No hay sesiones para notar.')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t('Schedule one to add a note.',
+                         'Planifiez-en une pour ajouter une note.',
+                         'Programe una para añadir una nota.')}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {pending.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 px-1 mb-1.5">
+                          {t('Pending notes', 'Notes en attente', 'Notas pendientes')}
+                        </div>
+                        <ul className="space-y-0.5">
+                          {pending.map(b => (
+                            <li key={b.id}>
+                              <button
+                                type="button"
+                                onClick={() => onPickSession(b)}
+                                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-amber-50/70 text-left transition-colors"
+                              >
+                                <span className="text-sm text-gray-900 truncate">{fmtRow(b)}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {upcoming.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-1 mb-1.5">
+                          {t('Upcoming', 'À venir', 'Próximas')}
+                        </div>
+                        <ul className="space-y-0.5">
+                          {upcoming.map(b => (
+                            <li key={b.id}>
+                              <button
+                                type="button"
+                                onClick={() => onPickSession(b)}
+                                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                              >
+                                <span className="text-sm text-gray-900 truncate">{fmtRow(b)}</span>
+                                <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )
+          })()}
         </motion.div>
       </motion.div>
     </AnimatePresence>
