@@ -168,6 +168,8 @@ function DashboardSlot({
   )
 }
 
+type MemberLite = { id: string; first_name: string; last_name: string; status: string; last_session_at: string | null }
+
 function DashboardInner() {
   const supabase = createClient()
   const router = useRouter()
@@ -189,7 +191,6 @@ function DashboardInner() {
   const [sessionTypeMap, setSessionTypeMap] = useState<Record<string, { name: string; name_fr?: string }>>({})
 
   // Member list — feeds the picker for the Share-resource flow.
-  type MemberLite = { id: string; first_name: string; last_name: string; status: string; last_session_at: string | null }
   const [members, setMembers] = useState<MemberLite[]>([])
 
   // Add Member modal state
@@ -260,6 +261,8 @@ function DashboardInner() {
   // Compose-note modal state — opened from the home composer line.
   const [showNoteComposer, setShowNoteComposer] = useState(false)
   const [noteComposerSearch, setNoteComposerSearch] = useState('')
+  const [quickNoteSearch, setQuickNoteSearch] = useState('')
+  const [quickNoteFocused, setQuickNoteFocused] = useState(false)
   // Opens a list of past sessions awaiting closure. Tapping a row
   // opens the close-session popup inline (no navigation).
   const [showAwaitingClosure, setShowAwaitingClosure] = useState(false)
@@ -524,6 +527,42 @@ function DashboardInner() {
         durationMinutes,
         format: null,
       },
+    })
+  }
+
+  // Ad-hoc quick note for any patient — no session attached. Opens the
+  // floating note panel in 'quick' mode, which inserts into
+  // progress_notes (note_type='general') on save.
+  const handleQuickNoteForMember = async (member: { id: string; first_name?: string | null; last_name?: string | null }) => {
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (!u) return
+    const [customTypesRes, milestonesRes] = await Promise.all([
+      supabase.from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', u.id)
+        .order('created_at'),
+      supabase.from('milestones')
+        .select('id, title, status')
+        .eq('member_id', member.id)
+        .order('created_at'),
+    ])
+    const customTypes = (customTypesRes.data || [])
+      .map((r: any) => r.type_name as string)
+      .filter((name: string) => !name.startsWith('_hidden:'))
+    const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
+    const noteTypeMap = new Map<string, { type: string; label: string }>()
+    for (const tt of FIXED_NOTE_TYPES) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    for (const tt of DEFAULT_NOTE_TYPES) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    for (const tt of customTypes) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    const editorNoteTypes = Array.from(noteTypeMap.values())
+    openFloat({
+      mode: 'quick',
+      content: '',
+      memberId: member.id,
+      memberName: `${member.first_name || ''} ${member.last_name || ''}`.trim() || 'Patient',
+      noteType: 'general',
+      milestones,
+      editorNoteTypes,
     })
   }
 
@@ -1070,6 +1109,22 @@ function DashboardInner() {
               )
             }
             // ─── Quick Note ──────────────────────────────────────────
+            // Minimal composer: pick a patient, the floating note panel
+            // opens for them in 'quick' mode. The old "awaiting notes"
+            // list is gone — the "1 to close" pill at the top already
+            // surfaces sessions needing follow-up.
+            const quickMembers = (() => {
+              const q = quickNoteSearch.trim().toLowerCase()
+              const ranked = members
+                .map(m => ({
+                  m,
+                  full: `${m.first_name || ''} ${m.last_name || ''}`.trim(),
+                  ts: m.last_session_at ? new Date(m.last_session_at).getTime() : 0,
+                }))
+                .filter(({ full }) => q.length === 0 || full.toLowerCase().includes(q))
+                .sort((a, b) => b.ts - a.ts)
+              return ranked.slice(0, 6)
+            })()
             const renderQuickNote = (variant: DashboardSlotShape) => {
               if (loading) {
                 return <div className={`bg-gray-50 animate-pulse rounded-2xl ${variant === 'strip' ? 'h-16' : 'h-full min-h-[120px]'}`} />
@@ -1084,79 +1139,62 @@ function DashboardInner() {
                     <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                       <FileText className="w-4 h-4" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
-                        {awaitingNotes.length > 0
-                          ? t('Take a quick note…', 'Prendre une note rapide…', 'Tomar una nota rápida…')
-                          : t('All caught up — no sessions waiting for notes.',
-                              'Vous êtes à jour — aucune séance en attente.',
-                              'Al día — sin sesiones esperando notas.')}
-                      </p>
-                    </div>
-                    {awaitingNotes.length > 0 && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-50 text-amber-700 text-xs font-medium tabular-nums shrink-0">
-                        {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
-                      </span>
-                    )}
+                    <p className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors flex-1 min-w-0">
+                      {t('Take a quick note…', 'Prendre une note rapide…', 'Tomar una nota rápida…')}
+                    </p>
                   </button>
                 )
               }
-              // Card variant — show the button as a header + a short
-              // preview list of awaiting sessions so the practitioner
-              // can click straight into one. Tall slot fits more.
-              const previewCount = variant === 'tall' ? 5 : 2
-              const preview = awaitingNotes.slice(0, previewCount)
               return (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 h-full flex flex-col">
-                  <header className="flex items-center justify-between mb-4 pr-8">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-amber-600" />
-                      <h3 className="text-base font-semibold text-gray-900">{t('Notes to write', 'Notes à écrire', 'Notas pendientes')}</h3>
-                    </div>
-                    {awaitingNotes.length > 0 && (
-                      <span className="text-xs text-gray-500 tabular-nums">
-                        {awaitingNotes.length} {t('awaiting', 'en attente', 'pendientes')}
-                      </span>
-                    )}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 h-full flex flex-col">
+                  <header className="flex items-center gap-2 mb-4 pr-8">
+                    <FileText className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {t('Quick note', 'Note rapide', 'Nota rápida')}
+                    </h3>
                   </header>
-                  {awaitingNotes.length === 0 ? (
-                    <p className="text-xs text-gray-400 leading-snug">
-                      {t('All caught up — no sessions waiting for notes.',
-                         'Vous êtes à jour — aucune séance en attente.',
-                         'Al día — sin sesiones esperando notas.')}
-                    </p>
-                  ) : (
-                    <ul className="space-y-1 mb-3 flex-1 min-h-0 overflow-y-auto">
-                      {preview.map(n => (
-                        <li key={n.id}>
-                          <button
-                            type="button"
-                            // Directly open the floating editor for THIS
-                            // session — no intermediate picker. Picker is
-                            // still reachable via the bottom button.
-                            onClick={() => handleTakeNotes(n)}
-                            className="w-full flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-amber-50/60 text-left transition group/note"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 truncate">{n.client_name}</p>
-                              <p className="text-[11px] text-gray-500 truncate">
-                                {format(parseISO(n.start_time), locale === 'fr' ? 'EEE d MMM · HH:mm' : 'EEE MMM d · HH:mm', { locale: locale === 'fr' ? frLocale : undefined })}
-                              </p>
-                            </div>
-                            <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => { setNoteComposerSearch(''); setShowNoteComposer(true) }}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-medium transition-colors mt-auto"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    {t('Take a quick note', 'Prendre une note rapide', 'Tomar una nota rápida')}
-                  </button>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={quickNoteSearch}
+                      onChange={(e) => setQuickNoteSearch(e.target.value)}
+                      onFocus={() => setQuickNoteFocused(true)}
+                      onBlur={() => setTimeout(() => setQuickNoteFocused(false), 150)}
+                      placeholder={t('Find a patient…', 'Trouver un patient…', 'Buscar un paciente…')}
+                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300"
+                    />
+                    {quickNoteFocused && quickMembers.length > 0 && (
+                      <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 max-h-64 overflow-y-auto z-20 py-1">
+                        {quickMembers.map(({ m }) => {
+                          const full = `${m.first_name || ''} ${m.last_name || ''}`.trim() || t('Unnamed', 'Sans nom', 'Sin nombre')
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                handleQuickNoteForMember(m)
+                                setQuickNoteSearch('')
+                                setQuickNoteFocused(false)
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-amber-50 text-left transition-colors"
+                            >
+                              <span className="text-sm text-gray-900 truncate flex-1">{full}</span>
+                              {m.last_session_at && (
+                                <span className="text-[11px] text-gray-400 shrink-0">{formatTimeAgo(m.last_session_at)}</span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 leading-snug mt-3">
+                    {t('Pick a patient and start writing — notes save automatically.',
+                       'Choisissez un patient et commencez à écrire — sauvegarde automatique.',
+                       'Elija un paciente y empiece a escribir — guardado automático.')}
+                  </p>
                 </div>
               )
             }
@@ -1409,13 +1447,12 @@ function DashboardInner() {
       <NoteComposerPicker
         isOpen={showNoteComposer}
         onClose={() => setShowNoteComposer(false)}
-        awaitingNotes={awaitingNotes}
+        members={members}
         search={noteComposerSearch}
         onSearchChange={setNoteComposerSearch}
         locale={locale}
         t={t}
-        sessionTypeMap={sessionTypeMap}
-        onPick={(b) => { setShowNoteComposer(false); handleTakeNotes(b) }}
+        onPick={(m) => { setShowNoteComposer(false); handleQuickNoteForMember(m) }}
       />
 
       <ScheduleSessionModal
@@ -2324,26 +2361,27 @@ function UpNextRow({
 }
 
 function NoteComposerPicker({
-  isOpen, onClose, awaitingNotes, search, onSearchChange, locale, t, sessionTypeMap, onPick,
+  isOpen, onClose, members, search, onSearchChange, locale, t, onPick,
 }: {
   isOpen: boolean
   onClose: () => void
-  awaitingNotes: DashBooking[]
+  members: MemberLite[]
   search: string
   onSearchChange: (s: string) => void
   locale: string
   t: (en: string, fr: string, es: string) => string
-  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
-  onPick: (b: DashBooking) => void
+  onPick: (m: MemberLite) => void
 }) {
   if (!isOpen) return null
   const q = search.trim().toLowerCase()
-  const filtered = q.length === 0
-    ? awaitingNotes
-    : awaitingNotes.filter(b =>
-        (b.client_name || '').toLowerCase().includes(q) ||
-        (b.client_email || '').toLowerCase().includes(q),
-      )
+  const filtered = (q.length === 0
+    ? members
+    : members.filter(m => {
+        const full = `${m.first_name || ''} ${m.last_name || ''}`.toLowerCase()
+        return full.includes(q)
+      })
+  ).slice()
+    .sort((a, b) => (new Date(b.last_session_at || 0).getTime()) - (new Date(a.last_session_at || 0).getTime()))
   return (
     <AnimatePresence>
       <motion.div
@@ -2364,13 +2402,8 @@ function NoteComposerPicker({
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-amber-500" />
               <h2 className="text-sm font-semibold text-gray-900">
-                {t('Pick a session to note', 'Choisir une séance', 'Elegir una sesión')}
+                {t('Pick a patient', 'Choisir un patient', 'Elegir un paciente')}
               </h2>
-              {awaitingNotes.length > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold tabular-nums">
-                  {awaitingNotes.length}
-                </span>
-              )}
             </div>
             <button
               type="button"
@@ -2399,20 +2432,19 @@ function NoteComposerPicker({
               <div className="text-center py-10 text-gray-400">
                 <Sparkles className="w-5 h-5 mx-auto mb-2 text-emerald-300" />
                 <p className="text-sm">
-                  {awaitingNotes.length === 0
-                    ? t('All caught up.', 'Vous êtes à jour.', 'Al día.')
+                  {q.length === 0
+                    ? t('No patients yet.', 'Aucun patient.', 'Sin pacientes.')
                     : t('No matches.', 'Aucun résultat.', 'Sin coincidencias.')}
                 </p>
               </div>
             ) : (
               <ul className="py-1">
-                {filtered.map(b => (
-                  <NoteComposerRow
-                    key={b.id}
-                    booking={b}
+                {filtered.map(m => (
+                  <MemberPickerRow
+                    key={m.id}
+                    member={m}
                     locale={locale}
                     t={t}
-                    sessionTypeMap={sessionTypeMap}
                     onPick={onPick}
                   />
                 ))}
@@ -2425,55 +2457,36 @@ function NoteComposerPicker({
   )
 }
 
-function NoteComposerRow({
-  booking, locale, t, sessionTypeMap, onPick,
+function MemberPickerRow({
+  member, locale, t, onPick,
 }: {
-  booking: DashBooking
+  member: MemberLite
   locale: string
   t: (en: string, fr: string, es: string) => string
-  sessionTypeMap: Record<string, { name: string; name_fr?: string }>
-  onPick: (b: DashBooking) => void
+  onPick: (m: MemberLite) => void
 }) {
-  const start = parseISO(booking.start_time)
-  const displayName = booking.client_name || t('Unnamed patient', 'Patient sans nom', 'Paciente sin nombre')
-  const dateLabel = isToday(start)
-    ? t('Today', "Aujourd'hui", 'Hoy')
-    : isYesterday(start)
-      ? t('Yesterday', 'Hier', 'Ayer')
-      : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
-  const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
-  const typeMeta = sessionTypeMap[booking.session_type]
-  const enumDefaults: Record<string, { en: string; fr: string; es: string }> = {
-    initial_consultation: { en: 'Initial consultation', fr: 'Première séance', es: 'Consulta inicial' },
-    follow_up:            { en: 'Follow-up',            fr: 'Suivi',           es: 'Seguimiento' },
-    check_in:             { en: 'Check-in',             fr: 'Bilan',           es: 'Revisión' },
-    crisis:               { en: 'Crisis',               fr: 'Crise',           es: 'Crisis' },
-    group:                { en: 'Group',                fr: 'Groupe',          es: 'Grupo' },
-    other:                { en: 'Other',                fr: 'Autre',           es: 'Otro' },
-  }
-  const enumDefault = enumDefaults[booking.session_type]
-  const sessionLabel = typeMeta
-    ? (locale === 'fr' ? (typeMeta.name_fr || typeMeta.name) : typeMeta.name)
-    : enumDefault
-      ? enumDefault[locale as 'en' | 'fr' | 'es'] || enumDefault.en
-      : booking.session_type
+  const displayName = `${member.first_name || ''} ${member.last_name || ''}`.trim()
+    || t('Unnamed patient', 'Patient sans nom', 'Paciente sin nombre')
+  const lastSeenLabel = member.last_session_at
+    ? format(parseISO(member.last_session_at), locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+    : null
   return (
     <li>
       <button
         type="button"
-        onClick={() => onPick(booking)}
+        onClick={() => onPick(member)}
         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-amber-50/40 text-left transition-colors"
       >
-        <div className="w-14 px-2 h-9 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center text-xs font-semibold shrink-0 tabular-nums">
-          {format(start, timeFmt)}
+        <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-semibold shrink-0">
+          {(member.first_name?.[0] || displayName[0] || '?').toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            <span className="text-gray-700">{dateLabel}</span>
-            <span className="text-gray-400"> · </span>
-            <span>{sessionLabel}</span>
-          </p>
+          {lastSeenLabel && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              {t('Last session', 'Dernière séance', 'Última sesión')} · {lastSeenLabel}
+            </p>
+          )}
         </div>
         <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
       </button>
