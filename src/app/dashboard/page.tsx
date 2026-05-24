@@ -1151,7 +1151,7 @@ function DashboardInner() {
                     <header className="flex items-center gap-2 mb-4 pr-8">
                       <FileText className="w-4 h-4 text-amber-600" />
                       <h3 className="text-base font-semibold text-gray-900">
-                        {t('Quick note', 'Note rapide', 'Nota rápida')}
+                        {t('Write a note', 'Écrire une note', 'Escribir una nota')}
                       </h3>
                     </header>
                     <div className="relative">
