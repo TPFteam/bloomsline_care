@@ -2609,31 +2609,35 @@ export default function BookingsPage() {
                       : 'Google can send you an email 24h before each appointment, independently of Bloomsline notifications.'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                   {(() => {
                     const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? true
                     return (
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={enabled}
-                          onChange={(e) => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: e.target.checked } as any))}
-                          className="mt-1 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-4">
+                          <p className="font-medium">
                             {locale === 'fr' ? 'Envoyer un e-mail de rappel 24h avant' : 'Send an email reminder 24h before'}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-sm text-gray-500">
                             {locale === 'fr'
                               ? "Le rappel popup 30 minutes avant est toujours actif. Ce changement s'applique uniquement aux nouveaux rendez-vous."
                               : 'The 30-min popup reminder is always on. This change applies only to new appointments.'}
                           </p>
                         </div>
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: !enabled } as any))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+                          aria-pressed={enabled}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                          />
+                        </button>
+                      </div>
                     )
                   })()}
-                  <div className="pt-3">
+                  <div>
                     <Button
                       onClick={handleSaveBookingSettings}
                       disabled={isSavingSettings}
