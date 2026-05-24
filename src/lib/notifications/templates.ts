@@ -431,9 +431,20 @@ const templates: Record<NotificationType, NotificationTemplate> = {
   },
 
   moment_shared: {
-    title: (_m, locale) =>
-      locale === 'fr' ? 'Moment partagé' : 'Moment shared',
+    title: (m, locale) => {
+      const count = Number(m.count || 1)
+      if (count > 1) {
+        return locale === 'fr' ? 'Moments partagés' : 'Moments shared'
+      }
+      return locale === 'fr' ? 'Moment partagé' : 'Moment shared'
+    },
     body: (m, locale) => {
+      const count = Number(m.count || 1)
+      if (count > 1) {
+        return locale === 'fr'
+          ? `${m.memberName} a partagé ${count} moments avec vous`
+          : `${m.memberName} shared ${count} moments with you`
+      }
       const kind = (m.momentType as string) || 'moment'
       const kindLabel = locale === 'fr'
         ? ({ photo: 'une photo', video: 'une vidéo', voice: 'une note vocale', write: 'une note', mixed: 'un moment' } as Record<string, string>)[kind] || 'un moment'
@@ -442,11 +453,24 @@ const templates: Record<NotificationType, NotificationTemplate> = {
         ? `${m.memberName} a partagé ${kindLabel} avec vous`
         : `${m.memberName} shared ${kindLabel} with you`
     },
-    actionUrl: (m) => `/members/${m.memberId}?tab=shared&shareTab=moments&openMomentId=${m.momentId || ''}`,
-    emailSubject: (m, locale) =>
-      locale === 'fr'
+    actionUrl: (m) => {
+      const count = Number(m.count || 1)
+      // Bulk shares land on the Moments tab list — no single moment to
+      // open since the notification represents N of them.
+      if (count > 1) return `/members/${m.memberId}?tab=shared&shareTab=moments`
+      return `/members/${m.memberId}?tab=shared&shareTab=moments&openMomentId=${m.momentId || ''}`
+    },
+    emailSubject: (m, locale) => {
+      const count = Number(m.count || 1)
+      if (count > 1) {
+        return locale === 'fr'
+          ? `${m.memberName} a partagé ${count} moments`
+          : `${m.memberName} shared ${count} moments with you`
+      }
+      return locale === 'fr'
         ? `${m.memberName} a partagé un moment`
-        : `${m.memberName} shared a moment with you`,
+        : `${m.memberName} shared a moment with you`
+    },
   },
 
   resource_started: {
