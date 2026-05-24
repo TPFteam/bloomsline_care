@@ -2287,61 +2287,6 @@ export default function BookingsPage() {
               </Card>
               )}
 
-              {/* Calendar email reminder toggle — controls whether Google
-                  Calendar fires its own 24h-before email reminder for
-                  events we create. Independent of Bloomsline's bell +
-                  email notifications. */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-gray-600" />
-                    {locale === 'fr' ? 'Rappel Google Agenda' : 'Google Calendar reminder'}
-                  </CardTitle>
-                  <CardDescription>
-                    {locale === 'fr'
-                      ? "Google peut vous envoyer un e-mail 24h avant chaque rendez-vous, indépendamment des notifications Bloomsline."
-                      : 'Google can send you an email 24h before each appointment, independently of Bloomsline notifications.'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? true
-                    return (
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={enabled}
-                          onChange={(e) => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: e.target.checked } as any))}
-                          className="mt-1 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
-                            {locale === 'fr' ? 'Envoyer un e-mail de rappel 24h avant' : 'Send an email reminder 24h before'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {locale === 'fr'
-                              ? "Le rappel popup 30 minutes avant est toujours actif. Ce changement s'applique uniquement aux nouveaux rendez-vous."
-                              : 'The 30-min popup reminder is always on. This change applies only to new appointments.'}
-                          </p>
-                        </div>
-                      </label>
-                    )
-                  })()}
-                  <div className="pt-3">
-                    <Button
-                      onClick={handleSaveBookingSettings}
-                      disabled={isSavingSettings}
-                      className="bg-gray-900 hover:bg-gray-800 text-white"
-                    >
-                      {isSavingSettings ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Calendar event title template — controls the title that
                   appears on Google Calendar events created by Bloomsline. */}
               <Card>
@@ -2648,6 +2593,61 @@ export default function BookingsPage() {
 
               {/* ─── Preferences tab ─── */}
               {settingsTab === 'preferences' && (<>
+              {/* Calendar email reminder toggle — controls whether Google
+                  Calendar fires its own 24h-before email reminder for
+                  events we create. Independent of Bloomsline's bell +
+                  email notifications. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Rappel Google Agenda' : 'Google Calendar reminder'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr'
+                      ? "Google peut vous envoyer un e-mail 24h avant chaque rendez-vous, indépendamment des notifications Bloomsline."
+                      : 'Google can send you an email 24h before each appointment, independently of Bloomsline notifications.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? true
+                    return (
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={(e) => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: e.target.checked } as any))}
+                          className="mt-1 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {locale === 'fr' ? 'Envoyer un e-mail de rappel 24h avant' : 'Send an email reminder 24h before'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {locale === 'fr'
+                              ? "Le rappel popup 30 minutes avant est toujours actif. Ce changement s'applique uniquement aux nouveaux rendez-vous."
+                              : 'The 30-min popup reminder is always on. This change applies only to new appointments.'}
+                          </p>
+                        </div>
+                      </label>
+                    )
+                  })()}
+                  <div className="pt-3">
+                    <Button
+                      onClick={handleSaveBookingSettings}
+                      disabled={isSavingSettings}
+                      className="bg-gray-900 hover:bg-gray-800 text-white"
+                    >
+                      {isSavingSettings ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Booking setup: enable/disable, external, approval */}
               <Card>
                 <CardHeader>
