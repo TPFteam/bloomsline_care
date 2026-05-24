@@ -1765,9 +1765,6 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           type="button"
                           className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-700 transition-colors"
                         >
-                          <span className="text-gray-400">
-                            {locale === 'fr' ? 'Trier :' : 'Sort:'}
-                          </span>
                           <span>
                             {momentsSortBy === 'shared'
                               ? (locale === 'fr' ? 'Partagé' : 'Shared')
@@ -1776,12 +1773,12 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                           <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[160px]">
+                      <DropdownMenuContent align="end" className="min-w-[140px]">
                         <DropdownMenuItem onClick={() => setMomentsSortBy('shared')}>
-                          {locale === 'fr' ? 'Date de partage' : 'Shared date'}
+                          {locale === 'fr' ? 'Partagé' : 'Shared'}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setMomentsSortBy('created')}>
-                          {locale === 'fr' ? 'Date de capture' : 'Captured date'}
+                          {locale === 'fr' ? 'Capturé' : 'Captured'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
