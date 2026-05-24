@@ -1550,6 +1550,11 @@ export default function BookingsPage() {
                   onReject={handleReject}
                   processingId={processingId}
                   onSlotClick={(day, time, options) => setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })}
+                  bookingsWithNotes={bookingsWithNotes}
+                  onTakeNotes={(bookingId) => {
+                    const b = bookings.find(x => x.id === bookingId)
+                    if (b) handleTakeNotes(b)
+                  }}
                 />
               ) : (
               <>

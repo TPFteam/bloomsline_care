@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
@@ -56,6 +56,15 @@ interface WeekCalendarViewProps {
   // dashboard embed sets a smaller value to keep the widget at the
   // same height as a populated "Up next" list.
   gridMaxHeight?: number
+  // Set of `${memberId}::${minutePrecisionTs}` keys identifying which
+  // bookings already have a saved session_summary note. Used by the
+  // event popover to label the notes button "View notes" vs
+  // "Take notes".
+  bookingsWithNotes?: Set<string>
+  // Open the floating notes editor for a specific booking. Parent
+  // resolves bookingId → Booking and calls into the shared
+  // handleTakeNotes flow.
+  onTakeNotes?: (bookingId: string) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -63,7 +72,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, bookingsWithNotes, onTakeNotes }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -681,6 +690,31 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             {isGoogle && (
                               <p className="text-[10px] text-blue-500">Google Calendar</p>
                             )}
+
+                            {/* Session notes — opens the floating editor.
+                                Label flips between "View notes" and "Take
+                                notes" based on whether a session_summary
+                                note already exists for this booking. */}
+                            {event.source === 'booking' && event.bookingId && event.memberId && onTakeNotes && (() => {
+                              const minute = Math.floor(new Date(event.start).getTime() / 60000)
+                              const hasNote = bookingsWithNotes?.has(`${event.memberId}::${minute}`) ?? false
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); onTakeNotes(event.bookingId!); setSelectedEvent(null) }}
+                                  className={`flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                                    hasNote
+                                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                                      : 'bg-amber-50 hover:bg-amber-100 text-amber-700'
+                                  }`}
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  {hasNote
+                                    ? (locale === 'fr' ? 'Voir les notes' : 'View notes')
+                                    : (locale === 'fr' ? 'Prendre des notes' : 'Take notes')}
+                                </button>
+                              )
+                            })()}
 
                             {/* Notes */}
                             {event.notes && (
