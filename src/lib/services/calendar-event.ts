@@ -82,6 +82,11 @@ export interface CalendarEventParams {
    *  {practitioner}, {client}, {session_type}. Empty/null → use the default
    *  "Rendez-vous {practitioner} <> {client}" / "Appointment ..." pattern. */
   titleTemplate?: string | null
+  /** Whether to attach Google Calendar's 24h email reminder to the event.
+   *  Mirrors booking_settings.calendar_email_reminder_enabled. Defaults
+   *  to true to preserve previous behaviour. The 30-min popup reminder
+   *  is always included. */
+  calendarEmailReminder?: boolean
 }
 
 // Substitute placeholder tokens in a title template. Unknown tokens are
@@ -121,6 +126,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     practitionerPhone,
     recurrenceRule,
     titleTemplate,
+    calendarEmailReminder = true,
   } = params
 
   const isInPerson = sessionFormat === 'in_person'
@@ -247,8 +253,13 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     reminders: {
       useDefault: false,
       overrides: [
-        { method: 'email', minutes: 24 * 60 }, // 1 email, 24h before
-        { method: 'popup', minutes: 30 },      // 1 popup,  30min before
+        // Email reminder is opt-out per practitioner setting; popup
+        // always fires 30min before so they're never surprised by a
+        // session they didn't see coming.
+        ...(calendarEmailReminder
+          ? [{ method: 'email' as const, minutes: 24 * 60 }]
+          : []),
+        { method: 'popup', minutes: 30 },
       ],
     },
   }

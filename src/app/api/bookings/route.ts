@@ -254,10 +254,11 @@ export async function POST(request: NextRequest) {
           const practAddr = await getPractitionerAddress(body.practitioner_id, supabase);
           const { data: titleSettings } = await supabase
             .from('booking_settings')
-            .select('calendar_event_title_template')
+            .select('calendar_event_title_template, calendar_email_reminder_enabled')
             .eq('user_id', body.practitioner_id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
+          const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName,
@@ -274,6 +275,7 @@ export async function POST(request: NextRequest) {
             practitionerAddress: practAddr.address,
             practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
             titleTemplate,
+            calendarEmailReminder,
           });
 
           const isVideo = (body.session_format || 'video') === 'video';

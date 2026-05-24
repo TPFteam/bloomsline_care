@@ -215,7 +215,7 @@ export async function PATCH(
         try {
           const { data: settings } = await adminSupabase
             .from('booking_settings')
-            .select('session_types, calendar_event_title_template')
+            .select('session_types, calendar_event_title_template, calendar_email_reminder_enabled')
             .eq('user_id', user.id)
             .single();
 
@@ -223,6 +223,7 @@ export async function PATCH(
           const sessionType = sessionTypes.find(st => st.id === booking.session_type);
           const sessionTypeName = sessionType?.name || booking.session_type;
           const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
+          const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
 
           // Get practitioner name (robust fallback) and locale
           const { data: practUser } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
@@ -247,6 +248,7 @@ export async function PATCH(
             practitionerEmail: practUser?.email,
             practitionerPhone: practUser?.phone,
             titleTemplate,
+            calendarEmailReminder,
           });
 
           const result = await postGoogleEvent({

@@ -96,6 +96,10 @@ export interface BookingSettings {
   // Custom title template for Google Calendar events. Supports
   // {practitioner} / {client} / {session_type}. Null = use default.
   calendar_event_title_template?: string | null;
+  // Per-practitioner toggle for the 24h email reminder that Google
+  // Calendar fires from its side. When false we skip attaching the
+  // email reminder to events; the 30-min popup stays. Defaults true.
+  calendar_email_reminder_enabled?: boolean;
   // Per-practitioner configuration for the "Add a new person" popup.
   // Keys → 'optional' | 'required'. Missing key = field hidden. See
   // migration 20260522_member_form_fields_config.sql.

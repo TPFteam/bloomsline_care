@@ -215,10 +215,11 @@ export async function POST(
           const practAddr = await getPractitionerAddress(user.id, adminSupabase);
           const { data: titleSettings } = await adminSupabase
             .from('booking_settings')
-            .select('calendar_event_title_template')
+            .select('calendar_event_title_template, calendar_email_reminder_enabled')
             .eq('user_id', user.id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
+          const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
           const rebuilt = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName: await getPractitionerName(user.id, adminSupabase),
@@ -236,6 +237,7 @@ export async function POST(
             practitionerAddress: practAddr.address,
             practitionerGoogleMapsUrl: practAddr.googleMapsUrl,
             titleTemplate,
+            calendarEmailReminder,
           }) as { start: unknown; end: unknown; summary: string; description: string; location?: string };
 
           // Inject the optional reason just after the "Session rescheduled"
