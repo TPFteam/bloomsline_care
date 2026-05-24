@@ -161,7 +161,12 @@ function SharedMomentCard({
   const hasImage = !!(moment.media_path || moment.media_url) && (moment.type === 'photo' || moment.type === 'video' || moment.type === 'mixed')
   const isVoice = moment.type === 'voice'
   const isWrite = moment.type === 'write'
-  const capturedDate = new Date(moment.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+  const capturedDate = (() => {
+    const d = new Date(moment.created_at)
+    const datePart = d.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+    const timePart = d.toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: 'numeric', minute: '2-digit' })
+    return `${datePart} · ${timePart}`
+  })()
   return (
     <motion.button
       type="button"
