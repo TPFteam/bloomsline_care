@@ -133,20 +133,12 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const [allNotes, setAllNotes] = useState<CombinedNote[]>([])
   const [showAllNotesModal, setShowAllNotesModal] = useState(false)
 
-  // AI Summary state
+  // AI Summary state. showSummaryModal kept around for the generate
+  // flow on first-ever run; once a summary exists the Pulse is
+  // rendered inline (embedded) rather than as a popup.
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
-  // Auto-open the full Bloom Pulse modal once per Overview mount when
-  // a summary exists. The 3-line preview card felt like a hop; the
-  // practitioner usually wants the full read on landing.
-  const bloomPulseAutoOpenedRef = useRef(false)
-  useEffect(() => {
-    if (latestSummary && !bloomPulseAutoOpenedRef.current) {
-      bloomPulseAutoOpenedRef.current = true
-      setShowSummaryModal(true)
-    }
-  }, [latestSummary])
 
   // Load card layout from preferences
   useEffect(() => {
@@ -605,35 +597,12 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const renderCardContent = (cardId: string) => {
     switch (cardId) {
       case 'ai_summary':
+        // Note: when latestSummary exists, renderCard short-circuits to
+        // an embedded MemberSummaryModal and never reaches this switch.
+        // This branch only fires for the empty / generate state.
         return loadingSummary ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
-          </div>
-        ) : latestSummary ? (
-          <div className="space-y-3">
-            {/* Current Status Preview */}
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <p className="text-sm text-gray-700 line-clamp-3">
-                {(latestSummary.summary_content as SummaryContent).current_status}
-              </p>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatRelativeTime(latestSummary.generated_at)}
-              </span>
-            </div>
-
-            {/* View Full Summary Button */}
-            <Button
-              onClick={() => setShowSummaryModal(true)}
-              variant="outline"
-              className="w-full border-teal-500/30 text-teal-600 hover:bg-teal-500/5 rounded-lg"
-            >
-              {locale === 'fr' ? 'Voir Bloom Pulse' : locale === 'es' ? 'Ver Bloom Pulse' : 'View Bloom Pulse'}
-            </Button>
           </div>
         ) : (
           <div className="text-center py-6">
@@ -1334,6 +1303,36 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     const isDragging = draggedCard === cardConfig.id
     const isDropTarget = dragOverColumn === columnIndex && dragOverIndex === cardIndex
     const isEditing = (cardConfig.id === 'about' && editingAbout) || (cardConfig.id === 'preferences' && editingPreferences)
+
+    // ai_summary, when a summary already exists, IS the embedded
+    // Pulse panel — no extra card wrapper / duplicate "Bloom Pulse"
+    // header. The empty/generate state still falls through to the
+    // standard card chrome below.
+    if (cardConfig.id === 'ai_summary' && latestSummary && !loadingSummary) {
+      return (
+        <div
+          key={cardConfig.id}
+          draggable
+          onDragStart={(e) => handleDragStart(e, cardConfig.id)}
+          onDragOver={(e) => handleDragOver(e, columnIndex as 0 | 1, cardIndex)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, columnIndex as 0 | 1, cardIndex)}
+          onDragEnd={handleDragEnd}
+          className={`transition-all duration-200 ${isDragging ? 'opacity-50' : ''}`}
+        >
+          {isDropTarget && !isDragging && (
+            <div className="h-2 mb-2 bg-blue-100 rounded-full transition-all" />
+          )}
+          <MemberSummaryModal
+            isOpen
+            embedded
+            onClose={() => {}}
+            memberId={member.id}
+            memberName={`${member.first_name} ${member.last_name}`}
+          />
+        </div>
+      )
+    }
 
     return (
       <div

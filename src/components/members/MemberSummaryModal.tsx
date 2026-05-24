@@ -55,11 +55,15 @@ interface MemberSummaryModalProps {
   memberName: string
   /** Called when user clicks a citation. Modal closes; parent should switch tab + highlight. */
   onNavigateToSource?: (sourceType: PulseSourceType, sourceId: string) => void
+  /** When true, render the panel inline (no fixed-position backdrop,
+   *  no scrim, no close button). Used by the Overview tab to embed
+   *  the full Pulse directly in the card instead of opening a popup. */
+  embedded?: boolean
 }
 
 type SectionId = 'status' | 'highlights' | 'themes' | 'attention' | 'recommendations' | 'nextSteps'
 
-export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNavigateToSource }: MemberSummaryModalProps) {
+export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNavigateToSource, embedded }: MemberSummaryModalProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
 
@@ -820,25 +824,19 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
     )
   }
 
-  if (!isOpen) return null
+  if (!embedded && !isOpen) return null
 
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ type: 'spring', duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
+  // Inner panel — same for both popup and embed; only the outer
+  // wrapping (fixed backdrop vs. plain div) changes.
+  const Panel = (
+    <div
+      className={
+        embedded
+          ? 'bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col w-full'
+          : 'bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col'
+      }
+      onClick={embedded ? undefined : (e) => e.stopPropagation()}
+    >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
@@ -862,12 +860,14 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
                   {locale === 'fr' ? 'Historique' : locale === 'es' ? 'Historial' : 'History'}
                 </Button>
               )}
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {!embedded && (
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -1260,7 +1260,23 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
               </div>
             )}
           </div>
-        </motion.div>
+    </div>
+  )
+
+  if (embedded) {
+    return Panel
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        onClick={onClose}
+      >
+        {Panel}
       </motion.div>
     </AnimatePresence>
   )
