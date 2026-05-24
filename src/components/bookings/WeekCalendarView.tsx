@@ -56,11 +56,11 @@ interface WeekCalendarViewProps {
   // dashboard embed sets a smaller value to keep the widget at the
   // same height as a populated "Up next" list.
   gridMaxHeight?: number
-  // Set of `${memberId}::${minutePrecisionTs}` keys identifying which
-  // bookings already have a saved session_summary note. Used by the
-  // event popover to label the notes button "View notes" vs
-  // "Take notes".
-  bookingsWithNotes?: Set<string>
+  // Predicate from the parent that tells us whether a given booking
+  // id already has a saved session_summary note. Parent encapsulates
+  // the key-matching logic so this component doesn't have to
+  // duplicate the (member_id, scheduled_at) minute-precision pairing.
+  hasNotesForBooking?: (bookingId: string) => boolean
   // Open the floating notes editor for a specific booking. Parent
   // resolves bookingId → Booking and calls into the shared
   // handleTakeNotes flow.
@@ -72,7 +72,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, bookingsWithNotes, onTakeNotes }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -696,8 +696,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                                 notes" based on whether a session_summary
                                 note already exists for this booking. */}
                             {event.source === 'booking' && event.bookingId && event.memberId && onTakeNotes && (() => {
-                              const minute = Math.floor(new Date(event.start).getTime() / 60000)
-                              const hasNote = bookingsWithNotes?.has(`${event.memberId}::${minute}`) ?? false
+                              const hasNote = hasNotesForBooking?.(event.bookingId) ?? false
                               return (
                                 <button
                                   type="button"
