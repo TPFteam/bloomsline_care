@@ -137,6 +137,16 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
+  // Auto-open the full Bloom Pulse modal once per Overview mount when
+  // a summary exists. The 3-line preview card felt like a hop; the
+  // practitioner usually wants the full read on landing.
+  const bloomPulseAutoOpenedRef = useRef(false)
+  useEffect(() => {
+    if (latestSummary && !bloomPulseAutoOpenedRef.current) {
+      bloomPulseAutoOpenedRef.current = true
+      setShowSummaryModal(true)
+    }
+  }, [latestSummary])
 
   // Load card layout from preferences
   useEffect(() => {
