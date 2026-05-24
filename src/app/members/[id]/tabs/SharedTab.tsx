@@ -161,7 +161,7 @@ function SharedMomentCard({
   const hasImage = !!(moment.media_path || moment.media_url) && (moment.type === 'photo' || moment.type === 'video' || moment.type === 'mixed')
   const isVoice = moment.type === 'voice'
   const isWrite = moment.type === 'write'
-  const sharedDate = new Date(moment.shared_with_practitioner_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+  const capturedDate = new Date(moment.created_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
   return (
     <motion.button
       type="button"
@@ -203,9 +203,7 @@ function SharedMomentCard({
             <span className="capitalize">{mood}</span>
           </span>
         ) : null}
-        <span className="text-[11px] text-gray-400">
-          {locale === 'fr' ? 'Partagé le ' : 'Shared '}{sharedDate}
-        </span>
+        <span className="text-[11px] text-gray-400">{capturedDate}</span>
       </div>
       {hasImage && (moment.caption || moment.text_content) && (
         <div className="px-3 pb-3 -mt-1">
@@ -344,6 +342,7 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
   const [activeShareTab, setActiveShareTab] = useState<'resources' | 'stories' | 'moments'>('resources')
   const [sharedMoments, setSharedMoments] = useState<SharedMoment[]>([])
   const [momentsViewMode, setMomentsViewMode] = useState<'stacked' | 'grid'>('stacked')
+  const [momentsSortBy, setMomentsSortBy] = useState<'shared' | 'created'>('shared')
   const [viewingSharedMoment, setViewingSharedMoment] = useState<SharedMoment | null>(null)
   const [momentComments, setMomentComments] = useState<MomentComment[]>([])
   const [newMomentComment, setNewMomentComment] = useState('')
@@ -1725,102 +1724,165 @@ export default function SharedTab({ memberId, member, highlightResourceId }: Sha
                       : 'When this member shares a moment, it will appear here.'}
                   </p>
                 </div>
-              ) : (<>
-                {/* View-mode toggle — same affordance as the patient
-                    Moments tab so the practitioner can switch between
-                    a stacked / timeline reading view and a denser grid. */}
-                <div className="flex items-center justify-end gap-1 p-4 pb-0">
-                  <div className="inline-flex bg-gray-100 rounded-xl p-1">
-                    <button
-                      type="button"
-                      onClick={() => setMomentsViewMode('stacked')}
-                      className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
-                        momentsViewMode === 'stacked' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                      aria-label="Stacked view"
-                    >
-                      <GalleryVerticalEnd className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMomentsViewMode('grid')}
-                      className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
-                        momentsViewMode === 'grid' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                      aria-label="Grid view"
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                    </button>
+              ) : (() => {
+                // Sort + group by the chosen date field. "Shared" mode
+                // groups by the day the patient shared each moment.
+                // "Created" mode groups by the day the moment was
+                // originally captured. Card footer always shows the
+                // captured date.
+                const dayKey = (iso: string) => {
+                  const d = new Date(iso)
+                  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+                }
+                const dayLabel = (iso: string) =>
+                  new Date(iso).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })
+                const sortField = (m: SharedMoment) =>
+                  new Date(momentsSortBy === 'shared' ? m.shared_with_practitioner_at : m.created_at).getTime()
+                const sorted = sharedMoments.slice().sort((a, b) => sortField(b) - sortField(a))
+                const groups: Array<{ key: string; label: string; moments: SharedMoment[] }> = []
+                for (const m of sorted) {
+                  const iso = momentsSortBy === 'shared' ? m.shared_with_practitioner_at : m.created_at
+                  const k = dayKey(iso)
+                  const tail = groups[groups.length - 1]
+                  if (tail && tail.key === k) {
+                    tail.moments.push(m)
+                  } else {
+                    groups.push({ key: k, label: dayLabel(iso), moments: [m] })
+                  }
+                }
+                const dividerLabel = (label: string) => {
+                  if (momentsSortBy === 'shared') {
+                    return locale === 'fr' ? `Partagé le ${label}` : `Shared on ${label}`
+                  }
+                  return locale === 'fr' ? `Capturé le ${label}` : `Captured on ${label}`
+                }
+                return (<>
+                  {/* Controls row: sort-by toggle + view-mode toggle. */}
+                  <div className="flex items-center justify-end gap-3 p-4 pb-0">
+                    <div className="inline-flex bg-gray-100 rounded-xl p-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setMomentsSortBy('shared')}
+                        className={`px-3 h-8 rounded-lg font-medium transition-colors ${
+                          momentsSortBy === 'shared' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Partagé' : 'Shared'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMomentsSortBy('created')}
+                        className={`px-3 h-8 rounded-lg font-medium transition-colors ${
+                          momentsSortBy === 'created' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        {locale === 'fr' ? 'Capturé' : 'Captured'}
+                      </button>
+                    </div>
+                    <div className="inline-flex bg-gray-100 rounded-xl p-1">
+                      <button
+                        type="button"
+                        onClick={() => setMomentsViewMode('stacked')}
+                        className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
+                          momentsViewMode === 'stacked' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                        aria-label="Stacked view"
+                      >
+                        <GalleryVerticalEnd className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMomentsViewMode('grid')}
+                        className={`flex items-center justify-center w-9 h-8 rounded-lg transition-colors ${
+                          momentsViewMode === 'grid' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                        aria-label="Grid view"
+                      >
+                        <LayoutGrid className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                {momentsViewMode === 'grid' ? (
-                  <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {sharedMoments.map((moment, index) => (
-                      <SharedMomentCard
-                        key={moment.id}
-                        moment={moment}
-                        index={index}
-                        compact
-                        onClick={() => openSharedMoment(moment)}
-                        locale={locale}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  /* Timeline / tree-branch view. Vertical center line
-                     with cards alternating left/right, each anchored
-                     by a mood-colored dot — same shape as the mobile
-                     EmotionalRiver. */
-                  <div className="relative max-w-3xl mx-auto px-4 py-6">
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200" aria-hidden />
-                    {sharedMoments.map((moment, index) => {
-                      const isLeft = index % 2 === 0
-                      const mood = moment.moods?.[0]
-                      const moodColor = mood ? (MOMENT_MOOD_COLORS[mood] || '#CBD5E1') : '#CBD5E1'
-                      return (
-                        <div key={moment.id} className="relative grid grid-cols-2 gap-6 mb-8 last:mb-0">
-                          {isLeft ? (
-                            <>
-                              <div className="flex justify-end">
-                                <div className="w-full max-w-[260px]">
-                                  <SharedMomentCard
-                                    moment={moment}
-                                    index={index}
-                                    compact
-                                    onClick={() => openSharedMoment(moment)}
-                                    locale={locale}
+                  {momentsViewMode === 'grid' ? (
+                    <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {sorted.map((moment, index) => (
+                        <SharedMomentCard
+                          key={moment.id}
+                          moment={moment}
+                          index={index}
+                          compact
+                          onClick={() => openSharedMoment(moment)}
+                          locale={locale}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    /* Timeline view — vertical line down the centre,
+                       cards alternating left/right, dated dividers
+                       hanging on the line between groups. */
+                    <div className="relative max-w-3xl mx-auto px-4 py-6">
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-200" aria-hidden />
+                      {(() => {
+                        let runningIndex = 0
+                        return groups.map(group => (
+                          <div key={group.key}>
+                            <div className="relative flex items-center justify-center my-3">
+                              <span className="bg-white px-3 py-1 rounded-full border border-gray-200 text-[11px] font-medium text-gray-500 relative z-10">
+                                {dividerLabel(group.label)}
+                              </span>
+                            </div>
+                            {group.moments.map(moment => {
+                              const isLeft = runningIndex % 2 === 0
+                              runningIndex++
+                              const mood = moment.moods?.[0]
+                              const moodColor = mood ? (MOMENT_MOOD_COLORS[mood] || '#CBD5E1') : '#CBD5E1'
+                              return (
+                                <div key={moment.id} className="relative grid grid-cols-2 gap-6 mb-8 last:mb-0">
+                                  {isLeft ? (
+                                    <>
+                                      <div className="flex justify-end">
+                                        <div className="w-full max-w-[260px]">
+                                          <SharedMomentCard
+                                            moment={moment}
+                                            index={runningIndex}
+                                            compact
+                                            onClick={() => openSharedMoment(moment)}
+                                            locale={locale}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div />
+                                      <div className="flex justify-start">
+                                        <div className="w-full max-w-[260px]">
+                                          <SharedMomentCard
+                                            moment={moment}
+                                            index={runningIndex}
+                                            compact
+                                            onClick={() => openSharedMoment(moment)}
+                                            locale={locale}
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
+                                  <span
+                                    className="absolute left-1/2 top-6 -translate-x-1/2 w-2.5 h-2.5 rounded-full ring-4 ring-white"
+                                    style={{ backgroundColor: moodColor }}
+                                    aria-hidden
                                   />
                                 </div>
-                              </div>
-                              <div />
-                            </>
-                          ) : (
-                            <>
-                              <div />
-                              <div className="flex justify-start">
-                                <div className="w-full max-w-[260px]">
-                                  <SharedMomentCard
-                                    moment={moment}
-                                    index={index}
-                                    compact
-                                    onClick={() => openSharedMoment(moment)}
-                                    locale={locale}
-                                  />
-                                </div>
-                              </div>
-                            </>
-                          )}
-                          <span
-                            className="absolute left-1/2 top-6 -translate-x-1/2 w-2.5 h-2.5 rounded-full ring-4 ring-white"
-                            style={{ backgroundColor: moodColor }}
-                            aria-hidden
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </>)}
+                              )
+                            })}
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  )}
+                </>)
+              })()}
             </motion.div>
           )}
         </>
