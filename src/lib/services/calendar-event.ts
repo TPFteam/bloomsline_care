@@ -84,8 +84,9 @@ export interface CalendarEventParams {
   titleTemplate?: string | null
   /** Whether to attach Google Calendar's 24h email reminder to the event.
    *  Mirrors booking_settings.calendar_email_reminder_enabled. Defaults
-   *  to true to preserve previous behaviour. The 30-min popup reminder
-   *  is always included. */
+   *  to false so practitioners aren't opted into a Google-side email
+   *  reminder they didn't ask for. The 30-min popup reminder is always
+   *  included. */
   calendarEmailReminder?: boolean
 }
 
@@ -126,7 +127,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     practitionerPhone,
     recurrenceRule,
     titleTemplate,
-    calendarEmailReminder = true,
+    calendarEmailReminder = false,
   } = params
 
   const isInPerson = sessionFormat === 'in_person'

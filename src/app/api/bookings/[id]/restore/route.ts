@@ -142,7 +142,7 @@ export async function POST(
             const sessionType = sessionTypes.find(st => st.id === booking.session_type);
             const sessionTypeName = sessionType?.name || (booking.session_type as string);
             const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-            const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
+            const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
             const practAddr = await getPractitionerAddress(user.id, adminSupabase);
 
             const calendarEvent = buildCalendarEvent({

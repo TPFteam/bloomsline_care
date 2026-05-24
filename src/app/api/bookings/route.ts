@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
             .eq('user_id', body.practitioner_id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-          const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
+          const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
           const calendarEvent = buildCalendarEvent({
             bookingId: booking.id,
             practitionerName,

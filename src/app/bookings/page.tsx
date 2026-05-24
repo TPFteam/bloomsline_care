@@ -1208,7 +1208,7 @@ export default function BookingsPage() {
       send_own_calendar_emails: (bookingSettings as any)?.send_own_calendar_emails ?? true,
       booking_page_language: bookingSettings?.booking_page_language ?? null,
       calendar_event_title_template: (bookingSettings as any)?.calendar_event_title_template?.trim() || null,
-      calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? true,
+      calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? false,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -2611,7 +2611,7 @@ export default function BookingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {(() => {
-                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? true
+                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? false
                     return (
                       <div className="flex items-center justify-between">
                         <div className="flex-1 pr-4">

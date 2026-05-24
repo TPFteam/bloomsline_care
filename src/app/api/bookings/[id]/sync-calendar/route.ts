@@ -94,7 +94,7 @@ export async function POST(
       const sessionType = sessionTypes.find(st => st.id === booking.session_type);
       const sessionTypeName = sessionType?.name || booking.session_type;
       const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-      const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? true;
+      const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
 
       // Get practitioner name and locale from public.users (has the Bloomsline profile name)
       const { data: practUser, error: practErr } = await adminSupabase.from('users').select('full_name, preferred_language, email, phone').eq('id', user.id).single();
