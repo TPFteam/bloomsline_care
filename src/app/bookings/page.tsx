@@ -815,23 +815,34 @@ export default function BookingsPage() {
       .order('start_time', { ascending: true })
     if (data) setBookings(data as Booking[])
 
-    // Build the "has saved session note" lookup. Joins sessions →
-    // progress_notes filtered to session_summary so we know which
-    // History rows should show "View notes" vs "Take notes".
-    const { data: noteRows } = await sb
-      .from('sessions')
-      .select('member_id, scheduled_at, progress_notes!inner(id, note_type)')
-      .eq('practitioner_id', userId)
-      .eq('progress_notes.note_type', 'session_summary')
-    if (noteRows) {
-      const set = new Set<string>()
-      for (const s of noteRows as any[]) {
-        const mid = s.member_id
-        const minute = Math.floor(new Date(s.scheduled_at).getTime() / 60000)
-        set.add(`${mid}::${minute}`)
-      }
-      setBookingsWithNotes(set)
+    // Build the "has saved session note" lookup with two flat queries
+    // and a JS-side intersection. The previous version used a
+    // PostgREST nested `progress_notes!inner(...)` select which
+    // intermittently returned empty on reload (likely a schema-cache
+    // / FK detection quirk), so the calendar popover would forget the
+    // note after a refresh. Two simple queries are cheap and rock
+    // solid.
+    const [{ data: sessionRows }, { data: noteRows }] = await Promise.all([
+      sb.from('sessions')
+        .select('id, member_id, scheduled_at')
+        .eq('practitioner_id', userId),
+      sb.from('progress_notes')
+        .select('session_id')
+        .eq('practitioner_id', userId)
+        .eq('note_type', 'session_summary')
+        .not('session_id', 'is', null),
+    ])
+    const sessionIdsWithNotes = new Set<string>(
+      (noteRows || []).map((n: { session_id: string | null }) => n.session_id).filter((x): x is string => !!x)
+    )
+    const set = new Set<string>()
+    for (const s of (sessionRows || []) as Array<{ id: string; member_id: string | null; scheduled_at: string }>) {
+      if (!s.member_id) continue
+      if (!sessionIdsWithNotes.has(s.id)) continue
+      const minute = Math.floor(new Date(s.scheduled_at).getTime() / 60000)
+      set.add(`${s.member_id}::${minute}`)
     }
+    setBookingsWithNotes(set)
   }
 
   // Match a booking against the has-notes set. Same minute-precision
