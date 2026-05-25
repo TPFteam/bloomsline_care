@@ -803,6 +803,17 @@ export default function BookingsPage() {
     }
   })
 
+  // On initial mount loadData only fetches the bookings rows
+  // themselves — it doesn't populate the bookingsWithNotes lookup
+  // (which lives inside fetchBookings). Without this useEffect, the
+  // set starts empty on every page reload and the calendar popover
+  // shows "Take notes" for bookings that actually have notes saved.
+  // Triggered by userId becoming non-null after auth resolves.
+  useEffect(() => {
+    if (userId) void fetchBookings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
   // Refresh bookings list — shared by every status-changing handler.
   // Mirrors SessionsTab's onSessionsUpdate pattern.
   const fetchBookings = async () => {
