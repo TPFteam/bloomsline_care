@@ -82,6 +82,10 @@ export async function POST(
       reflectionsResult,
       sharedResourcesResult,
       milestoneCommentsResult,
+      sharedMomentsResult,
+      patientStoriesResult,
+      resourceResponsesResult,
+      bookingsResult,
     ] = await Promise.all([
       // Sessions
       supabase
@@ -143,6 +147,47 @@ export async function POST(
             .order('created_at', { ascending: false })
             .limit(10)
         }),
+
+      // Patient-shared moments (B2C). moments.user_id is the auth uid
+      // of the patient — same id as members.user_id.
+      member.user_id
+        ? supabase
+            .from('moments')
+            .select('id, type, moods, caption, text_content, created_at, shared_with_practitioner_at')
+            .eq('user_id', member.user_id)
+            .not('shared_with_practitioner_at', 'is', null)
+            .order('shared_with_practitioner_at', { ascending: false })
+            .limit(15)
+        : Promise.resolve({ data: [], error: null }),
+
+      // Patient stories shared with this practitioner.
+      supabase
+        .from('story_shares')
+        .select('id, shared_at, story:stories!inner(id, title, content)')
+        .eq('member_id', memberId)
+        .eq('practitioner_id', user.id)
+        .order('shared_at', { ascending: false })
+        .limit(8),
+
+      // Submitted resource responses (worksheets / assessments the
+      // patient actually filled out).
+      supabase
+        .from('resource_responses')
+        .select('id, status, submitted_at, resource:resources(id, title, type), answers')
+        .eq('member_id', memberId)
+        .eq('practitioner_id', user.id)
+        .order('submitted_at', { ascending: false, nullsFirst: false })
+        .limit(10),
+
+      // Bookings timeline — last 8 past + next 4 upcoming so the model
+      // sees cadence + what's queued.
+      supabase
+        .from('bookings')
+        .select('id, start_time, status, session_type, session_format')
+        .eq('practitioner_id', user.id)
+        .eq('member_id', memberId)
+        .order('start_time', { ascending: false })
+        .limit(12),
     ])
 
     // Check if there's enough data to generate a meaningful summary
@@ -152,6 +197,69 @@ export async function POST(
     const reflections = reflectionsResult.data || []
     const sharedResources = sharedResourcesResult.data || []
     const milestoneComments = milestoneCommentsResult.data || []
+    const sharedMomentsRaw = (sharedMomentsResult.data || []) as Array<{
+      id: string; type: string; moods: string[] | null; caption: string | null;
+      text_content: string | null; created_at: string;
+      shared_with_practitioner_at: string | null;
+    }>
+    const patientStoriesRaw = (patientStoriesResult.data || []) as Array<{
+      id: string; shared_at: string;
+      story?: { id: string; title: string | null; content: unknown } | Array<{ id: string; title: string | null; content: unknown }>
+    }>
+    const resourceResponsesRaw = (resourceResponsesResult.data || []) as Array<{
+      id: string; status: string | null; submitted_at: string | null;
+      resource?: { id: string; title: string | null; type: string | null } | Array<{ id: string; title: string | null; type: string | null }>
+      answers: unknown
+    }>
+    const bookingsRaw = (bookingsResult.data || []) as Array<{
+      id: string; start_time: string; status: string | null;
+      session_type: string | null; session_format: string | null
+    }>
+
+    // Fetch moment comments in one batch for the shared moments above.
+    // Avoid the N+1 — single query with .in() then group by moment_id.
+    let momentCommentsByMoment = new Map<string, Array<{ author_type: 'practitioner' | 'member'; content: string; created_at: string }>>()
+    if (sharedMomentsRaw.length > 0) {
+      const momentIds = sharedMomentsRaw.map(m => m.id)
+      const { data: cmtRows } = await supabase
+        .from('moment_comments')
+        .select('moment_id, author_type, content, created_at')
+        .in('moment_id', momentIds)
+        .order('created_at', { ascending: true })
+      for (const c of (cmtRows || []) as Array<{ moment_id: string; author_type: 'practitioner' | 'member'; content: string; created_at: string }>) {
+        const list = momentCommentsByMoment.get(c.moment_id) || []
+        list.push({ author_type: c.author_type, content: c.content, created_at: c.created_at })
+        momentCommentsByMoment.set(c.moment_id, list)
+      }
+    }
+
+    // Flatten the nested shapes Supabase returns when joining via FK.
+    const sharedMoments = sharedMomentsRaw.map(m => ({
+      ...m,
+      comments: momentCommentsByMoment.get(m.id) || [],
+    }))
+    const patientStories = patientStoriesRaw.map(s => {
+      const story = Array.isArray(s.story) ? s.story[0] : s.story
+      const excerpt = extractStoryExcerpt(story?.content)
+      return {
+        id: s.id,
+        title: story?.title ?? null,
+        shared_at: s.shared_at,
+        excerpt,
+      }
+    })
+    const resourceResponses = resourceResponsesRaw.map(r => {
+      const resource = Array.isArray(r.resource) ? r.resource[0] : r.resource
+      return {
+        id: r.id,
+        resource_title: resource?.title ?? null,
+        resource_type: resource?.type ?? null,
+        status: r.status,
+        submitted_at: r.submitted_at,
+        answers_summary: summariseResponseAnswers(r.answers),
+      }
+    })
+    const bookings = bookingsRaw
 
     const hasData = sessions.length > 0 || notes.length > 0 || milestones.length > 0 || member.internal_notes
 
@@ -180,6 +288,10 @@ export async function POST(
         }
       }),
       milestoneComments,
+      sharedMoments,
+      patientStories,
+      resourceResponses,
+      bookings,
       locale,
     }
 
@@ -207,6 +319,10 @@ export async function POST(
       reflections: reflections.length,
       sharedResources: sharedResources.length,
       milestoneComments: milestoneComments.length,
+      sharedMoments: sharedMoments.length,
+      patientStories: patientStories.length,
+      resourceResponses: resourceResponses.length,
+      bookings: bookings.length,
       files: fileExtractions.map(e => ({
         id: e.fileId,
         name: e.fileName,
@@ -580,4 +696,55 @@ export async function GET(
       { status: 500 }
     )
   }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+
+// stories.content is JSONB — usually an array of {type, content:{text}}
+// blocks. Walk it, collect any text strings, return the first ~400
+// chars. Robust to legacy plain-string or wrapped-object shapes.
+function extractStoryExcerpt(content: unknown): string | null {
+  if (!content) return null
+  let blocks: unknown[] = []
+  if (Array.isArray(content)) blocks = content
+  else if (typeof content === 'string') return content.trim().slice(0, 400) || null
+  else if (typeof content === 'object' && content !== null) {
+    const maybe = (content as { blocks?: unknown[] }).blocks
+    if (Array.isArray(maybe)) blocks = maybe
+  }
+  const parts: string[] = []
+  for (const b of blocks) {
+    if (!b || typeof b !== 'object') continue
+    const block = b as { type?: string; content?: { text?: string } }
+    const text = block.content?.text
+    if (typeof text === 'string' && text.trim()) parts.push(text.trim())
+    if (parts.join(' ').length > 400) break
+  }
+  const joined = parts.join(' · ').trim()
+  return joined.length > 0 ? joined.slice(0, 400) : null
+}
+
+// resource_responses.answers is JSONB — shape varies by resource type.
+// We don't try to render every block here; just emit a compact
+// "question: answer" digest so the model gets the gist without
+// dragging the prompt over the token cliff.
+function summariseResponseAnswers(answers: unknown): string | null {
+  if (!answers || typeof answers !== 'object') return null
+  const obj = answers as Record<string, unknown>
+  const lines: string[] = []
+  for (const [key, value] of Object.entries(obj)) {
+    let v: string
+    if (value === null || value === undefined) v = '—'
+    else if (Array.isArray(value)) v = value.map(x => String(x)).join(', ')
+    else if (typeof value === 'object') {
+      const o = value as Record<string, unknown>
+      if (typeof o.value !== 'undefined') v = String(o.value)
+      else v = JSON.stringify(o)
+    } else {
+      v = String(value)
+    }
+    lines.push(`${key}: ${v.slice(0, 120)}`)
+    if (lines.join(' · ').length > 280) break
+  }
+  return lines.length > 0 ? lines.join(' · ').slice(0, 320) : null
 }

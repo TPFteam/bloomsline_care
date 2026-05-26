@@ -30,6 +30,50 @@ interface MilestoneComment {
   milestone_id: string
 }
 
+// Patient-shared moment from the B2C mobile app, plus its conversation
+// thread with the practitioner (if any).
+interface SharedMomentInput {
+  id: string
+  type: string
+  moods: string[] | null
+  caption: string | null
+  text_content: string | null
+  created_at: string
+  shared_with_practitioner_at: string | null
+  comments?: Array<{ author_type: 'practitioner' | 'member'; content: string; created_at: string }>
+}
+
+// Patient-authored story (mobile app journal) that was shared with the
+// practitioner. Content is JSONB blocks — we extract plain text for
+// the prompt so the model isn't choking on layout JSON.
+interface PatientStoryInput {
+  id: string
+  title: string | null
+  shared_at: string
+  excerpt: string | null
+}
+
+// Practitioner-shared resource that the patient actually filled out.
+interface ResourceResponseInput {
+  id: string
+  resource_title: string | null
+  resource_type: string | null
+  status: string | null
+  submitted_at: string | null
+  answers_summary: string | null
+}
+
+// Scheduled / past bookings (gives the model timeline context the
+// `sessions` query alone doesn't surface — e.g. several no-shows in a
+// row, or an upcoming first-session-back after a gap).
+interface BookingInput {
+  id: string
+  start_time: string
+  status: string | null
+  session_type: string | null
+  session_format: string | null
+}
+
 export interface SummaryContext {
   member: Member
   sessions: Session[]
@@ -38,6 +82,10 @@ export interface SummaryContext {
   reflections: MemberReflection[]
   sharedResources: SharedResource[]
   milestoneComments: MilestoneComment[]
+  sharedMoments?: SharedMomentInput[]
+  patientStories?: PatientStoryInput[]
+  resourceResponses?: ResourceResponseInput[]
+  bookings?: BookingInput[]
   locale: SupportedLocale
 }
 
@@ -316,6 +364,63 @@ Last Session: ${member.last_session_at ? formatDate(member.last_session_at, loca
     })
 
     sections.push(`## Shared Resources (${sharedResources.length} shared, ${viewedCount} viewed)\n\n${resourceList.join('\n')}`)
+  }
+
+  // Resource Responses — what the patient actually submitted on
+  // worksheets / assessments the practitioner shared with them.
+  const responses = context.resourceResponses || []
+  if (responses.length > 0) {
+    const list = responses.slice(0, 8).map(r => {
+      const when = r.submitted_at ? formatDate(r.submitted_at, locale) : '—'
+      const head = `- [${when}] ${r.resource_title || 'Resource'} (${r.resource_type || 'unknown'}) · ${r.status || 'submitted'}`
+      return r.answers_summary ? `${head}\n  ${r.answers_summary}` : head
+    })
+    sections.push(`## Resource Responses (${responses.length} total, showing recent ${Math.min(8, responses.length)})\n\n${list.join('\n')}`)
+  }
+
+  // Patient-shared Moments (B2C mobile app). Each captures a mood +
+  // optional text / caption. Sample includes the practitioner ↔ patient
+  // comment thread when there is one so the model sees the dialogue
+  // context, not just the moment.
+  const sharedMoments = context.sharedMoments || []
+  if (sharedMoments.length > 0) {
+    const list = sharedMoments.slice(0, 10).map(m => {
+      const when = formatDate(m.shared_with_practitioner_at || m.created_at, locale)
+      const moods = (m.moods || []).join(', ') || '—'
+      const body = (m.text_content || m.caption || '').trim().slice(0, 280)
+      const lines = [`- [${when}] type=${m.type} · moods=${moods}`]
+      if (body) lines.push(`  "${body}"`)
+      if (m.comments && m.comments.length > 0) {
+        lines.push('  Conversation:')
+        for (const c of m.comments.slice(0, 4)) {
+          lines.push(`    [${c.author_type}] ${c.content.trim().slice(0, 200)}`)
+        }
+      }
+      return lines.join('\n')
+    })
+    sections.push(`## Shared Moments (${sharedMoments.length} shared by the patient via the mobile app, showing recent ${Math.min(10, sharedMoments.length)})\n\n${list.join('\n')}`)
+  }
+
+  // Patient-authored Stories / Journal (mobile app journal entries
+  // shared with this practitioner).
+  const stories = context.patientStories || []
+  if (stories.length > 0) {
+    const list = stories.slice(0, 6).map(s => {
+      const when = formatDate(s.shared_at, locale)
+      const head = `- [${when}] "${s.title || 'Untitled'}"`
+      return s.excerpt ? `${head}\n  ${s.excerpt.slice(0, 300)}` : head
+    })
+    sections.push(`## Patient Journal Entries (${stories.length} shared with you, showing recent ${Math.min(6, stories.length)})\n\n${list.join('\n')}`)
+  }
+
+  // Bookings timeline — past + upcoming, so the model sees cadence
+  // (gaps, recent no-shows, what's next) even when there's no note yet.
+  const bookings = context.bookings || []
+  if (bookings.length > 0) {
+    const list = bookings.slice(0, 10).map(b => {
+      return `- [${formatDate(b.start_time, locale)}] ${b.session_type || '—'} · ${b.session_format || '—'} · status=${b.status || '—'}`
+    })
+    sections.push(`## Bookings Timeline (recent ${Math.min(10, bookings.length)} of ${bookings.length})\n\n${list.join('\n')}`)
   }
 
   // Final instruction
