@@ -954,7 +954,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
             ) : summary ? (
               <div className="space-y-3">
                 {/* Delta banner — newer data available */}
-                {delta && delta.total >= 10 && (
+                {delta && delta.total >= 1 && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                       <Sparkles className="w-4 h-4 text-amber-600" />
@@ -978,6 +978,8 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
                           delta.breakdown.bookings && `${delta.breakdown.bookings} ${locale === 'fr' ? 'réservations' : locale === 'es' ? 'reservas' : 'bookings'}`,
                           delta.breakdown.comments && `${delta.breakdown.comments} ${locale === 'fr' ? 'commentaires' : locale === 'es' ? 'comentarios' : 'comments'}`,
                           delta.breakdown.milestones && `${delta.breakdown.milestones} ${locale === 'fr' ? 'jalons' : locale === 'es' ? 'hitos' : 'milestones'}`,
+                          delta.breakdown.moments && `${delta.breakdown.moments} ${locale === 'fr' ? 'moments' : locale === 'es' ? 'momentos' : 'moments'}`,
+                          delta.breakdown.momentComments && `${delta.breakdown.momentComments} ${locale === 'fr' ? 'réponses sur moments' : locale === 'es' ? 'respuestas en momentos' : 'moment replies'}`,
                         ].filter(Boolean).join(' · ')}
                       </p>
                     </div>

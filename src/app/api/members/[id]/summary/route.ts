@@ -547,6 +547,17 @@ export async function GET(
       let delta: { total: number; breakdown: Record<string, number>; sinceDate: string | null } | null = null
       if (summary) {
         const since = summary.generated_at
+        // Need the member's auth uid to look up moments (keyed by
+        // user_id, not member_id). Already fetched above for the
+        // generation path but we re-read here to keep this branch
+        // self-contained.
+        const { data: memberRowForDelta } = await supabase
+          .from('members')
+          .select('user_id')
+          .eq('id', memberId)
+          .single()
+        const memberUserId = memberRowForDelta?.user_id || null
+
         const [
           sessionsCount,
           notesCount,
@@ -557,6 +568,8 @@ export async function GET(
           storyCommentCount,
           resourceResponsesCount,
           bookingsCount,
+          momentsSharedCount,
+          momentCommentsCount,
         ] = await Promise.all([
           supabase.from('sessions').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
           supabase.from('progress_notes').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
@@ -567,6 +580,12 @@ export async function GET(
           supabase.from('story_share_comments').select('id', { count: 'exact', head: true }).eq('author_type', 'member').gt('created_at', since),
           supabase.from('resource_responses').select('id', { count: 'exact', head: true }).eq('member_id', memberId).gt('updated_at', since),
           supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('member_id', memberId).eq('practitioner_id', user.id).gt('created_at', since),
+          memberUserId
+            ? supabase.from('moments').select('id', { count: 'exact', head: true }).eq('user_id', memberUserId).gt('shared_with_practitioner_at', since)
+            : Promise.resolve({ count: 0 } as { count: number }),
+          memberUserId
+            ? supabase.from('moment_comments').select('id', { count: 'exact', head: true }).eq('author_type', 'member').gt('created_at', since)
+            : Promise.resolve({ count: 0 } as { count: number }),
         ])
 
         const breakdown = {
@@ -579,6 +598,8 @@ export async function GET(
           comments: storyCommentCount.count || 0,
           responses: resourceResponsesCount.count || 0,
           bookings: bookingsCount.count || 0,
+          moments: momentsSharedCount.count || 0,
+          momentComments: momentCommentsCount.count || 0,
         }
         const total = Object.values(breakdown).reduce((a, b) => a + b, 0)
         delta = { total, breakdown, sinceDate: since }

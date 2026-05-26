@@ -130,6 +130,10 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         if (error) throw error
         await mirrorToSession('completed', showPayment)
         emitBookingsChanged()
+        // Fire a background Pulse regeneration. Closing a session is
+        // the most meaningful update event — practitioners reported
+        // the Pulse felt stale after they finished a session.
+        if (booking.member_id) void triggerPulseRegen(sb, booking.member_id, locale)
         onSaved?.({ bookingId: booking.id, status: 'completed', payment_status: showPayment })
         onClose()
         toast.success(locale === 'fr' ? 'Rendez-vous marqué comme terminé' : 'Booking marked as completed')
@@ -151,6 +155,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         if (error) throw error
         await mirrorToSession('cancelled', noShowPayment, noShowReason)
         emitBookingsChanged()
+        if (booking.member_id) void triggerPulseRegen(sb, booking.member_id, locale)
         onSaved?.({ bookingId: booking.id, status: 'cancelled', payment_status: noShowPayment })
         onClose()
         toast.success(locale === 'fr' ? 'Rendez-vous marqué comme annulé' : 'Booking marked as cancelled')
@@ -388,4 +393,27 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
       </div>
     </div>
   )
+}
+
+// Fire-and-forget regenerate of the member's Bloom Pulse after a
+// session close. We don't await — the close UI shouldn't wait for an
+// AI generation. The endpoint takes the practitioner's auth token via
+// Authorization header.
+async function triggerPulseRegen(
+  sb: ReturnType<typeof createClient>,
+  memberId: string,
+  locale: string,
+): Promise<void> {
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session?.access_token) return
+    void fetch(`/api/members/${memberId}/summary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ locale }),
+    }).catch(() => {})
+  } catch {}
 }
