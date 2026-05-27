@@ -34,8 +34,10 @@ const translations = {
       product: 'Product',
       boundary: 'Boundary',
       whyNow: 'Why Now',
-      model: 'Model',
+      security: 'Security',
       real: "What's Real",
+      market: 'Market',
+      model: 'Model',
       team: 'Team',
       vision: 'Vision',
       ask: 'The Ask',
@@ -194,6 +196,39 @@ const translations = {
       ],
       closing: 'Zero AI-native clinical SaaS in EU. The wedge is open.',
     },
+    security: {
+      label: 'DATA SECURITY',
+      headline: 'Mental health data is the highest-stakes category in EU law.',
+      headline2: 'We treat it that way.',
+      intro: 'Three layers — infrastructure, governance, AI safety.',
+      todayTag: 'Today',
+      todayTitle: 'Secure by default.',
+      todayItems: [
+        'AES-256-GCM at rest. TLS 1.3 in transit.',
+        'Postgres Row-Level Security on every table.',
+        'EU residency end-to-end.',
+        'GDPR rights: export, deletion, portability.',
+      ],
+      nextTag: 'Next',
+      nextTitle: 'Credentialed in this round.',
+      nextItems: [
+        'Third-party penetration test (ANSSI-aligned).',
+        'DPIA on Bloom AI features.',
+        'Security advisor on the cap table.',
+        '72-hour incident response playbook.',
+      ],
+      laterTag: 'Later',
+      laterTitle: 'Enterprise-ready after launch.',
+      laterItems: [
+        'SOC 2 Type I → Type II.',
+        'HDS certification.',
+        'ISO 27001.',
+        'Full-time security engineer.',
+      ],
+      aiSafetyLabel: 'AI safety',
+      aiSafetyBody: 'Bloom AI summarizes therapy notes — it never diagnoses, recommends medication, or intervenes in crisis. Bounds are written into the system prompts. Every output traces back to source data.',
+      closing: 'Security isn\'t a slide. It\'s the precondition.',
+    },
     model: {
       label: 'THE MODEL',
       headline: 'Practitioners are our distribution.',
@@ -242,6 +277,29 @@ const translations = {
         'Two founders, fast iteration loop',
       ],
       quote: 'This isn\'t a concept. It\'s a working platform you can use today.',
+    },
+    market: {
+      label: 'THE MARKET',
+      headline: 'Start in France.',
+      headline2: 'The path is bigger.',
+      franceTitle: 'France today',
+      funnel: [
+        { value: '69M', label: 'people in France', source: 'INSEE 2026', url: 'https://www.insee.fr/en/statistiques/2381472' },
+        { value: '8.6M', label: 'adults with a depressive episode each year (15.6%)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'psychologists practicing in France', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
+        { value: '28K', label: 'in private / liberal practice — our TAM', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
+        { value: '~15K', label: 'active on digital practice tools (Doctolib, etc.) — our SAM', source: 'estimate', url: '' },
+        { value: '1,000', label: 'practitioners by Year 5 = ~€350K ARR', source: 'our SOM (~7% of SAM)', url: '' },
+      ],
+      europeLabel: 'Europe',
+      europeValue: '~17× France',
+      europeBody: 'EU27 — ~450M people. Compliance built in France passports across the bloc.',
+      worldLabel: 'World',
+      worldValue: '1B+',
+      worldBody: 'people living with mental health conditions. Long horizon, not a claim this year.',
+      worldSource: 'WHO 2025',
+      worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+      closing: 'We don\'t need the world. We need 1,000 French practitioners.',
     },
     team: {
       label: 'THE TEAM',
@@ -313,8 +371,10 @@ const translations = {
       product: 'Produit',
       boundary: 'Limite',
       whyNow: 'Pourquoi Maintenant',
-      model: 'Modèle',
+      security: 'Sécurité',
       real: 'Ce Qui Est Réel',
+      market: 'Marché',
+      model: 'Modèle',
       team: 'Équipe',
       vision: 'Vision',
       ask: 'La Demande',
@@ -473,6 +533,39 @@ const translations = {
       ],
       closing: 'Zéro SaaS clinique AI-native en Europe. La fenêtre est ouverte.',
     },
+    security: {
+      label: 'SÉCURITÉ DES DONNÉES',
+      headline: 'Les données de santé mentale sont la catégorie la plus sensible du droit européen.',
+      headline2: 'Nous les traitons comme telles.',
+      intro: 'Trois couches — infrastructure, gouvernance, sécurité IA.',
+      todayTag: 'Aujourd\'hui',
+      todayTitle: 'Sécurisé par défaut.',
+      todayItems: [
+        'AES-256-GCM au repos. TLS 1.3 en transit.',
+        'Row-Level Security Postgres sur chaque table.',
+        'Résidence UE de bout en bout.',
+        'Droits RGPD : export, suppression, portabilité.',
+      ],
+      nextTag: 'Ensuite',
+      nextTitle: 'Validé cette levée.',
+      nextItems: [
+        'Test d\'intrusion tiers (aligné ANSSI).',
+        'AIPD sur les fonctionnalités Bloom AI.',
+        'Conseiller sécurité au cap table.',
+        'Plan de réponse aux incidents 72h.',
+      ],
+      laterTag: 'Plus tard',
+      laterTitle: 'Prêt entreprise après le lancement.',
+      laterItems: [
+        'SOC 2 Type I → Type II.',
+        'Certification HDS.',
+        'ISO 27001.',
+        'Ingénieur sécurité à temps plein.',
+      ],
+      aiSafetyLabel: 'Sécurité IA',
+      aiSafetyBody: 'Bloom AI synthétise les notes thérapeutiques — elle ne diagnostique jamais, ne recommande pas de médication, n\'intervient pas en crise. Les limites sont dans les system prompts. Chaque sortie est traçable jusqu\'à la donnée source.',
+      closing: 'La sécurité n\'est pas un slide. C\'est la condition préalable.',
+    },
     model: {
       label: 'LE MODÈLE',
       headline: 'Les praticiens sont notre distribution.',
@@ -521,6 +614,29 @@ const translations = {
         'Deux fondateurs, itération rapide',
       ],
       quote: 'Ce n\'est pas un concept. C\'est une plateforme fonctionnelle que vous pouvez utiliser aujourd\'hui.',
+    },
+    market: {
+      label: 'LE MARCHÉ',
+      headline: 'On démarre en France.',
+      headline2: 'Le chemin est plus grand.',
+      franceTitle: 'La France aujourd\'hui',
+      funnel: [
+        { value: '69M', label: 'personnes en France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/2381472' },
+        { value: '8,6M', label: 'adultes avec un épisode dépressif chaque année (15,6%)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'psychologues en exercice en France', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
+        { value: '28K', label: 'en libéral / exercice mixte — notre TAM', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
+        { value: '~15K', label: 'actifs sur les outils numériques (Doctolib, etc.) — notre SAM', source: 'estimation', url: '' },
+        { value: '1 000', label: 'praticiens en année 5 = ~350K€ ARR', source: 'notre SOM (~7% du SAM)', url: '' },
+      ],
+      europeLabel: 'Europe',
+      europeValue: '~17× la France',
+      europeBody: 'UE27 — ~450M de personnes. La conformité construite en France se déploie dans toute l\'UE.',
+      worldLabel: 'Monde',
+      worldValue: '1Md+',
+      worldBody: 'de personnes vivant avec un trouble mental. Horizon long, pas une promesse pour cette année.',
+      worldSource: 'OMS 2025',
+      worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+      closing: 'On n\'a pas besoin du monde. On a besoin de 1 000 praticiens français.',
     },
     team: {
       label: 'L\'ÉQUIPE',
@@ -601,7 +717,9 @@ export default function PitchNewPage() {
     { id: 'product', title: t.slides.product },
     { id: 'boundary', title: t.slides.boundary },
     { id: 'whyNow', title: t.slides.whyNow },
+    { id: 'security', title: t.slides.security },
     { id: 'real', title: t.slides.real },
+    { id: 'market', title: t.slides.market },
     { id: 'model', title: t.slides.model },
     { id: 'team', title: t.slides.team },
     { id: 'vision', title: t.slides.vision },
@@ -740,12 +858,14 @@ export default function PitchNewPage() {
           {currentSlide === 4 && <ProductSlide t={t.product} />}
           {currentSlide === 5 && <BoundarySlide t={t.boundary} />}
           {currentSlide === 6 && <WhyNowSlide t={t.whyNow} />}
-          {currentSlide === 7 && <RealSlide t={t.real} />}
-          {currentSlide === 8 && <ModelSlide t={t.model} />}
-          {currentSlide === 9 && <TeamSlide t={t.team} />}
-          {currentSlide === 10 && <VisionSlide t={t.vision} />}
-          {currentSlide === 11 && <AskSlide t={t.ask} />}
-          {currentSlide === 12 && <CloseSlide t={t.close} />}
+          {currentSlide === 7 && <SecuritySlide t={t.security} />}
+          {currentSlide === 8 && <RealSlide t={t.real} />}
+          {currentSlide === 9 && <MarketSlide t={t.market} />}
+          {currentSlide === 10 && <ModelSlide t={t.model} />}
+          {currentSlide === 11 && <TeamSlide t={t.team} />}
+          {currentSlide === 12 && <VisionSlide t={t.vision} />}
+          {currentSlide === 13 && <AskSlide t={t.ask} />}
+          {currentSlide === 14 && <CloseSlide t={t.close} />}
         </motion.div>
       </AnimatePresence>
 
@@ -1301,6 +1421,262 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1 }}
           className="text-xl text-teal-300 italic font-light pt-8 border-t border-white/10 max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: SECURITY — three horizons
+// =============================================================================
+
+function SecuritySlide({ t }: { t: typeof translations.en.security }) {
+  const horizons = [
+    { tag: t.todayTag, title: t.todayTitle, items: t.todayItems, accent: 'teal' as const, num: '01' },
+    { tag: t.nextTag, title: t.nextTitle, items: t.nextItems, accent: 'amber' as const, num: '02' },
+    { tag: t.laterTag, title: t.laterTitle, items: t.laterItems, accent: 'neutral' as const, num: '03' },
+  ]
+
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight mb-3"
+        >
+          {t.headline}
+        </motion.h2>
+
+        <motion.h3
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight mb-8"
+        >
+          {t.headline2}
+        </motion.h3>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-base text-neutral-500 font-light mb-12 max-w-3xl"
+        >
+          {t.intro}
+        </motion.p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {horizons.map((h, i) => {
+            const tagClass =
+              h.accent === 'teal'
+                ? 'text-teal-700 bg-teal-50 border-teal-200'
+                : h.accent === 'amber'
+                ? 'text-amber-700 bg-amber-50 border-amber-200'
+                : 'text-neutral-600 bg-neutral-50 border-neutral-200'
+            const numClass =
+              h.accent === 'teal'
+                ? 'text-teal-400/60'
+                : h.accent === 'amber'
+                ? 'text-amber-400/60'
+                : 'text-neutral-400/60'
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.12 }}
+                className="flex flex-col"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`text-xl font-light ${numClass}`}>{h.num}</span>
+                  <span className={`text-[10px] tracking-[0.2em] uppercase font-medium px-2.5 py-1 rounded-full border ${tagClass}`}>
+                    {h.tag}
+                  </span>
+                </div>
+                <h4 className="text-lg font-medium text-neutral-900 mb-4 leading-snug">{h.title}</h4>
+                <ul className="space-y-2.5">
+                  {h.items.map((item, j) => (
+                    <li key={j} className="text-sm text-neutral-600 font-light leading-relaxed flex gap-2">
+                      <span className="text-neutral-300 mt-0.5">—</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="border-t border-neutral-200 pt-8 mb-8 max-w-4xl"
+        >
+          <p className="text-xs tracking-[0.2em] uppercase text-neutral-500 font-medium mb-2">
+            {t.aiSafetyLabel}
+          </p>
+          <p className="text-base text-neutral-700 font-light leading-relaxed">
+            {t.aiSafetyBody}
+          </p>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-teal-700 italic font-light max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: MARKET — top-down funnel + Europe/World multiplier
+// =============================================================================
+
+function MarketSlide({ t }: { t: typeof translations.en.market }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <div className="mb-10">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight"
+          >
+            {t.headline}
+          </motion.h2>
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight"
+          >
+            {t.headline2}
+          </motion.h3>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-xs tracking-[0.25em] uppercase text-neutral-500 font-medium mb-6"
+        >
+          {t.franceTitle}
+        </motion.p>
+
+        {/* Funnel — narrowing rows */}
+        <div className="space-y-3 mb-10">
+          {t.funnel.map((row, i) => {
+            const isLast = i === t.funnel.length - 1
+            const isPenultimate = i === t.funnel.length - 2
+            const isHighlight = isLast || isPenultimate
+            const widthClasses = ['w-full', 'w-[92%]', 'w-[80%]', 'w-[66%]', 'w-[50%]', 'w-[36%]']
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+                className={`${widthClasses[i] || 'w-full'} border-l-2 ${isHighlight ? 'border-teal-500' : 'border-neutral-200'} pl-5 py-2 flex items-baseline gap-4`}
+              >
+                <span className={`text-2xl sm:text-3xl font-light tabular-nums ${isHighlight ? 'text-teal-700' : 'text-neutral-900'} min-w-[5rem]`}>
+                  {row.value}
+                </span>
+                <div className="flex-1 flex items-baseline gap-3 flex-wrap">
+                  <span className={`text-sm sm:text-base font-light ${isHighlight ? 'text-neutral-800' : 'text-neutral-600'}`}>
+                    {row.label}
+                  </span>
+                  {row.url ? (
+                    <a
+                      href={row.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors whitespace-nowrap"
+                    >
+                      {row.source} ↗
+                    </a>
+                  ) : (
+                    <span className="text-[10px] text-neutral-400 italic whitespace-nowrap">
+                      {row.source}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* Europe + World strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-neutral-200 pt-6 mb-6"
+        >
+          <div className="flex items-baseline gap-4">
+            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-500 font-medium min-w-[3.5rem]">
+              {t.europeLabel}
+            </span>
+            <div>
+              <span className="text-xl font-light text-neutral-900 mr-2">{t.europeValue}</span>
+              <span className="text-sm text-neutral-500 font-light">{t.europeBody}</span>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-500 font-medium min-w-[3.5rem]">
+              {t.worldLabel}
+            </span>
+            <div>
+              <span className="text-xl font-light text-neutral-900 mr-2">{t.worldValue}</span>
+              <span className="text-sm text-neutral-500 font-light">{t.worldBody}</span>{' '}
+              {t.worldUrl && (
+                <a
+                  href={t.worldUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors whitespace-nowrap"
+                >
+                  {t.worldSource} ↗
+                </a>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.4 }}
+          className="text-lg text-teal-700 italic font-light max-w-3xl"
         >
           {t.closing}
         </motion.p>
