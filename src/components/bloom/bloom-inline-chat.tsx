@@ -129,10 +129,10 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
     setMentionAnchor(atIdx)
   }, [])
 
+  // No artificial cap — show the full filtered list; the dropdown
+  // itself is scrollable.
   const mentionMatches = mentionQuery !== null
-    ? members
-        .filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
-        .slice(0, 6)
+    ? members.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
     : []
 
   const pickMention = useCallback((m: { id: string; name: string }) => {
@@ -676,11 +676,11 @@ function MentionDropdown({
       const rect = el.getBoundingClientRect()
       // Drop ~24px to clear the bullet circle + breathing room.
       const left = Math.max(8, rect.left - 24)
-      const width = 220
-      const dropdownH = dropdownRef.current?.offsetHeight ?? 200
+      const width = 240
+      const dropdownH = dropdownRef.current?.offsetHeight ?? 280
       const top = topAnchored
-        ? rect.bottom + 6
-        : Math.max(8, rect.top - dropdownH - 6)
+        ? rect.bottom + 10
+        : Math.max(8, rect.top - dropdownH - 8)
       setCoords({ top, left, width })
     }
     compute()
@@ -700,7 +700,7 @@ function MentionDropdown({
       className="fixed z-[400] bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden"
       style={{ top: coords.top, left: coords.left, width: coords.width }}
     >
-      <ul className="max-h-44 overflow-y-auto py-0.5">
+      <ul className="max-h-72 overflow-y-auto py-0.5">
         {matches.map((m) => (
           <li key={m.id}>
             <button
