@@ -297,7 +297,11 @@ export async function buildPractitionerContext(
   }
 
   const allMembers = (membersResult.data || [])
-  const members: MemberSummary[] = allMembers.slice(0, 50).map(m => ({
+  // Keep ALL members in scope so name lookups, mention validation,
+  // and per-member sections (notes, moments, reflections, etc.) can
+  // resolve any member_id Bloom sees. The MEMBERS prompt section
+  // itself is trimmed lower down to keep token cost bounded.
+  const members: MemberSummary[] = allMembers.map(m => ({
     id: m.id,
     user_id: m.user_id || null,
     name: `${m.first_name} ${m.last_name}`.trim(),
@@ -547,7 +551,11 @@ export function formatPractitionerContextForPrompt(
   if (members.length === 0) {
     membersSection = `\nMEMBERS:\nNo members yet.`
   } else {
-    const memberLines = members.map(m => {
+    // Render only the top 50 most-recent members in the prompt body
+    // to keep token cost bounded. Name lookups elsewhere still see
+    // the full roster (see memberName map above).
+    const renderedMembers = members.slice(0, 50)
+    const memberLines = renderedMembers.map(m => {
       const memberMilestones = milestones.filter(ms => ms.member_id === m.id)
       const memberSessions = sessions.filter(s => s.member_id === m.id)
       const recentMoods = memberSessions
@@ -565,8 +573,8 @@ export function formatPractitionerContextForPrompt(
       return `  - ${m.name}: ${m.status}, ${m.engagement_level} engagement, last session ${lastSession}, ${memberMilestones.length} milestones${moodStr}`
     })
 
-    const truncated = totals.totalMembers > 50
-      ? `\n  (Showing 50 most recently active of ${totals.totalMembers} total)`
+    const truncated = members.length > 50
+      ? `\n  (Showing 50 most recently active of ${members.length} total — full roster available for name lookups)`
       : ''
 
     membersSection = `\nMEMBERS:${truncated}\n${memberLines.join('\n')}`
