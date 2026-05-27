@@ -89,9 +89,17 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
   useEffect(() => {
     if (!expanded || members.length > 0) return
     void (async () => {
+      // Scope explicitly to this practitioner's own roster. Without
+      // the practitioner_id filter, RLS lets the user also see
+      // members where their auth uid is the member's user_id (e.g.
+      // they're themselves a patient under another practitioner),
+      // which is NOT a valid mention target.
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
       const { data } = await supabase
         .from('members')
         .select('id, first_name, last_name')
+        .eq('practitioner_id', authUser.id)
         .eq('is_demo', false)
         .order('last_session_at', { ascending: false, nullsFirst: false })
         .limit(200)

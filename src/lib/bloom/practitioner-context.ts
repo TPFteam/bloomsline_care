@@ -539,12 +539,19 @@ export function formatPractitionerContextForPrompt(
   const memberName = new Map(members.map(m => [m.id, m.name]))
 
   // ── PRACTICE OVERVIEW ──
+  // Note: members.length is the raw row count for this practitioner
+  // (no slicing). totals.totalMembers comes from the same source.
+  // Listing the first 10 names inline removes any ambiguity for the
+  // model about whether the roster is empty.
+  const rosterPreview = members.length > 0
+    ? members.slice(0, 10).map(m => m.name).join(', ')
+    : null
   const overview = `PRACTICE OVERVIEW:
-- Total members: ${totals.totalMembers} (${totals.activeMembers} active, ${totals.inactiveMembers} inactive, ${totals.pendingMembers} pending)
+- Total members: ${members.length} (${members.filter(m => m.status === 'active').length} active, ${members.filter(m => m.status === 'inactive').length} inactive, ${members.filter(m => m.status === 'pending').length} pending)
 - Sessions this week: ${totals.sessionsThisWeek} | This month: ${totals.sessionsThisMonth}
 - Completed: ${totals.completedSessions} | Cancelled: ${totals.cancelledSessions} | No-shows: ${totals.noShowSessions}
 - Milestones: ${totals.totalMilestones} | Resources: ${totals.totalResources}
-- Engagement: ${members.filter(m => m.engagement_level === 'high').length} high, ${members.filter(m => m.engagement_level === 'medium').length} medium, ${members.filter(m => m.engagement_level === 'low').length} low`
+- Engagement: ${members.filter(m => m.engagement_level === 'high').length} high, ${members.filter(m => m.engagement_level === 'medium').length} medium, ${members.filter(m => m.engagement_level === 'low').length} low${rosterPreview ? `\n- Roster sample (${members.length} total): ${rosterPreview}${members.length > 10 ? `, +${members.length - 10} more` : ''}` : ''}`
 
   // ── MEMBERS ──
   let membersSection: string
