@@ -700,7 +700,7 @@ function MentionDropdown({
       className="fixed z-[400] bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden"
       style={{ top: coords.top, left: coords.left, width: coords.width }}
     >
-      <ul className="max-h-72 overflow-y-auto py-0.5">
+      <ul className="max-h-72 overflow-y-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {matches.map((m) => (
           <li key={m.id}>
             <button
