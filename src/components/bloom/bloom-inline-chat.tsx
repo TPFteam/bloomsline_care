@@ -84,6 +84,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
   const [mentionedIds, setMentionedIds] = useState<string[]>([])
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionAnchor, setMentionAnchor] = useState<number | null>(null)
+  const [mentionHighlight, setMentionHighlight] = useState(0)
 
   useEffect(() => {
     if (!expanded || members.length > 0) return
@@ -135,6 +136,12 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
     ? members.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
     : []
 
+  // Reset the highlighted row whenever the query changes — the user
+  // expects the new top match to be the active one.
+  useEffect(() => {
+    setMentionHighlight(0)
+  }, [mentionQuery])
+
   const pickMention = useCallback((m: { id: string; name: string }) => {
     if (mentionAnchor === null) return
     const fragLen = mentionQuery?.length ?? 0
@@ -154,6 +161,34 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
       }
     }, 0)
   }, [input, mentionAnchor, mentionQuery])
+
+  // Enter → pick highlighted match (instead of submitting the form).
+  // ArrowDown / ArrowUp → move highlight. Escape → close dropdown.
+  // All gated on the dropdown actually being visible.
+  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (mentionMatches.length === 0) return
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const pick = mentionMatches[mentionHighlight] || mentionMatches[0]
+      if (pick) pickMention(pick)
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setMentionHighlight(i => (i + 1) % mentionMatches.length)
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setMentionHighlight(i => (i - 1 + mentionMatches.length) % mentionMatches.length)
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      setMentionQuery(null)
+      setMentionAnchor(null)
+    }
+  }, [mentionMatches, mentionHighlight, pickMention])
 
   // When the user wipes the input or sends, clear mention state.
   // Also keep the mentionedIds list aligned with what's actually in
@@ -409,6 +444,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 type="text"
                                 value={input}
                                 onChange={handleInputChange}
+                                onKeyDown={handleInputKeyDown}
                                 placeholder={locale === 'fr' ? 'Demandez à Bloom… tapez @ pour mentionner un patient' : locale === 'es' ? 'Pregunta a Bloom… escribe @ para mencionar un paciente' : 'Ask Bloom… type @ to mention a patient'}
                                 disabled={isLoading}
                                 className="flex-1 text-base bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50"
@@ -427,6 +463,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 matches={mentionMatches}
                                 onPick={pickMention}
                                 anchorRef={inputRef}
+                                highlight={mentionHighlight}
                                 topAnchored
                               />
                             )}
@@ -524,6 +561,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 matches={mentionMatches}
                                 onPick={pickMention}
                                 anchorRef={inputRef}
+                                highlight={mentionHighlight}
                               />
                             )}
                             <div className="flex items-center gap-3 px-5 py-3">
@@ -533,6 +571,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 type="text"
                                 value={input}
                                 onChange={handleInputChange}
+                                onKeyDown={handleInputKeyDown}
                                 placeholder={locale === 'fr' ? 'Continuez… @ pour mentionner' : locale === 'es' ? 'Continúa… @ para mencionar' : 'Follow up… @ to mention'}
                                 disabled={isLoading}
                                 className="flex-1 text-sm bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50"
@@ -657,11 +696,13 @@ function MentionDropdown({
   matches,
   onPick,
   anchorRef,
+  highlight,
   topAnchored,
 }: {
   matches: Array<{ id: string; name: string }>
   onPick: (m: { id: string; name: string }) => void
   anchorRef: React.RefObject<HTMLInputElement | null>
+  highlight: number
   topAnchored?: boolean
 }) {
   // Position via fixed coordinates + portal so the dropdown escapes
@@ -706,12 +747,14 @@ function MentionDropdown({
       style={{ top: coords.top, left: coords.left, width: coords.width }}
     >
       <ul className="max-h-72 overflow-y-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-        {matches.map((m) => (
+        {matches.map((m, i) => (
           <li key={m.id}>
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); onPick(m) }}
-              className="w-full text-left px-2.5 py-1.5 text-[13px] text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2"
+              className={`w-full text-left px-2.5 py-1.5 text-[13px] text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2 ${
+                i === highlight ? 'bg-teal-50' : ''
+              }`}
             >
               <span className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 text-[9px] font-semibold text-white flex items-center justify-center shrink-0">
                 {(m.name[0] || '?').toUpperCase()}
