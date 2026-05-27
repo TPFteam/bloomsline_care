@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Minus, History, Plus, ChevronLeft, X } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
@@ -425,7 +426,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                               <MentionDropdown
                                 matches={mentionMatches}
                                 onPick={pickMention}
-                                locale={locale}
+                                anchorRef={inputRef}
                                 topAnchored
                               />
                             )}
@@ -522,7 +523,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                               <MentionDropdown
                                 matches={mentionMatches}
                                 onPick={pickMention}
-                                locale={locale}
+                                anchorRef={inputRef}
                               />
                             )}
                             <div className="flex items-center gap-3 px-5 py-3">
@@ -655,18 +656,49 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
 function MentionDropdown({
   matches,
   onPick,
+  anchorRef,
   topAnchored,
 }: {
   matches: Array<{ id: string; name: string }>
   onPick: (m: { id: string; name: string }) => void
-  locale: string
+  anchorRef: React.RefObject<HTMLInputElement | null>
   topAnchored?: boolean
 }) {
-  return (
+  // Position via fixed coordinates + portal so the dropdown escapes
+  // the Ask Bloom modal's overflow-hidden container.
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const compute = () => {
+      const el = anchorRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      // Drop ~24px to clear the bullet circle + breathing room.
+      const left = Math.max(8, rect.left - 24)
+      const width = 220
+      const dropdownH = dropdownRef.current?.offsetHeight ?? 200
+      const top = topAnchored
+        ? rect.bottom + 6
+        : Math.max(8, rect.top - dropdownH - 6)
+      setCoords({ top, left, width })
+    }
+    compute()
+    window.addEventListener('resize', compute)
+    window.addEventListener('scroll', compute, true)
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.removeEventListener('scroll', compute, true)
+    }
+  }, [anchorRef, topAnchored, matches.length])
+
+  if (typeof document === 'undefined' || !coords) return null
+
+  return createPortal(
     <div
-      className={`absolute left-9 z-10 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden w-[220px] ${
-        topAnchored ? 'top-full mt-1' : 'bottom-full mb-1'
-      }`}
+      ref={dropdownRef}
+      className="fixed z-[400] bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden"
+      style={{ top: coords.top, left: coords.left, width: coords.width }}
     >
       <ul className="max-h-44 overflow-y-auto py-0.5">
         {matches.map((m) => (
@@ -684,6 +716,7 @@ function MentionDropdown({
           </li>
         ))}
       </ul>
-    </div>
+    </div>,
+    document.body,
   )
 }
