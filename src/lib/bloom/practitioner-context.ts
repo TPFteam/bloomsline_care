@@ -30,7 +30,6 @@ interface MemberSummary {
   engagement_level: string
   last_session_at: string | null
   created_at: string
-  about_notes: string | null
   internal_notes: string | null
   // Compact one-liners pulled from member.preferences JSONB so the
   // prompt doesn't carry the full nested object.
@@ -173,7 +172,7 @@ export async function buildPractitionerContext(
   ] = await Promise.all([
     supabase
       .from('members')
-      .select('id, user_id, first_name, last_name, status, engagement_level, last_session_at, created_at, is_demo, about_notes, internal_notes, preferences')
+      .select('id, user_id, first_name, last_name, status, engagement_level, last_session_at, created_at, is_demo, internal_notes, preferences')
       .eq('practitioner_id', practitionerId)
       .eq('is_demo', false)
       .order('last_session_at', { ascending: false, nullsFirst: false }),
@@ -309,7 +308,6 @@ export async function buildPractitionerContext(
     engagement_level: m.engagement_level,
     last_session_at: m.last_session_at,
     created_at: m.created_at,
-    about_notes: m.about_notes || null,
     internal_notes: m.internal_notes || null,
     preferences_digest: digestPreferences(m.preferences),
   }))
@@ -770,7 +768,6 @@ export function formatPractitionerContextForPrompt(
   const profileLines: string[] = []
   for (const m of members) {
     const parts: string[] = []
-    if (m.about_notes) parts.push(`about: ${m.about_notes.slice(0, 160)}`)
     if (m.internal_notes) parts.push(`internal: ${m.internal_notes.slice(0, 160)}`)
     if (m.preferences_digest) parts.push(m.preferences_digest)
     if (parts.length > 0) profileLines.push(`  - ${m.name}: ${parts.join(' · ')}`)

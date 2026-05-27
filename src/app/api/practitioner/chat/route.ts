@@ -517,7 +517,6 @@ async function buildTaggedPatientBlock(
       if (c.recommendations?.length) lines.push(`  Recommendations: ${c.recommendations.join(' · ')}`)
       if (c.next_steps?.length) lines.push(`  Next steps: ${c.next_steps.join(' · ')}`)
     }
-    if (member.about_notes) lines.push(`About: ${member.about_notes.slice(0, 300)}`)
     if (member.internal_notes) lines.push(`Internal notes: ${member.internal_notes.slice(0, 300)}`)
     if (member.preferences_digest) lines.push(`Preferences: ${member.preferences_digest}`)
 
