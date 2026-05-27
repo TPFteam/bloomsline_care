@@ -655,7 +655,6 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
 function MentionDropdown({
   matches,
   onPick,
-  locale,
   topAnchored,
 }: {
   matches: Array<{ id: string; name: string }>
@@ -665,22 +664,19 @@ function MentionDropdown({
 }) {
   return (
     <div
-      className={`absolute left-4 right-4 z-10 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden ${
+      className={`absolute left-9 z-10 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden w-[220px] ${
         topAnchored ? 'top-full mt-1' : 'bottom-full mb-1'
       }`}
     >
-      <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-400 font-medium border-b border-gray-100 bg-gray-50">
-        {locale === 'fr' ? 'Mentionner un patient' : locale === 'es' ? 'Mencionar un paciente' : 'Mention a patient'}
-      </div>
-      <ul className="max-h-56 overflow-y-auto">
+      <ul className="max-h-44 overflow-y-auto py-0.5">
         {matches.map((m) => (
           <li key={m.id}>
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); onPick(m) }}
-              className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2"
+              className="w-full text-left px-2.5 py-1.5 text-[13px] text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2"
             >
-              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 text-[10px] font-semibold text-white flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 text-[9px] font-semibold text-white flex items-center justify-center shrink-0">
                 {(m.name[0] || '?').toUpperCase()}
               </span>
               <span className="truncate">{m.name}</span>
