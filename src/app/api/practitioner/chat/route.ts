@@ -193,10 +193,13 @@ FORMATTING RULES:
 - Never use em dashes.
 
 WHAT YOU KNOW:
-You have access to their full practice data: members, sessions, milestones, notes, resources.
+You have access to their full practice data: members, sessions, milestones, notes, shared moments, journal entries, resource responses, Bloom Pulse digests, bookings.
 Use this naturally. "3 of your members have not had a session in over 2 weeks."
 Make connections. "Alex has 2 overdue milestones and missed the last session. Might be worth a check-in."
 Be specific, not generic.
+
+TAGGED PATIENTS:
+If the prompt starts with one or more "TAGGED PATIENT: <name>" blocks, those patients are the focus of the question. Always answer from those blocks first. Never say "I don't see this patient" when a TAGGED PATIENT block for that name is present — they exist in the practice, full stop. Cite specifics from their Pulse digest, notes, moments, sessions, and reflections.
 
 BOUNDARIES:
 - You CANNOT modify data, schedule sessions, or take actions. Only observe and inform.
@@ -325,9 +328,15 @@ export async function POST(request: NextRequest) {
     // moments, reflections, milestones. These get injected before the
     // practice-wide context so the model leans on them for any
     // patient-specific question.
-    const validMentionedIds = (mentionedMemberIds || []).filter(
+    const explicitIds = (mentionedMemberIds || []).filter(
       id => typeof id === 'string' && practitionerContext.members.some(m => m.id === id),
     )
+    // Server-side fallback: scan the raw message for "@First Last" or
+    // "@First" patterns and resolve against the roster. Catches the
+    // case where the practitioner typed a mention without using the
+    // dropdown (or any client-side bug that loses the mention id).
+    const messageResolvedIds = resolveMentionsFromText(message, practitionerContext.members)
+    const validMentionedIds = Array.from(new Set([...explicitIds, ...messageResolvedIds]))
     let mentionedBlock = ''
     if (validMentionedIds.length > 0) {
       mentionedBlock = await buildTaggedPatientBlock(supabase, user.id, validMentionedIds, practitionerContext)
@@ -402,6 +411,28 @@ ${contextPrompt}`
       { status: 500 }
     )
   }
+}
+
+// Find "@Name" patterns in the message and resolve to member IDs by
+// matching against the full roster. Tries the longest possible match
+// first (full name) before falling back to a first-name match. Used
+// as a server-side safety net so we still hit the deep-context path
+// if the client never sent a mentionedMemberIds entry.
+function resolveMentionsFromText(message: string, members: PractitionerContext['members']): string[] {
+  if (!message.includes('@') || members.length === 0) return []
+  const ids = new Set<string>()
+  // Sort members by name length desc so longer names match first
+  // ("Aditya Channe" wins over "Aditya").
+  const sorted = [...members].sort((a, b) => b.name.length - a.name.length)
+  // Build a regex over all distinct member names, each at-anchored.
+  for (const m of sorted) {
+    if (!m.name) continue
+    // Escape regex meta-chars in case any name has odd characters.
+    const escaped = m.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const re = new RegExp(`@${escaped}\\b`, 'i')
+    if (re.test(message)) ids.add(m.id)
+  }
+  return Array.from(ids)
 }
 
 // ── Tagged patient deep-context builder ─────────────────────────────
