@@ -74,6 +74,100 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
 
   const expanded = isOpen && !minimized
 
+  // ── @mention autocomplete ────────────────────────────────────────
+  // The practitioner can type "@" + a patient's name to scope a
+  // question to that patient. Selecting from the dropdown both
+  // inserts "@Name" into the text and tracks the member's id so the
+  // server can inject deep per-patient context.
+  const [members, setMembers] = useState<Array<{ id: string; name: string }>>([])
+  const [mentionedIds, setMentionedIds] = useState<string[]>([])
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionAnchor, setMentionAnchor] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!expanded || members.length > 0) return
+    void (async () => {
+      const { data } = await supabase
+        .from('members')
+        .select('id, first_name, last_name')
+        .eq('is_demo', false)
+        .order('last_session_at', { ascending: false, nullsFirst: false })
+        .limit(200)
+      if (data) {
+        setMembers(data.map((m: { id: string; first_name: string | null; last_name: string | null }) => ({
+          id: m.id,
+          name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || '—',
+        })))
+      }
+    })()
+  }, [expanded, members.length, supabase])
+
+  // Update input + detect active @mention by scanning backward from
+  // the cursor. We allow up to two words after @ so "Sonia L" still
+  // matches Sonia Lebari.
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const cursor = e.target.selectionStart ?? value.length
+    setInput(value)
+    const upToCursor = value.slice(0, cursor)
+    const atIdx = upToCursor.lastIndexOf('@')
+    if (atIdx === -1) {
+      setMentionQuery(null)
+      setMentionAnchor(null)
+      return
+    }
+    const frag = upToCursor.slice(atIdx + 1)
+    // Stop the mention if there's a newline or more than ~30 chars of
+    // garbage between @ and cursor.
+    if (frag.length > 30 || /\n/.test(frag)) {
+      setMentionQuery(null)
+      setMentionAnchor(null)
+      return
+    }
+    setMentionQuery(frag)
+    setMentionAnchor(atIdx)
+  }, [])
+
+  const mentionMatches = mentionQuery !== null
+    ? members
+        .filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+        .slice(0, 6)
+    : []
+
+  const pickMention = useCallback((m: { id: string; name: string }) => {
+    if (mentionAnchor === null) return
+    const fragLen = mentionQuery?.length ?? 0
+    const before = input.slice(0, mentionAnchor)
+    const after = input.slice(mentionAnchor + 1 + fragLen)
+    const newValue = `${before}@${m.name} ${after}`
+    setInput(newValue)
+    setMentionQuery(null)
+    setMentionAnchor(null)
+    setMentionedIds(prev => (prev.includes(m.id) ? prev : [...prev, m.id]))
+    setTimeout(() => {
+      const el = inputRef.current
+      if (el) {
+        el.focus()
+        const pos = mentionAnchor + 1 + m.name.length + 1
+        el.setSelectionRange(pos, pos)
+      }
+    }, 0)
+  }, [input, mentionAnchor, mentionQuery])
+
+  // When the user wipes the input or sends, clear mention state.
+  // Also keep the mentionedIds list aligned with what's actually in
+  // the input — if they backspaced over "@Sonia", drop that id.
+  useEffect(() => {
+    if (mentionedIds.length === 0) return
+    const active = new Set<string>()
+    for (const m of members) {
+      if (input.includes(`@${m.name}`)) active.add(m.id)
+    }
+    if (active.size !== mentionedIds.length || mentionedIds.some(id => !active.has(id))) {
+      setMentionedIds(Array.from(active))
+    }
+  }, [input, members, mentionedIds])
+
   useEffect(() => {
     if (expanded && view === 'chat') setTimeout(() => inputRef.current?.focus(), 150)
   }, [expanded, view])
@@ -192,7 +286,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
       const res = await fetch('/api/practitioner/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ message: text.trim(), conversationId, locale }),
+        body: JSON.stringify({ message: text.trim(), conversationId, locale, mentionedMemberIds: mentionedIds }),
       })
 
       if (res.status === 429) {
@@ -213,8 +307,11 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
       setMessages(prev => [...prev, { id: `e-${Date.now()}`, role: 'assistant', content: errText, error: true }])
     } finally {
       setIsLoading(false)
+      // Clear mention state once the message is sent — next question
+      // starts clean unless the practitioner re-tags.
+      setMentionedIds([])
     }
-  }, [isLoading, conversationId, locale, supabase, errText, limitText])
+  }, [isLoading, conversationId, locale, supabase, errText, limitText, mentionedIds])
 
   const initialSentRef = useRef<string | null>(null)
   useEffect(() => {
@@ -303,14 +400,15 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                       {isEmpty && (
                         <>
                           <form onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}>
+                            <div className="relative">
                             <div className="flex items-center gap-3 px-5 py-4">
                               <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shrink-0" />
                               <input
                                 ref={isEmpty ? inputRef : undefined}
                                 type="text"
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder={locale === 'fr' ? 'Demandez à Bloom...' : locale === 'es' ? 'Pregunta a Bloom...' : 'Ask Bloom...'}
+                                onChange={handleInputChange}
+                                placeholder={locale === 'fr' ? 'Demandez à Bloom… tapez @ pour mentionner un patient' : locale === 'es' ? 'Pregunta a Bloom… escribe @ para mencionar un paciente' : 'Ask Bloom… type @ to mention a patient'}
                                 disabled={isLoading}
                                 className="flex-1 text-base bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50"
                               />
@@ -322,6 +420,15 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                               >
                                 <History className="w-4 h-4" />
                               </button>
+                            </div>
+                            {mentionMatches.length > 0 && (
+                              <MentionDropdown
+                                matches={mentionMatches}
+                                onPick={pickMention}
+                                locale={locale}
+                                topAnchored
+                              />
+                            )}
                             </div>
                           </form>
 
@@ -410,14 +517,22 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
 
                           {/* Bottom input */}
                           <form onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}>
-                            <div className="flex items-center gap-3 px-5 py-3 border-t border-gray-100">
+                            <div className="relative border-t border-gray-100">
+                            {mentionMatches.length > 0 && (
+                              <MentionDropdown
+                                matches={mentionMatches}
+                                onPick={pickMention}
+                                locale={locale}
+                              />
+                            )}
+                            <div className="flex items-center gap-3 px-5 py-3">
                               <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shrink-0" />
                               <input
                                 ref={isEmpty ? undefined : inputRef}
                                 type="text"
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder={locale === 'fr' ? 'Continuez...' : locale === 'es' ? 'Continúa...' : 'Follow up...'}
+                                onChange={handleInputChange}
+                                placeholder={locale === 'fr' ? 'Continuez… @ pour mentionner' : locale === 'es' ? 'Continúa… @ para mencionar' : 'Follow up… @ to mention'}
                                 disabled={isLoading}
                                 className="flex-1 text-sm bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50"
                               />
@@ -447,6 +562,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                   <Minus className="w-4 h-4" />
                                 </button>
                               </div>
+                            </div>
                             </div>
                           </form>
                         </>
@@ -527,5 +643,51 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+// ── Mention dropdown ────────────────────────────────────────────────
+// Standalone so both the empty-state input and the chat-active input
+// can render the same component without duplicating markup. Anchored
+// just below the input row by absolute positioning; topAnchored flips
+// the side for the empty-state input which sits at the top of the
+// modal.
+function MentionDropdown({
+  matches,
+  onPick,
+  locale,
+  topAnchored,
+}: {
+  matches: Array<{ id: string; name: string }>
+  onPick: (m: { id: string; name: string }) => void
+  locale: string
+  topAnchored?: boolean
+}) {
+  return (
+    <div
+      className={`absolute left-4 right-4 z-10 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden ${
+        topAnchored ? 'top-full mt-1' : 'bottom-full mb-1'
+      }`}
+    >
+      <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-400 font-medium border-b border-gray-100 bg-gray-50">
+        {locale === 'fr' ? 'Mentionner un patient' : locale === 'es' ? 'Mencionar un paciente' : 'Mention a patient'}
+      </div>
+      <ul className="max-h-56 overflow-y-auto">
+        {matches.map((m) => (
+          <li key={m.id}>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onPick(m) }}
+              className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2"
+            >
+              <span className="w-6 h-6 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 text-[10px] font-semibold text-white flex items-center justify-center shrink-0">
+                {(m.name[0] || '?').toUpperCase()}
+              </span>
+              <span className="truncate">{m.name}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
