@@ -697,6 +697,11 @@ function MentionDropdown({
   return createPortal(
     <div
       ref={dropdownRef}
+      // Stop mousedown propagation so the Ask Bloom modal's "click
+      // outside to close" handler treats this dropdown as part of the
+      // popup. Without this, picking a patient closes the whole modal
+      // because the portal mounts outside contentRef.
+      onMouseDown={(e) => e.stopPropagation()}
       className="fixed z-[400] bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden"
       style={{ top: coords.top, left: coords.left, width: coords.width }}
     >
