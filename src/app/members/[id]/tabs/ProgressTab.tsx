@@ -1145,10 +1145,8 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
     const buildNoteTypes = async () => {
       const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
       const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
-      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
-        type: nt,
-        label: noteTypeLabels?.[nt] || nt,
-      }))
+      const hiddenSet = new Set<string>()
+      const customs: string[] = []
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase
@@ -1158,15 +1156,20 @@ export default function ProgressTab({ memberId, notes, onNotesUpdate, highlightM
           .order('created_at')
         if (data) {
           for (const d of data) {
-            // Skip the `_hidden:*` markers — those track which default
-            // tags the practitioner has chosen to hide on filter pills,
-            // they're not real tags. NotesTab and SessionsTab already
-            // filter these out; ProgressTab was the outlier.
-            if (d.type_name.startsWith('_hidden:')) continue
-            if (!types.some(existing => existing.type === d.type_name)) {
-              types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
+            if (d.type_name.startsWith('_hidden:')) {
+              hiddenSet.add(d.type_name.replace('_hidden:', ''))
+            } else {
+              customs.push(d.type_name)
             }
           }
+        }
+      }
+      const types: { type: string; label: string }[] = baseDefaults
+        .filter(nt => !hiddenSet.has(nt))
+        .map(nt => ({ type: nt, label: noteTypeLabels?.[nt] || nt }))
+      for (const c of customs) {
+        if (!types.some(existing => existing.type === c)) {
+          types.push({ type: c, label: noteTypeLabels?.[c] || c.replace(/_/g, ' ') })
         }
       }
       setEditorNoteTypes(types)

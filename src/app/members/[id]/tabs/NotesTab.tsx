@@ -261,14 +261,16 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   const effectiveDefaultTags: readonly string[] = usesLegacyDefaults
     ? defaultNoteTypes
     : fixedNoteTypes
-  // Browse TYPES filter mirrors the editor's tag picker: every default
-  // tag the practitioner has access to shows up here, regardless of
-  // `_hidden:*` markers. The editor never strips them either, so the
-  // two surfaces stay in sync — a tag visible while writing is also
-  // filterable while browsing. Dedupe because `custom_note_types` can
-  // legitimately contain a row whose name already exists as a default
-  // (e.g. a default got duplicated by a past rename/add flow).
-  const allNoteTypes = Array.from(new Set([...effectiveDefaultTags, ...customNoteTypes]))
+  // Browse TYPES filter mirrors the editor's tag picker: defaults the
+  // practitioner has soft-deleted (via `_hidden:*` markers in
+  // custom_note_types) get stripped from both surfaces so a tag they
+  // can't write with also doesn't appear as a browse pill. Dedupe
+  // because `custom_note_types` can legitimately contain a row whose
+  // name already exists as a default.
+  const allNoteTypes = Array.from(new Set([
+    ...effectiveDefaultTags.filter(d => !hiddenDefaults.includes(d)),
+    ...customNoteTypes,
+  ]))
 
   // ==============================
   // NOTEPAD MODE STATE
@@ -1119,15 +1121,15 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   useEffect(() => {
     const buildNoteTypes = async () => {
       const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
-
-      // Defaults shown depend on legacy flag — see effectiveDefaultTags above
       const baseDefaults = usesLegacyDefaults ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
-      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
-        type: nt,
-        label: noteTypeLabels?.[nt] || nt,
-      }))
 
+      // Read custom_note_types once and split hidden markers from real
+      // custom types. A row like `_hidden:contre_transfert` is a soft-
+      // delete of a deletable default — without filtering by these
+      // markers the tag reappears every refresh.
       const { data: { user } } = await supabase.auth.getUser()
+      const hiddenSet = new Set<string>()
+      const customs: string[] = []
       if (user) {
         const { data } = await supabase
           .from('custom_note_types')
@@ -1137,10 +1139,22 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
 
         if (data) {
           for (const d of data) {
-            if (!d.type_name.startsWith('_hidden:') && !types.some(existing => existing.type === d.type_name)) {
-              types.push({ type: d.type_name, label: noteTypeLabels?.[d.type_name] || d.type_name.replace(/_/g, ' ') })
+            if (d.type_name.startsWith('_hidden:')) {
+              hiddenSet.add(d.type_name.replace('_hidden:', ''))
+            } else {
+              customs.push(d.type_name)
             }
           }
+        }
+      }
+
+      const types: { type: string; label: string }[] = baseDefaults
+        .filter(nt => !hiddenSet.has(nt))
+        .map(nt => ({ type: nt, label: noteTypeLabels?.[nt] || nt }))
+
+      for (const c of customs) {
+        if (!types.some(existing => existing.type === c)) {
+          types.push({ type: c, label: noteTypeLabels?.[c] || c.replace(/_/g, ' ') })
         }
       }
 

@@ -101,10 +101,6 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         .maybeSingle()
       if (cancelled) return
       const baseDefaults = userRow?.uses_legacy_default_tags ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
-      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
-        type: nt,
-        label: labelFor(nt),
-      }))
 
       const { data: customs } = await sb
         .from('custom_note_types')
@@ -112,11 +108,27 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         .eq('practitioner_id', booking.practitioner_id)
         .order('created_at')
       if (cancelled) return
+
+      // Split `_hidden:*` markers from real customs so soft-deleted
+      // defaults stay hidden after a refresh.
+      const hiddenSet = new Set<string>()
+      const realCustoms: string[] = []
       if (customs) {
         for (const c of customs) {
-          if (!c.type_name.startsWith('_hidden:') && !types.some(t => t.type === c.type_name)) {
-            types.push({ type: c.type_name, label: labelFor(c.type_name) })
+          if (c.type_name.startsWith('_hidden:')) {
+            hiddenSet.add(c.type_name.replace('_hidden:', ''))
+          } else {
+            realCustoms.push(c.type_name)
           }
+        }
+      }
+
+      const types: { type: string; label: string }[] = baseDefaults
+        .filter(nt => !hiddenSet.has(nt))
+        .map(nt => ({ type: nt, label: labelFor(nt) }))
+      for (const c of realCustoms) {
+        if (!types.some(t => t.type === c)) {
+          types.push({ type: c, label: labelFor(c) })
         }
       }
       setNoteTypes(types)

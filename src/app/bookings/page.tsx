@@ -395,20 +395,24 @@ export default function BookingsPage() {
         .single()
       if (!createErr && created?.id) sessionRow = { id: created.id }
     }
-    const customTypes = (customTypesRes.data || [])
-      .map(r => r.type_name as string)
-      .filter(name => !name.startsWith('_hidden:'))
+    const allTypeRows = (customTypesRes.data || []).map(r => r.type_name as string)
+    const hiddenSet = new Set(
+      allTypeRows.filter(n => n.startsWith('_hidden:')).map(n => n.replace('_hidden:', ''))
+    )
+    const customTypes = allTypeRows.filter(name => !name.startsWith('_hidden:'))
     const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
 
     // Build the note-type list the editor expects (defaults + custom).
-    // Labels are kept as the raw type name; the editor i18n-formats them
-    // when it shows the chip palette.
+    // Soft-deleted defaults (rows like `_hidden:<name>` in custom_note_types)
+    // are stripped so the editor matches what the practitioner left visible.
     const noteTypeMap = new Map<string, { type: string; label: string }>()
     for (const t of FIXED_NOTE_TYPES) {
       noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
     }
     for (const t of DEFAULT_NOTE_TYPES) {
-      if (!noteTypeMap.has(t)) noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
+      if (!hiddenSet.has(t) && !noteTypeMap.has(t)) {
+        noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })
+      }
     }
     for (const t of customTypes) {
       if (!noteTypeMap.has(t)) noteTypeMap.set(t, { type: t, label: t.replace(/_/g, ' ') })

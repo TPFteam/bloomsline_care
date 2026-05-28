@@ -489,13 +489,19 @@ function DashboardInner() {
         .order('created_at'),
     ])
     const sessionRow = sessionRowRes.data
-    const customTypes = (customTypesRes.data || [])
-      .map((r: any) => r.type_name as string)
-      .filter((name: string) => !name.startsWith('_hidden:'))
+    const allTypeRows = (customTypesRes.data || []).map((r: any) => r.type_name as string)
+    const hiddenSet = new Set(
+      allTypeRows.filter((n: string) => n.startsWith('_hidden:')).map((n: string) => n.replace('_hidden:', ''))
+    )
+    const customTypes = allTypeRows.filter((name: string) => !name.startsWith('_hidden:'))
     const milestones = (milestonesRes.data || []) as Array<{ id: string; title: string; status: string }>
+    // Soft-deleted defaults (rows like `_hidden:<name>`) must be stripped
+    // here too or the tag picker shows tags the practitioner removed.
     const noteTypeMap = new Map<string, { type: string; label: string }>()
     for (const tt of FIXED_NOTE_TYPES) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
-    for (const tt of DEFAULT_NOTE_TYPES) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    for (const tt of DEFAULT_NOTE_TYPES) {
+      if (!hiddenSet.has(tt) && !noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
+    }
     for (const tt of customTypes) if (!noteTypeMap.has(tt)) noteTypeMap.set(tt, { type: tt, label: tt.replace(/_/g, ' ') })
     const editorNoteTypes = Array.from(noteTypeMap.values())
     const { data: existingNote } = sessionRow?.id
