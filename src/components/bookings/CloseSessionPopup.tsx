@@ -19,6 +19,17 @@ import { Button } from '@/components/ui/button'
 import { X, CheckCircle, XCircle, PenLine, Loader2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { emitBookingsChanged } from '@/lib/bookings-events'
+import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
+
+const TAG_LABELS: Record<string, { en: string; fr: string; es: string }> = {
+  recurrence:          { en: 'Recurrence',          fr: 'Récurrence',          es: 'Recurrencia' },
+  hypothese:           { en: 'Hypothesis',          fr: 'Hypothèse',           es: 'Hipótesis' },
+  general:             { en: 'General',             fr: 'Général',             es: 'General' },
+  symptome:            { en: 'Symptom',             fr: 'Symptôme',            es: 'Síntoma' },
+  transfert:           { en: 'Transference',        fr: 'Transfert',           es: 'Transferencia' },
+  contre_transfert:    { en: 'Countertransference', fr: 'Contre-transfert',    es: 'Contratransferencia' },
+  ajustement_envisage: { en: 'Planned adjustment',  fr: 'Ajustement envisagé', es: 'Ajuste previsto' },
+}
 
 export interface CloseSessionBooking {
   id: string
@@ -54,6 +65,8 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
   const [noShowPayment, setNoShowPayment] = useState<'paid' | 'unpaid' | null>(null)
   const [noShowReason, setNoShowReason] = useState('')
   const [noShowComments, setNoShowComments] = useState('')
+  // Tag types for the inline tag picker — same shape as the main notes editor
+  const [noteTypes, setNoteTypes] = useState<{ type: string; label: string }[]>([])
 
   // Reset state each time a new booking opens. "Note already added"
   // detection auto-satisfies the note requirement when the booking
@@ -70,6 +83,47 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
     setNoShowReason('')
     setNoShowComments('')
   }, [booking])
+
+  // Build the practitioner's tag list (defaults + custom) so the inline
+  // editor here gets the same tag-insert button as the main notes editor.
+  useEffect(() => {
+    if (!booking?.practitioner_id) return
+    let cancelled = false
+    const sb = createClient()
+    const labelFor = (slug: string) =>
+      TAG_LABELS[slug]?.[locale as 'en' | 'fr' | 'es'] || slug.replace(/_/g, ' ')
+
+    ;(async () => {
+      const { data: userRow } = await sb
+        .from('users')
+        .select('uses_legacy_default_tags')
+        .eq('id', booking.practitioner_id)
+        .maybeSingle()
+      if (cancelled) return
+      const baseDefaults = userRow?.uses_legacy_default_tags ? DEFAULT_NOTE_TYPES : FIXED_NOTE_TYPES
+      const types: { type: string; label: string }[] = baseDefaults.map(nt => ({
+        type: nt,
+        label: labelFor(nt),
+      }))
+
+      const { data: customs } = await sb
+        .from('custom_note_types')
+        .select('type_name')
+        .eq('practitioner_id', booking.practitioner_id)
+        .order('created_at')
+      if (cancelled) return
+      if (customs) {
+        for (const c of customs) {
+          if (!c.type_name.startsWith('_hidden:') && !types.some(t => t.type === c.type_name)) {
+            types.push({ type: c.type_name, label: labelFor(c.type_name) })
+          }
+        }
+      }
+      setNoteTypes(types)
+    })()
+
+    return () => { cancelled = true }
+  }, [booking?.practitioner_id, locale])
 
   if (!booking) return null
 
@@ -280,6 +334,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
                       locale={locale}
                       autoFocus
                       memberName={booking.client_name?.split(' ')[0]}
+                      noteTypes={noteTypes}
                     />
                   </div>
                   <button
