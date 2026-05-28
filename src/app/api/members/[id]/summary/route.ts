@@ -386,9 +386,17 @@ export async function POST(
           return new Date(iso).toLocaleDateString(localeStr, { month: 'short', day: 'numeric' })
         } catch { return '' }
       }
+      // For notes, prefer the linked session's date (what practitioners
+      // anchor on) over the note's created_at (the timestamp the row was
+      // written — drifts from the session date when notes get edited or
+      // backfilled, which made citations show dates with no session).
+      const sessionDateById = new Map(sessions.map(s => [s.id, s.scheduled_at]))
       const labelLookup: Record<string, Map<string, string>> = {
         session: new Map(sessions.map(s => [s.id, `${locale === 'fr' ? 'Séance' : locale === 'es' ? 'Sesión' : 'Session'} ${shortDate(s.scheduled_at)}`.trim()])),
-        note: new Map(notes.map(n => [n.id, `${locale === 'fr' ? 'Note' : 'Note'} ${shortDate(n.created_at)}`.trim()])),
+        note: new Map(notes.map(n => {
+          const anchor = (n.session_id && sessionDateById.get(n.session_id)) || n.created_at
+          return [n.id, `${locale === 'fr' ? 'Note' : 'Note'} ${shortDate(anchor)}`.trim()]
+        })),
         milestone: new Map(milestones.map(m => [m.id, m.title || (locale === 'fr' ? 'Objectif' : 'Goal')])),
         file: new Map(fileExtractions.filter(e => e.summary).map(e => [e.fileId, e.fileName])),
       }

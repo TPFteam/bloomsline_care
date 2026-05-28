@@ -30,6 +30,7 @@ import { toast } from 'sonner'
 import type { Member, ProgressNote, NoteType, MemberPreferences, Milestone, MilestoneCategory, Session as MemberSession, MemberSummary, SummaryContent } from '@/types/member'
 import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel, getMemberFullName } from '@/types/member'
 import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
+import { NotePreviewModal } from '@/components/members/NotePreviewModal'
 import { getUserPreferences, updateUserPreferences, DEFAULT_CARD_LAYOUT, type CardLayoutItem } from '@/lib/services/preferences'
 
 type TabId = 'overview' | 'sessions_notes' | 'progress' | 'files' | 'shared'
@@ -139,6 +140,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [latestSummary, setLatestSummary] = useState<MemberSummary | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
+  // Note citation chips in Bloom Pulse open this preview popup so the
+  // practitioner can read the note without leaving the Pulse view.
+  const [previewNoteId, setPreviewNoteId] = useState<string | null>(null)
 
   // Load card layout from preferences
   useEffect(() => {
@@ -1329,6 +1333,20 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             onClose={() => {}}
             memberId={member.id}
             memberName={`${member.first_name} ${member.last_name}`}
+            onPreviewNote={setPreviewNoteId}
+            onNavigateToSource={(sourceType, sourceId) => {
+              const tabMap: Record<string, { tab: TabId; sub?: SubTabId } | null> = {
+                session: { tab: 'sessions_notes', sub: 'sessions' },
+                note: { tab: 'sessions_notes', sub: 'notes' },
+                milestone: { tab: 'progress' },
+                file: { tab: 'files' },
+                reflection: null,
+              }
+              const target = tabMap[sourceType]
+              if (target && onNavigateToTab) {
+                onNavigateToTab(target.tab, sourceId, target.sub)
+              }
+            }}
           />
         </div>
       )
@@ -1583,6 +1601,7 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
         }}
         memberId={member.id}
         memberName={getMemberFullName(member)}
+        onPreviewNote={setPreviewNoteId}
         onNavigateToSource={(sourceType, sourceId) => {
           // Map Pulse source types → main tab + optional sub-tab
           const tabMap: Record<string, { tab: TabId; sub?: SubTabId } | null> = {
@@ -1597,6 +1616,14 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             onNavigateToTab(target.tab, sourceId, target.sub)
           }
         }}
+      />
+
+      {/* Note preview popup — stacks above the Pulse so the practitioner
+          can read a cited note then close and resume scanning the Pulse. */}
+      <NotePreviewModal
+        noteId={previewNoteId}
+        locale={locale}
+        onClose={() => setPreviewNoteId(null)}
       />
     </div>
   )

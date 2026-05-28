@@ -55,6 +55,10 @@ interface MemberSummaryModalProps {
   memberName: string
   /** Called when user clicks a citation. Modal closes; parent should switch tab + highlight. */
   onNavigateToSource?: (sourceType: PulseSourceType, sourceId: string) => void
+  /** When provided, note citations open an inline preview popup instead
+   *  of navigating away. The parent renders the popup so it stacks above
+   *  the Pulse. Other source types still fall through to onNavigateToSource. */
+  onPreviewNote?: (noteId: string) => void
   /** When true, render the panel inline (no fixed-position backdrop,
    *  no scrim, no close button). Used by the Overview tab to embed
    *  the full Pulse directly in the card instead of opening a popup. */
@@ -63,7 +67,7 @@ interface MemberSummaryModalProps {
 
 type SectionId = 'status' | 'highlights' | 'themes' | 'attention' | 'recommendations' | 'nextSteps'
 
-export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNavigateToSource, embedded }: MemberSummaryModalProps) {
+export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNavigateToSource, onPreviewNote, embedded }: MemberSummaryModalProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
 
@@ -349,7 +353,11 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
       <div className="flex flex-wrap gap-1 mt-1.5">
         {sources.map((s, i) => {
           const Icon = sourceIcons[s.type] || Clock
-          const clickable = !!onNavigateToSource && s.type !== 'reflection'
+          // Notes open as a popup if onPreviewNote is provided so the user
+          // can close it and stay on the Pulse. Other types use the tab-
+          // navigation handler. Reflections are patient-private — no click.
+          const opensPopup = s.type === 'note' && !!onPreviewNote
+          const clickable = (opensPopup || !!onNavigateToSource) && s.type !== 'reflection'
           const baseCls = 'inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md border border-gray-200 bg-gray-50 text-gray-600'
           const interactiveCls = clickable ? ' hover:bg-gray-100 hover:border-gray-300 cursor-pointer transition-colors' : ' opacity-70'
           return (
@@ -359,6 +367,10 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
               disabled={!clickable}
               onClick={() => {
                 if (!clickable) return
+                if (opensPopup) {
+                  onPreviewNote?.(s.id)
+                  return
+                }
                 onNavigateToSource?.(s.type, s.id)
                 onClose()
               }}
