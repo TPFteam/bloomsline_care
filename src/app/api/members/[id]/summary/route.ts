@@ -10,6 +10,7 @@ import {
   type SupportedLocale,
 } from '@/lib/summary/prompts'
 import { extractAllMemberFiles, formatExtractionsForPrompt } from '@/lib/pulse/file-extraction'
+import { PULSE_VERSION } from '@/lib/bloom/pulse-version'
 import type { SummaryContent } from '@/types/member'
 
 /**
@@ -430,8 +431,14 @@ export async function POST(
     // Generate plain text version
     const summaryText = generatePlainTextSummary(summaryContent, locale)
 
-    // Store summary in database (data sources included in summary_content JSONB)
-    const summaryContentWithSources = { ...summaryContent, _data_sources: dataSources }
+    // Store summary in database (data sources included in summary_content JSONB).
+    // _meta.version lets the UI flag prior-version summaries with an
+    // "Updated version available" banner (see lib/bloom/pulse-version).
+    const summaryContentWithSources = {
+      ...summaryContent,
+      _data_sources: dataSources,
+      _meta: { version: PULSE_VERSION },
+    }
 
     const { data: savedSummary, error: saveError } = await supabase
       .from('member_summaries')
