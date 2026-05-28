@@ -2318,19 +2318,30 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                         }
                       }
                       if (activeTypes.length === 0 && !quoteFilterOn) {
-                        const tagMatch = note.content.match(/<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"/)
-                        let derivedTag: { type: string; label: string } | null = tagMatch
-                          ? { type: tagMatch[1], label: tagMatch[2] }
-                          : null
-                        // Goal notes (milestone_comments) don't have inline <mark> tags;
-                        // they store their tag in `note_type` directly. Surface it here so
-                        // goal-note rows show a tag pill like session notes.
-                        if (!derivedTag && note.milestone_id && note.note_type && note.note_type !== 'general') {
-                          const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
-                          const label = noteTypeLabels?.[note.note_type] || note.note_type.replace(/_/g, ' ')
-                          derivedTag = { type: note.note_type, label }
+                        // Explode by inline tag so every tag in every note is visible,
+                        // not just the first one — a Browse view that collapses 3
+                        // tagged passages into 1 row hides 2 of them.
+                        const allTagsRegex = /<mark[^>]*data-tag="([^"]*)"[^>]*?data-tag-label="([^"]*)"[^>]*>([\s\S]*?)<\/mark>/gi
+                        let pushedAny = false
+                        let m
+                        while ((m = allTagsRegex.exec(note.content)) !== null) {
+                          const text = stripHtml(m[3]).trim()
+                          if (text) {
+                            rows.push({ note, tag: { type: m[1], label: m[2] }, tagContent: text })
+                            pushedAny = true
+                          }
                         }
-                        rows.push({ note, tag: derivedTag, tagContent: stripHtml(note.content) })
+                        if (!pushedAny) {
+                          // No inline tags. Surface a milestone tag for goal notes,
+                          // otherwise show the note once with no tag pill.
+                          let derivedTag: { type: string; label: string } | null = null
+                          if (note.milestone_id && note.note_type && note.note_type !== 'general') {
+                            const noteTypeLabels = (t.members as any)?.noteTypes as Record<string, string> | undefined
+                            const label = noteTypeLabels?.[note.note_type] || note.note_type.replace(/_/g, ' ')
+                            derivedTag = { type: note.note_type, label }
+                          }
+                          rows.push({ note, tag: derivedTag, tagContent: stripHtml(note.content) })
+                        }
                       }
                     }
                     return rows.map((row, idx) => {
