@@ -495,7 +495,10 @@ export function getSessionFormatLabel(format: SessionFormat, locale?: string): s
   return labels[format] || format
 }
 
-export function formatRelativeTime(date: string | null): string {
+export function formatRelativeTime(
+  date: string | null,
+  opts?: { withTime?: boolean; locale?: 'en' | 'fr' | 'es' }
+): string {
   if (!date) return 'Never'
 
   const now = new Date()
@@ -503,8 +506,23 @@ export function formatRelativeTime(date: string | null): string {
   const diffMs = now.getTime() - then.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
+  const locale = opts?.locale
+  const time = opts?.withTime
+    ? then.toLocaleTimeString(
+        locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US',
+        { hour: '2-digit', minute: '2-digit', hour12: locale !== 'fr' }
+      )
+    : null
+  const at = time ? (locale === 'fr' ? ` à ${time}` : locale === 'es' ? ` a las ${time}` : ` at ${time}`) : ''
+
+  if (diffDays === 0) {
+    const todayLabel = locale === 'fr' ? "Aujourd'hui" : locale === 'es' ? 'Hoy' : 'Today'
+    return `${todayLabel}${at}`
+  }
+  if (diffDays === 1) {
+    const yesterdayLabel = locale === 'fr' ? 'Hier' : locale === 'es' ? 'Ayer' : 'Yesterday'
+    return `${yesterdayLabel}${at}`
+  }
   if (diffDays < 7) return `${diffDays} days ago`
   if (diffDays < 14) return '1 week ago'
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`

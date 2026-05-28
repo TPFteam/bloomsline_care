@@ -47,6 +47,7 @@ import type {
   RecommendationTimeframe,
 } from '@/types/member'
 import { formatRelativeTime } from '@/types/member'
+import { PULSE_VERSION } from '@/lib/bloom/pulse-version'
 
 interface MemberSummaryModalProps {
   isOpen: boolean
@@ -947,7 +948,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-400" />
                           <span className="text-sm font-medium text-gray-900">
-                            {formatRelativeTime(historySummary.generated_at)}
+                            {formatRelativeTime(historySummary.generated_at, { withTime: true, locale: locale as 'en' | 'fr' | 'es' })}
                           </span>
                         </div>
                         {summary?.id === historySummary.id && (
@@ -965,6 +966,53 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
               </div>
             ) : summary ? (
               <div className="space-y-3">
+                {/* Older-version banner — the saved summary predates the
+                    current Pulse prompt/data shape. Practitioner can
+                    regenerate at will; no auto-regenerate so token cost
+                    stays predictable. Takes visual precedence over the
+                    delta banner since the version gap is structural. */}
+                {(() => {
+                  const savedVersion = (summary.summary_content as { _meta?: { version?: number } })?._meta?.version ?? 1
+                  const isOutdated = savedVersion < PULSE_VERSION
+                  if (!isOutdated) return null
+                  return (
+                    <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-teal-900 mb-1">
+                          {locale === 'fr'
+                            ? 'Nouvelle version de Bloom Pulse disponible'
+                            : locale === 'es'
+                              ? 'Nueva versión de Bloom Pulse disponible'
+                              : 'Updated Bloom Pulse version available'}
+                        </p>
+                        <p className="text-xs text-teal-800 leading-relaxed">
+                          {locale === 'fr'
+                            ? 'Cette synthèse a été générée avec une version antérieure. Régénérer pour inclure les moments partagés, les histoires, les réponses aux ressources, le calendrier de séances et les extraits de fichiers.'
+                            : locale === 'es'
+                              ? 'Este resumen se generó con una versión anterior. Regenera para incluir momentos compartidos, historias, respuestas a recursos, agenda de sesiones y extractos de archivos.'
+                              : 'This summary was generated with an earlier version. Regenerate to include shared moments, stories, resource responses, bookings timeline, and file extracts.'}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={generateSummary}
+                        disabled={generating}
+                        className="bg-teal-600 hover:bg-teal-700 text-white shrink-0"
+                      >
+                        {generating ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                        )}
+                        {locale === 'fr' ? 'Régénérer' : locale === 'es' ? 'Regenerar' : 'Regenerate'}
+                      </Button>
+                    </div>
+                  )
+                })()}
+
                 {/* Delta banner — newer data available */}
                 {delta && delta.total >= 1 && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3">
@@ -1015,7 +1063,7 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Clock className="w-4 h-4" />
-                    {locale === 'fr' ? 'Généré' : locale === 'es' ? 'Generado' : 'Generated'} {formatRelativeTime(summary.generated_at)}
+                    {locale === 'fr' ? 'Généré' : locale === 'es' ? 'Generado' : 'Generated'} {formatRelativeTime(summary.generated_at, { withTime: true, locale: locale as 'en' | 'fr' | 'es' })}
                   </div>
                   <Button
                     variant="ghost"
