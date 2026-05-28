@@ -742,14 +742,35 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   }, [sessions, supabase])
 
   const handleSaveSessionSummary = async (sessionId: string, content: string) => {
-    if (!content.trim()) return
+    const plain = content.replace(/<[^>]*>/g, '').trim()
+    const existing = sessionSummaryNotes[sessionId]
+    // Empty + no existing row = nothing to do. Empty + existing row =
+    // the practitioner is clearing a stale note, so delete instead of bailing.
+    if (!plain && !existing) return
 
     setSavingSummary(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const existing = sessionSummaryNotes[sessionId]
+      if (!plain && existing) {
+        const { error } = await supabase
+          .from('progress_notes')
+          .delete()
+          .eq('id', existing.id)
+
+        if (error) throw error
+
+        setSessionSummaryNotes(prev => {
+          const next = { ...prev }
+          delete next[sessionId]
+          return next
+        })
+        setEditingSummarySession(null)
+        setSummaryDraft('')
+        toast.success(locale === 'fr' ? 'Note supprimée' : 'Note deleted')
+        return
+      }
 
       if (existing) {
         const { error } = await supabase
@@ -1993,7 +2014,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <Button
                               size="sm"
                               onClick={() => handleSaveSessionSummary(session.id, summaryDraft)}
-                              disabled={savingSummary || !summaryDraft.replace(/<[^>]*>/g, '').trim()}
+                              disabled={savingSummary || (!summaryDraft.replace(/<[^>]*>/g, '').trim() && !sessionSummaryNotes[session.id])}
                               className="h-8 px-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
                             >
                               {savingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (locale === 'fr' ? 'Enregistrer' : 'Save')}

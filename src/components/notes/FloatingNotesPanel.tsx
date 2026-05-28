@@ -174,18 +174,28 @@ export function FloatingNotesPanel() {
 
   // Save from floating panel
   const handleSave = useCallback(async () => {
-    if (!floatingNote || !floatingNote.content.trim()) return
+    if (!floatingNote) return
+    const trimmed = floatingNote.content.trim()
+    // Empty + no existing row = nothing to save. Empty + existing row =
+    // the practitioner is clearing a stale note (e.g. wiping leftover
+    // content), so delete the row entirely instead of bailing.
+    if (!trimmed && !floatingNote.existingNoteId) return
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       if (floatingNote.mode === 'session' && floatingNote.sessionId) {
-        // Session note — upsert
-        if (floatingNote.existingNoteId) {
+        if (!trimmed && floatingNote.existingNoteId) {
           const { error } = await supabase
             .from('progress_notes')
-            .update({ content: floatingNote.content.trim(), updated_at: new Date().toISOString() })
+            .delete()
+            .eq('id', floatingNote.existingNoteId)
+          if (error) throw error
+        } else if (floatingNote.existingNoteId) {
+          const { error } = await supabase
+            .from('progress_notes')
+            .update({ content: trimmed, updated_at: new Date().toISOString() })
             .eq('id', floatingNote.existingNoteId)
           if (error) throw error
         } else {
@@ -195,7 +205,7 @@ export function FloatingNotesPanel() {
               member_id: floatingNote.memberId,
               practitioner_id: user.id,
               session_id: floatingNote.sessionId,
-              content: floatingNote.content.trim(),
+              content: trimmed,
               note_type: 'session_summary',
               is_private: true,
             })
@@ -208,14 +218,14 @@ export function FloatingNotesPanel() {
           .insert({
             member_id: floatingNote.memberId,
             practitioner_id: user.id,
-            content: floatingNote.content.trim(),
+            content: trimmed,
             note_type: floatingNote.noteType || 'general',
             is_private: true,
           })
         if (error) throw error
       }
 
-      toast.success(fr ? 'Note enregistrée' : 'Note saved')
+      toast.success(fr ? (trimmed ? 'Note enregistrée' : 'Note supprimée') : (trimmed ? 'Note saved' : 'Note deleted'))
       analytics.sessionNoteSaved()
       // Tell every surface that lists bookings / notes (calendar
       // popover, History tab, dashboard awaiting list) to refresh its
@@ -368,7 +378,7 @@ export function FloatingNotesPanel() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || !floatingNote.content?.trim()}
+            disabled={saving || (!floatingNote.content?.trim() && !floatingNote.existingNoteId)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}

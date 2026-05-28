@@ -1150,21 +1150,41 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
   }, [supabase, t, usesLegacyDefaults])
 
   const handleSaveSessionNote = async (sessionId: string, content: string) => {
-    if (!content.trim() && snAttachments.length === 0) return
+    const plain = content.replace(/<[^>]*>/g, '').trim()
+    const isEmpty = !plain && snAttachments.length === 0
+    const existing = snSessionSummaryNotes[sessionId]
+    let existingId = existing?.id || snAutoSavedId.current
+
+    if (!existingId && snCreatingPromise.current) {
+      existingId = await snCreatingPromise.current
+    }
+
+    // Empty + no existing row = nothing to do. Empty + existing row =
+    // practitioner is clearing a stale note, so delete the row.
+    if (isEmpty && !existingId) return
 
     setSnSavingSummary(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const existing = snSessionSummaryNotes[sessionId]
-      let existingId = existing?.id || snAutoSavedId.current
-
-      // If an INSERT for this session is already in flight (typically
-      // from a debounced autosave), wait for it instead of starting a
-      // second INSERT. Once it resolves we'll UPDATE the row it created.
-      if (!existingId && snCreatingPromise.current) {
-        existingId = await snCreatingPromise.current
+      if (isEmpty && existingId) {
+        const { error } = await supabase
+          .from('progress_notes')
+          .delete()
+          .eq('id', existingId)
+        if (error) throw error
+        snAutoSavedId.current = null
+        setSnSessionSummaryNotes(prev => {
+          const next = { ...prev }
+          delete next[sessionId]
+          return next
+        })
+        setSnIsEditing(false)
+        setSnSummaryDraft('')
+        toast.success(locale === 'fr' ? 'Note supprimée' : 'Note deleted')
+        setSnSavingSummary(false)
+        return
       }
 
       if (existingId) {
@@ -2091,7 +2111,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                           <button
                             type="button"
                             onClick={() => handleSaveSessionNote(selectedItemId, snSummaryDraft)}
-                            disabled={snSavingSummary || (!snSummaryDraft.trim() && snAttachments.length === 0)}
+                            disabled={snSavingSummary || (!snSummaryDraft.replace(/<[^>]*>/g, '').trim() && snAttachments.length === 0 && !snSessionSummaryNotes[selectedItemId])}
                             className="px-2.5 py-1 rounded-md text-xs bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                           >
                             {snSavingSummary ? (
@@ -2154,7 +2174,7 @@ export default function NotesTab({ memberId, sessions, notes: initialNotes, onNo
                       <button
                         type="button"
                         onClick={() => handleSaveSessionNote(selectedItemId, snSummaryDraft)}
-                        disabled={snSavingSummary || (!snSummaryDraft.trim() && snAttachments.length === 0)}
+                        disabled={snSavingSummary || (!snSummaryDraft.replace(/<[^>]*>/g, '').trim() && snAttachments.length === 0 && !snSessionSummaryNotes[selectedItemId])}
                         className="px-2.5 py-1 rounded-md text-xs bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
                       >
                         {snSavingSummary ? (
