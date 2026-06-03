@@ -296,7 +296,7 @@ const hypothesisChain = [
     note: 'a relationship that’s held all week, not just for one hour, gets stronger',
   },
   {
-    step: 'The cadre holds and builds',
+    step: 'The cadre holds',
     note: 'the framework keeps its shape between sessions instead of resetting each time',
   },
   {
