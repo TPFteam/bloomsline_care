@@ -5,7 +5,14 @@
 // viewer's browser timezone so they match what the practitioner sees in-app.
 // Safe to delete with the /sarah route once the demo is over.
 
+import { useState } from 'react'
 import { Mic, Share2 } from 'lucide-react'
+
+export interface DemoComment {
+  author_type: string // 'practitioner' | 'member'
+  content: string
+  created_at: string
+}
 
 export interface DemoMoment {
   id: string
@@ -17,6 +24,8 @@ export interface DemoMoment {
   created_at: string
   shared_with_practitioner_at: string
   image_url: string | null
+  full_url: string | null
+  comments: DemoComment[]
 }
 
 const MOMENT_MOOD_COLORS: Record<string, string> = {
@@ -27,7 +36,7 @@ const MOMENT_MOOD_COLORS: Record<string, string> = {
   overwhelmed: '#C084FC', lonely: '#9CA3AF',
 }
 
-function MomentCard({ moment }: { moment: DemoMoment }) {
+function MomentCard({ moment, onOpen }: { moment: DemoMoment; onOpen: (m: DemoMoment) => void }) {
   const mood = moment.moods?.[0]
   const moodColor = mood ? MOMENT_MOOD_COLORS[mood] || '#94A3B8' : null
   const hasImage = !!moment.image_url && (moment.type === 'photo' || moment.type === 'video' || moment.type === 'mixed')
@@ -41,7 +50,11 @@ function MomentCard({ moment }: { moment: DemoMoment }) {
   })()
 
   return (
-    <div className="w-full text-left rounded-2xl border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all overflow-hidden bg-white">
+    <button
+      type="button"
+      onClick={() => onOpen(moment)}
+      className="w-full text-left rounded-2xl border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all overflow-hidden bg-white"
+    >
       {hasImage && (
         <div className="relative rounded-xl overflow-hidden bg-gray-100">
           <img src={moment.image_url!} alt="" className="w-full h-40 object-cover" />
@@ -90,11 +103,111 @@ function MomentCard({ moment }: { moment: DemoMoment }) {
           <p className="text-xs text-gray-500 line-clamp-2">{moment.caption || moment.text_content}</p>
         </div>
       )}
+    </button>
+  )
+}
+
+// Full-moment modal — mirrors the app's Shared Moment viewer (full media, moods,
+// full text, captured date, conversation). Read-only in the demo.
+function MomentModal({ moment, onClose }: { moment: DemoMoment; onClose: () => void }) {
+  const moods = moment.moods || []
+  const sharedAt = new Date(moment.shared_with_practitioner_at).toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  })
+  const capturedAt = new Date(moment.created_at).toLocaleString('fr-FR', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Moment partagé</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Partagé le {sharedAt}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">
+            &times;
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {moment.type === 'video' && moment.full_url && (
+            <video src={moment.full_url} controls className="w-full max-h-[60vh] bg-black rounded-xl" />
+          )}
+          {moment.type === 'voice' && moment.full_url && (
+            <div className="w-full bg-amber-50 rounded-xl p-6 flex flex-col items-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-amber-500 flex items-center justify-center">
+                <Mic className="w-6 h-6 text-white" />
+              </div>
+              <audio src={moment.full_url} controls className="w-full" />
+            </div>
+          )}
+          {(moment.type === 'photo' || moment.type === 'mixed') && moment.full_url && (
+            <img src={moment.full_url} alt="" className="w-full max-h-[60vh] object-contain bg-gray-50 rounded-xl" />
+          )}
+
+          {moods.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {moods.map((mood) => {
+                const c = MOMENT_MOOD_COLORS[mood] || '#94A3B8'
+                return (
+                  <span
+                    key={mood}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full"
+                    style={{ backgroundColor: `${c}1F`, color: c }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c }} />
+                    <span className="capitalize">{mood}</span>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+
+          {moment.text_content && (
+            <p className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">{moment.text_content}</p>
+          )}
+          {moment.caption && (
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{moment.caption}</p>
+          )}
+
+          <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">Capturé le {capturedAt}</p>
+
+          {/* Conversation (read-only) */}
+          <div className="pt-4 mt-2 border-t border-gray-100">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">Conversation</div>
+            {moment.comments.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Pas encore de commentaires</p>
+            ) : (
+              <div className="space-y-3">
+                {moment.comments.map((c, i) => {
+                  const mine = c.author_type === 'practitioner'
+                  const when = new Date(c.created_at).toLocaleString('fr-FR', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                  })
+                  return (
+                    <div key={i} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${mine ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                        <p className="whitespace-pre-wrap break-words">{c.content}</p>
+                      </div>
+                      <span className="text-[10px] text-gray-400 mt-1 px-1">{when}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default function SarahTimeline({ moments }: { moments: DemoMoment[] }) {
+  const [selected, setSelected] = useState<DemoMoment | null>(null)
   // Group by shared date (matches "Date de partage" mode in the app).
   const dayKey = (iso: string) => {
     const d = new Date(iso)
@@ -162,7 +275,7 @@ export default function SarahTimeline({ moments }: { moments: DemoMoment[] }) {
                               <>
                                 <div className="flex justify-end">
                                   <div className="w-full max-w-[260px]">
-                                    <MomentCard moment={moment} />
+                                    <MomentCard moment={moment} onOpen={setSelected} />
                                   </div>
                                 </div>
                                 <div />
@@ -172,7 +285,7 @@ export default function SarahTimeline({ moments }: { moments: DemoMoment[] }) {
                                 <div />
                                 <div className="flex justify-start">
                                   <div className="w-full max-w-[260px]">
-                                    <MomentCard moment={moment} />
+                                    <MomentCard moment={moment} onOpen={setSelected} />
                                   </div>
                                 </div>
                               </>
@@ -193,6 +306,8 @@ export default function SarahTimeline({ moments }: { moments: DemoMoment[] }) {
           )}
         </div>
       </div>
+
+      {selected && <MomentModal moment={selected} onClose={() => setSelected(null)} />}
     </div>
   )
 }

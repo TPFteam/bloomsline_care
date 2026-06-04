@@ -4,7 +4,7 @@
 // the demo is over — it exposes patient moments without auth by design.
 
 import { createAdminClient } from '@/lib/supabase/server-client'
-import SarahTimeline, { type DemoMoment } from './SarahTimeline'
+import SarahTimeline, { type DemoMoment, type DemoComment } from './SarahTimeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,12 +69,34 @@ export default async function SarahDemoPage() {
         .not('shared_with_practitioner_at', 'is', null)
         .order('shared_with_practitioner_at', { ascending: false })
 
+      const rows = data || []
+      const ids = rows.map((m: any) => m.id)
+
+      // Conversation threads (read-only in the demo), grouped per moment.
+      const commentsByMoment: Record<string, DemoComment[]> = {}
+      if (ids.length) {
+        const { data: cData } = await admin
+          .from('moment_comments')
+          .select('moment_id, author_type, content, created_at')
+          .in('moment_id', ids)
+          .order('created_at', { ascending: true })
+        for (const c of (cData || []) as any[]) {
+          ;(commentsByMoment[c.moment_id] ||= []).push({
+            author_type: c.author_type,
+            content: c.content,
+            created_at: c.created_at,
+          })
+        }
+      }
+
       moments = await Promise.all(
-        (data || []).map(async (m: any): Promise<DemoMoment> => {
+        rows.map(async (m: any): Promise<DemoMoment> => {
           const isMedia = m.type === 'photo' || m.type === 'video' || m.type === 'mixed'
           const image_url = isMedia
             ? await signImage(admin, m.thumbnail_path ?? m.media_path ?? m.thumbnail_url ?? m.media_url)
             : null
+          const full_url =
+            isMedia || m.type === 'voice' ? await signImage(admin, m.media_path ?? m.media_url) : null
           return {
             id: m.id,
             type: m.type,
@@ -85,6 +107,8 @@ export default async function SarahDemoPage() {
             created_at: m.created_at,
             shared_with_practitioner_at: m.shared_with_practitioner_at,
             image_url,
+            full_url,
+            comments: commentsByMoment[m.id] || [],
           }
         })
       )
