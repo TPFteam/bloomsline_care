@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 
 const fade = {
   hidden: { opacity: 0, y: 16 },
@@ -24,15 +24,15 @@ const discovery: MindNodeData = {
     fr: 'On a commencé avec Doctalink — aider les gens à trouver le bon thérapeute.',
   },
   a: {
-    en: 'It worked. People liked it. But it wasn’t the real problem. So we kept asking…',
-    fr: 'Ça marchait. Les gens aimaient. Mais ce n’était pas le vrai problème. Alors on a continué à chercher…',
+    en: 'It worked, and people liked it. But it wasn’t where people got stuck. So we kept asking…',
+    fr: 'Ça marchait, et les gens aimaient. Mais ce n’était pas là que les gens bloquaient. Alors on a continué à demander…',
   },
   children: [
     {
-      q: { en: 'So what’s the real problem?', fr: 'Alors, c’est quoi le vrai problème ?' },
+      q: { en: 'So where did people actually get stuck?', fr: 'Alors, où est-ce que les gens bloquaient vraiment ?' },
       a: {
-        en: 'It’s not finding the therapist. It’s what happens once therapy starts.',
-        fr: 'Ce n’est pas de trouver le thérapeute. C’est ce qui se passe une fois la thérapie commencée.',
+        en: 'Not in finding the therapist. In what happens once therapy starts.',
+        fr: 'Pas pour trouver le thérapeute. Dans ce qui se passe une fois la thérapie commencée.',
       },
       children: [
         {
@@ -81,7 +81,7 @@ const discovery: MindNodeData = {
                       },
                       children: [
                         {
-                          q: { en: 'So, in one line?', fr: 'Alors, en une phrase ?' },
+                          q: { en: 'So, the real problem?', fr: 'Alors, le vrai problème ?' },
                           a: {
                             en: 'It’s not that therapy doesn’t work. It’s that nothing supports the 167 hours in between — so the work is harder, and progress stays hard to see.',
                             fr: 'Ce n’est pas que la thérapie ne marche pas. C’est que rien ne soutient les 167 heures entre les séances — alors le travail est plus dur, et les progrès restent difficiles à voir.',
@@ -307,54 +307,353 @@ const hypothesisChain = [
 
 const hypothesisOutcome = 'Therapy gets easier. The patient gets better. The practice grows.'
 
+// Indirect, projective questions — the viewer can't see the mapping. That's the
+// point: a rule-based app maps answer→category; the understanding layer infers
+// who you are from signals you never stated outright.
+const Q = [
+  { q: 'An unplanned free evening — first instinct?', opts: ['Text someone to do something', 'Dive into a project', 'Decompress alone'] },
+  { q: 'Someone you like takes a day to reply.', opts: ['No big deal', 'I notice, a little', 'It lives in my head'] },
+  { q: 'What makes you feel closest to someone?', opts: ['Being truly understood', 'Having fun together', 'Building toward something'] },
+]
+
+// Inferred traits — derived, NOT asked. Connection style drives the match.
+const CONNECTION = [
+  { trait: 'Depth-seeker', line: 'bonds by being understood — small talk drains you' },
+  { trait: 'Play-first', line: 'bonds through ease and fun — pressure kills it' },
+  { trait: 'Builder', line: 'bonds by building something together' },
+]
+const ATTACH = [
+  'Secure — a slow reply doesn’t rattle you',
+  'Attuned — you read the small signals',
+  'Reassurance-seeking — silence gets loud',
+]
+const ENERGY = ['Recharges around people', 'Recharges by creating', 'Recharges in solitude']
+
+const MATCH = [
+  { name: 'Sofia, 27', emoji: '🌧️', grad: 'from-sky-300 to-indigo-300', why: 'she needs to feel understood first too — you’ll skip the small talk' },
+  { name: 'Inès, 25', emoji: '🎈', grad: 'from-amber-200 to-rose-300', why: 'she leads with play, never pressure — your kind of easy' },
+  { name: 'Noé, 29', emoji: '🚀', grad: 'from-emerald-300 to-teal-400', why: 'she’s building something too — she’ll get your drive' },
+]
+const FEED_NOTE = [
+  'We slowed your feed: 3 hand-picked people, not 300.',
+  'We surfaced the playful ones and hid the intense profiles.',
+  'We put the people building something up top.',
+]
+const OPENER = [
+  'ask what they’re unlearning lately',
+  'send the most chaotic thing in your camera roll',
+  'ask what they’re building this year',
+]
+
+const personaSteps = ['Generic dating app', 'Answer a few questions', 'It infers who you are']
+
+// Manual click-through phone mockup. A generic dating app plugs in Bloomsline;
+// from a few indirect questions it INFERS traits the viewer never stated, then
+// re-tunes the whole experience to the inferred person — not to the literal answers.
+function PersonalizationDemo() {
+  const [stage, setStage] = useState<'cold' | 'intake' | 'reading' | 'done'>('cold')
+  const [answers, setAnswers] = useState<(number | null)[]>([null, null, null])
+  const allAnswered = answers.every((a) => a !== null)
+
+  useEffect(() => {
+    if (stage !== 'reading') return
+    const t = setTimeout(() => setStage('done'), 1700)
+    return () => clearTimeout(t)
+  }, [stage])
+
+  const reset = () => {
+    setAnswers([null, null, null])
+    setStage('cold')
+  }
+  const select = (qi: number, oi: number) =>
+    setAnswers((a) => a.map((v, i) => (i === qi ? oi : v)))
+
+  const energyPick = answers[0] ?? 0
+  const attachPick = answers[1] ?? 0
+  const connPick = answers[2] ?? 0 // connection style drives the personalisation
+  const m = MATCH[connPick]
+  const done = stage === 'done'
+  const stepIdx = stage === 'cold' ? 0 : stage === 'done' ? 2 : 1
+
+  return (
+    <div className="flex select-none flex-col items-center gap-6">
+      {/* Phone */}
+      <div className="relative h-[520px] w-[256px] rounded-[2.75rem] bg-neutral-900 p-[10px] shadow-2xl">
+        <div className="absolute left-1/2 top-[10px] z-30 h-[22px] w-[88px] -translate-x-1/2 rounded-b-2xl bg-neutral-900" />
+        <div className="relative h-full w-full overflow-hidden rounded-[2.2rem] bg-white">
+
+          {/* Status bar */}
+          <div className="flex items-center justify-between px-5 pt-3 pb-1 text-[9px] text-neutral-400">
+            <span>9:41</span>
+            <span className="uppercase tracking-widest">a dating app</span>
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-1 pb-2">
+            <div className="text-lg font-semibold text-neutral-900">{done ? 'For you' : 'Discover'}</div>
+            {done ? (
+              <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[9px] font-medium text-teal-700">Understood ✓</span>
+            ) : (
+              <span className="text-base">🔥</span>
+            )}
+          </div>
+
+          {/* COLD: a normal dating app */}
+          {!done && (
+            <div className="px-5">
+              <div className="relative h-[300px] overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-200 to-neutral-300">
+                <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">🙂</div>
+                <div className="absolute right-3 top-3 rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold text-white">?? match</div>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-10">
+                  <div className="text-sm font-semibold text-white">Jordan, 29</div>
+                  <div className="text-[10px] text-white/80">5 km away</div>
+                  <div className="mt-1.5 flex gap-1">
+                    {['—', '—'].map((t, i) => (
+                      <span key={i} className="rounded-full bg-white/25 px-2 py-0.5 text-[9px] text-white/70">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2 text-center text-[9px] italic text-neutral-400">
+                picked at random — the app doesn’t know you yet
+              </div>
+              <div className="mt-3 flex justify-center gap-5">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-rose-200 text-lg text-rose-400">✕</span>
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-teal-300 text-lg text-teal-500">♥</span>
+              </div>
+            </div>
+          )}
+
+          {/* DONE: the understanding layer + a tuned experience */}
+          {done && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="px-5 space-y-2.5"
+            >
+              {/* Inferred understanding */}
+              <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-3">
+                <div className="text-[11px] font-semibold text-teal-800">What Bloomsline read in you</div>
+                <div className="mb-2 text-[8px] uppercase tracking-wide text-teal-700/60">inferred — you never said any of this</div>
+                <ul className="space-y-1 text-[9px] leading-snug text-teal-800/90">
+                  <li>· <span className="font-semibold">{CONNECTION[connPick].trait}</span> — {CONNECTION[connPick].line}</li>
+                  <li>· {ATTACH[attachPick]}</li>
+                  <li>· {ENERGY[energyPick]}</li>
+                </ul>
+              </div>
+
+              {/* The match, chosen from the inferred trait */}
+              <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 p-2.5">
+                <div className={`relative flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${m.grad} text-2xl`}>
+                  {m.emoji}
+                  <span className="absolute -bottom-1.5 -right-1.5 rounded-full bg-white px-1.5 py-0.5 text-[8px] font-bold text-teal-700 shadow">94%</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[12px] font-semibold text-neutral-900">{m.name}</div>
+                  <div className="text-[9px] leading-snug text-teal-700">✦ {m.why}</div>
+                </div>
+              </div>
+
+              {/* How the app itself changed */}
+              <div className="rounded-xl bg-neutral-900 p-2.5 text-[9px] leading-snug text-white">
+                <div className="font-medium">{FEED_NOTE[connPick]}</div>
+                <div className="text-white/60">Opener to try: {OPENER[connPick]}</div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Bottom action */}
+          {stage === 'cold' && (
+            <div className="absolute inset-x-5 bottom-5">
+              <button
+                onClick={() => setStage('intake')}
+                className="relative w-full rounded-xl bg-neutral-900 py-3 text-center text-xs font-medium text-white transition-transform active:scale-95"
+              >
+                ✦ Personalize with Bloomsline
+              </button>
+              <motion.span
+                className="pointer-events-none absolute -top-1 right-7 h-7 w-7 rounded-full bg-teal-400/40"
+                animate={{ scale: [0.5, 1.4], opacity: [0.7, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              />
+            </div>
+          )}
+          {done && (
+            <div className="absolute inset-x-5 bottom-4 text-center">
+              <button
+                onClick={reset}
+                className="text-[11px] font-medium text-neutral-400 underline-offset-2 hover:text-neutral-700 hover:underline"
+              >
+                ↺ Start over
+              </button>
+            </div>
+          )}
+
+          {/* Intake sheet — indirect questions */}
+          <AnimatePresence>
+            {stage === 'intake' && (
+              <motion.div
+                initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                transition={{ type: 'spring', stiffness: 280, damping: 30 }}
+                className="absolute inset-x-0 bottom-0 top-8 z-20 flex flex-col rounded-t-3xl bg-white px-5 pb-5 pt-4 shadow-2xl"
+              >
+                <span className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-200" />
+                <div className="text-sm font-semibold text-neutral-900">A few quick questions</div>
+                <div className="mb-3 text-[10px] text-neutral-400">anonymous · nothing stored · no preferences asked</div>
+                <div className="space-y-3">
+                  {Q.map((qq, qi) => (
+                    <div key={qi}>
+                      <div className="mb-1.5 text-[11px] font-medium text-neutral-700">{qq.q}</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {qq.opts.map((o, oi) => {
+                          const sel = answers[qi] === oi
+                          return (
+                            <button
+                              key={oi}
+                              onClick={() => select(qi, oi)}
+                              className={`rounded-full border px-2.5 py-1 text-[10px] transition-colors ${
+                                sel
+                                  ? 'border-teal-600 bg-teal-600 text-white'
+                                  : 'border-neutral-200 text-neutral-500 hover:border-teal-300'
+                              }`}
+                            >
+                              {o}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  disabled={!allAnswered}
+                  onClick={() => allAnswered && setStage('reading')}
+                  className={`mt-auto rounded-xl py-2.5 text-center text-xs font-medium transition-colors ${
+                    allAnswered
+                      ? 'bg-teal-600 text-white active:scale-95'
+                      : 'cursor-not-allowed bg-neutral-100 text-neutral-400'
+                  }`}
+                >
+                  {allAnswered ? 'Continue' : 'Pick one for each'}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Reading / inferring overlay */}
+          <AnimatePresence>
+            {stage === 'reading' && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-white/95 px-6 text-center"
+              >
+                <span className="h-9 w-9 animate-spin rounded-full border-2 border-neutral-200 border-t-teal-600" />
+                <div className="text-sm font-medium text-neutral-700">Reading you…</div>
+                <div className="text-[10px] text-neutral-400">inferring who you are — not what you ticked</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Step indicator */}
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[11px]">
+        {personaSteps.map((s, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 transition-colors duration-300 ${
+                stepIdx === i ? 'bg-teal-600 text-white' : 'border border-neutral-200 bg-white text-neutral-400'
+              }`}
+            >
+              {i + 1}. {s}
+            </span>
+            {i < personaSteps.length - 1 && <span className="text-neutral-300">→</span>}
+          </div>
+        ))}
+      </div>
+
+      <p className="max-w-xs text-center text-xs text-neutral-400">
+        A normal app maps <span className="text-neutral-500">answer → category</span>. Bloomsline <span className="font-medium text-teal-700">infers who you are</span> — then tunes everything to it.
+      </p>
+    </div>
+  )
+}
+
 export default function BadisPage() {
   const [discoveryLang, setDiscoveryLang] = useState<'en' | 'fr'>('en')
+  const [showDiscovery, setShowDiscovery] = useState(false)
   return (
     <div className="min-h-screen w-full" style={{ backgroundColor: '#FAF8F5' }}>
       <div className="mx-auto max-w-5xl px-6 sm:px-10">
 
-        {/* How we found the problem — collapsible discovery */}
-        <section className="pt-20 pb-10">
-          <div className="flex items-center justify-between mb-2">
-            <motion.p
-              initial="hidden" animate="show" variants={fade} transition={{ duration: 0.5 }}
-              className="text-[11px] tracking-[0.35em] uppercase text-neutral-400"
-            >
-              {discoveryLang === 'fr' ? 'Comment on a trouvé le problème' : 'How we found the problem'}
-            </motion.p>
-            <div className="flex gap-1">
-              {(['en', 'fr'] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setDiscoveryLang(l)}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-wider transition-colors ${
-                    discoveryLang === l
-                      ? 'bg-neutral-900 text-white'
-                      : 'text-neutral-400 hover:text-neutral-700'
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <motion.p
-            initial="hidden" animate="show" variants={fade} transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-xs text-neutral-400 font-light italic mb-6"
+        {/* Trigger — the discovery story is hidden until you click, so you can
+            reveal it on-demand during a screen share (Badis sees it only then). */}
+        <section className="pt-12">
+          <button
+            onClick={() => setShowDiscovery(true)}
+            className="group inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2 text-[11px] tracking-[0.25em] uppercase text-neutral-500 shadow-sm transition-colors hover:border-neutral-900 hover:text-neutral-900"
           >
-            {discoveryLang === 'fr'
-              ? 'Chaque question qu’on s’est posée — cliquez pour aller plus loin.'
-              : 'Each question we kept asking — tap to go deeper.'}
-          </motion.p>
-          <motion.div
-            initial="hidden" animate="show" variants={fade} transition={{ duration: 0.6, delay: 0.15 }}
-          >
-            <MindNode node={discovery} lang={discoveryLang} />
-          </motion.div>
+            <span className="text-neutral-400 transition-colors group-hover:text-neutral-900">◇</span>
+            How we found the problem
+          </button>
         </section>
 
+        {/* Discovery popup — the collapsible mind map, revealed on click */}
+        <AnimatePresence>
+          {showDiscovery && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowDiscovery(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            >
+              <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 12 }}
+                transition={{ duration: 0.25 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10 max-h-[88vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-[#FAF8F5] p-6 shadow-2xl sm:p-10"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[11px] tracking-[0.35em] uppercase text-neutral-400">
+                    {discoveryLang === 'fr' ? 'Comment on a trouvé le problème' : 'How we found the problem'}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      {(['en', 'fr'] as const).map((l) => (
+                        <button
+                          key={l}
+                          onClick={() => setDiscoveryLang(l)}
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-wider transition-colors ${
+                            discoveryLang === l ? 'bg-neutral-900 text-white' : 'text-neutral-400 hover:text-neutral-700'
+                          }`}
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setShowDiscovery(false)}
+                      aria-label="Close"
+                      className="text-2xl leading-none text-neutral-400 hover:text-neutral-700"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+                <p className="mb-6 text-xs font-light italic text-neutral-400">
+                  {discoveryLang === 'fr'
+                    ? 'Chaque question qu’on s’est posée — cliquez pour aller plus loin.'
+                    : 'Each question we kept asking — tap to go deeper.'}
+                </p>
+                <MindNode node={discovery} lang={discoveryLang} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Hero — the problem */}
-        <section className="pt-12 pb-16 border-t border-neutral-200">
+        <section className="pt-8 pb-16">
           <motion.p
             initial="hidden" animate="show" variants={fade} transition={{ duration: 0.5 }}
             className="text-[11px] tracking-[0.35em] uppercase text-teal-700 mb-6"
@@ -702,6 +1001,11 @@ export default function BadisPage() {
                   A 4–5 question intake → day-one personalisation. Anonymous. No data stored on their side. They plug in; the understanding lives with us.
                 </p>
               </div>
+            </div>
+
+            {/* Live mockup of the understanding layer in action */}
+            <div className="mt-12 flex justify-center">
+              <PersonalizationDemo />
             </div>
           </motion.div>
 
