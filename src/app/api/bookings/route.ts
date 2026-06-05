@@ -4,6 +4,7 @@ import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
 import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
+import { notifyBookingSms } from '@/lib/notifications/sms';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
@@ -152,6 +153,13 @@ export async function POST(request: NextRequest) {
       .single();
     const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
     const practitionerName = await getPractitionerName(body.practitioner_id, supabase);
+
+    // SMS the client when the booking is auto-confirmed (no approval needed) and
+    // the practitioner enabled SMS. notifyBookingSms self-gates on the toggle +
+    // a usable mobile and never throws.
+    if (!isBackdated && bookingStatus === 'confirmed') {
+      waitUntil(notifyBookingSms(supabase, { practitionerId: body.practitioner_id, booking, kind: 'confirmed' }));
+    }
 
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {

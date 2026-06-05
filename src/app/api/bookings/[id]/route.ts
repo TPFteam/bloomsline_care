@@ -6,6 +6,8 @@ import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
+import { notifyBookingSms } from '@/lib/notifications/sms';
+import { waitUntil } from '@vercel/functions';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
 import { postGoogleEvent } from '@/lib/services/google-event-create';
@@ -112,6 +114,16 @@ export async function PATCH(
         { error: 'Failed to update booking' },
         { status: 500 }
       );
+    }
+
+    // SMS the client when the practitioner confirms or cancels a future booking.
+    // Self-gated on booking_settings.sms_on_booking + a usable mobile; no-throw.
+    if (new Date(booking.start_time).getTime() >= Date.now()) {
+      if (status === 'confirmed' && booking.status === 'pending') {
+        waitUntil(notifyBookingSms(adminSupabase, { practitionerId: booking.practitioner_id, booking, kind: 'confirmed' }));
+      } else if (status === 'cancelled' && booking.status !== 'cancelled') {
+        waitUntil(notifyBookingSms(adminSupabase, { practitionerId: booking.practitioner_id, booking, kind: 'cancelled' }));
+      }
     }
 
     // If approving, create a session record and link to member

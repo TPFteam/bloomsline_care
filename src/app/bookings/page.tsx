@@ -1255,6 +1255,7 @@ export default function BookingsPage() {
       booking_page_language: bookingSettings?.booking_page_language ?? null,
       calendar_event_title_template: (bookingSettings as any)?.calendar_event_title_template?.trim() || null,
       calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? false,
+      sms_on_booking: (bookingSettings as any)?.sms_on_booking ?? false,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -2647,6 +2648,51 @@ export default function BookingsPage() {
 
               {/* ─── Preferences tab ─── */}
               {settingsTab === 'preferences' && (<>
+              {/* SMS confirmation toggle — when on, the client gets a text on
+                  booking confirm / reschedule / cancel (if a mobile is on file). */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'SMS de confirmation' : 'SMS confirmations'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr'
+                      ? 'Envoyez un SMS au patient à la confirmation, au report ou à l’annulation d’une séance (si un numéro de mobile est renseigné).'
+                      : 'Text the patient when a session is confirmed, rescheduled or cancelled (when a mobile number is on file).'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(() => {
+                    const enabled = (bookingSettings as any)?.sms_on_booking ?? false
+                    return (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-4">
+                          <p className="font-medium">
+                            {locale === 'fr' ? 'Envoyer un SMS de confirmation' : 'Send an SMS confirmation'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {locale === 'fr'
+                              ? 'Assurez-vous d’avoir le consentement du patient pour recevoir des SMS.'
+                              : 'Make sure you have the patient’s consent to receive SMS.'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), sms_on_booking: !enabled } as any))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+                          aria-pressed={enabled}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                          />
+                        </button>
+                      </div>
+                    )
+                  })()}
+                </CardContent>
+              </Card>
+
               {/* Calendar email reminder toggle — controls whether Google
                   Calendar fires its own 24h-before email reminder for
                   events we create. Independent of Bloomsline's bell +
