@@ -1,0 +1,40 @@
+# Production LanguageTool for Bloomsline — always-on, HTTPS, token-locked.
+#
+#   users → Vercel app → THIS server (Caddy, https + auth) → LanguageTool → back
+#
+# Caddy terminates TLS, auto-renews certs, and rejects any request without the
+# shared Bearer token. LanguageTool itself is NOT exposed publicly — only Caddy
+# can reach it over the internal Docker network.
+
+name: bloom-languagetool
+
+services:
+  languagetool:
+    image: erikvl87/languagetool:latest # pin to a digest in real production
+    restart: unless-stopped
+    environment:
+      Java_Xms: 512m
+      Java_Xmx: 2g # JVM heap — raise on bigger instances (see README)
+    expose:
+      - '8010' # internal only; never published to the host
+    mem_limit: 2560m
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - languagetool
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      GRAMMAR_DOMAIN: ${GRAMMAR_DOMAIN}
+      GRAMMAR_TOKEN: ${GRAMMAR_TOKEN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

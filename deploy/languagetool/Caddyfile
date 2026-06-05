@@ -1,0 +1,14 @@
+# Auto-HTTPS for the grammar domain + Bearer-token gate. Only requests carrying
+# the exact shared secret reach LanguageTool; everything else gets 401.
+
+{$GRAMMAR_DOMAIN} {
+	@authorized header Authorization "Bearer {$GRAMMAR_TOKEN}"
+
+	handle @authorized {
+		reverse_proxy languagetool:8010
+	}
+
+	handle {
+		respond "Unauthorized" 401
+	}
+}

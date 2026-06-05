@@ -6,6 +6,7 @@ import { Bold, Italic, ChevronDown, List, ListOrdered, Minus, ScanLine, FileUp, 
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { TemplatesButton } from '@/components/notes/TemplatesButton'
+import GrammarOverlay from '@/components/notes/GrammarOverlay'
 
 // Inline style colors for goal marks (hex so they persist in stored HTML)
 const GOAL_COLORS: Record<string, { bg: string; border: string }> = {
@@ -2326,6 +2327,8 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
             <div
               ref={editorRef}
               contentEditable
+              spellCheck={true}
+              lang={locale === 'fr' ? 'fr' : locale === 'es' ? 'es' : 'en'}
               onInput={handleInput}
               onPaste={handlePaste}
               onMouseUp={handleMouseUp}
@@ -2340,6 +2343,7 @@ export function RichTextEditor({ value, onChange, placeholder, memberId, locale,
                 {placeholder}
               </div>
             )}
+            <GrammarOverlay editorRef={editorRef} locale={locale} />
           </div>
         </div>
       </div>
