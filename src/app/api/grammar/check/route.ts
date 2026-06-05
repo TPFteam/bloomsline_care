@@ -7,13 +7,19 @@ import { NextRequest, NextResponse } from 'next/server'
 // leaves your infra. The public default below sends text to LanguageTool's
 // cloud — acceptable only for local prototyping with non-real data. The feature
 // is OFF by default (see GrammarOverlay) so nothing is sent unless enabled.
-const LT_BASE = process.env.LANGUAGETOOL_URL || 'https://api.languagetool.org'
-// Shared secret for a locked-down self-hosted instance (sent as a Bearer
+// No public-cloud fallback (PHI safety): if LANGUAGETOOL_URL is not configured,
+// grammar simply returns nothing — note text is NEVER sent to a 3rd-party cloud.
+// Point this at your own (self-hosted) LanguageTool.
+const LT_BASE = process.env.LANGUAGETOOL_URL || ''
+// Shared secret for the locked-down self-hosted instance (sent as a Bearer
 // header; the reverse proxy in front of LanguageTool enforces it).
 const LT_TOKEN = process.env.LANGUAGETOOL_TOKEN || ''
 
 export async function POST(req: NextRequest) {
   try {
+    // Not configured → no grammar (and crucially, no call to any public cloud).
+    if (!LT_BASE) return NextResponse.json({ matches: [] })
+
     const { text, language } = await req.json()
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json({ matches: [] })
