@@ -224,15 +224,16 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   }, [showAvailability, weekStart, userId, dayFormats])
 
 
+  // Show every status (incl. cancelled / no-show) so the calendar reflects the
+  // full picture — they're rendered muted + struck-through and coloured red/gray.
   const bookingEvents: CalendarEvent[] = bookings
-    .filter(b => b.status !== 'cancelled')
     .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link, paymentStatus: (b.payment_status || 'unpaid') as 'paid' | 'unpaid', bookingId: b.id, memberId: b.member_id || null }))
 
   // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
   // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
   const bookingStartTimes = new Set(
     bookings
-      .filter(b => b.status !== 'cancelled' && b.google_event_id)
+      .filter(b => b.google_event_id)
       .map(b => Math.floor(new Date(b.start_time).getTime() / 60000)) // round to minute
   )
   const dedupedGoogleEvents = googleEvents.filter(e => {
@@ -354,8 +355,16 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   {locale === 'fr' ? 'Terminée' : 'Completed'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-4 h-4 rounded-full bg-white border border-dashed border-gray-400 shrink-0" />
-                  {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
+                  <span className="w-4 h-4 rounded-full bg-rose-50 border border-rose-400 flex items-center justify-center shrink-0">
+                    <XCircle className="w-2.5 h-2.5 text-rose-600" />
+                  </span>
+                  {locale === 'fr' ? 'Annulée' : 'Cancelled'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-4 h-4 rounded-full bg-gray-100 border border-gray-400 flex items-center justify-center shrink-0">
+                    <Ban className="w-2.5 h-2.5 text-gray-500" />
+                  </span>
+                  {locale === 'fr' ? 'Absent' : 'No-show'}
                 </div>
                 {googleConnected && (
                   <div className="flex items-center gap-2 text-xs text-gray-700">
@@ -365,6 +374,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                     Google Calendar
                   </div>
                 )}
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-4 h-4 rounded-full bg-white border border-dashed border-gray-400 shrink-0" />
+                  {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
+                </div>
               </div>
             </>
           )}
@@ -605,6 +618,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 const isPast = new Date(event.start).getTime() < Date.now()
                 const sv = calStatusVisual(isGoogle, event.status, isPast)
                 const SvIcon = sv.Icon
+                // Cancelled / no-show → muted + struck so "didn't happen" reads instantly.
+                const dim = event.status === 'cancelled' || event.status === 'no_show'
                 const colWidth = 100 / event.totalCols
                 const left = `${event.col * colWidth}%`
                 const width = `${colWidth - 2}%`
@@ -613,14 +628,14 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   <div key={event.id} data-event>
                     <div
                       onClick={() => setSelectedEvent(isSelected ? null : event.id)}
-                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${sv.fill} ${
+                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${sv.fill} ${dim ? 'opacity-70' : ''} ${
                         isSelected ? `shadow-lg z-20 ring-2 ring-offset-1 ${sv.ring}` : 'hover:shadow-md'
                       }`}
                       style={{ top, height: Math.max(height, 26), left: `calc(${left} + 4px)`, width: `calc(${width} - 2px)` }}
                     >
                       <p className="text-[11px] font-semibold truncate leading-tight flex items-center gap-1">
                         {sv.showIcon && <SvIcon className="w-3 h-3 shrink-0" />}
-                        <span className="truncate">{event.title}</span>
+                        <span className={`truncate ${dim ? 'line-through' : ''}`}>{event.title}</span>
                       </p>
                       {height > 32 && (
                         <p className="text-[10px] opacity-60 truncate mt-0.5">
@@ -795,8 +810,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             </div>
                           )}
 
-                          {/* Completed booking: Edit close */}
-                          {event.status === 'completed' && event.source === 'booking' && event.bookingId && onCloseSession && (
+                          {/* Closed booking (completed / cancelled / no-show): Edit close */}
+                          {(event.status === 'completed' || event.status === 'cancelled' || event.status === 'no_show') && event.source === 'booking' && event.bookingId && onCloseSession && (
                             <div className="px-4 pb-3 pt-2 border-t border-gray-100">
                               <button
                                 onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!); setSelectedEvent(null) }}
