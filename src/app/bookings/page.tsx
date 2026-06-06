@@ -1559,22 +1559,25 @@ export default function BookingsPage() {
                     </>
                   )
                 })()}
-                {/* View toggle — Calendar comes first since it's the
-                    default view; List is one click away. */}
+                {/* View toggle — in calendar view it lives in the left rail
+                    (under "New booking"); kept here only for list view so the
+                    user can switch back. */}
+                {bookingView === 'list' && (
                 <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
                   <button
                     onClick={() => setBookingView('calendar')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-700"
                   >
                     {locale === 'fr' ? 'Calendrier' : 'Calendar'}
                   </button>
                   <button
                     onClick={() => setBookingView('list')}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900"
                   >
                     {locale === 'fr' ? 'Liste' : 'List'}
                   </button>
                 </div>
+                )}
               </div>
 
               {/* Unlinked Google events — only when Google is connected */}
@@ -1612,6 +1615,21 @@ export default function BookingsPage() {
                       <Plus className="w-4 h-4" />
                       {locale === 'fr' ? 'Nouveau rendez-vous' : 'New booking'}
                     </button>
+                    {/* Calendar / List toggle (Calendar is the active view here) */}
+                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setBookingView('calendar')}
+                        className="flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900"
+                      >
+                        {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                      </button>
+                      <button
+                        onClick={() => setBookingView('list')}
+                        className="flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-700"
+                      >
+                        {locale === 'fr' ? 'Liste' : 'List'}
+                      </button>
+                    </div>
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
                       <MiniMonthCalendar
                         selectedWeekStart={calWeekStart}
