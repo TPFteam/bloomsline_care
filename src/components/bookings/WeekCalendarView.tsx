@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban } from 'lucide-react'
@@ -95,7 +95,7 @@ interface WeekCalendarViewProps {
 
 const HOUR_HEIGHT = 56
 const START_HOUR = 7
-const END_HOUR = 21
+const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
 export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport }: WeekCalendarViewProps) {
@@ -302,6 +302,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   // "Now" position (in the practitioner's tz) for the red current-time line.
   const nowHours = getHoursInTz(new Date().toISOString())
 
+  // On mount, scroll the grid so the current time is in view (Google-style),
+  // instead of starting at the top (7 AM) with the evening off-screen.
+  const gridScrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = gridScrollRef.current
+    if (!el) return
+    const h = getHoursInTz(new Date().toISOString())
+    el.scrollTop = Math.max(0, (h - START_HOUR - 1.5) * HOUR_HEIGHT)
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
       {/* Header — toolbar with legend, week nav, Today, Availability.
@@ -473,7 +485,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           </div>
         </div>
       )}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: fillViewport ? 'calc(100vh - 240px)' : `${gridMaxHeight ?? 560}px` }}>
+      <div ref={gridScrollRef} className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: fillViewport ? 'calc(100vh - 240px)' : `${gridMaxHeight ?? 560}px` }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div key={i} className="flex items-start justify-end pr-3 pt-0.5" style={{ height: HOUR_HEIGHT }}>
