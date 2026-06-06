@@ -804,6 +804,8 @@ export default function BookingsPage() {
   // Set from the calendar popover's "Add to Bloomsline"; the rail's
   // UnclaimedGoogleEventsCard picks it up and opens its claim modal.
   const [claimGoogleEventId, setClaimGoogleEventId] = useState<string | null>(null)
+  // "N pending" header badge → popup listing pending bookings to approve/reject.
+  const [showPendingModal, setShowPendingModal] = useState(false)
 
   // Refetch when any other surface (patient detail, dashboard, another
   // tab) mutates a booking or session. Keeps the page in sync without
@@ -1325,10 +1327,15 @@ export default function BookingsPage() {
                 <p className="text-gray-500 text-sm">{locale === 'fr' ? 'Gérer les rendez-vous et les paramètres' : 'Manage appointments and booking settings'}</p>
               </div>
               {pendingCount > 0 && (
-                <div className="flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => setShowPendingModal(true)}
+                  className="flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  title={locale === 'fr' ? 'Voir les demandes en attente' : 'View pending requests'}
+                >
                   <AlertCircle className="w-4 h-4" />
                   <span>{pendingCount} {locale === 'fr' ? 'en attente' : 'pending'}</span>
-                </div>
+                </button>
               )}
             </motion.div>
 
@@ -3294,6 +3301,80 @@ export default function BookingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Pending requests modal — opened from the "N pending" header badge.
+          Lists every pending booking so they can be approved/rejected in one
+          place. Reads from `bookings` so the list shrinks live as each is
+          actioned; closes automatically once none remain. */}
+      {showPendingModal && (() => {
+        const pending = bookings
+          .filter(b => b.status === 'pending')
+          .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setShowPendingModal(false)}>
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {locale === 'fr' ? 'Demandes en attente' : 'Pending requests'}
+                  </h3>
+                  <span className="text-sm text-gray-400 tabular-nums">{pending.length}</span>
+                </div>
+                <button
+                  onClick={() => setShowPendingModal(false)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  aria-label={locale === 'fr' ? 'Fermer' : 'Close'}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto px-6 py-4 space-y-3">
+                {pending.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">
+                    {locale === 'fr' ? 'Aucune demande en attente.' : 'No pending requests.'}
+                  </p>
+                ) : (
+                  pending.map(b => {
+                    const when = new Date(b.start_time).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+                      weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: locale !== 'fr',
+                    })
+                    const busy = processingId === b.id
+                    return (
+                      <div key={b.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{b.client_name}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {when}
+                            {b.session_type && <> · {b.session_type.replace(/_/g, ' ')}</>}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleApprove(b.id)}
+                          disabled={busy}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 transition-colors shrink-0"
+                        >
+                          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          {locale === 'fr' ? 'Accepter' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleReject(b.id)}
+                          disabled={busy}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50 transition-colors shrink-0"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          {locale === 'fr' ? 'Refuser' : 'Reject'}
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Cancel Confirmation Modal */}
       {cancelConfirmBooking && (
