@@ -1625,6 +1625,7 @@ export default function BookingsPage() {
                       bookings={bookings}
                       weekStart={calWeekStart}
                       onWeekStartChange={setCalWeekStart}
+                      fillViewport
                       onApprove={handleApprove}
                       onReject={handleReject}
                       processingId={processingId}

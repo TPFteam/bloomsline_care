@@ -88,6 +88,9 @@ interface WeekCalendarViewProps {
   // Falls back to internal state when omitted.
   weekStart?: Date
   onWeekStartChange?: (d: Date) => void
+  // Make the grid fill the viewport height (full-screen calendar) instead of
+  // the fixed gridMaxHeight.
+  fillViewport?: boolean
 }
 
 const HOUR_HEIGHT = 56
@@ -95,7 +98,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [internalWeekStart, setInternalWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -296,6 +299,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   }
 
   const todayCheck = (day: Date) => isSameDay(day, new Date())
+  // "Now" position (in the practitioner's tz) for the red current-time line.
+  const nowHours = getHoursInTz(new Date().toISOString())
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
@@ -468,7 +473,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
           </div>
         </div>
       )}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: `${gridMaxHeight ?? 560}px` }}>
+      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: fillViewport ? 'calc(100vh - 240px)' : `${gridMaxHeight ?? 560}px` }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div key={i} className="flex items-start justify-end pr-3 pt-0.5" style={{ height: HOUR_HEIGHT }}>
@@ -512,6 +517,15 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                 <div key={i} className="border-b border-gray-50" style={{ height: HOUR_HEIGHT }} />
               ))}
+
+              {/* Current-time line (today only) — the Google-style red marker. */}
+              {today && nowHours >= START_HOUR && nowHours <= START_HOUR + TOTAL_HOURS && (
+                <div className="pointer-events-none absolute inset-x-0 z-30" style={{ top: (nowHours - START_HOUR) * HOUR_HEIGHT }}>
+                  <div className="relative border-t-2 border-red-500">
+                    <span className="absolute -left-1 -top-[5px] h-2.5 w-2.5 rounded-full bg-red-500" />
+                  </div>
+                </div>
+              )}
 
               {/* Inline hint: shown when practitioner clicks empty grid space
                   after availability is loaded — directs them to click a slot. */}
