@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus } from 'lucide-react'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -91,6 +91,10 @@ interface WeekCalendarViewProps {
   // Make the grid fill the viewport height (full-screen calendar) instead of
   // the fixed gridMaxHeight.
   fillViewport?: boolean
+  // Claim an unlinked Google event into Bloomsline (opens the claim flow in
+  // the parent — typically the rail's UnclaimedGoogleEventsCard). Called with
+  // the Google event id.
+  onAddToBloomsline?: (googleEventId: string) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -98,7 +102,7 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [internalWeekStart, setInternalWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -557,21 +561,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 </div>
               )}
 
-              {/* Now line */}
-              {today && (() => {
-                const now = new Date()
-                const h = getHoursInTz(now.toISOString())
-                if (h < START_HOUR || h > END_HOUR) return null
-                return (
-                  <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}>
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 rounded-full bg-red-400 -ml-1" />
-                      <div className="flex-1 h-[1.5px] bg-red-400/60" />
-                    </div>
-                  </div>
-                )
-              })()}
-
               {/* Available slots — teal pill for in-hours (always shown).
                   After-hours pills are always in the DOM but invisible
                   outside the hovered day, fading in/out smoothly via CSS
@@ -765,9 +754,23 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                               </a>
                             )}
 
-                            {/* Google source tag */}
+                            {/* Google source tag + claim action — these events
+                                live only in Google, not Bloomsline yet, so offer
+                                to attach them to a patient. */}
                             {isGoogle && (
-                              <p className="text-[10px] text-blue-500">Google Calendar</p>
+                              <>
+                                {onAddToBloomsline && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); onAddToBloomsline(event.id); setSelectedEvent(null) }}
+                                    className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    {locale === 'fr' ? 'Ajouter à Bloomsline' : 'Add to Bloomsline'}
+                                  </button>
+                                )}
+                                <p className="text-[10px] text-blue-500">Google Calendar</p>
+                              </>
                             )}
 
                             {/* Session notes — opens the floating editor.

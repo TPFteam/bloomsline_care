@@ -801,6 +801,9 @@ export default function BookingsPage() {
   // opens at its member-picker step (consistent with the existing Reschedule
   // path) rather than auto-preselecting.
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  // Set from the calendar popover's "Add to Bloomsline"; the rail's
+  // UnclaimedGoogleEventsCard picks it up and opens its claim modal.
+  const [claimGoogleEventId, setClaimGoogleEventId] = useState<string | null>(null)
 
   // Refetch when any other surface (patient detail, dashboard, another
   // tab) mutates a booking or session. Keeps the page in sync without
@@ -1309,8 +1312,8 @@ export default function BookingsPage() {
         />
 
         {/* Content */}
-        <div className={mainTab === 'appointments' && bookingView === 'calendar' ? 'p-4' : 'p-8'}>
-          <div className={`space-y-6 ${mainTab === 'appointments' && bookingView === 'calendar' ? 'w-full' : 'max-w-5xl mx-auto'}`}>
+        <div className="p-4">
+          <div className="space-y-6 w-full">
             {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1359,40 +1362,66 @@ export default function BookingsPage() {
             </motion.div>
           )}
 
-            {/* Main Tabs */}
-            <div className="flex items-center gap-1 bg-white rounded-xl p-1 border border-gray-200 mb-6">
-              <button
-                onClick={() => setMainTab('appointments')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                  mainTab === 'appointments'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Calendar className="w-4 h-4" />
-                {locale === 'fr' ? 'Rendez-vous' : 'Appointments'}
-                {pendingCount > 0 && (
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    mainTab === 'appointments'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-amber-500 text-white'
-                }`}>
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-              <button
-                onClick={() => setMainTab('settings')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                  mainTab === 'settings'
-                    ? 'bg-gray-900 text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                {locale === 'fr' ? 'Paramètres' : 'Settings'}
-              </button>
-            </div>
+            {/* Bookings workspace — a persistent left rail (new booking +
+                Calendar / List / Settings toggle + mini month picker) sits
+                beside a main pane that swaps between the calendar, the list and
+                settings. The rail and layout stay put across all three; only
+                the main pane changes. */}
+            <div className="flex items-start gap-4">
+              <aside className="hidden lg:block w-60 shrink-0 space-y-4">
+                <button
+                  onClick={() => setShowScheduleModal(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  {locale === 'fr' ? 'Nouveau rendez-vous' : 'New booking'}
+                </button>
+                {/* Calendar / List / Settings toggle — always visible */}
+                <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => { setMainTab('appointments'); setBookingView('calendar') }}
+                    className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'appointments' && bookingView === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+                  </button>
+                  <button
+                    onClick={() => { setMainTab('appointments'); setBookingView('list') }}
+                    className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'appointments' && bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    {locale === 'fr' ? 'Liste' : 'List'}
+                  </button>
+                  <button
+                    onClick={() => setMainTab('settings')}
+                    title={locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    aria-label={locale === 'fr' ? 'Paramètres' : 'Settings'}
+                    className={`flex-1 flex items-center justify-center px-2 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'settings' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+                  <MiniMonthCalendar
+                    selectedWeekStart={calWeekStart}
+                    onSelectDate={(d) => setCalWeekStart(startOfWeek(d, { weekStartsOn: 1 }))}
+                    locale={locale}
+                  />
+                </div>
+                {/* Unlinked Google events — compact card under the mini month
+                    calendar (calendar view only; list view shows the wide
+                    banner above its sections). */}
+                {calendarConnection && bookingView === 'calendar' && (
+                  <UnclaimedGoogleEventsCard
+                    sessionTypes={(sessionTypes || []) as { id: string; name: string; duration?: number; price?: number | null }[]}
+                    locale={locale as 'en' | 'fr' | 'es'}
+                    compact
+                    onClaimed={fetchBookings}
+                    claimEventId={claimGoogleEventId}
+                    onClaimConsumed={() => setClaimGoogleEventId(null)}
+                  />
+                )}
+              </aside>
+
+              <div className="flex-1 min-w-0 space-y-4">
 
           {/* Appointments Tab Content */}
           {mainTab === 'appointments' && (
@@ -1537,108 +1566,41 @@ export default function BookingsPage() {
                 </div>
               )}
 
-              {/* Sub Tabs — scroll-anchored to sections (list view only) */}
-              <div className="flex gap-2 items-center flex-wrap">
-                {bookingView !== 'calendar' && (() => {
-                  const handleScroll = (id: string) => () => {
-                    const el = document.getElementById(id)
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                  const upcomingCount = bookings.filter(b => (b.status === 'confirmed' || b.status === 'pending') && parseISO(b.start_time) > new Date()).length
-                  const historyCount = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || b.status === 'no_show' || (b.status === 'confirmed' && parseISO(b.start_time) < new Date())).length
-                  return (
-                    <>
-                      <button onClick={handleScroll('up-next-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/60 transition-colors">
-                        {locale === 'fr' ? 'À venir' : 'Upcoming'}
-                        <span className="text-xs text-gray-400 tabular-nums">{upcomingCount}</span>
-                      </button>
-                      <button onClick={handleScroll('history-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-white/60 transition-colors">
-                        {locale === 'fr' ? 'Historique' : 'History'}
-                        <span className="text-xs text-gray-400 tabular-nums">{historyCount}</span>
-                      </button>
-                    </>
-                  )
-                })()}
-                {/* View toggle — in calendar view it lives in the left rail
-                    (under "New booking"); kept here only for list view so the
-                    user can switch back. */}
-                {bookingView === 'list' && (
-                <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
-                  <button
-                    onClick={() => setBookingView('calendar')}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-700"
-                  >
-                    {locale === 'fr' ? 'Calendrier' : 'Calendar'}
-                  </button>
-                  <button
-                    onClick={() => setBookingView('list')}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900"
-                  >
-                    {locale === 'fr' ? 'Liste' : 'List'}
-                  </button>
-                </div>
-                )}
-              </div>
+                  {/* Sub Tabs — scroll-anchored to sections (list view only) */}
+                  {bookingView === 'list' && (() => {
+                    const handleScroll = (id: string) => () => {
+                      const el = document.getElementById(id)
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                    const upcomingCount = bookings.filter(b => (b.status === 'confirmed' || b.status === 'pending') && parseISO(b.start_time) > new Date()).length
+                    const historyCount = bookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || b.status === 'no_show' || (b.status === 'confirmed' && parseISO(b.start_time) < new Date())).length
+                    return (
+                      <div className="flex gap-2 items-center flex-wrap">
+                        <button onClick={handleScroll('up-next-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-white/60 transition-colors">
+                          {locale === 'fr' ? 'À venir' : 'Upcoming'}
+                          <span className="text-xs text-gray-400 tabular-nums">{upcomingCount}</span>
+                        </button>
+                        <button onClick={handleScroll('history-section')} className="flex items-baseline gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-900 hover:bg-white/60 transition-colors">
+                          {locale === 'fr' ? 'Historique' : 'History'}
+                          <span className="text-xs text-gray-400 tabular-nums">{historyCount}</span>
+                        </button>
+                      </div>
+                    )
+                  })()}
 
-              {/* Unlinked Google events — only when Google is connected */}
-              {calendarConnection && (
-                <div className="mb-4">
-                  <UnclaimedGoogleEventsCard
-                    sessionTypes={(sessionTypes || []) as { id: string; name: string; duration?: number; price?: number | null }[]}
-                    locale={locale as 'en' | 'fr' | 'es'}
-                    onClaimed={async () => {
-                      // Refetch bookings inline so the newly claimed event
-                      // appears in the list immediately.
-                      const sb = createClient()
-                      const { data: { user: u } } = await sb.auth.getUser()
-                      if (!u) return
-                      const { data } = await sb
-                        .from('bookings')
-                        .select('*')
-                        .eq('practitioner_id', u.id)
-                        .order('start_time', { ascending: true })
-                      if (data) setBookings(data as typeof bookings)
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Calendar View — Google-style: left rail (new booking +
-                  mini month picker) + full-width week grid. */}
-              {bookingView === 'calendar' ? (
-                <div className="flex items-start gap-4">
-                  <aside className="hidden lg:block w-60 shrink-0 space-y-4">
-                    <button
-                      onClick={() => setShowScheduleModal(true)}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      {locale === 'fr' ? 'Nouveau rendez-vous' : 'New booking'}
-                    </button>
-                    {/* Calendar / List toggle (Calendar is the active view here) */}
-                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                      <button
-                        onClick={() => setBookingView('calendar')}
-                        className="flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white shadow-sm text-gray-900"
-                      >
-                        {locale === 'fr' ? 'Calendrier' : 'Calendar'}
-                      </button>
-                      <button
-                        onClick={() => setBookingView('list')}
-                        className="flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all text-gray-500 hover:text-gray-700"
-                      >
-                        {locale === 'fr' ? 'Liste' : 'List'}
-                      </button>
-                    </div>
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-                      <MiniMonthCalendar
-                        selectedWeekStart={calWeekStart}
-                        onSelectDate={(d) => setCalWeekStart(startOfWeek(d, { weekStartsOn: 1 }))}
-                        locale={locale}
+                  {/* Unlinked Google events (list view) — wide banner. In
+                      calendar view this same card lives in the left rail. */}
+                  {calendarConnection && bookingView === 'list' && (
+                    <div>
+                      <UnclaimedGoogleEventsCard
+                        sessionTypes={(sessionTypes || []) as { id: string; name: string; duration?: number; price?: number | null }[]}
+                        locale={locale as 'en' | 'fr' | 'es'}
+                        onClaimed={fetchBookings}
                       />
                     </div>
-                  </aside>
-                  <div className="flex-1 min-w-0">
+                  )}
+
+                  {bookingView === 'calendar' ? (
                     <WeekCalendarView
                       bookings={bookings}
                       weekStart={calWeekStart}
@@ -1660,11 +1622,10 @@ export default function BookingsPage() {
                         const b = bookings.find(x => x.id === bookingId)
                         if (b) openClosePopupBooking(b)
                       }}
+                      onAddToBloomsline={(googleEventId) => setClaimGoogleEventId(googleEventId)}
                     />
-                  </div>
-                </div>
-              ) : (
-              <>
+                  ) : (
+                  <>
               {/* Bookings List */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -3328,6 +3289,8 @@ export default function BookingsPage() {
               )}
             </div>
           )}
+              </div>
+            </div>
           </div>
         </div>
       </main>

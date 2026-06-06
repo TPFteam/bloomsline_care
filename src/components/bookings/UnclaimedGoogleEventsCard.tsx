@@ -49,9 +49,16 @@ interface Props {
   locale: 'en' | 'fr' | 'es'
   /** Called after a successful claim so the parent can refresh its bookings list. */
   onClaimed?: () => void
+  /** Narrow layout for the calendar left rail — stacks each event row vertically. */
+  compact?: boolean
+  /** When set to a Google event id, open the claim modal for that event (e.g.
+   *  triggered from the calendar popover's "Add to Bloomsline"). */
+  claimEventId?: string | null
+  /** Called once the claimEventId has been handled, so the parent can clear it. */
+  onClaimConsumed?: () => void
 }
 
-export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: Props) {
+export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed, compact = false, claimEventId, onClaimConsumed }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [events, setEvents] = useState<OrphanEvent[] | null>(null)
   const [members, setMembers] = useState<MemberOption[]>([])
@@ -98,6 +105,17 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
   useEffect(() => {
     fetchOrphans()
   }, [])
+
+  // External request (e.g. the calendar popover's "Add to Bloomsline") to open
+  // the claim modal for a specific Google event. Match it against the loaded
+  // orphan list; refetch first if the list hasn't loaded yet.
+  useEffect(() => {
+    if (!claimEventId) return
+    if (!events) { fetchOrphans(); return }
+    const match = events.find(e => e.googleEventId === claimEventId)
+    if (match) setClaiming(match)
+    onClaimConsumed?.()
+  }, [claimEventId, events]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
 
@@ -157,17 +175,20 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
   return (
     <>
       <div className="rounded-2xl border border-violet-200 bg-violet-50/40 overflow-hidden">
-        <div className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-violet-50/70 transition-colors">
+        <div className={`w-full flex items-center justify-between gap-2 hover:bg-violet-50/70 transition-colors ${compact ? 'px-3 py-2.5' : 'px-4 py-3'}`}>
           <button
             type="button"
             onClick={() => setExpanded(v => !v)}
             className="flex items-center gap-2.5 text-left flex-1 min-w-0"
           >
-            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 text-violet-600" />
-            </div>
+            {!compact && (
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 text-violet-600" />
+              </div>
+            )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className={`font-semibold text-gray-900 ${compact ? 'text-xs leading-snug flex items-center gap-1.5' : 'text-sm'}`}>
+                {compact && <Calendar className="w-3.5 h-3.5 text-violet-600 shrink-0" />}
                 {count > 0
                   ? t(
                       `${count} Google event${count > 1 ? 's' : ''} not linked yet`,
@@ -176,23 +197,25 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
                     )
                   : t('Google events', 'Événements Google', 'Eventos de Google')}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5 truncate">
-                {t(
-                  'Booked in Google but not in Bloomsline. Attach each one to a patient.',
-                  'Réservés dans Google mais pas dans Bloomsline. Rattachez chacun à un patient.',
-                  'Reservados en Google pero no en Bloomsline. Vincula cada uno a un paciente.',
-                )}
-              </p>
+              {!compact && (
+                <p className="text-xs text-gray-500 mt-0.5 truncate">
+                  {t(
+                    'Booked in Google but not in Bloomsline. Attach each one to a patient.',
+                    'Réservés dans Google mais pas dans Bloomsline. Rattachez chacun à un patient.',
+                    'Reservados en Google pero no en Bloomsline. Vincula cada uno a un paciente.',
+                  )}
+                </p>
+              )}
             </div>
           </button>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={fetchOrphans}
               className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-100 transition-colors"
               title={t('Refresh', 'Actualiser', 'Actualizar')}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               type="button"
@@ -200,7 +223,7 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
               className="p-1.5 rounded-lg text-gray-400 hover:bg-violet-100 transition-colors"
               title={expanded ? t('Collapse', 'Réduire', 'Contraer') : t('Expand', 'Développer', 'Expandir')}
             >
-              {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {expanded ? <ChevronDown className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} /> : <ChevronRight className={compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} />}
             </button>
           </div>
         </div>
@@ -214,7 +237,7 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
               transition={{ duration: 0.18 }}
               className="overflow-hidden"
             >
-              <div className="px-4 pb-4 pt-1">
+              <div className={compact ? 'px-3 pb-3 pt-0.5' : 'px-4 pb-4 pt-1'}>
                 {error && (
                   <p className="text-xs text-red-600 px-2 py-2">{error}</p>
                 )}
@@ -231,6 +254,7 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
                         key={evt.googleEventId}
                         event={evt}
                         locale={locale}
+                        compact={compact}
                         onClaim={() => setClaiming(evt)}
                         onDismiss={() => setDismissing(evt)}
                       />
@@ -273,11 +297,13 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed }: P
 function OrphanRow({
   event,
   locale,
+  compact = false,
   onClaim,
   onDismiss,
 }: {
   event: OrphanEvent
   locale: 'en' | 'fr' | 'es'
+  compact?: boolean
   onClaim: () => void
   onDismiss: () => void
 }) {
@@ -293,52 +319,94 @@ function OrphanRow({
 
   const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
 
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-        <FormatIcon className="w-4 h-4 text-gray-500" />
+  const avatar = (
+    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+      <FormatIcon className="w-4 h-4 text-gray-500" />
+    </div>
+  )
+  const content = (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2 flex-wrap">
+        <p className="text-sm font-medium text-gray-900 truncate">{event.title || t('(no title)', '(sans titre)', '(sin título)')}</p>
+        {isPast && (
+          <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium">
+            {t('Past', 'Passée', 'Pasada')}
+          </span>
+        )}
+        {event.suggestedMember && (
+          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium">
+            {t('Match', 'Correspondance', 'Coincidencia')}: {event.suggestedMember.name}
+          </span>
+        )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-medium text-gray-900 truncate">{event.title || t('(no title)', '(sans titre)', '(sin título)')}</p>
-          {isPast && (
-            <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium">
-              {t('Past', 'Passée', 'Pasada')}
-            </span>
-          )}
+      <p className="text-xs text-gray-500 mt-0.5 truncate">
+        {dateLabel} · {timeLabel}
+        {event.attendees[0]?.email && (
+          <> · {event.attendees[0].email}</>
+        )}
+      </p>
+    </div>
+  )
+  const addBtn = (
+    <Button
+      size="sm"
+      onClick={onClaim}
+      className="rounded-lg bg-violet-600 hover:bg-violet-700 text-white shrink-0"
+    >
+      {t('Add to Bloomsline', 'Ajouter à Bloomsline', 'Agregar a Bloomsline')}
+    </Button>
+  )
+  const dismissBtn = (
+    <button
+      type="button"
+      onClick={onDismiss}
+      title={t(
+        "Hide — don't link this event",
+        'Masquer — ne pas rattacher cet événement',
+        'Ocultar — no vincular este evento',
+      )}
+      aria-label={t('Hide event', 'Masquer l\'événement', 'Ocultar evento')}
+      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  )
+
+  if (compact) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-xs font-medium text-gray-900 truncate">{event.title || t('(no title)', '(sans titre)', '(sin título)')}</p>
+            {isPast && <span className="text-[10px] text-gray-400 shrink-0">· {t('Past', 'Passée', 'Pasada')}</span>}
+          </div>
+          <p className="text-[11px] text-gray-500 mt-0.5 truncate">{dateLabel} · {timeLabel}</p>
           {event.suggestedMember && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium">
+            <p className="text-[11px] text-emerald-600 truncate mt-0.5">
               {t('Match', 'Correspondance', 'Coincidencia')}: {event.suggestedMember.name}
-            </span>
+            </p>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-0.5 truncate">
-          {dateLabel} · {timeLabel}
-          {event.attendees[0]?.email && (
-            <> · {event.attendees[0].email}</>
-          )}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            onClick={onClaim}
+            className="flex-1 h-7 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs"
+          >
+            {t('Add', 'Ajouter', 'Agregar')}
+          </Button>
+          {dismissBtn}
+        </div>
       </div>
-      <Button
-        size="sm"
-        onClick={onClaim}
-        className="rounded-lg bg-violet-600 hover:bg-violet-700 text-white shrink-0"
-      >
-        {t('Add to Bloomsline', 'Ajouter à Bloomsline', 'Agregar a Bloomsline')}
-      </Button>
-      <button
-        type="button"
-        onClick={onDismiss}
-        title={t(
-          "Hide — don't link this event",
-          'Masquer — ne pas rattacher cet événement',
-          'Ocultar — no vincular este evento',
-        )}
-        aria-label={t('Hide event', 'Masquer l\'événement', 'Ocultar evento')}
-        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
-      >
-        <X className="w-4 h-4" />
-      </button>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+      {avatar}
+      {content}
+      {addBtn}
+      {dismissBtn}
     </div>
   )
 }

@@ -1342,7 +1342,7 @@ function DashboardInner() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowCalendar(true)}
+                      onClick={() => router.push('/bookings')}
                       title={t('Expand calendar', 'Agrandir le calendrier', 'Expandir calendario')}
                       aria-label={t('Expand calendar', 'Agrandir le calendrier', 'Expandir calendario')}
                       // Sit on the right side of the toolbar — the
