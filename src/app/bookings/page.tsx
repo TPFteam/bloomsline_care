@@ -49,12 +49,13 @@ import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
-import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns'
+import { format, parseISO, isToday, isTomorrow, isPast, startOfWeek } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
 import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
+import { MiniMonthCalendar } from '@/components/bookings/MiniMonthCalendar'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import {
@@ -292,6 +293,9 @@ export default function BookingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
   const [bookingView, setBookingView] = useState<'list' | 'calendar'>('calendar')
+  // The week shown in the calendar — controlled here so the left-rail
+  // mini-calendar and the grid's own nav stay in sync.
+  const [calWeekStart, setCalWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [processingId, setProcessingId] = useState<string | null>(null)
   // Recurring-series drawer — opened from the "View all sessions" button
   // on any series-anchor row. Mirrors the SessionsTab behaviour.
@@ -1305,8 +1309,8 @@ export default function BookingsPage() {
         />
 
         {/* Content */}
-        <div className="p-8">
-          <div className="max-w-5xl mx-auto space-y-6">
+        <div className={mainTab === 'appointments' && bookingView === 'calendar' ? 'p-4' : 'p-8'}>
+          <div className={`space-y-6 ${mainTab === 'appointments' && bookingView === 'calendar' ? 'w-full' : 'max-w-5xl mx-auto'}`}>
             {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1596,27 +1600,50 @@ export default function BookingsPage() {
                 </div>
               )}
 
-              {/* Calendar View */}
+              {/* Calendar View — Google-style: left rail (new booking +
+                  mini month picker) + full-width week grid. */}
               {bookingView === 'calendar' ? (
-                <WeekCalendarView
-                  bookings={bookings}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  processingId={processingId}
-                  onSlotClick={(day, time, options) => setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })}
-                  hasNotesForBooking={(bookingId) => {
-                    const b = bookings.find(x => x.id === bookingId)
-                    return b ? bookingHasNotes(b) : false
-                  }}
-                  onTakeNotes={(bookingId) => {
-                    const b = bookings.find(x => x.id === bookingId)
-                    if (b) handleTakeNotes(b)
-                  }}
-                  onCloseSession={(bookingId) => {
-                    const b = bookings.find(x => x.id === bookingId)
-                    if (b) openClosePopupBooking(b)
-                  }}
-                />
+                <div className="flex items-start gap-4">
+                  <aside className="hidden lg:block w-60 shrink-0 space-y-4">
+                    <button
+                      onClick={() => setShowScheduleModal(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {locale === 'fr' ? 'Nouveau rendez-vous' : 'New booking'}
+                    </button>
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+                      <MiniMonthCalendar
+                        selectedWeekStart={calWeekStart}
+                        onSelectDate={(d) => setCalWeekStart(startOfWeek(d, { weekStartsOn: 1 }))}
+                        locale={locale}
+                      />
+                    </div>
+                  </aside>
+                  <div className="flex-1 min-w-0">
+                    <WeekCalendarView
+                      bookings={bookings}
+                      weekStart={calWeekStart}
+                      onWeekStartChange={setCalWeekStart}
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      processingId={processingId}
+                      onSlotClick={(day, time, options) => setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })}
+                      hasNotesForBooking={(bookingId) => {
+                        const b = bookings.find(x => x.id === bookingId)
+                        return b ? bookingHasNotes(b) : false
+                      }}
+                      onTakeNotes={(bookingId) => {
+                        const b = bookings.find(x => x.id === bookingId)
+                        if (b) handleTakeNotes(b)
+                      }}
+                      onCloseSession={(bookingId) => {
+                        const b = bookings.find(x => x.id === bookingId)
+                        if (b) openClosePopupBooking(b)
+                      }}
+                    />
+                  </div>
+                </div>
               ) : (
               <>
               {/* Bookings List */}

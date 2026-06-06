@@ -84,6 +84,10 @@ interface WeekCalendarViewProps {
   // Opens the close-session flow for a booking (confirmed → close,
   // completed → edit close). Wired per host page to its close popup.
   onCloseSession?: (bookingId: string) => void
+  // Optional controlled week (so an external mini-calendar can drive it).
+  // Falls back to internal state when omitted.
+  weekStart?: Date
+  onWeekStartChange?: (d: Date) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -91,10 +95,17 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [internalWeekStart, setInternalWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
+  // Controlled when a parent passes weekStart (mini-calendar); else internal.
+  const weekStart = controlledWeekStart ?? internalWeekStart
+  const setWeekStart = (updater: Date | ((prev: Date) => Date)) => {
+    const next = typeof updater === 'function' ? (updater as (p: Date) => Date)(weekStart) : updater
+    if (onWeekStartChange) onWeekStartChange(next)
+    else setInternalWeekStart(next)
+  }
   const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
