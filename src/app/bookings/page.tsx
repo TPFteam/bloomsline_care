@@ -870,16 +870,18 @@ export default function BookingsPage() {
 
   const openClosePopupBooking = (booking: Booking) => {
     setClosePopupBooking(booking)
-    setClosePopupOutcome(null)
-    // Reset every required field. The only auto-fill is the "Note
-    // already added" detection — that satisfies the note requirement
-    // since the system already has the answer.
-    setShowBPayment(null)
+    // When editing an already-closed booking, pre-fill the outcome + payment
+    // (+ reason) so the practitioner adjusts what they recorded rather than
+    // starting over. Completed → "show"; cancelled/no_show → "no_show".
+    const isCompleted = booking.status === 'completed'
+    const isClosedCancel = booking.status === 'cancelled' || booking.status === 'no_show'
+    setClosePopupOutcome(isCompleted ? 'show' : isClosedCancel ? 'no_show' : null)
+    setShowBPayment(isCompleted ? booking.payment_status : null)
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
     setShowBNoteAction(hasExistingNote ? 'has' : null)
     setShowBNoteDraft('')
-    setNoShowBPayment(null)
-    setNoShowBReason('')
+    setNoShowBPayment(isClosedCancel ? booking.payment_status : null)
+    setNoShowBReason(isClosedCancel ? (booking.cancellation_reason || '') : '')
     setNoShowBComments('')
   }
   const closeClosePopupBooking = () => {
@@ -914,13 +916,14 @@ export default function BookingsPage() {
             updated_at: new Date().toISOString(),
           }
           if (cancellationReason) sessionUpdates.cancellation_reason = cancellationReason
+          // No status guard: when editing an already-closed booking we DO want
+          // to update the (already completed/cancelled) paired session row too.
           await sb
             .from('sessions')
             .update(sessionUpdates)
             .eq('practitioner_id', booking.practitioner_id)
             .eq('member_id', booking.member_id)
             .eq('scheduled_at', booking.start_time)
-            .not('status', 'in', '("completed","cancelled")')
         } catch (sessErr) {
           console.warn('Could not propagate close to matching session:', sessErr)
         }
@@ -932,6 +935,10 @@ export default function BookingsPage() {
         const updates: Record<string, unknown> = {
           status: 'completed',
           payment_status: showBPayment,
+          // Clear any prior cancellation data — relevant when editing a
+          // previously cancelled/no-show booking back to attended.
+          cancellation_reason: null,
+          cancelled_at: null,
         }
         // Save new note inline by appending to practitioner_notes (don't
         // overwrite an existing entry).
@@ -1605,6 +1612,10 @@ export default function BookingsPage() {
                     const b = bookings.find(x => x.id === bookingId)
                     if (b) handleTakeNotes(b)
                   }}
+                  onCloseSession={(bookingId) => {
+                    const b = bookings.find(x => x.id === bookingId)
+                    if (b) openClosePopupBooking(b)
+                  }}
                 />
               ) : (
               <>
@@ -1962,7 +1973,9 @@ export default function BookingsPage() {
                               const isCancelledB = booking.status === 'cancelled'
                               return (
                                 <RowMenu items={[
-                                  ...(isClosedB ? [] : [
+                                  ...(isClosedB ? [
+                                    { label: locale === 'fr' ? 'Modifier la clôture' : 'Edit close', icon: PenLine, onClick: () => openClosePopupBooking(booking) },
+                                  ] : [
                                     { label: locale === 'fr' ? 'Clôturer la séance' : 'Close session', icon: CheckCircle, onClick: () => openClosePopupBooking(booking), tone: 'success' as const },
                                     { label: locale === 'fr' ? 'Reprogrammer' : 'Reschedule', icon: RefreshCw, onClick: () => openRescheduleModal(booking) },
                                   ]),
@@ -3464,7 +3477,15 @@ export default function BookingsPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">
-                {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+                {(() => {
+                  const editing =
+                    closePopupBooking.status === 'completed' ||
+                    closePopupBooking.status === 'cancelled' ||
+                    closePopupBooking.status === 'no_show'
+                  return locale === 'fr'
+                    ? editing ? 'Modifier la clôture' : 'Clôturer la séance'
+                    : editing ? 'Edit close' : 'Close session'
+                })()}
               </h3>
               <button
                 type="button"

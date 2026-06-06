@@ -3,7 +3,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban } from 'lucide-react'
+
+// Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
+// SAME colours mean the same thing everywhere (dots + calendar):
+//   scheduled=blue · awaiting=amber · pending=amber · completed=green ·
+//   cancelled=red · no_show=gray. Google (external) gets its own violet so it
+//   never clashes with a status colour.
+function calStatusVisual(isGoogle: boolean, status: string | undefined, isPast: boolean) {
+  if (isGoogle) return { fill: 'bg-violet-50 border-violet-400 text-violet-700', ring: 'ring-violet-300', Icon: CalendarClock, showIcon: true }
+  if (status === 'pending') return { fill: 'bg-amber-50 border-amber-300 text-amber-700', ring: 'ring-amber-200', Icon: Hourglass, showIcon: true }
+  if (status === 'completed') return { fill: 'bg-emerald-50 border-emerald-400 text-emerald-700', ring: 'ring-emerald-400', Icon: CheckCircle2, showIcon: true }
+  if (status === 'cancelled') return { fill: 'bg-rose-50 border-rose-400 text-rose-700', ring: 'ring-rose-300', Icon: XCircle, showIcon: true }
+  if (status === 'no_show') return { fill: 'bg-gray-100 border-gray-400 text-gray-600', ring: 'ring-gray-300', Icon: Ban, showIcon: true }
+  // confirmed: past start + not closed = "awaiting outcome" (amber); else scheduled (blue)
+  if (isPast) return { fill: 'bg-amber-50 border-amber-500 text-amber-800', ring: 'ring-amber-300', Icon: AlertCircle, showIcon: true }
+  return { fill: 'bg-blue-50 border-blue-400 text-blue-700', ring: 'ring-blue-300', Icon: CalendarClock, showIcon: true }
+}
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
@@ -65,6 +81,9 @@ interface WeekCalendarViewProps {
   // resolves bookingId → Booking and calls into the shared
   // handleTakeNotes flow.
   onTakeNotes?: (bookingId: string) => void
+  // Opens the close-session flow for a booking (confirmed → close,
+  // completed → edit close). Wired per host page to its close popup.
+  onCloseSession?: (bookingId: string) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -72,7 +91,7 @@ const START_HOUR = 7
 const END_HOUR = 21
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   const supabase = createClient()
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
@@ -311,24 +330,38 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   {locale === 'fr' ? 'Légende' : 'Legend'}
                 </p>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-3 h-3 rounded-full bg-teal-50 border border-teal-200 shrink-0" />
+                  <span className="w-4 h-4 rounded-full bg-blue-50 border border-blue-400 flex items-center justify-center shrink-0">
+                    <CalendarClock className="w-2.5 h-2.5 text-blue-600" />
+                  </span>
                   {locale === 'fr' ? 'Prévue' : 'Scheduled'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-3 h-3 rounded-full bg-teal-100 border border-teal-300 shrink-0" />
+                  <span className="w-4 h-4 rounded-full bg-amber-50 border border-amber-500 flex items-center justify-center shrink-0">
+                    <AlertCircle className="w-2.5 h-2.5 text-amber-600" />
+                  </span>
+                  {locale === 'fr' ? 'En attente de clôture' : 'Awaiting outcome'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-4 h-4 rounded-full bg-amber-50 border border-amber-300 flex items-center justify-center shrink-0">
+                    <Hourglass className="w-2.5 h-2.5 text-amber-500" />
+                  </span>
+                  {locale === 'fr' ? 'À approuver' : 'Pending'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-700">
+                  <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-400 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                  </span>
                   {locale === 'fr' ? 'Terminée' : 'Completed'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-3 h-3 rounded-full bg-amber-100 border border-amber-300 shrink-0" />
-                  {locale === 'fr' ? 'En attente' : 'Pending'}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-3 h-3 rounded-full bg-white border border-dashed border-gray-400 shrink-0" />
+                  <span className="w-4 h-4 rounded-full bg-white border border-dashed border-gray-400 shrink-0" />
                   {locale === 'fr' ? 'Hors horaires' : 'After-hours'}
                 </div>
                 {googleConnected && (
                   <div className="flex items-center gap-2 text-xs text-gray-700">
-                    <span className="w-3 h-3 rounded-full bg-blue-100 border border-blue-200 shrink-0" />
+                    <span className="w-4 h-4 rounded-full bg-violet-50 border border-violet-400 flex items-center justify-center shrink-0">
+                      <CalendarClock className="w-2.5 h-2.5 text-violet-600" />
+                    </span>
                     Google Calendar
                   </div>
                 )}
@@ -569,6 +602,9 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 const isGoogle = event.source === 'google'
                 const isPending = event.status === 'pending'
                 const isSelected = selectedEvent === event.id
+                const isPast = new Date(event.start).getTime() < Date.now()
+                const sv = calStatusVisual(isGoogle, event.status, isPast)
+                const SvIcon = sv.Icon
                 const colWidth = 100 / event.totalCols
                 const left = `${event.col * colWidth}%`
                 const width = `${colWidth - 2}%`
@@ -577,24 +613,15 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   <div key={event.id} data-event>
                     <div
                       onClick={() => setSelectedEvent(isSelected ? null : event.id)}
-                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${
-                        isSelected ? 'shadow-lg z-20 ring-2 ring-offset-1' : 'hover:shadow-md'
-                      } ${
-                        isGoogle
-                          ? `bg-blue-50 border-blue-200/60 text-blue-700 ${isSelected ? 'ring-blue-300' : ''}`
-                          : isPending
-                            ? `bg-amber-50 border-amber-300 text-amber-800 ${isSelected ? 'ring-amber-300' : ''}`
-                            : event.status === 'completed'
-                              // Deeper teal so completed reads as "done well" rather
-                              // than washed-out / cancelled. Same hue family as
-                              // confirmed (bg-teal-50) so the calendar stays in one
-                              // visual key.
-                              ? `bg-teal-100 border-teal-300 text-teal-800 ${isSelected ? 'ring-teal-400' : ''}`
-                              : `bg-teal-50 border-teal-200/60 text-teal-700 ${isSelected ? 'ring-teal-300' : ''}`
+                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${sv.fill} ${
+                        isSelected ? `shadow-lg z-20 ring-2 ring-offset-1 ${sv.ring}` : 'hover:shadow-md'
                       }`}
                       style={{ top, height: Math.max(height, 26), left: `calc(${left} + 4px)`, width: `calc(${width} - 2px)` }}
                     >
-                      <p className="text-[11px] font-semibold truncate leading-tight">{event.title}</p>
+                      <p className="text-[11px] font-semibold truncate leading-tight flex items-center gap-1">
+                        {sv.showIcon && <SvIcon className="w-3 h-3 shrink-0" />}
+                        <span className="truncate">{event.title}</span>
+                      </p>
                       {height > 32 && (
                         <p className="text-[10px] opacity-60 truncate mt-0.5">
                           {formatTimeInTz(event.start)}
@@ -743,15 +770,40 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             </div>
                           )}
 
-                          {event.status === 'confirmed' && event.source === 'booking' && onReject && (
+                          {/* Confirmed booking: Close session (primary) + Cancel */}
+                          {event.status === 'confirmed' && event.source === 'booking' && (
+                            <div className="px-4 pb-3 pt-2 border-t border-gray-100 space-y-2">
+                              {event.bookingId && onCloseSession && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!); setSelectedEvent(null) }}
+                                  className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+                                </button>
+                              )}
+                              {onReject && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onReject(event.id); setSelectedEvent(null) }}
+                                  disabled={processingId === event.id}
+                                  className="w-full flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Completed booking: Edit close */}
+                          {event.status === 'completed' && event.source === 'booking' && event.bookingId && onCloseSession && (
                             <div className="px-4 pb-3 pt-2 border-t border-gray-100">
                               <button
-                                onClick={(e) => { e.stopPropagation(); onReject(event.id); setSelectedEvent(null) }}
-                                disabled={processingId === event.id}
-                                className="w-full flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
+                                onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!); setSelectedEvent(null) }}
+                                className="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-gray-700 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                               >
-                                {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                                {locale === 'fr' ? 'Annuler' : 'Cancel'}
+                                <FileText className="w-3.5 h-3.5" />
+                                {locale === 'fr' ? 'Modifier la clôture' : 'Edit close'}
                               </button>
                             </div>
                           )}

@@ -129,17 +129,24 @@ export async function notifyBookingSms(
   params: { practitionerId: string; booking: BookingForSms; kind: BookingSmsKind }
 ): Promise<void> {
   try {
-    if (!BIRD_CONFIGURED) return
+    if (!BIRD_CONFIGURED) {
+      console.warn('[sms] skip: Bird not configured (BIRD_ACCESS_KEY/WORKSPACE_ID/CHANNEL_ID missing in env)')
+      return
+    }
 
     const { practitionerId, booking, kind } = params
 
     // 1. Toggle gate
-    const { data: settings } = await supabase
+    const { data: settings, error: settingsErr } = await supabase
       .from('booking_settings')
       .select('sms_on_booking')
       .eq('user_id', practitionerId)
       .maybeSingle()
-    if (!settings?.sms_on_booking) return
+    if (settingsErr) console.warn('[sms] booking_settings read error:', settingsErr.message)
+    if (!settings?.sms_on_booking) {
+      console.warn('[sms] skip: sms_on_booking is OFF/missing for practitioner', practitionerId, '— settings:', settings)
+      return
+    }
 
     // 2. Resolve phone: booking.client_phone first, else the member's phone
     let phone = booking.client_phone || null
@@ -151,7 +158,11 @@ export async function notifyBookingSms(
         .maybeSingle()
       phone = member?.phone || null
     }
-    if (!toE164(phone)) return
+    if (!toE164(phone)) {
+      console.warn('[sms] skip: no usable mobile (could not normalize to E.164) — raw:', JSON.stringify(phone))
+      return
+    }
+    console.log('[sms] sending', kind, 'to', toE164(phone), 'for booking', booking.id)
 
     // 3. Practitioner locale + name
     const { data: prof } = await supabase

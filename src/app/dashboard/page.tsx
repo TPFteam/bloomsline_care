@@ -1328,6 +1328,17 @@ function DashboardInner() {
                       }}
                       hideLegend
                       gridMaxHeight={280}
+                      onCloseSession={(bookingId) => {
+                        const b = (bookings as any[]).find((x) => x.id === bookingId)
+                        if (b) setClosingBooking({
+                          id: b.id,
+                          practitioner_id: b.practitioner_id,
+                          member_id: b.member_id,
+                          client_name: b.client_name,
+                          start_time: b.start_time,
+                          practitioner_notes: (b as any).practitioner_notes ?? null,
+                        })
+                      }}
                     />
                     <button
                       type="button"
@@ -2303,6 +2314,20 @@ function DashboardInner() {
                 onSlotClick={(day, time, options) => {
                   setShowCalendar(false)
                   setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
+                }}
+                onCloseSession={(bookingId) => {
+                  const b = (bookings as any[]).find((x) => x.id === bookingId)
+                  if (b) {
+                    setShowCalendar(false)
+                    setClosingBooking({
+                      id: b.id,
+                      practitioner_id: b.practitioner_id,
+                      member_id: b.member_id,
+                      client_name: b.client_name,
+                      start_time: b.start_time,
+                      practitioner_notes: (b as any).practitioner_notes ?? null,
+                    })
+                  }
                 }}
               />
             </div>

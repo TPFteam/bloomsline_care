@@ -238,16 +238,18 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
   const openClosePopup = (session: Session) => {
     setClosePopupSession(session)
-    setClosePopupOutcome(null)
-    // Reset every required field. The only auto-fill is the "Note
-    // already added" detection — that satisfies the requirement
-    // without forcing a click since the system already has the answer.
-    setShowPopupPayment(null)
+    // Editing an already-closed session: pre-fill outcome + payment (+ reason)
+    // so the practitioner adjusts what they recorded. Completed → "show";
+    // cancelled/no_show → "no_show".
+    const isCompleted = session.status === 'completed'
+    const isClosedCancel = session.status === 'cancelled' || session.status === 'no_show'
+    setClosePopupOutcome(isCompleted ? 'show' : isClosedCancel ? 'no_show' : null)
+    setShowPopupPayment(isCompleted ? session.payment_status : null)
     const hasExistingNote = !!sessionSummaryNotes[session.id]?.content
     setShowPopupNoteAction(hasExistingNote ? 'has' : null)
     setShowPopupNoteDraft('')
-    setNoShowPopupPayment(null)
-    setNoShowPopupReason('')
+    setNoShowPopupPayment(isClosedCancel ? session.payment_status : null)
+    setNoShowPopupReason(isClosedCancel ? (session.cancellation_reason || '') : '')
     setNoShowPopupComments('')
   }
 
@@ -962,6 +964,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
       if (reason) updateData.cancellation_reason = reason
       if (notes) updateData.notes = (notes || '').trim() || null
+      // Clear stale cancellation data when (re)closing as completed — relevant
+      // when editing a previously cancelled/no-show session back to attended.
+      if (newStatus === 'completed') { updateData.cancellation_reason = null; updateData.cancelled_at = null }
       const { error } = await supabase
         .from('sessions')
         .update(updateData)
@@ -985,8 +990,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             .eq('practitioner_id', sessionRow.practitioner_id)
             .eq('member_id', memberId)
             .eq('start_time', sessionRow.scheduled_at)
-            .neq('status', 'cancelled')
-            .neq('status', 'completed')
+            // No status guard: editing an already-closed session must still
+            // propagate the new outcome/payment to its paired booking row.
             .maybeSingle()
           if (matchingBooking) {
             // Read the just-updated session row to pick up the new
@@ -2323,7 +2328,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">
-                {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+                {(() => {
+                  const editing = closePopupSession.status !== 'scheduled'
+                  return locale === 'fr'
+                    ? editing ? 'Modifier la clôture' : 'Clôturer la séance'
+                    : editing ? 'Edit close' : 'Close session'
+                })()}
               </h3>
               <button
                 type="button"
@@ -2586,11 +2596,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         </div>
       )}
 
-      {/* Edit Session Modal (shared component) */}
+      {/* Edit Session Modal (shared component). For already-closed sessions
+          this becomes the single unified "Edit" — outcome + payment + details
+          — replacing the separate "Edit close". */}
       <EditSessionModal
         session={editingSession}
         onClose={handleCancelEdit}
         onSave={onSessionsUpdate}
+        showOutcome={!!editingSession && editingSession.status !== 'scheduled'}
       />
 
       {/* Series detail drawer — opens from the violet "Session N/Y" badge */}

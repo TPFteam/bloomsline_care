@@ -742,6 +742,15 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               .eq('series_id', seriesId)
           }
 
+          // One confirmation SMS for the series (the anchor session). Self-gated.
+          if (anchorBooking?.id) {
+            fetch(`/api/bookings/${anchorBooking.id}/notify-sms`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ kind: 'confirmed' }),
+            }).catch(() => {})
+          }
+
           // Base session rows for every occurrence in the series are
           // created by the bookings→sessions trigger. Backfill the
           // session-only extras (series fields, custom_session_type,
@@ -835,6 +844,17 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           }
 
           console.log('Booking created:', data)
+
+          // Fire the booking-confirmation SMS (server-side; self-gated on the
+          // practitioner's toggle + a usable mobile + Bird config). Bookings
+          // created here bypass /api/bookings, so we trigger it explicitly.
+          if (data?.id) {
+            fetch(`/api/bookings/${data.id}/notify-sms`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ kind: 'confirmed' }),
+            }).catch(() => {})
+          }
 
           // 2. The base session row is created automatically by the
           // bookings→sessions DB trigger. Backfill the session-only
