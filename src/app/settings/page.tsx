@@ -19,10 +19,12 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import { DocumentTemplatesPanel } from '@/components/settings/DocumentTemplatesPanel'
 
-type SettingsTab = 'legal' | 'account'
+type SettingsTab = 'legal' | 'account' | 'documents'
 
 const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+  { id: 'documents', label: 'Documents', icon: FileText },
   { id: 'legal', label: 'Legal', icon: Shield },
   { id: 'account', label: 'Account', icon: UserCog },
 ]
@@ -31,7 +33,7 @@ function SettingsContent() {
   const { t, locale } = useLanguage()
   const router = useRouter()
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('legal')
+  const [activeTab, setActiveTab] = useState<SettingsTab>('documents')
 
   // Account deletion state
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
@@ -218,6 +220,11 @@ function SettingsContent() {
 
             {/* Content area */}
             <div className="flex-1 min-w-0 space-y-8">
+              {/* Documents Tab */}
+              {activeTab === 'documents' && (
+                <DocumentTemplatesPanel locale={locale} />
+              )}
+
               {/* Legal Tab */}
               {activeTab === 'legal' && (
                 <Card>

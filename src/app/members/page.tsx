@@ -63,6 +63,7 @@ import type { MemberFormFieldsConfig } from '@/types/calendar'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
 import type { MemberGroup } from '@/types/member-group'
+import type { DocumentTemplate } from '@/types/documents'
 import { FeedbackButton } from '@/components/feedback-button'
 
 // Import row type for CSV bulk import
@@ -210,6 +211,10 @@ export default function MembersPage() {
   const [newMember, setNewMember] = useState({ firstName: '', lastName: '', email: '', phone: '', isMinor: false, groupIds: [] as string[] })
   const [newMemberExtras, setNewMemberExtras] = useState<MemberExtras>(EMPTY_EXTRAS)
   const [sendInvite, setSendInvite] = useState(true)
+  // Active signable-document templates, and which to send on patient creation
+  // (auto-send templates are pre-checked; the practitioner can adjust here).
+  const [docTemplates, setDocTemplates] = useState<DocumentTemplate[]>([])
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   // Per-practitioner config for which extra fields show. Loaded from
   // booking_settings.member_form_fields on the same fetch that loads
@@ -217,6 +222,19 @@ export default function MembersPage() {
   const [memberFormFieldsConfig, setMemberFormFieldsConfig] = useState<MemberFormFieldsConfig | null>(null)
   const [showFieldsConfig, setShowFieldsConfig] = useState(false)
   const [savingFieldsConfig, setSavingFieldsConfig] = useState(false)
+
+  // Load active document templates once; used by the add-patient checklist.
+  useEffect(() => {
+    fetch('/api/documents/templates')
+      .then(r => r.ok ? r.json() : { templates: [] })
+      .then(d => setDocTemplates((d.templates || []).filter((t: DocumentTemplate) => t.is_active)))
+      .catch(() => {})
+  }, [])
+
+  // Pre-check auto-send templates each time the add-patient modal opens.
+  useEffect(() => {
+    if (showAddModal) setSelectedDocIds(docTemplates.filter(t => t.auto_send).map(t => t.id))
+  }, [showAddModal, docTemplates])
 
   // Groups
   const [memberGroups, setMemberGroups] = useState<MemberGroup[]>([])
@@ -959,6 +977,20 @@ export default function MembersPage() {
         } catch (inviteErr) {
           console.error('Error sending invitation:', inviteErr)
         }
+      }
+
+      // Send the selected onboarding documents (auto-send templates are
+      // pre-checked; the practitioner may have adjusted the list). Each POST
+      // creates the member_document + token and emails the patient.
+      if (data.id && selectedDocIds.length > 0) {
+        await Promise.all(selectedDocIds.map(templateId =>
+          fetch(`/api/members/${data.id}/documents`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ templateId }),
+          }).catch(() => {})
+        ))
+        setSelectedDocIds([])
       }
 
       fetchMembers() // refresh group counts
@@ -3137,6 +3169,45 @@ export default function MembersPage() {
                       <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${sendInvite ? 'translate-x-4' : ''}`} />
                     </div>
                   </div>
+
+                  {/* Onboarding documents — active templates to send for
+                      signature. Auto-send templates start checked. */}
+                  {docTemplates.length > 0 && (
+                    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                      <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-gray-400" />
+                        {locale === 'fr' ? 'Documents à envoyer' : 'Documents to send'}
+                      </p>
+                      <div className="space-y-1.5">
+                        {docTemplates.map(t => {
+                          const checked = selectedDocIds.includes(t.id)
+                          return (
+                            <label key={t.id} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setSelectedDocIds(prev => checked ? prev.filter(id => id !== t.id) : [...prev, t.id])}
+                                className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                              />
+                              <span className="text-sm text-gray-700">{t.title}</span>
+                              {t.auto_send && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-600 font-medium">
+                                  {locale === 'fr' ? 'auto' : 'auto'}
+                                </span>
+                              )}
+                            </label>
+                          )
+                        })}
+                      </div>
+                      {selectedDocIds.length > 0 && !newMember.email.trim() && (
+                        <p className="text-[11px] text-amber-600 mt-2">
+                          {locale === 'fr'
+                            ? 'Sans email, le document sera créé mais non envoyé — copiez le lien depuis l’onglet Documents.'
+                            : 'Without an email the document is created but not sent — copy the link from the Documents tab.'}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Group selector — gated by the configurable
                       add_to_group field so practitioners who don't use

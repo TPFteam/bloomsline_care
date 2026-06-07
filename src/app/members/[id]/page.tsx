@@ -39,6 +39,7 @@ import ProgressTab from './tabs/ProgressTab'
 import FilesTab from './tabs/FilesTab'
 import SharedTab from './tabs/SharedTab'
 import NotesTab from './tabs/NotesTab'
+import { MemberDocumentsCard } from '@/components/members/MemberDocumentsCard'
 
 type TabId = 'overview' | 'sessions_notes' | 'progress' | 'files' | 'shared'
 type SubTabId = 'sessions' | 'notes'
@@ -618,7 +619,10 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
                 <ProgressTab memberId={member.id} notes={notes} onNotesUpdate={fetchRelatedData} highlightMilestoneId={highlightId} />
               )}
               {activeTab === 'files' && (
-                <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} highlightFileId={highlightId} />
+                <div>
+                  <MemberDocumentsCard memberId={member.id} locale={locale} />
+                  <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} highlightFileId={highlightId} />
+                </div>
               )}
               {activeTab === 'shared' && (
                 <SharedTab memberId={member.id} member={member} highlightResourceId={highlightId} />
