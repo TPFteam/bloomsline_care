@@ -55,6 +55,10 @@ interface ScheduleSessionModalProps {
   onClose: () => void
   onSuccess?: () => void
   preselectedMember?: Member | null
+  /** Like preselectedMember but by id only — the modal resolves it from its own
+   *  member list and starts at the session step (used by "Schedule next
+   *  session" after closing a booking, where only the member_id is on hand). */
+  preselectedMemberId?: string | null
   rescheduleBooking?: RescheduleBooking | null
   preselectedDate?: Date
   preselectedTime?: string
@@ -72,10 +76,12 @@ interface ScheduleSessionModalProps {
 type Step = 'member' | 'session' | 'datetime' | 'confirm'
 type ScheduleMode = 'calendar' | 'manual'
 
-export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime, preselectedOutsideHours }: ScheduleSessionModalProps) {
+export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMember, preselectedMemberId, rescheduleBooking: rescheduleData, preselectedDate, preselectedTime, preselectedOutsideHours }: ScheduleSessionModalProps) {
+  // A member is "preselected" either by full object or by id (resolved below).
+  const memberPreselected = !!preselectedMember || !!preselectedMemberId
   const { locale } = useLanguage()
   const router = useRouter()
-  const [step, setStep] = useState<Step>(preselectedMember ? 'session' : 'member')
+  const [step, setStep] = useState<Step>(memberPreselected ? 'session' : 'member')
   const [members, setMembers] = useState<Member[]>([])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
@@ -122,6 +128,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [scheduleDayFormats, setScheduleDayFormats] = useState<Record<string, string[]>>({})
   const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
 
+  // Booking launched from a calendar slot click — the practitioner already
+  // picked the day + time on the grid, so we keep that exact slot, skip the
+  // date/time step, and lock the format to that day's configured format.
+  const fromCalendarSlot = !rescheduleData && !!preselectedDate && !!preselectedTime
+
   // Compute disabled days based on format selection
   const disabledDaysOfWeek = useMemo(() => {
     if (!selectedSessionFormat) return baseDisabledDays
@@ -137,6 +148,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   // Auto-advance selectedDate if the current day is disabled for the chosen format
   // (e.g. user picks "In person" on a Thursday when Thursdays are Video-only → jump to next Monday)
   useEffect(() => {
+    // Keep the exact day the practitioner clicked on the calendar grid, even
+    // if that weekday isn't in their normal availability.
+    if (fromCalendarSlot) return
     if (disabledDaysOfWeek.length === 0 || disabledDaysOfWeek.length >= 7) return
     if (!disabledDaysOfWeek.includes(selectedDate.getDay())) return
     // Scan forward up to 14 days for the first enabled day
@@ -150,6 +164,16 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       }
     }
   }, [disabledDaysOfWeek, selectedDate])
+  // Calendar-slot bookings: lock the format to the clicked day's configured
+  // format. Single-format days use that format; "both" / unconfigured /
+  // after-hours days default to in-person. The practitioner can't change it.
+  useEffect(() => {
+    if (!fromCalendarSlot || !selectedDate) return
+    const fmts = scheduleDayFormats[String(selectedDate.getDay())] || []
+    const fmt: 'in_person' | 'video' = (fmts.includes('video') && !fmts.includes('in_person')) ? 'video' : 'in_person'
+    setSelectedSessionFormat(fmt)
+  }, [fromCalendarSlot, selectedDate, scheduleDayFormats])
+
   const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[]>([])
   const [quickLoading, setQuickLoading] = useState(false)
   const [quickExpandedDate, setQuickExpandedDate] = useState<string | null>(null)
@@ -225,7 +249,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setNotes('')
         setScheduleMode('calendar')
       } else {
-        setStep(preselectedMember ? 'session' : 'member')
+        setStep(memberPreselected ? 'session' : 'member')
         setSelectedMember(preselectedMember || null)
         setSelectedSessionType(null)
         setSelectedSessionFormat(null)
@@ -252,7 +276,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setShowSlotCalendar(false)
       fetchInitialData()
     }
-  }, [isOpen, preselectedMember, rescheduleData])
+  }, [isOpen, preselectedMember, preselectedMemberId, rescheduleData])
+
+  // Resolve a preselectedMemberId to the full member once the member list has
+  // loaded (used by "Schedule next session" — only the id is passed in).
+  useEffect(() => {
+    if (!isOpen || !preselectedMemberId || selectedMember) return
+    const match = members.find(m => m.id === preselectedMemberId)
+    if (match) {
+      setSelectedMember(match)
+      if (step === 'member') setStep('session')
+    }
+  }, [isOpen, preselectedMemberId, members, selectedMember, step])
 
   // In reschedule mode, auto-select the session type once session types load
   useEffect(() => {
@@ -963,9 +998,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
   const goBack = () => {
     setShowSlotCalendar(false)
-    if (step === 'session' && !preselectedMember) setStep('member')
+    if (step === 'session' && !memberPreselected) setStep('member')
     else if (step === 'datetime') setStep('session')
-    else if (step === 'confirm') setStep('datetime')
+    else if (step === 'confirm') setStep(fromCalendarSlot ? 'session' : 'datetime')
   }
 
   const canProceed = () => {
@@ -1006,7 +1041,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              {step !== 'member' && !(step === 'session' && preselectedMember) && (
+              {step !== 'member' && !(step === 'session' && memberPreselected) && (
                 <button
                   onClick={goBack}
                   className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1038,7 +1073,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
             <div className="flex items-center justify-center">
               {(isReschedule
                 ? ['session', 'datetime', 'confirm']
-                : preselectedMember
+                : fromCalendarSlot
+                ? (memberPreselected ? ['session', 'confirm'] : ['member', 'session', 'confirm'])
+                : memberPreselected
                 ? ['session', 'datetime', 'confirm']
                 : ['member', 'session', 'datetime', 'confirm']
               ).map((s, index, arr) => {
@@ -1301,6 +1338,27 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     <p className="text-sm font-medium text-gray-700">
                       {locale === 'fr' ? 'Format de séance' : locale === 'es' ? 'Formato de sesión' : 'Session Format'}
                     </p>
+                    {fromCalendarSlot ? (
+                      // Locked to the clicked day's format — shown, not editable.
+                      <div className="w-full p-3.5 rounded-xl border-2 border-mint-500 bg-mint-50/50">
+                        <div className="flex items-center gap-3">
+                          {selectedSessionFormat === 'video'
+                            ? <Video className="w-5 h-5 text-gray-500" />
+                            : <Building2 className="w-5 h-5 text-gray-500" />}
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {selectedSessionFormat === 'video'
+                                ? (locale === 'fr' ? 'Vidéo' : locale === 'es' ? 'Videollamada' : 'Video call')
+                                : (locale === 'fr' ? 'En personne' : locale === 'es' ? 'En persona' : 'In person')}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {locale === 'fr' ? 'Défini par la disponibilité de ce jour' : locale === 'es' ? 'Definido por la disponibilidad de este día' : 'Set by this day’s availability'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                    <>
                     {availSessionFormats.includes('in_person') && (
                       <button
                         type="button"
@@ -1338,6 +1396,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                           </div>
                         </div>
                       </button>
+                    )}
+                    </>
                     )}
                   </div>
                 )}
@@ -1969,11 +2029,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               <button
                 onClick={() => {
                   if (step === 'member') setStep('session')
-                  // After-hours bookings carry their own date+time from the
-                  // calendar click — skip the datetime step so the practitioner
-                  // doesn't have to re-pick. Still goes through calendar-mode
-                  // submit, so Google Calendar sync runs normally.
-                  else if (step === 'session' && preselectedOutsideHours && selectedDate && selectedTime) setStep('confirm')
+                  // Calendar-slot bookings carry their own date+time from the
+                  // grid click — skip the datetime step so the practitioner
+                  // doesn't re-pick. Still goes through calendar-mode submit, so
+                  // Google Calendar sync runs normally.
+                  else if (step === 'session' && fromCalendarSlot && selectedDate && selectedTime) setStep('confirm')
                   else if (step === 'session') setStep('datetime')
                   else if (step === 'datetime') setStep('confirm')
                 }}

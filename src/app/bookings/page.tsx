@@ -790,6 +790,9 @@ export default function BookingsPage() {
   // follow-up popup — keeps the main Close form focused on the
   // session that just happened.
   const [scheduleNextPromptOpenB, setScheduleNextPromptOpenB] = useState(false)
+  // Member whose session was just closed — so "Schedule next session" opens the
+  // modal pre-selected to the same patient.
+  const [scheduleNextMemberId, setScheduleNextMemberId] = useState<string | null>(null)
 
   // No-show-branch fields
   const [noShowBPayment, setNoShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
@@ -963,7 +966,9 @@ export default function BookingsPage() {
         await fetchBookings()
         emitBookingsChanged()
         closeClosePopupBooking()
-        // Hand off to the small follow-up prompt.
+        // Hand off to the small follow-up prompt — remember the patient so the
+        // next-session modal opens pre-selected to them.
+        setScheduleNextMemberId(booking.member_id || null)
         setScheduleNextPromptOpenB(true)
         toast.success(locale === 'fr' ? 'Rendez-vous marqué comme terminé' : 'Booking marked as completed')
       } else {
@@ -1377,7 +1382,7 @@ export default function BookingsPage() {
             <div className="flex items-start gap-4">
               <aside className="hidden lg:block w-60 shrink-0 space-y-4">
                 <button
-                  onClick={() => setShowScheduleModal(true)}
+                  onClick={() => { setScheduleNextMemberId(null); setShowScheduleModal(true) }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl shadow-sm transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -3824,7 +3829,7 @@ export default function BookingsPage() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
           style={{ zIndex: 9999 }}
-          onClick={() => setScheduleNextPromptOpenB(false)}
+          onClick={() => { setScheduleNextPromptOpenB(false); setScheduleNextMemberId(null) }}
         >
           <div
             className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
@@ -3841,7 +3846,7 @@ export default function BookingsPage() {
             <div className="flex items-center justify-end gap-2">
               <Button
                 variant="ghost"
-                onClick={() => setScheduleNextPromptOpenB(false)}
+                onClick={() => { setScheduleNextPromptOpenB(false); setScheduleNextMemberId(null) }}
               >
                 {locale === 'fr' ? 'Non' : 'No'}
               </Button>
@@ -3856,12 +3861,15 @@ export default function BookingsPage() {
         </div>
       )}
 
-      {/* Schedule-next modal — opens after the prompt's Yes. */}
+      {/* Schedule-next modal — opens after the prompt's Yes, pre-selected to
+          the patient whose session was just closed. */}
       <ScheduleSessionModal
         isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
+        preselectedMemberId={scheduleNextMemberId}
+        onClose={() => { setShowScheduleModal(false); setScheduleNextMemberId(null) }}
         onSuccess={() => {
           setShowScheduleModal(false)
+          setScheduleNextMemberId(null)
           fetchBookings()
         }}
       />
