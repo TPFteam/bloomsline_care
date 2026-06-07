@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server-client'
-import { newShareToken, tokenExpiryISO, snapshotFromTemplate } from '@/lib/services/documents'
+import { newShareToken, tokenExpiryISO, snapshotFromTemplate, emailSigningLink } from '@/lib/services/documents'
 import type { DocumentTemplate, MemberDocument } from '@/types/documents'
 
 export async function GET(
@@ -95,6 +95,21 @@ export async function POST(
   if (tErr) return NextResponse.json({ error: tErr.message }, { status: 500 })
   if (!template) return NextResponse.json({ error: 'Template not found' }, { status: 404 })
 
+  // Don't create a duplicate: if this template is already out for signature
+  // (sent or viewed, not yet signed) for this member, block it — the UI offers
+  // "Remind" on the existing row instead.
+  const { data: dupes } = await supabase
+    .from('member_documents')
+    .select('id')
+    .eq('member_id', memberId)
+    .eq('practitioner_id', user.id)
+    .eq('template_id', template.id)
+    .in('status', ['sent', 'viewed'])
+    .limit(1)
+  if (dupes && dupes.length > 0) {
+    return NextResponse.json({ error: 'already_sent', existingId: dupes[0].id }, { status: 409 })
+  }
+
   const token = newShareToken()
   const { data: doc, error: insErr } = await supabase
     .from('member_documents')
@@ -111,35 +126,20 @@ export async function POST(
     .single()
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
 
-  const origin = request.nextUrl.origin
+  // Use the configured public app URL so links are correct in production
+  // (request.nextUrl.origin can resolve to localhost / an internal host behind
+  // the proxy). Falls back to the request origin for local dev.
+  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
   const signUrl = `${origin}/documents/sign/${token}`
 
-  // Email the patient the signing link. Best-effort: never fail the send (the
-  // practitioner can always copy the link from the Documents card). Skipped
-  // when the patient has no email on file.
-  let emailed = false
-  if (member.email) {
-    const { data: prof } = await supabase
-      .from('users')
-      .select('full_name, preferred_language')
-      .eq('id', user.id)
-      .maybeSingle()
-    try {
-      const { error: fnErr } = await supabase.functions.invoke('send-document-to-sign', {
-        body: {
-          memberEmail: member.email,
-          memberName: member.first_name || '',
-          practitionerName: prof?.full_name || '',
-          documentTitle: (template as { title?: string }).title || '',
-          signUrl,
-          locale: prof?.preferred_language || (template as { locale?: string }).locale || 'fr',
-        },
-      })
-      emailed = !fnErr
-    } catch {
-      emailed = false
-    }
-  }
+  // Email the patient the signing link (best-effort; skipped if no email).
+  const emailed = await emailSigningLink(supabase, {
+    practitionerId: user.id,
+    memberEmail: member.email,
+    memberFirstName: member.first_name,
+    templateTitle: (template as { title?: string }).title || '',
+    signUrl,
+  })
 
   return NextResponse.json({ document: doc, signUrl, emailed })
 }

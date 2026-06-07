@@ -213,7 +213,6 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
                       {typeLabel(t.type)}
                       {t.auto_send && <> · {tr(locale, 'auto-send', 'envoi auto')}</>}
                       {t.require_signature && <> · {tr(locale, 'signature required', 'signature requise')}</>}
-                      {t.required_before_session && <> · {tr(locale, 'before first session', 'avant la 1ʳᵉ séance')}</>}
                     </p>
                   </div>
                   <button onClick={() => viewTemplate(t)} title={tr(locale, 'View', 'Voir')} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
@@ -388,8 +387,6 @@ function DraftEditor({
       <div className="space-y-2">
         <ToggleRow label={tr(locale, 'Send automatically when a patient is added', 'Envoyer automatiquement à l’ajout d’un patient')} value={draft.auto_send} onChange={(v) => set({ auto_send: v })} />
         <ToggleRow label={tr(locale, 'Require signature', 'Signature requise')} value={draft.require_signature} onChange={(v) => set({ require_signature: v })} />
-        <ToggleRow label={tr(locale, 'Required before first session', 'Requis avant la 1ʳᵉ séance')} value={draft.required_before_session} onChange={(v) => set({ required_before_session: v })} />
-        <ToggleRow label={tr(locale, 'Allow guardian to sign (minors)', 'Autoriser la signature par le tuteur (mineurs)')} value={draft.allow_guardian} onChange={(v) => set({ allow_guardian: v })} />
       </div>
 
       <div className="flex justify-between gap-2">

@@ -6,7 +6,7 @@
 // member's Files tab.
 
 import { useEffect, useState } from 'react'
-import { FileSignature, Send, Loader2, Copy, Check, Clock, Eye, CheckCircle2, X, Download } from 'lucide-react'
+import { FileSignature, Send, Loader2, Copy, Check, Clock, Eye, CheckCircle2, X, Download, Bell, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { DocumentTemplate, MemberDocument, DocumentBlock, DocumentTemplateSnapshot } from '@/types/documents'
 
@@ -86,6 +86,10 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
         body: JSON.stringify({ templateId: selectedTemplate }),
       })
       const data = await res.json()
+      if (res.status === 409 && data.error === 'already_sent') {
+        toast.error(tr(locale, 'Already sent — use Remind on the existing one.', 'Déjà envoyé — utilisez Relancer sur l’existant.'))
+        return
+      }
       if (!res.ok) throw new Error(data.error || 'Failed')
       toast.success(tr(locale, 'Document sent', 'Document envoyé'))
       setSendOpen(false)
@@ -95,6 +99,28 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
       toast.error(e instanceof Error ? e.message : 'Failed')
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleRemind = async (d: MemberDocumentWithUrl) => {
+    const res = await fetch(`/api/members/${memberId}/documents/${d.id}`, { method: 'POST' })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      toast.success(data.emailed
+        ? tr(locale, 'Reminder sent', 'Rappel envoyé')
+        : tr(locale, 'No email on file — copy the link instead.', 'Pas d’email — copiez le lien.'))
+    } else {
+      toast.error(tr(locale, 'Could not send reminder', 'Échec du rappel'))
+    }
+  }
+
+  const handleUnsend = async (d: MemberDocumentWithUrl) => {
+    const res = await fetch(`/api/members/${memberId}/documents/${d.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setDocs(prev => prev.filter(x => x.id !== d.id))
+      toast.success(tr(locale, 'Unsent', 'Annulé'))
+    } else {
+      toast.error(tr(locale, 'Could not unsend', 'Impossible d’annuler'))
     }
   }
 
@@ -201,11 +227,21 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => copyLink(d.share_token)}
-                    className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
-                    {copied === d.share_token ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    {tr(locale, 'Copy link', 'Copier le lien')}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => handleRemind(d)} title={tr(locale, 'Remind', 'Relancer')}
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+                      <Bell className="w-3.5 h-3.5" />
+                      {tr(locale, 'Remind', 'Relancer')}
+                    </button>
+                    <button onClick={() => copyLink(d.share_token)} title={tr(locale, 'Copy link', 'Copier le lien')}
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+                      {copied === d.share_token ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    <button onClick={() => handleUnsend(d)} title={tr(locale, 'Unsend', 'Annuler l’envoi')}
+                      className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 px-2 py-1 rounded-md hover:bg-red-50">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
               </div>
             )

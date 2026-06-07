@@ -83,6 +83,44 @@ export async function storeSignedArtifacts(
   return { signedPdfPath, signaturePath }
 }
 
+/**
+ * Email the patient their signing link via the send-document-to-sign edge
+ * function. Best-effort: returns false (never throws) when there's no email or
+ * the function isn't reachable, so the caller can still surface the link.
+ */
+export async function emailSigningLink(
+  supabase: SupabaseClient,
+  args: {
+    practitionerId: string
+    memberEmail: string | null
+    memberFirstName: string | null
+    templateTitle: string
+    signUrl: string
+  },
+): Promise<boolean> {
+  if (!args.memberEmail) return false
+  const { data: prof } = await supabase
+    .from('users')
+    .select('full_name, preferred_language')
+    .eq('id', args.practitionerId)
+    .maybeSingle()
+  try {
+    const { error } = await supabase.functions.invoke('send-document-to-sign', {
+      body: {
+        memberEmail: args.memberEmail,
+        memberName: args.memberFirstName || '',
+        practitionerName: prof?.full_name || '',
+        documentTitle: args.templateTitle,
+        signUrl: args.signUrl,
+        locale: prof?.preferred_language || 'fr',
+      },
+    })
+    return !error
+  } catch {
+    return false
+  }
+}
+
 /** Decode a data-URL or base64 PNG signature into raw bytes. */
 export function decodeSignaturePng(input: string): Uint8Array {
   const base64 = input.includes(',') ? input.split(',')[1] : input
