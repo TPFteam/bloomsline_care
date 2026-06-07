@@ -16,9 +16,21 @@ function calStatusVisual(isGoogle: boolean, status: string | undefined, isPast: 
   if (status === 'completed') return { fill: 'bg-emerald-50 border-emerald-400 text-emerald-700', ring: 'ring-emerald-400', Icon: CheckCircle2, showIcon: true }
   if (status === 'cancelled') return { fill: 'bg-rose-50 border-rose-400 text-rose-700', ring: 'ring-rose-300', Icon: XCircle, showIcon: true }
   if (status === 'no_show') return { fill: 'bg-gray-100 border-gray-400 text-gray-600', ring: 'ring-gray-300', Icon: Ban, showIcon: true }
-  // confirmed: past start + not closed = "awaiting outcome" (amber); else scheduled (blue)
-  if (isPast) return { fill: 'bg-amber-50 border-amber-500 text-amber-800', ring: 'ring-amber-300', Icon: AlertCircle, showIcon: true }
+  // confirmed: past start + not closed = "needs outcome" (orange); else scheduled (blue)
+  if (isPast) return { fill: 'bg-orange-50 border-orange-500 text-orange-800', ring: 'ring-orange-300', Icon: AlertCircle, showIcon: true }
   return { fill: 'bg-blue-50 border-blue-400 text-blue-700', ring: 'ring-blue-300', Icon: CalendarClock, showIcon: true }
+}
+
+// Status header for the event popover — a solid top bar + a clear label so the
+// practitioner reads the status instantly, without needing the legend.
+function calStatusHeader(isGoogle: boolean, status: string | undefined, isPast: boolean) {
+  if (isGoogle) return { borderT: 'border-t-violet-500', tint: 'bg-violet-50', text: 'text-violet-700', Icon: CalendarClock, en: 'Google Calendar', fr: 'Google Agenda' }
+  if (status === 'pending') return { borderT: 'border-t-amber-400', tint: 'bg-amber-50', text: 'text-amber-700', Icon: Hourglass, en: 'Needs approval', fr: 'À approuver' }
+  if (status === 'completed') return { borderT: 'border-t-emerald-500', tint: 'bg-emerald-50', text: 'text-emerald-700', Icon: CheckCircle2, en: 'Completed', fr: 'Terminé' }
+  if (status === 'cancelled') return { borderT: 'border-t-rose-500', tint: 'bg-rose-50', text: 'text-rose-700', Icon: XCircle, en: 'Cancelled', fr: 'Annulé' }
+  if (status === 'no_show') return { borderT: 'border-t-gray-400', tint: 'bg-gray-100', text: 'text-gray-600', Icon: Ban, en: 'No-show', fr: 'Absence' }
+  if (isPast) return { borderT: 'border-t-orange-500', tint: 'bg-orange-50', text: 'text-orange-700', Icon: AlertCircle, en: 'Needs outcome', fr: 'À clôturer' }
+  return { borderT: 'border-t-blue-500', tint: 'bg-blue-50', text: 'text-blue-700', Icon: CalendarClock, en: 'Scheduled', fr: 'Planifié' }
 }
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
@@ -369,16 +381,16 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                   {locale === 'fr' ? 'Prévue' : 'Scheduled'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
-                  <span className="w-4 h-4 rounded-full bg-amber-50 border border-amber-500 flex items-center justify-center shrink-0">
-                    <AlertCircle className="w-2.5 h-2.5 text-amber-600" />
+                  <span className="w-4 h-4 rounded-full bg-orange-50 border border-orange-500 flex items-center justify-center shrink-0">
+                    <AlertCircle className="w-2.5 h-2.5 text-orange-600" />
                   </span>
-                  {locale === 'fr' ? 'En attente de clôture' : 'Awaiting outcome'}
+                  {locale === 'fr' ? 'À clôturer' : 'Needs outcome'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
                   <span className="w-4 h-4 rounded-full bg-amber-50 border border-amber-300 flex items-center justify-center shrink-0">
                     <Hourglass className="w-2.5 h-2.5 text-amber-500" />
                   </span>
-                  {locale === 'fr' ? 'À approuver' : 'Pending'}
+                  {locale === 'fr' ? 'À approuver' : 'Needs approval'}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-700">
                   <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-400 flex items-center justify-center shrink-0">
@@ -644,6 +656,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 const isPast = new Date(event.start).getTime() < Date.now()
                 const sv = calStatusVisual(isGoogle, event.status, isPast)
                 const SvIcon = sv.Icon
+                const sh = calStatusHeader(isGoogle, event.status, isPast)
+                const ShIcon = sh.Icon
                 // Cancelled / no-show → muted + struck so "didn't happen" reads instantly.
                 const dim = event.status === 'cancelled' || event.status === 'no_show'
                 const colWidth = 100 / event.totalCols
@@ -675,12 +689,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setSelectedEvent(null)} />
                         <div
-                          className="absolute z-50 bg-white rounded-xl shadow-xl border border-gray-200 w-64 overflow-hidden"
+                          className={`absolute z-50 bg-white rounded-xl shadow-xl border border-gray-200 border-t-[3px] ${sh.borderT} w-64 overflow-hidden`}
                           style={{ top: top + Math.min(height, 40), left: `calc(${left} + 4px)` }}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* Header — name + view profile */}
+                          {/* Header — status pill + name + view profile. The
+                              colored top edge (above) + this pill make the
+                              status clear without the legend. */}
                           <div className="px-4 pt-3.5 pb-3 border-b border-gray-100">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mb-2 ${sh.tint} ${sh.text}`}>
+                              <ShIcon className="w-3 h-3" />
+                              {locale === 'fr' ? sh.fr : sh.en}
+                            </span>
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <p className="font-semibold text-gray-900 text-sm leading-tight flex-1 break-words">{event.title}</p>
                               {event.memberId && (
@@ -702,20 +722,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
 
                           {/* Body */}
                           <div className="px-4 py-3 space-y-2.5">
-                            {/* Status pills — 'confirmed' is the default
-                                state and rendering it as a pill is redundant
-                                with "Completed", so only show pending and
-                                exceptional statuses. */}
-                            {(event.status || event.sessionType || (event.source === 'booking' && event.bookingId)) && (
+                            {/* Payment + session type — the status itself now
+                                lives in the colored header above, so it's not
+                                repeated here. */}
+                            {(event.sessionType || (event.source === 'booking' && event.bookingId)) && (
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                {event.status && event.status !== 'confirmed' && (
-                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                    isPending ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-                                  }`}>
-                                    {event.status === 'pending' ? (locale === 'fr' ? 'En attente' : 'Pending')
-                                      : event.status}
-                                  </span>
-                                )}
                                 {event.source === 'booking' && event.bookingId && (
                                   <PaymentBadge
                                     status={event.paymentStatus || 'unpaid'}
