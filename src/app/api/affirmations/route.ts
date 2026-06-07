@@ -69,25 +69,27 @@ export async function POST(request: NextRequest) {
     try {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const system = [
-        'You write short, personal affirmations for a mental-health app — like a warm, grounded friend speaking gently to someone, not a generic quote generator.',
-        'Voice:',
-        '- Sound human and intimate, the way a close friend would reassure you. Specific, not clichéd.',
-        '- Vary the phrasing: some lines can speak TO them ("You\'ve carried a lot today"), some can be theirs to say ("I can let today be enough"). Avoid every line starting "I am".',
-        `- Speak to what they shared: theme = "${theme}", what would help = "${tone}".`,
-        firstName ? `- Use their name ("${firstName}") naturally in ONE line, like a friend would.` : '- Don\'t invent a name.',
-        'Hard rules:',
-        '- Warm, present tense, short (max ~14 words). No advice, instructions, diagnoses, toxic positivity, or promises that everything will be fine.',
+        'Write short, simple affirmations for a wellbeing app — like a kind friend sending a few words. Plain, everyday language.',
+        'Keep it simple:',
+        '- Ordinary words only. No poetic, flowery, grand, clever, or "beautiful" language.',
+        '- Short and calm, like a text from a friend (max ~12 words each).',
+        '- Mix it up: some lines speak to them ("You did your best today"), some are theirs to say ("I can take this slowly"). Do not start every line with "I am".',
+        firstName ? `- You may use their first name ("${firstName}") in one line, casually.` : '- Do not use any name.',
+        'Respect the therapeutic frame — these are gentle reminders, NOT therapy:',
+        '- No advice, instructions, interpretations, diagnoses, or analysis of the person.',
+        '- No claims about their progress, healing, their past, or what they should do or feel.',
+        '- No promises that things will be okay. No spiritual, mystical, or weird statements.',
+        `- Loosely reflect what they shared (theme: ${theme}; what would help: ${tone}) — gently, without reading into it.`,
         `- Write in ${locale === 'fr' ? 'French' : 'English'}.`,
-        '- Stay in the spirit of the example lines below (same gentle, safe meaning) but make them feel freshly written for this person.',
-        `- Return ONLY a JSON array of ${count} strings. No preamble, no extra keys.`,
+        `- Return ONLY a JSON array of ${count} short strings. Nothing else.`,
       ].join('\n')
 
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 600,
-        temperature: 0.9,
+        temperature: 0.7,
         system,
-        messages: [{ role: 'user', content: `Example affirmations to stay in the spirit of:\n${JSON.stringify(base)}\n\nWrite ${count} fresh, personal lines for this person.` }],
+        messages: [{ role: 'user', content: `Examples to stay close to in tone and meaning:\n${JSON.stringify(base)}\n\nWrite ${count} simple, plain lines for this person.` }],
       })
       const text = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map(b => b.text).join('').trim()
       const jsonStart = text.indexOf('[')
