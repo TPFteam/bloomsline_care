@@ -2314,23 +2314,45 @@ export default function BookingsPage() {
                           </button>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
-                          updated[index] = { ...updated[index], notesRequired: !type.notesRequired }
-                          setSessionTypes(updated)
-                          setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
-                        }}
-                        className="flex items-center gap-2 cursor-pointer mt-2 pt-2 border-t border-gray-100 w-full"
-                      >
-                        <div className={`relative w-8 h-[18px] rounded-full transition-colors ${type.notesRequired ? 'bg-teal-500' : 'bg-gray-200'}`}>
-                          <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${type.notesRequired ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                      <div className="flex items-center justify-between gap-3 flex-wrap mt-2 pt-2 border-t border-gray-100">
+                        {/* Format — combined with each day's availability format
+                            to decide what patients can pick. */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">{locale === 'fr' ? 'Format' : 'Format'}</span>
+                          <select
+                            value={type.sessionFormat || 'both'}
+                            onChange={(e) => {
+                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                              updated[index] = { ...updated[index], sessionFormat: e.target.value as 'in_person' | 'video' | 'both' }
+                              setSessionTypes(updated)
+                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                            }}
+                            className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 bg-white"
+                          >
+                            <option value="both">{locale === 'fr' ? 'Les deux' : 'Both'}</option>
+                            <option value="in_person">{locale === 'fr' ? 'En personne' : 'In person'}</option>
+                            <option value="video">{locale === 'fr' ? 'Vidéo' : 'Video'}</option>
+                          </select>
                         </div>
-                        <span className="text-xs text-gray-500">
-                          {locale === 'fr' ? 'Notes obligatoires lors de la réservation' : 'Require notes when booking'}
-                        </span>
-                      </button>
+                        {/* Require notes toggle */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                            updated[index] = { ...updated[index], notesRequired: !type.notesRequired }
+                            setSessionTypes(updated)
+                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                          }}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <div className={`relative w-8 h-[18px] rounded-full transition-colors ${type.notesRequired ? 'bg-teal-500' : 'bg-gray-200'}`}>
+                            <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${type.notesRequired ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {locale === 'fr' ? 'Notes obligatoires lors de la réservation' : 'Require notes when booking'}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   )})}
 
@@ -2342,6 +2364,7 @@ export default function BookingsPage() {
                         name: '',
                         duration: 60,
                         price: null,
+                        sessionFormat: 'both',
                       }
                       const updated = [...current, newType]
                       setSessionTypes(updated)

@@ -47,6 +47,9 @@ export interface SessionType {
   price: number | null;
   is_default?: boolean;
   notesRequired?: boolean; // Whether "Additional Notes" is mandatory for this session type
+  // Which formats this session type can be booked in. Combined with each day's
+  // availability format to decide what patients see. Defaults to 'both'.
+  sessionFormat?: 'in_person' | 'video' | 'both';
 }
 
 // The set of optional fields the Add-member popup can render. Order

@@ -248,6 +248,23 @@ export default function BookingPage() {
     loadSlots()
   }, [selectedDate, practitioner, selectedService, selectedFormat])
 
+  // Constrain the format to the chosen session type's configured formats
+  // (intersected with what the practitioner offers). Default to in-person when
+  // both are possible; auto-select (and lock) when only one applies. Runs when
+  // the patient picks a different session type.
+  useEffect(() => {
+    if (!selectedService) return
+    const stf = selectedService.sessionFormat || 'both'
+    let allowed: ('in_person' | 'video')[] = stf === 'both' ? ['in_person', 'video'] : [stf]
+    const offered = practitioner?.availableFormats
+    if (offered) allowed = allowed.filter(f => offered.includes(f))
+    if (allowed.length === 0) return
+    if (!selectedFormat || !allowed.includes(selectedFormat)) {
+      setSelectedFormat(allowed.includes('in_person') ? 'in_person' : allowed[0])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedService, practitioner])
+
   // When the format changes, drop any previously-picked date/slot that doesn't fit
   // (e.g. user picked a Thursday for Video, then went back and switched to In-person
   // which is only on Mondays) — and jump the calendar to a month that has availability.
@@ -950,9 +967,15 @@ export default function BookingPage() {
               </div>
             )}
 
-            {currentStep === 'schedule' && (() => {
-              const showInPerson = !practitioner?.availableFormats || practitioner.availableFormats.includes('in_person')
-              const showVideo = !practitioner?.availableFormats || practitioner.availableFormats.includes('video')
+            {currentStep === 'schedule' && selectedService && (() => {
+              // Formats this session type allows, narrowed to what the
+              // practitioner actually offers across their week. A single
+              // resulting format locks the choice (no toggle shown).
+              const stf = selectedService.sessionFormat || 'both'
+              let allowed: string[] = stf === 'both' ? ['in_person', 'video'] : [stf]
+              if (practitioner?.availableFormats) allowed = allowed.filter(f => practitioner.availableFormats!.includes(f))
+              const showInPerson = allowed.includes('in_person')
+              const showVideo = allowed.includes('video')
               if (!showInPerson || !showVideo) return null  // single-format → no toggle
               return (
                 <div className="mb-5">
