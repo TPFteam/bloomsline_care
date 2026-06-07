@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server-client'
-import { newShareToken, tokenExpiryISO, snapshotFromTemplate, emailSigningLink } from '@/lib/services/documents'
+import { newShareToken, tokenExpiryISO, snapshotFromTemplate, emailSigningLink, substituteDocVariables } from '@/lib/services/documents'
 import type { DocumentTemplate, MemberDocument } from '@/types/documents'
 
 export async function GET(
@@ -33,6 +33,14 @@ export async function GET(
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Patient data for filling in authored-document variables in the view.
+  const { data: gMember } = await supabase
+    .from('members')
+    .select('first_name, last_name, email')
+    .eq('id', memberId)
+    .maybeSingle()
+  const gMemberName = gMember ? `${gMember.first_name ?? ''} ${gMember.last_name ?? ''}`.trim() : ''
 
   // Attach a short-lived URL to each signed PDF so the practitioner can view /
   // download it straight from the Documents card.
@@ -55,7 +63,12 @@ export async function GET(
       signedPdfDownloadUrl = attach.data?.signedUrl ?? null
       signatureUrl = sig.data?.signedUrl ?? null
     }
-    return { ...doc, signedPdfUrl, signedPdfDownloadUrl, signatureUrl }
+    // Fill in patient variables for the authored-document viewer.
+    const snap = (doc.template_snapshot || {}) as { source?: string; content?: import('@/types/documents').DocumentBlock[] | null }
+    const template_snapshot = snap.source === 'authored'
+      ? { ...snap, content: substituteDocVariables(snap.content, { name: gMemberName, email: gMember?.email }) }
+      : doc.template_snapshot
+    return { ...doc, template_snapshot, signedPdfUrl, signedPdfDownloadUrl, signatureUrl }
   }))
 
   return NextResponse.json({ documents })

@@ -121,6 +121,29 @@ export async function emailSigningLink(
   }
 }
 
+/**
+ * Replace authored-document variables with a specific patient's data.
+ * Supported tokens: {{patient_name}}, {{patient_email}} (case-insensitive,
+ * tolerant of inner spaces). Applied at render/sign time so templates stay
+ * reusable across patients.
+ */
+export function substituteDocVariables(
+  blocks: import('@/types/documents').DocumentBlock[] | null | undefined,
+  vars: { name?: string | null; email?: string | null },
+): import('@/types/documents').DocumentBlock[] {
+  if (!blocks) return []
+  const apply = (s: string) =>
+    s
+      .replace(/\{\{\s*patient_name\s*\}\}/gi, vars.name || '')
+      .replace(/\{\{\s*patient_email\s*\}\}/gi, vars.email || '')
+  return blocks.map((b) => {
+    if (b.type === 'heading') return { ...b, text: apply(b.text) }
+    if (b.type === 'paragraph') return { ...b, text: apply(b.text) }
+    if (b.type === 'list') return { ...b, items: b.items.map(apply) }
+    return b
+  })
+}
+
 /** Decode a data-URL or base64 PNG signature into raw bytes. */
 export function decodeSignaturePng(input: string): Uint8Array {
   const base64 = input.includes(',') ? input.split(',')[1] : input

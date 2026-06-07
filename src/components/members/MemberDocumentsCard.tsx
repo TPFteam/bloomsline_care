@@ -146,6 +146,13 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
     )
   }
 
+  // Hide templates that are already out for signature (sent/viewed) so the
+  // same document can't be sent twice — use Remind on the existing row instead.
+  const pendingTemplateIds = new Set(
+    docs.filter(d => d.status === 'sent' || d.status === 'viewed').map(d => d.template_id).filter(Boolean),
+  )
+  const availableTemplates = templates.filter(t => !pendingTemplateIds.has(t.id))
+
   return (
     <>
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 mb-4">
@@ -172,7 +179,7 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
             className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
           >
             <option value="">{tr(locale, 'Choose a document…', 'Choisir un document…')}</option>
-            {templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+            {availableTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
           </select>
           <button onClick={handleSend} disabled={sending || !selectedTemplate}
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg disabled:opacity-50">
@@ -187,6 +194,11 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
       {sendOpen && templates.length === 0 && (
         <p className="text-xs text-gray-400 mb-3">
           {tr(locale, 'No active templates — create one in Settings → Documents.', 'Aucun modèle actif — créez-en un dans Réglages → Documents.')}
+        </p>
+      )}
+      {sendOpen && templates.length > 0 && availableTemplates.length === 0 && (
+        <p className="text-xs text-gray-400 mb-3">
+          {tr(locale, 'All your documents are already sent to this patient.', 'Tous vos documents ont déjà été envoyés à ce patient.')}
         </p>
       )}
 

@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server-client'
 import { buildSignedPdf } from '@/lib/pdf/signed-document'
-import { storeSignedArtifacts, decodeSignaturePng } from '@/lib/services/documents'
+import { storeSignedArtifacts, decodeSignaturePng, substituteDocVariables } from '@/lib/services/documents'
 import type { DocumentTemplateSnapshot, MemberDocument } from '@/types/documents'
 
 function isExpired(doc: { token_expires_at: string }): boolean {
@@ -44,12 +44,22 @@ export async function GET(
       .eq('id', doc.id)
   }
 
-  // Minor → maybe offer guardian signing.
+  // Minor → maybe offer guardian signing. Email used for variable fill-in.
   const { data: member } = await admin
     .from('members')
-    .select('first_name, last_name, is_minor')
+    .select('first_name, last_name, email, is_minor')
     .eq('id', doc.member_id)
     .maybeSingle()
+  const memberFullName = member ? `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim() : ''
+
+  // Language for the signing UI — match the email (practitioner's preferred
+  // language), falling back to the template's locale.
+  const { data: prof } = await admin
+    .from('users')
+    .select('preferred_language')
+    .eq('id', doc.practitioner_id)
+    .maybeSingle()
+  const uiLocale = prof?.preferred_language || snap.locale || 'fr'
 
   // For uploaded originals, hand back a short-lived URL to render the PDF.
   let originalUrl: string | null = null
@@ -73,8 +83,8 @@ export async function GET(
     title: snap.title,
     type: snap.type,
     source: snap.source,
-    content: snap.content,
-    locale: snap.locale || 'fr',
+    content: substituteDocVariables(snap.content, { name: memberFullName, email: member?.email }),
+    locale: uiLocale,
     requireSignature: snap.require_signature !== false,
     allowGuardian: snap.allow_guardian !== false,
     isMinor: member?.is_minor === true,
@@ -112,6 +122,15 @@ export async function POST(
   const snap = doc.template_snapshot as DocumentTemplateSnapshot
   const signaturePng = decodeSignaturePng(String(body.signatureImage))
 
+  // Fill in patient variables in authored content for the signed PDF.
+  const { data: signMember } = await admin
+    .from('members')
+    .select('first_name, last_name, email')
+    .eq('id', doc.member_id)
+    .maybeSingle()
+  const signMemberName = signMember ? `${signMember.first_name ?? ''} ${signMember.last_name ?? ''}`.trim() : ''
+  const filledBlocks = substituteDocVariables(snap.content, { name: signMemberName, email: signMember?.email })
+
   // Load the original PDF bytes for uploaded templates.
   let uploadBytes: Uint8Array | null = null
   if (snap.source === 'upload' && snap.file_path) {
@@ -129,7 +148,7 @@ export async function POST(
   const pdfBytes = await buildSignedPdf({
     source: snap.source,
     uploadBytes,
-    blocks: snap.content,
+    blocks: filledBlocks,
     title: snap.title,
     signerName: String(body.signerName).trim(),
     signerRelationship,

@@ -5,7 +5,7 @@
 // uploading a PDF or authoring lightweight rich-text blocks; view, edit,
 // preview (during creation/editing), toggle active, and delete.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FileText, Plus, Trash2, Loader2, Upload, PenLine, X, GripVertical, Eye, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -421,24 +421,57 @@ function BlockEditor({ blocks, onChange, locale }: { blocks: DocumentBlock[]; on
   const remove = (i: number) => onChange(blocks.filter((_, idx) => idx !== i))
   const add = (b: DocumentBlock) => onChange([...blocks, b])
 
+  // Track the last-focused text field so "insert variable" drops the token at
+  // the caret. Falls back to appending a paragraph when nothing is focused.
+  const activeRef = useRef<{ el: HTMLInputElement | HTMLTextAreaElement; index: number } | null>(null)
+
+  const insertVar = (token: string) => {
+    const a = activeRef.current
+    if (!a) { onChange([...blocks, { type: 'paragraph', text: token }]); return }
+    const { el, index } = a
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? start
+    const newVal = el.value.slice(0, start) + token + el.value.slice(end)
+    const b = blocks[index]
+    if (b.type === 'heading') update(index, { type: 'heading', text: newVal })
+    else if (b.type === 'paragraph') update(index, { type: 'paragraph', text: newVal })
+    else if (b.type === 'list') update(index, { type: 'list', items: newVal.split('\n') })
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + token.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
+
+  const onFieldFocus = (i: number) => (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    activeRef.current = { el: e.currentTarget, index: i }
+  }
+
   return (
     <div className="space-y-2">
+      {/* Variable inserter — drops a placeholder filled with the patient's
+          data at signing time. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] text-gray-400">{tr(locale, 'Insert:', 'Insérer :')}</span>
+        <AddBtn onClick={() => insertVar('{{patient_name}}')}>{tr(locale, 'Patient name', 'Nom du patient')}</AddBtn>
+        <AddBtn onClick={() => insertVar('{{patient_email}}')}>{tr(locale, 'Patient email', 'Email du patient')}</AddBtn>
+      </div>
       {blocks.map((b, i) => (
         <div key={i} className="flex items-start gap-2">
           <GripVertical className="w-4 h-4 text-gray-300 mt-2 shrink-0" />
           <div className="flex-1">
             {b.type === 'heading' && (
-              <input value={b.text} onChange={(e) => update(i, { type: 'heading', text: e.target.value })}
+              <input value={b.text} onFocus={onFieldFocus(i)} onChange={(e) => update(i, { type: 'heading', text: e.target.value })}
                 placeholder={tr(locale, 'Heading', 'Titre de section')}
                 className="w-full px-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white" />
             )}
             {b.type === 'paragraph' && (
-              <textarea value={b.text} onChange={(e) => update(i, { type: 'paragraph', text: e.target.value })}
+              <textarea value={b.text} onFocus={onFieldFocus(i)} onChange={(e) => update(i, { type: 'paragraph', text: e.target.value })}
                 placeholder={tr(locale, 'Paragraph…', 'Paragraphe…')} rows={2}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white resize-y" />
             )}
             {b.type === 'list' && (
-              <textarea value={b.items.join('\n')} onChange={(e) => update(i, { type: 'list', items: e.target.value.split('\n') })}
+              <textarea value={b.items.join('\n')} onFocus={onFieldFocus(i)} onChange={(e) => update(i, { type: 'list', items: e.target.value.split('\n') })}
                 placeholder={tr(locale, 'One item per line', 'Un élément par ligne')} rows={3}
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white resize-y" />
             )}
@@ -453,6 +486,11 @@ function BlockEditor({ blocks, onChange, locale }: { blocks: DocumentBlock[]; on
         <AddBtn onClick={() => add({ type: 'list', items: [''] })}>{tr(locale, '+ List', '+ Liste')}</AddBtn>
         <AddBtn onClick={() => add({ type: 'divider' })}>{tr(locale, '+ Divider', '+ Séparateur')}</AddBtn>
       </div>
+      <p className="text-[11px] text-gray-400">
+        {tr(locale,
+          'Variables like {{patient_name}} are replaced with the patient’s details when sent.',
+          'Les variables comme {{patient_name}} sont remplacées par les infos du patient à l’envoi.')}
+      </p>
     </div>
   )
 }
