@@ -540,17 +540,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   }
 
   // Scroll and open handlers
-  const handleOpenPreferences = () => {
-    setEditingPreferences(true)
-    setTimeout(() => {
-      preferencesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 100)
-  }
-
-  // Check what's missing
-  const missingItems = []
-  if (!hasPreferencesData) missingItems.push({ key: 'preferences', label: locale === 'fr' ? 'Préférences' : 'Preferences', action: handleOpenPreferences })
-
   // Card titles
   const cardTitles: Record<string, { label: string; icon: React.ReactNode; iconBg: string; iconColor: string }> = {
     ai_summary: {
@@ -1434,43 +1423,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
   return (
     <div className="space-y-6">
-      {/* Complete Profile Banner */}
-      {missingItems.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-              <AlertCircle className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-amber-900">
-                {locale === 'fr' ? 'Compléter le profil' : 'Complete Profile'}
-              </p>
-              <p className="text-xs text-amber-700">
-                {locale === 'fr' ? 'Ajoutez plus de détails pour ce client' : 'Add more details for this client'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {missingItems.map((item) => (
-              <Button
-                key={item.key}
-                size="sm"
-                variant="outline"
-                onClick={item.action}
-                className="text-amber-700 border-amber-300 hover:bg-amber-100 rounded-lg text-xs"
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                {item.label}
-              </Button>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column */}
