@@ -62,6 +62,47 @@ export async function POST(request: NextRequest) {
   // A fresh number of lines each session (5–8) so it feels alive.
   const count = 5 + Math.floor(Math.random() * 4)
 
+  // ── Personalization context (abstracted, privacy-safe) ──────────────
+  // Recent moods — labels only, never raw moment/journal text.
+  let recentMoods: string[] = []
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: moments } = await admin
+      .from('moments')
+      .select('moods')
+      .eq('user_id', userId)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    const counts: Record<string, number> = {}
+    for (const m of (moments || []) as Array<{ moods: string[] | null }>) {
+      for (const mood of (m.moods || [])) counts[mood] = (counts[mood] || 0) + 1
+    }
+    recentMoods = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k)
+  } catch { /* moods are optional context */ }
+
+  // Time of day from the app's local hour — a small human touch.
+  const hourRaw = Number(body?.hour)
+  const hour = Number.isFinite(hourRaw) ? ((hourRaw % 24) + 24) % 24 : null
+  const partOfDay = hour === null ? null
+    : hour < 5 ? 'late at night'
+    : hour < 12 ? 'morning'
+    : hour < 18 ? 'afternoon'
+    : hour < 22 ? 'evening'
+    : 'late evening'
+
+  // Recent lines to avoid echoing (continuity without repetition).
+  let recentLines: string[] = []
+  try {
+    const { data: hist } = await admin
+      .from('affirmation_history')
+      .select('affirmations')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(2)
+    recentLines = (hist || []).flatMap((h: { affirmations: string[] | null }) => h.affirmations || []).slice(0, 12)
+  } catch { /* optional */ }
+
   let affirmations: string[] = pick(base, count) // curated fallback
   let source: 'ai' | 'curated' = 'curated'
 
@@ -70,19 +111,24 @@ export async function POST(request: NextRequest) {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const system = [
         'Write short, simple affirmations for a wellbeing app — like a kind friend sending a few words. Plain, everyday language.',
+        'Make it feel personal — these should land like they were written for THIS person right now, not generic quotes.',
         'Keep it simple:',
         '- Ordinary words only. No poetic, flowery, grand, clever, or "beautiful" language.',
         '- Short and calm, like a text from a friend (max ~12 words each).',
         '- Mix it up: some lines speak to them ("You did your best today"), some are theirs to say ("I can take this slowly"). Do not start every line with "I am".',
         firstName ? `- You may use their first name ("${firstName}") in one line, casually.` : '- Do not use any name.',
+        'What you know about them (use it to feel personal, gently):',
+        `- Right now they want help with: ${theme}; what would help: ${tone}.`,
+        recentMoods.length ? `- Lately they've mostly felt: ${recentMoods.join(', ')}. Let a couple of lines quietly meet that — plainly, WITHOUT naming it as a diagnosis or explaining why they feel it.` : '',
+        partOfDay ? `- It's ${partOfDay} for them — you may let that gently colour one line.` : '',
         'Respect the therapeutic frame — these are gentle reminders, NOT therapy:',
         '- No advice, instructions, interpretations, diagnoses, or analysis of the person.',
         '- No claims about their progress, healing, their past, or what they should do or feel.',
         '- No promises that things will be okay. No spiritual, mystical, or weird statements.',
-        `- Loosely reflect what they shared (theme: ${theme}; what would help: ${tone}) — gently, without reading into it.`,
+        recentLines.length ? `- Do NOT reuse or closely echo these recent lines: ${JSON.stringify(recentLines)}.` : '',
         `- Write in ${locale === 'fr' ? 'French' : 'English'}.`,
         `- Return ONLY a JSON array of ${count} short strings. Nothing else.`,
-      ].join('\n')
+      ].filter(Boolean).join('\n')
 
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
