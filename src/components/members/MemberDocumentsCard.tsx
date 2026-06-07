@@ -16,6 +16,22 @@ type MemberDocumentWithUrl = MemberDocument & {
   signatureUrl?: string | null
 }
 
+type TemplateWithPreview = DocumentTemplate & { previewUrl?: string | null }
+
+function fillVar(s: string, name: string, email: string): string {
+  return s
+    .replace(/\{\{\s*patient_name\s*\}\}/gi, name || '')
+    .replace(/\{\{\s*patient_email\s*\}\}/gi, email || '')
+}
+function fillBlocks(blocks: DocumentBlock[] | null, name: string, email: string): DocumentBlock[] {
+  if (!blocks) return []
+  return blocks.map((b) => {
+    if (b.type === 'heading' || b.type === 'paragraph') return { ...b, text: fillVar(b.text, name, email) }
+    if (b.type === 'list') return { ...b, items: b.items.map((i) => fillVar(i, name, email)) }
+    return b
+  })
+}
+
 type Viewer =
   | { kind: 'pdf'; title: string; url: string }
   | { kind: 'authored'; title: string; blocks: DocumentBlock[]; signerName: string | null; signedAt: string | null; signatureUrl: string | null }
@@ -39,15 +55,18 @@ function AuthoredBlocks({ blocks, locale }: { blocks: DocumentBlock[]; locale: s
   )
 }
 
-export function MemberDocumentsCard({ memberId, locale }: { memberId: string; locale: string }) {
+export function MemberDocumentsCard({ memberId, locale, memberName = '', memberEmail = null }: { memberId: string; locale: string; memberName?: string; memberEmail?: string | null }) {
   const [docs, setDocs] = useState<MemberDocumentWithUrl[]>([])
-  const [templates, setTemplates] = useState<DocumentTemplate[]>([])
+  const [templates, setTemplates] = useState<TemplateWithPreview[]>([])
   const [loading, setLoading] = useState(true)
   const [sendOpen, setSendOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [sending, setSending] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [viewing, setViewing] = useState<Viewer | null>(null)
+  // Pre-send confirmation: preview the document (with this patient's data
+  // filled in) before it actually goes out.
+  const [confirmSend, setConfirmSend] = useState<Viewer | null>(null)
 
   const openView = (d: MemberDocumentWithUrl) => {
     const snap = (d.template_snapshot || {}) as DocumentTemplateSnapshot
@@ -94,11 +113,24 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
       toast.success(tr(locale, 'Document sent', 'Document envoyé'))
       setSendOpen(false)
       setSelectedTemplate('')
+      setConfirmSend(null)
       load()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed')
     } finally {
       setSending(false)
+    }
+  }
+
+  // Build the "what the patient will get" preview (variables filled in) and
+  // open the confirmation modal instead of sending immediately.
+  const handlePreviewSend = () => {
+    const t = templates.find(x => x.id === selectedTemplate)
+    if (!t) return
+    if (t.source === 'authored') {
+      setConfirmSend({ kind: 'authored', title: t.title, blocks: fillBlocks(t.content, memberName, memberEmail || ''), signerName: null, signedAt: null, signatureUrl: null })
+    } else {
+      setConfirmSend({ kind: 'pdf', title: t.title, url: t.previewUrl || '' })
     }
   }
 
@@ -181,10 +213,10 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
             <option value="">{tr(locale, 'Choose a document…', 'Choisir un document…')}</option>
             {availableTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
           </select>
-          <button onClick={handleSend} disabled={sending || !selectedTemplate}
+          <button onClick={handlePreviewSend} disabled={!selectedTemplate}
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg disabled:opacity-50">
-            {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            {tr(locale, 'Send', 'Envoyer')}
+            <Eye className="w-3.5 h-3.5" />
+            {tr(locale, 'Preview & send', 'Aperçu et envoi')}
           </button>
           <button onClick={() => { setSendOpen(false); setSelectedTemplate('') }} className="p-2 text-gray-400 hover:text-gray-700">
             <X className="w-4 h-4" />
@@ -291,6 +323,47 @@ export function MemberDocumentsCard({ memberId, locale }: { memberId: string; lo
               </div>
             </div>
           )}
+        </div>
+      </div>
+    )}
+
+    {/* Pre-send confirmation — preview the document (patient's data filled in)
+        before it actually goes out. */}
+    {confirmSend && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !sending && setConfirmSend(null)}>
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 truncate">{confirmSend.title}</p>
+              <p className="text-[11px] text-gray-400">
+                {tr(locale, 'Preview — this is what the patient will receive.', 'Aperçu — voici ce que le patient recevra.')}
+              </p>
+            </div>
+            <button onClick={() => setConfirmSend(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {confirmSend.kind === 'pdf' ? (
+            confirmSend.url
+              ? <iframe src={confirmSend.url} className="flex-1 w-full" title={confirmSend.title} />
+              : <div className="flex-1 flex items-center justify-center text-sm text-gray-400">{tr(locale, 'No preview available.', 'Aperçu indisponible.')}</div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-6">
+              <h1 className="text-xl font-semibold text-gray-900 mb-4">{confirmSend.title}</h1>
+              <AuthoredBlocks blocks={confirmSend.blocks} locale={locale} />
+            </div>
+          )}
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
+            <button onClick={() => setConfirmSend(null)} disabled={sending}
+              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50">
+              {tr(locale, 'Cancel', 'Annuler')}
+            </button>
+            <button onClick={handleSend} disabled={sending}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl disabled:opacity-50">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {tr(locale, 'Confirm & send', 'Confirmer et envoyer')}
+            </button>
+          </div>
         </div>
       </div>
     )}

@@ -620,7 +620,12 @@ export default function MemberProfilePage({ params }: { params: Promise<{ id: st
               )}
               {activeTab === 'files' && (
                 <div>
-                  <MemberDocumentsCard memberId={member.id} locale={locale} />
+                  <MemberDocumentsCard
+                    memberId={member.id}
+                    locale={locale}
+                    memberName={`${member.first_name ?? ''} ${member.last_name ?? ''}`.trim()}
+                    memberEmail={member.email ?? null}
+                  />
                   <FilesTab memberId={member.id} member={member} onMemberUpdate={fetchMember} highlightFileId={highlightId} />
                 </div>
               )}

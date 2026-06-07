@@ -272,14 +272,38 @@ function AuthoredBlocks({ blocks, locale }: { blocks: DocumentBlock[]; locale: s
   return (
     <div className="space-y-3 text-gray-800">
       {blocks.map((b, i) => {
-        if (b.type === 'heading') return <h3 key={i} className="text-base font-semibold text-gray-900 mt-4">{b.text}</h3>
-        if (b.type === 'paragraph') return <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap">{b.text}</p>
-        if (b.type === 'list') return <ul key={i} className="list-disc pl-5 space-y-1 text-sm">{b.items.map((it, j) => <li key={j}>{it}</li>)}</ul>
+        if (b.type === 'heading') return <h3 key={i} className="text-base font-semibold text-gray-900 mt-4">{renderVarText(b.text, locale)}</h3>
+        if (b.type === 'paragraph') return <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap">{renderVarText(b.text, locale)}</p>
+        if (b.type === 'list') return <ul key={i} className="list-disc pl-5 space-y-1 text-sm">{b.items.map((it, j) => <li key={j}>{renderVarText(it, locale)}</li>)}</ul>
         if (b.type === 'divider') return <hr key={i} className="border-gray-100 my-2" />
         return null
       })}
     </div>
   )
+}
+
+// Render text with {{patient_name}} / {{patient_email}} shown as highlighted
+// chips that explain (on hover) they auto-fill with the patient's data.
+function renderVarText(text: string, locale: string): React.ReactNode {
+  const parts = text.split(/(\{\{\s*patient_(?:name|email)\s*\}\})/gi)
+  return parts.map((part, i) => {
+    const m = /\{\{\s*patient_(name|email)\s*\}\}/i.exec(part)
+    if (!m) return <span key={i}>{part}</span>
+    const isName = m[1].toLowerCase() === 'name'
+    const label = isName ? tr(locale, 'Patient name', 'Nom du patient') : tr(locale, 'Patient email', 'Email du patient')
+    const tip = isName
+      ? tr(locale, 'This is filled in automatically with the patient’s name when the document is sent.', 'Ceci est rempli automatiquement avec le nom du patient à l’envoi du document.')
+      : tr(locale, 'This is filled in automatically with the patient’s email when the document is sent.', 'Ceci est rempli automatiquement avec l’email du patient à l’envoi du document.')
+    return (
+      <span key={i}
+        className="group relative inline-flex items-center rounded px-1.5 py-0.5 bg-teal-100 text-teal-800 text-[0.85em] font-medium cursor-help">
+        {label}
+        <span className="pointer-events-none absolute top-full left-0 mt-1.5 z-20 hidden group-hover:block w-48 rounded-lg bg-gray-900 px-2.5 py-1.5 text-[11px] font-normal leading-snug text-white shadow-lg">
+          {tip}
+        </span>
+      </span>
+    )
+  })
 }
 
 function DocumentViewer({ viewer, locale, onClose }: { viewer: Viewer; locale: string; onClose: () => void }) {
