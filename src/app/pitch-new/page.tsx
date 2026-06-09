@@ -14,6 +14,9 @@ import {
   MessageSquare,
   Zap,
   Info,
+  Hammer,
+  Lightbulb,
+  Check,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -124,9 +127,9 @@ const translations = {
       para4: 'That became Bloomsline.',
       quote: 'We didn\'t guess this problem. We failed our way into it.',
       timeline: [
-        { period: '2024', label: 'Doctalink' },
-        { period: '2025', label: 'Discovery' },
-        { period: '2026', label: 'Bloomsline — live', accent: true },
+        { period: '2024', label: 'Doctalink', body: 'Find a therapist by values, not just degrees. Therapists liked it — but a nice-to-have, never a business.' },
+        { period: '2025', label: 'Discovery', body: '100+ conversations. The problem wasn\'t just finding a therapist — it\'s everything that happens between sessions.' },
+        { period: '2026', label: 'Bloomsline — live', body: 'The silence where progress quietly slips away. That became Bloomsline.', accent: true },
       ],
     },
     product: {
@@ -165,8 +168,10 @@ const translations = {
       label: 'THE BOUNDARY',
       hero1: 'There\'s a boundary in therapy.',
       hero2: 'We respect it.',
-      intro: 'Therapy runs on a few hard principles. We built inside every one — never over them.',
+      intro: 'Therapy runs on a few hard principles.',
       defHint: 'Tap any principle to see what it means.',
+      frameLabel: 'The therapeutic frame',
+      frameNote: 'We build inside the frame — never over it.',
       principles: [
         { name: 'The frame', respect: 'We work around the session, never inside it — nothing changes about how therapy happens.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
         { name: 'The alliance', respect: 'We strengthen the patient–practitioner bond, never replace it. No bot stands in for the therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
@@ -205,25 +210,25 @@ const translations = {
       headline2: 'We treat it that way.',
       intro: 'Three layers — infrastructure, governance, AI safety.',
       todayTag: 'Today',
-      todayTitle: 'Live now — secure by default.',
+      todayTitle: 'Live now',
       todayItems: [
-        'AES-256-GCM at rest. TLS 1.3 in transit.',
-        'Row-Level Security on every table.',
-        'EU data residency on AWS (EU region).',
+        'AES-256-GCM at rest, TLS 1.3 in transit',
+        'Row-Level Security on every table',
+        'EU data residency (AWS)',
       ],
       nextTag: 'Next',
-      nextTitle: 'As soon as we raise — what we do first.',
+      nextTitle: 'This round',
       nextItems: [
-        'HDS certification — the French health-data gate.',
-        'First in-house security hire, plus a fractional CISO to start.',
-        'Third-party penetration test (ANSSI-aligned).',
+        'HDS certification — the French gate',
+        'First security hire + fractional CISO',
+        'Third-party pen test (ANSSI)',
       ],
       laterTag: 'Later',
-      laterTitle: 'Then, as we scale to clinics.',
+      laterTitle: 'At scale',
       laterItems: [
-        'A full-time, in-house security team.',
-        'SOC 2 Type I → Type II.',
-        'ISO 27001.',
+        'Full in-house security team',
+        'SOC 2 Type I → Type II',
+        'ISO 27001',
       ],
       aiSafetyLabel: 'AI safety',
       aiSafetyBody: 'Bloom AI summarizes therapy notes — it never diagnoses, recommends medication, or intervenes in crisis. Bounds are written into the system prompts. Every output traces back to source data.',
@@ -280,8 +285,8 @@ const translations = {
     },
     gtm: {
       label: 'GO-TO-MARKET',
-      headline: 'We didn\'t build a GTM.',
-      headline2: 'We earned it.',
+      headline: 'Trust first.',
+      headline2: 'Growth follows.',
       intro: 'Therapists trust other therapists, not ads. We talked to 100 before writing any code — and we\'ll win the next 1,000 the same way.',
       columns: [
         {
@@ -516,9 +521,9 @@ const translations = {
       para4: 'C\'est devenu Bloomsline.',
       quote: 'On n\'a pas deviné ce problème. On l\'a appris en échouant.',
       timeline: [
-        { period: '2024', label: 'Doctalink' },
-        { period: '2025', label: 'Découverte' },
-        { period: '2026', label: 'Bloomsline — en production', accent: true },
+        { period: '2024', label: 'Doctalink', body: 'Trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les thérapeutes appréciaient — un plus, jamais un business.' },
+        { period: '2025', label: 'Découverte', body: '100+ conversations. Le problème n\'était pas seulement de trouver un thérapeute — c\'est tout ce qui se passe entre les séances.' },
+        { period: '2026', label: 'Bloomsline — en production', body: 'Ce silence où les progrès s\'effacent. C\'est devenu Bloomsline.', accent: true },
       ],
     },
     product: {
@@ -557,8 +562,10 @@ const translations = {
       label: 'LA LIMITE',
       hero1: 'Il y a une limite en thérapie.',
       hero2: 'Nous la respectons.',
-      intro: 'La thérapie repose sur quelques principes essentiels. Nous avons construit à l\'intérieur de chacun — jamais par-dessus.',
+      intro: 'La thérapie repose sur quelques principes essentiels.',
       defHint: 'Touchez un principe pour voir ce qu\'il signifie.',
+      frameLabel: 'Le cadre thérapeutique',
+      frameNote: 'On construit à l\'intérieur du cadre — jamais par-dessus.',
       principles: [
         { name: 'Le cadre', respect: 'On agit autour de la séance, jamais dedans — rien ne change à la façon dont la thérapie se déroule.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
         { name: 'L\'alliance', respect: 'On renforce le lien patient–praticien, jamais on ne le remplace. Aucun bot ne se substitue au thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
@@ -597,25 +604,25 @@ const translations = {
       headline2: 'Nous les traitons comme telles.',
       intro: 'Trois couches — infrastructure, gouvernance, sécurité IA.',
       todayTag: 'Aujourd\'hui',
-      todayTitle: 'En ligne — sécurisé par défaut.',
+      todayTitle: 'En ligne',
       todayItems: [
-        'AES-256-GCM au repos. TLS 1.3 en transit.',
-        'Row-Level Security sur chaque table.',
-        'Résidence des données en UE sur AWS (région UE).',
+        'AES-256-GCM au repos, TLS 1.3 en transit',
+        'Row-Level Security sur chaque table',
+        'Résidence des données en UE (AWS)',
       ],
       nextTag: 'Ensuite',
-      nextTitle: 'Dès la levée — ce qu\'on fait d\'abord.',
+      nextTitle: 'Cette levée',
       nextItems: [
-        'Certification HDS — la porte des données de santé en France.',
-        'Premier recrutement sécurité en interne, avec un CISO à temps partiel pour démarrer.',
-        'Test d\'intrusion tiers (aligné ANSSI).',
+        'Certification HDS — la porte française',
+        'Premier recrutement sécurité + CISO à temps partiel',
+        'Test d\'intrusion tiers (ANSSI)',
       ],
       laterTag: 'Plus tard',
-      laterTitle: 'Puis, à mesure qu\'on passe aux cliniques.',
+      laterTitle: 'À l\'échelle',
       laterItems: [
-        'Une équipe sécurité interne à temps plein.',
-        'SOC 2 Type I → Type II.',
-        'ISO 27001.',
+        'Équipe sécurité interne à temps plein',
+        'SOC 2 Type I → Type II',
+        'ISO 27001',
       ],
       aiSafetyLabel: 'Sécurité IA',
       aiSafetyBody: 'Bloom AI synthétise les notes thérapeutiques — elle ne diagnostique jamais, ne recommande pas de médication, n\'intervient pas en crise. Les limites sont dans les system prompts. Chaque sortie est traçable jusqu\'à la donnée source.',
@@ -672,8 +679,8 @@ const translations = {
     },
     gtm: {
       label: 'GO-TO-MARKET',
-      headline: 'On n\'a pas construit un GTM.',
-      headline2: 'On l\'a gagné.',
+      headline: 'La confiance d\'abord.',
+      headline2: 'La croissance suit.',
       intro: 'Les thérapeutes font confiance aux thérapeutes, pas aux pubs. On a parlé à 100 avant d\'écrire une ligne de code — et on gagnera les 1 000 suivants de la même façon.',
       columns: [
         {
@@ -1278,52 +1285,47 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
           {t.headline}
         </motion.h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 mb-16">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="lg:col-span-2 space-y-5 text-lg text-neutral-700 font-light leading-relaxed"
-          >
-            <p>{t.para1}</p>
-            <p>{t.para2}</p>
-            <p className="text-neutral-900 font-medium">{t.para3}</p>
-            {t.para4 && <p className="text-neutral-700">{t.para4}</p>}
-          </motion.div>
-
-          <motion.blockquote
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="lg:col-span-3 lg:pl-12 lg:border-l border-neutral-200"
-          >
-            <p className="text-3xl lg:text-4xl font-light italic text-neutral-900 leading-snug">
-              &ldquo;{t.quote}&rdquo;
-            </p>
-          </motion.blockquote>
-        </div>
-
-        {/* Timeline */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-          className="pt-8 border-t border-neutral-200"
+        {/* Takeaway quote */}
+        <motion.blockquote
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="border-l-2 border-teal-600 pl-6 py-1 max-w-3xl mb-14"
         >
-          <div className="flex items-start justify-between max-w-3xl">
-            {(t.timeline as Array<{ period: string; label: string; accent?: boolean }>).map((item, i, arr) => (
-              <div key={i} className="flex items-start flex-1">
-                <div>
-                  <p className={`text-sm font-medium ${item.accent ? 'text-teal-700' : 'text-neutral-900'}`}>{item.period}</p>
-                  <p className={`text-xs mt-1 ${item.accent ? 'text-teal-600' : 'text-neutral-500'}`}>{item.label}</p>
-                </div>
-                {i < arr.length - 1 && (
-                  <div className="flex-1 mx-6 mt-2 border-t border-dashed border-neutral-300" />
+          <p className="text-2xl lg:text-3xl font-light italic text-neutral-900 leading-snug">
+            &ldquo;{t.quote}&rdquo;
+          </p>
+        </motion.blockquote>
+
+        {/* Horizontal timeline — the journey */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+          {(t.timeline as Array<{ period: string; label: string; body: string; accent?: boolean }>).map((item, i, arr) => {
+            const isLast = i === arr.length - 1
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
+                className="relative"
+              >
+                {!isLast && (
+                  <div className="hidden md:block absolute top-[7px] left-5 right-[-1.5rem] h-px bg-neutral-300" />
                 )}
-              </div>
-            ))}
-          </div>
-        </motion.div>
+                <div
+                  className={`w-4 h-4 rounded-full border-2 mb-5 relative z-10 ${
+                    item.accent ? 'bg-teal-600 border-teal-600 ring-4 ring-teal-100' : 'bg-neutral-800 border-neutral-800'
+                  }`}
+                />
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className={`text-lg font-medium ${item.accent ? 'text-teal-700' : 'text-neutral-900'}`}>{item.period}</span>
+                  <span className={`text-[10px] tracking-[0.2em] uppercase font-mono ${item.accent ? 'text-teal-600' : 'text-neutral-400'}`}>{item.label}</span>
+                </div>
+                <p className="text-sm text-neutral-600 font-light leading-relaxed">{item.body}</p>
+              </motion.div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -1441,52 +1443,50 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-base text-neutral-600 font-light max-w-3xl mb-2"
+          className="text-base text-neutral-600 font-light max-w-3xl mb-8"
         >
           {t.intro}
         </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="text-xs text-neutral-400 font-light mb-8"
-        >
-          {(t as any).defHint}
-        </motion.p>
-
-        {/* Six principles — therapy's principle (tap ⓘ for definition) + how we respect it */}
+        {/* The therapeutic frame — the 6 principles live inside it */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.75 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-10"
+          className="relative border border-teal-200 rounded-2xl px-6 md:px-10 pt-9 pb-8 mb-3"
         >
-          {(t.principles as Array<{ name: string; respect: string; definition: string }>).map((p, i) => {
-            const open = openDefs.has(i)
-            return (
-              <div key={i}>
-                <button onClick={() => toggleDef(i)} className="flex items-center gap-1.5 mb-1 group">
-                  <span className="text-sm font-semibold text-teal-700">{p.name}</span>
-                  <Info className={`w-3.5 h-3.5 transition-colors ${open ? 'text-teal-700' : 'text-neutral-300 group-hover:text-teal-600'}`} />
-                </button>
-                <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
-                <AnimatePresence initial={false}>
-                  {open && (
-                    <motion.p
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
-                      className="overflow-hidden text-xs text-neutral-500 font-light leading-relaxed mt-2 pl-3 border-l-2 border-teal-100"
-                    >
-                      {p.definition}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-            )
-          })}
+          <span className="absolute -top-2.5 left-6 px-3 bg-[#FAF8F5] text-[10px] tracking-[0.3em] uppercase font-mono text-teal-700">
+            {(t as any).frameLabel}
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            {(t.principles as Array<{ name: string; respect: string; definition: string }>).map((p, i) => {
+              const open = openDefs.has(i)
+              return (
+                <div key={i}>
+                  <button onClick={() => toggleDef(i)} className="flex items-center gap-1.5 mb-1 group">
+                    <span className="text-sm font-semibold text-teal-700">{p.name}</span>
+                    <Info className={`w-3.5 h-3.5 transition-colors ${open ? 'text-teal-700' : 'text-neutral-300 group-hover:text-teal-600'}`} />
+                  </button>
+                  <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <motion.p
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="overflow-hidden text-xs text-neutral-500 font-light leading-relaxed mt-2 pl-3 border-l-2 border-teal-100"
+                      >
+                        {p.definition}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )
+            })}
+          </div>
         </motion.div>
+
+        <div className="mb-8" />
 
         {/* Closing punch */}
         <motion.p
@@ -1628,39 +1628,40 @@ function SecuritySlide({ t }: { t: typeof translations.en.security }) {
           {t.intro}
         </motion.p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        {/* Progress roadmap — done → now → future */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 mb-12">
           {horizons.map((h, i) => {
-            const tagClass =
+            const dotClass =
               h.accent === 'teal'
-                ? 'text-teal-700 bg-teal-50 border-teal-200'
+                ? 'bg-teal-600 border-teal-600'
                 : h.accent === 'amber'
-                ? 'text-amber-700 bg-amber-50 border-amber-200'
-                : 'text-neutral-600 bg-neutral-50 border-neutral-200'
-            const numClass =
-              h.accent === 'teal'
-                ? 'text-teal-400/60'
-                : h.accent === 'amber'
-                ? 'text-amber-400/60'
-                : 'text-neutral-400/60'
+                ? 'bg-amber-400 border-amber-500 ring-4 ring-amber-100'
+                : 'bg-white border-neutral-300'
+            const lineClass = h.accent === 'teal' ? 'bg-teal-200' : 'bg-amber-200'
+            const tagColor =
+              h.accent === 'teal' ? 'text-teal-700' : h.accent === 'amber' ? 'text-amber-700' : 'text-neutral-500'
+            const isLast = i === horizons.length - 1
             return (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 + i * 0.12 }}
-                className="flex flex-col"
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
+                className="relative"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className={`text-xl font-light ${numClass}`}>{h.num}</span>
-                  <span className={`text-[10px] tracking-[0.2em] uppercase font-medium px-2.5 py-1 rounded-full border ${tagClass}`}>
-                    {h.tag}
-                  </span>
+                {/* connector to next node */}
+                {!isLast && (
+                  <div className={`hidden md:block absolute top-[7px] left-5 right-[-1.5rem] h-px ${lineClass}`} />
+                )}
+                <div className={`w-4 h-4 rounded-full border-2 mb-5 relative z-10 ${dotClass}`} />
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className={`text-[10px] tracking-[0.25em] uppercase font-mono ${tagColor}`}>{h.tag}</span>
+                  <span className="text-sm font-medium text-neutral-900">{h.title}</span>
                 </div>
-                <h4 className="text-lg font-medium text-neutral-900 mb-4 leading-snug">{h.title}</h4>
-                <ul className="space-y-2.5">
+                <ul className="space-y-2">
                   {h.items.map((item, j) => (
                     <li key={j} className="text-sm text-neutral-600 font-light leading-relaxed flex gap-2">
-                      <span className="text-neutral-300 mt-0.5">—</span>
+                      <span className={`mt-px ${tagColor}`}>·</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -1715,7 +1716,7 @@ function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
           {t.label}
         </motion.p>
 
-        <div className="mb-6">
+        <div className="mb-10">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1734,52 +1735,57 @@ function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
           </motion.h3>
         </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-base text-neutral-500 font-light mb-10 max-w-4xl"
-        >
-          {t.intro}
-        </motion.p>
+        {/* Widening spread — trust radiates outward, then spreads on its own */}
+        <div className="mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+            {t.columns.map((col, i) => {
+              const dotCounts = [1, 4, 9, 16]
+              const dots = dotCounts[i]
+              const accent = accents[i]
+              const dotColor = accent === 'teal' ? 'bg-teal-500' : accent === 'amber' ? 'bg-amber-400' : 'bg-neutral-400'
+              const tagColor = accent === 'teal' ? 'text-teal-700' : accent === 'amber' ? 'text-amber-700' : 'text-neutral-500'
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 + i * 0.12 }}
+                  className="flex flex-col"
+                >
+                  {/* growing cluster of people = the spread */}
+                  <div className="h-14 flex items-end mb-4">
+                    <div className="flex flex-wrap content-end gap-1 w-16">
+                      {Array.from({ length: dots }).map((_, k) => (
+                        <span
+                          key={k}
+                          className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
+                          style={{ opacity: 0.45 + (0.55 * (k + 1)) / dots }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] tracking-[0.25em] uppercase font-mono mb-1 ${tagColor}`}>{col.tag}</span>
+                  <h4 className="text-base font-medium text-neutral-900 mb-2.5 leading-snug">{col.title}</h4>
+                  <ul className="space-y-1.5">
+                    {col.items.map((item, j) => (
+                      <li key={j} className="text-xs text-neutral-500 font-light leading-relaxed flex gap-1.5">
+                        <span className="text-neutral-300">·</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )
+            })}
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {t.columns.map((col, i) => {
-            const accent = accents[i]
-            const tagClass =
-              accent === 'teal'
-                ? 'text-teal-700 bg-teal-50 border-teal-200'
-                : accent === 'amber'
-                ? 'text-amber-700 bg-amber-50 border-amber-200'
-                : 'text-neutral-600 bg-neutral-50 border-neutral-200'
-            const numClass =
-              accent === 'teal' ? 'text-teal-400/60' : accent === 'amber' ? 'text-amber-400/60' : 'text-neutral-400/60'
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 + i * 0.1 }}
-                className="flex flex-col"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`text-lg font-light ${numClass}`}>{col.num}</span>
-                  <span className={`text-[10px] tracking-[0.2em] uppercase font-medium px-2.5 py-1 rounded-full border ${tagClass}`}>
-                    {col.tag}
-                  </span>
-                </div>
-                <h4 className="text-base font-medium text-neutral-900 mb-3 leading-snug">{col.title}</h4>
-                <ul className="space-y-2">
-                  {col.items.map((item, j) => (
-                    <li key={j} className="text-sm text-neutral-600 font-light leading-relaxed flex gap-2">
-                      <span className="text-neutral-300 mt-0.5">—</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )
-          })}
+          {/* baseline — it spreads on its own */}
+          <div className="mt-6">
+            <div className="h-0.5 rounded-full bg-gradient-to-r from-neutral-200 via-teal-300 to-teal-500" />
+            <p className="text-[11px] text-neutral-400 font-light mt-2 tracking-wide">
+              One by one <span className="text-neutral-300">———</span> then it <span className="text-teal-700">spreads on its own</span>
+            </p>
+          </div>
         </div>
 
         {/* What we don't do */}
@@ -2064,26 +2070,40 @@ function RealSlide({ t }: { t: typeof translations.en.real }) {
           {t.headline}
         </motion.h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
           {[
-            { label: t.builtLabel, items: t.builtItems, color: 'text-teal-700' },
-            { label: t.learnedLabel, items: t.learnedItems, color: 'text-neutral-700' },
-            { label: t.honestLabel, items: t.honestItems, color: 'text-neutral-500' },
-          ].map((col, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 + i * 0.15 }}
-            >
-              <p className={`text-xs tracking-[0.25em] uppercase mb-5 font-mono ${col.color}`}>{col.label}</p>
-              <ul className="space-y-2.5">
-                {col.items.map((item, j) => (
-                  <li key={j} className="text-base text-neutral-700 font-light leading-snug">{item}</li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+            { label: t.builtLabel, items: t.builtItems, Icon: Hammer, accent: 'teal' as const, check: true },
+            { label: t.learnedLabel, items: t.learnedItems, Icon: Lightbulb, accent: 'teal' as const, check: true },
+            { label: t.honestLabel, items: t.honestItems, Icon: Heart, accent: 'neutral' as const, check: false },
+          ].map((col, i) => {
+            const isTeal = col.accent === 'teal'
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 + i * 0.15 }}
+                className={`rounded-2xl border p-6 ${isTeal ? 'bg-white border-neutral-200' : 'bg-neutral-50 border-neutral-200'}`}
+              >
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTeal ? 'bg-teal-50' : 'bg-neutral-100'}`}>
+                    <col.Icon className={`w-4 h-4 ${isTeal ? 'text-teal-700' : 'text-neutral-500'}`} strokeWidth={2} />
+                  </div>
+                  <p className={`text-xs tracking-[0.25em] uppercase font-mono ${isTeal ? 'text-teal-700' : 'text-neutral-500'}`}>{col.label}</p>
+                </div>
+                <ul className="space-y-3">
+                  {col.items.map((item, j) => (
+                    <li key={j} className="text-sm text-neutral-700 font-light leading-snug flex gap-2.5">
+                      {col.check
+                        ? <Check className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" strokeWidth={2.5} />
+                        : <span className="text-neutral-300 shrink-0 mt-0.5 leading-none">•</span>}
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )
+          })}
         </div>
 
         <motion.blockquote
