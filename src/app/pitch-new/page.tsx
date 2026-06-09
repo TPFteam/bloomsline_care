@@ -13,6 +13,7 @@ import {
   Heart,
   MessageSquare,
   Zap,
+  Info,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ const translations = {
       whyNow: 'Why Now',
       security: 'Security',
       real: "What's Real",
+      gtm: 'Go-to-Market',
       market: 'Market',
       model: 'Model',
       team: 'Team',
@@ -48,9 +50,9 @@ const translations = {
       title1: 'Therapy happens in sessions.',
       title2: 'Change happens between sessions.',
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
-      subtitle: 'The platform for care between sessions.',
+      subtitle: 'The continuity layer for clinical practice.',
       stage: '',
-      cta: 'Here\'s the story',
+      cta: 'See what\'s missing',
     },
     silence: {
       label: 'THE PROBLEM',
@@ -60,12 +62,12 @@ const translations = {
       patientItems: [
         'Forget what they discussed',
         'Fall back into old patterns',
-        'Come back starting over',
+        'Feel like they\'re starting over',
       ],
       practitionerLabel: 'For practitioners',
       practitionerItems: [
         'Know only what patients remember to share',
-        'Start every session from scratch',
+        'Start each session a step behind',
         'Half the session is catch-up',
       ],
       quote: '"My client shared something painful on Tuesday. By our next session, I\'d lost the thread. I spent 15 minutes catching up instead of doing the work."',
@@ -116,11 +118,11 @@ const translations = {
     origin: {
       label: 'HOW WE GOT HERE',
       headline: 'We didn\'t start here.',
-      para1: 'Doctalink, 2024. Find a therapist by values, not degrees. Practitioners loved it. It wasn\'t a business.',
-      para2: '100+ conversations. Same insight kept coming up.',
-      para3: 'The silence after was.',
-      para4: '',
-      quote: 'We didn\'t find a problem and build a product. We earned the insight through a product that failed.',
+      para1: 'In 2024 we built Doctalink — find a therapist by values, not just degrees. Practitioners loved it. But it never became a business.',
+      para2: 'So we asked why. 100+ conversations with therapists and patients — and the same thing kept surfacing: it was never about finding a therapist.',
+      para3: 'It was everything that happens between sessions — the silence where progress quietly slips away.',
+      para4: 'That became Bloomsline.',
+      quote: 'We didn\'t guess this problem. We failed our way into it.',
       timeline: [
         { period: '2024', label: 'Doctalink' },
         { period: '2025', label: 'Discovery' },
@@ -163,16 +165,17 @@ const translations = {
       label: 'THE BOUNDARY',
       hero1: 'There\'s a boundary in therapy.',
       hero2: 'We respect it.',
-      explanation: '',
-      howLabel: 'Our principles:',
-      items: [
-        'Patients reflect on their own. Nothing required.',
-        'Practitioners decide what to see, and when.',
-        'No streaks, no scoring. No pressure to perform.',
-        'We add context, not interaction.',
+      intro: 'Therapy runs on a few hard principles. We built inside every one — never over them.',
+      defHint: 'Tap any principle to see what it means.',
+      principles: [
+        { name: 'The frame', respect: 'We work around the session, never inside it — nothing changes about how therapy happens.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
+        { name: 'The alliance', respect: 'We strengthen the patient–practitioner bond, never replace it. No bot stands in for the therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
+        { name: 'Autonomy', respect: 'Reflecting is always the patient\'s choice — never homework, never required. They set the pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
+        { name: 'Do no harm', respect: 'No streaks, scores, or nudges. Nothing built to hook. Therapy isn\'t a game.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
+        { name: 'Scope of practice', respect: 'We give context — never advice, a diagnosis, or crisis handling. The clinician decides.', definition: 'Clinicians act only within their trained competence. Diagnosing, treating, and handling crises is the clinician\'s role — a tool must stay in its lane.' },
+        { name: 'Confidentiality', respect: 'Encrypted, EU-hosted, and the practitioner controls what they see. What\'s shared stays protected.', definition: 'What a patient shares is protected. Foundational to trust in therapy — and, for digital tools, a legal duty (GDPR / health-data rules).' },
       ],
-      closing1: 'Nothing new to maintain.',
-      closing2: 'Just making what already happens visible.',
+      closing: 'These aren\'t our rules. They\'re therapy\'s — applied to software.',
     },
     whyNow: {
       label: 'WHY NOW',
@@ -202,28 +205,25 @@ const translations = {
       headline2: 'We treat it that way.',
       intro: 'Three layers — infrastructure, governance, AI safety.',
       todayTag: 'Today',
-      todayTitle: 'Secure by default.',
+      todayTitle: 'Live now — secure by default.',
       todayItems: [
         'AES-256-GCM at rest. TLS 1.3 in transit.',
-        'Postgres Row-Level Security on every table.',
-        'EU residency end-to-end.',
-        'GDPR rights: export, deletion, portability.',
+        'Row-Level Security on every table.',
+        'EU data residency on AWS (EU region).',
       ],
       nextTag: 'Next',
-      nextTitle: 'Credentialed in this round.',
+      nextTitle: 'As soon as we raise — what we do first.',
       nextItems: [
+        'HDS certification — the French health-data gate.',
+        'First in-house security hire, plus a fractional CISO to start.',
         'Third-party penetration test (ANSSI-aligned).',
-        'DPIA on Bloom AI features.',
-        'Security advisor on the cap table.',
-        '72-hour incident response playbook.',
       ],
       laterTag: 'Later',
-      laterTitle: 'Enterprise-ready after launch.',
+      laterTitle: 'Then, as we scale to clinics.',
       laterItems: [
+        'A full-time, in-house security team.',
         'SOC 2 Type I → Type II.',
-        'HDS certification.',
         'ISO 27001.',
-        'Full-time security engineer.',
       ],
       aiSafetyLabel: 'AI safety',
       aiSafetyBody: 'Bloom AI summarizes therapy notes — it never diagnoses, recommends medication, or intervenes in crisis. Bounds are written into the system prompts. Every output traces back to source data.',
@@ -278,28 +278,80 @@ const translations = {
       ],
       quote: 'This isn\'t a concept. It\'s a working platform you can use today.',
     },
+    gtm: {
+      label: 'GO-TO-MARKET',
+      headline: 'We didn\'t build a GTM.',
+      headline2: 'We earned it.',
+      intro: 'Therapists trust other therapists, not ads. We talked to 100 before writing any code — and we\'ll win the next 1,000 the same way.',
+      columns: [
+        {
+          tag: 'Past',
+          title: 'We started with trust.',
+          num: '01',
+          items: [
+            'Talked to 100+ therapists',
+            'Found the real problem: the gap between sessions',
+            'Built our network before the product',
+          ],
+        },
+        {
+          tag: 'Now',
+          title: 'We win them one by one.',
+          num: '02',
+          items: [
+            'We reach out to each practitioner personally',
+            'Hands-on onboarding — we hand-hold every one',
+            'Weekly calls; we improve on their feedback',
+            'Goal: our first 10 active users',
+          ],
+        },
+        {
+          tag: 'Next',
+          title: 'Growth that builds itself.',
+          num: '03',
+          items: [
+            'Therapists invite other therapists',
+            'Partner with psychology schools',
+            'Share real stories, write for their journals',
+            'Goal: 50 next quarter, 150 by early 2027',
+          ],
+        },
+        {
+          tag: 'Later',
+          title: 'Go bigger.',
+          num: '04',
+          items: [
+            'Sell to clinics and group practices',
+            'Expand across Europe',
+            '1,500+ therapists · €1M+ revenue',
+          ],
+        },
+      ],
+      dontLabel: 'What we don\'t do',
+      dontItems: ['Paid ads', 'Cold outbound', 'B2C patient acquisition', 'Vanity metrics'],
+      closing: 'We win trust slowly, then it spreads on its own.',
+    },
     market: {
       label: 'THE MARKET',
       headline: 'Start in France.',
       headline2: 'The path is bigger.',
-      franceTitle: 'France today',
+      franceTitle: 'In France today',
       funnel: [
-        { value: '69M', label: 'people in France', source: 'INSEE 2026', url: 'https://www.insee.fr/en/statistiques/2381472' },
-        { value: '8.6M', label: 'adults with a depressive episode each year (15.6%)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
-        { value: '77K', label: 'psychologists practicing in France', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
-        { value: '28K', label: 'in private / liberal practice — our TAM', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
-        { value: '~15K', label: 'active on digital practice tools (Doctolib, etc.) — our SAM', source: 'estimate', url: '' },
-        { value: '1,000', label: 'practitioners by Year 5 = ~€350K ARR', source: 'our SOM (~7% of SAM)', url: '' },
+        { value: '69M', label: 'people live in France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
+        { value: '~8M', label: 'adults have depression each year (about 1 in 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'licensed psychologists — all officially registered', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'work for themselves — these are who we sell to', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1,000', label: 'our goal by Year 5 — about €350K a year', source: 'our target · 3.5% of them', url: '' },
       ],
       europeLabel: 'Europe',
-      europeValue: '~17× France',
-      europeBody: 'EU27 — ~450M people. Compliance built in France passports across the bloc.',
+      europeValue: '17× bigger',
+      europeBody: '450M people. The rules we already follow in France work across Europe too.',
       worldLabel: 'World',
       worldValue: '1B+',
-      worldBody: 'people living with mental health conditions. Long horizon, not a claim this year.',
+      worldBody: 'people live with mental health problems. Someday — not today.',
       worldSource: 'WHO 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      closing: 'We don\'t need the world. We need 1,000 French practitioners.',
+      closing: 'We don\'t need the world. We need 1,000 French psychologists.',
     },
     team: {
       label: 'THE TEAM',
@@ -322,34 +374,38 @@ const translations = {
       whatWeDoLabel: 'What we do',
       whyItMattersLabel: 'Why it matters',
       todayTag: 'Today',
-      todayTitle: 'We sell a platform to practitioners.',
-      todayBody: 'Practitioners prepare better. Patients reflect between sessions. We prove retention.',
-      todayWhatWeDo: 'Practitioners pay €29/month for a tool that makes every session better. Patients stay engaged between sessions. Both sides see the value.',
-      todayWhyItMatters: '100+ paying practitioners. Patients come back. That proves the model works.',
+      todayTitle: 'Software therapists pay for.',
+      todaySub: 'A real business today — recurring revenue, inside the practice.',
+      todayBody: 'This is real today. Therapists walk into every session prepared instead of playing catch-up — and patients feel held between sessions, not alone.',
+      todayWhatWeDo: 'For €29/month, a therapist gets a tool that makes every session sharper, and their patients stay connected to the work between sessions. Both sides feel it.',
+      todayWhyItMatters: 'Practitioners pay and keep paying. Patients come back. When both sides choose to stay, you know it works — in practice, not in theory.',
       nextTag: 'Next',
-      nextTitle: 'The platform starts to see patterns.',
-      nextBody: '"Sarah\'s anxiety dropped 40% over 3 months." Real outcome signals for practitioners. Visible progress for patients.',
-      nextWhatWeDo: 'Practitioners get outcome reports. Patients see their own progress over time. Reports that prove therapy is working. Premium tier with deeper insights.',
-      nextWhyItMatters: 'The product becomes more valuable. Practitioners upgrade. Group practices and clinics sign on.',
+      nextTitle: 'We make therapy measurable.',
+      nextSub: 'The data no one else has — proof of what actually works between sessions.',
+      nextBody: 'For the first time, progress becomes visible. Every session — and every moment between — adds up to a real picture: "anxiety down 40% in three months." The patient sees they\'re getting better; the therapist sees their work land. No one has ever had this.',
+      nextWhatWeDo: 'Therapists get real outcome reports; patients watch their own progress over time. And we hold the one thing no one else does — a continuous record of what happens between sessions.',
+      nextWhyItMatters: 'Proof changes everything. It\'s why a practitioner upgrades, why a clinic signs on — why this stops being a nice tool and becomes essential.',
       laterTag: 'Eventually',
-      laterTitle: 'Intelligence layer.',
-      laterBody: 'From data platform to consumer products. Mental health becomes personalized and proactive.',
-      laterWhatWeDo: 'Pattern recognition that catches things early. Practitioners intervene before a crisis, not after. The product moves from visibility to intelligence.',
-      laterWhyItMatters: 'Clinics and health systems need this. The product scales from solo practitioners to institutions. Revenue grows because the product gets smarter.',
+      laterTitle: 'The infrastructure for mental health.',
+      laterSub: 'The trusted layer the whole field is built on — practitioners, clinics, researchers and health systems.',
+      laterBody: 'Mental health has never had a shared way to measure what works. We become it — from one therapist\'s room to clinics, researchers, and health systems across Europe, all building on the same foundation.',
+      laterWhatWeDo: 'From measuring outcomes to seeing them coming — patterns that flag the hard days before they arrive, so a practitioner can reach out first. We become how care is measured.',
+      laterWhyItMatters: 'When a whole field measures the same way, it builds on the same layer — ours. That\'s not a bigger product. That\'s infrastructure.',
       footnote: 'Vision earns the right to exist through execution. Right now, we\'re heads-down on Today.',
     },
     ask: {
       label: 'THE ASK',
-      headline: 'Raising €500K pre-seed.',
-      subhead: '18 months of runway.',
+      headline: 'Raising €1.1M pre-seed.',
+      subhead: '18 months to turn EU compliance into a moat.',
       fundsLabel: 'Use of funds',
+      fundsHint: 'Tap a line for why',
       fundsItems: [
-        { label: 'Team', value: '40%' },
-        { label: 'Product', value: '25%' },
-        { label: 'Growth', value: '20%' },
-        { label: 'Reserve', value: '15%' },
+        { label: 'Team', value: '36%', why: 'Grow from the two of us to the team we need to ship faster and sign our first paying therapists.' },
+        { label: 'Security, Compliance & Legal', value: '33%', why: 'Nearly as much, because handling health data in the EU is the hard, expensive part, and it is what lets us sell at all.' },
+        { label: 'Product & Growth', value: '21%', why: 'Keep improving the app and get it in front of more therapists.' },
+        { label: 'Reserve', value: '10%', why: 'Cover unexpected costs and delays.' },
       ],
-      closing: 'Enough to find product-market fit without compromising the story we\'re building.',
+      closing: 'Enough to reach product-market fit, build the compliance moat, and keep patient data safe.',
     },
     close: {
       line1: 'Therapy happens in sessions.',
@@ -373,6 +429,7 @@ const translations = {
       whyNow: 'Pourquoi Maintenant',
       security: 'Sécurité',
       real: 'Ce Qui Est Réel',
+      gtm: 'Go-to-Market',
       market: 'Marché',
       model: 'Modèle',
       team: 'Équipe',
@@ -385,9 +442,9 @@ const translations = {
       title1: 'La thérapie a lieu en séance.',
       title2: 'Le changement se passe entre les séances.',
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
-      subtitle: 'La plateforme pour le soin entre les séances.',
-      stage: 'Pre-seed · Pré-revenu · 2026',
-      cta: 'Voici l\'histoire',
+      subtitle: 'La couche de continuité pour la pratique clinique.',
+      stage: '',
+      cta: 'Voyez ce qui manque',
     },
     silence: {
       label: 'LE PROBLÈME',
@@ -397,12 +454,12 @@ const translations = {
       patientItems: [
         'Oublient ce qu\'ils ont abordé',
         'Retombent dans les anciens schémas',
-        'Reviennent en recommençant',
+        'Ont l\'impression de tout recommencer',
       ],
       practitionerLabel: 'Pour les praticiens',
       practitionerItems: [
         'Ne savent que ce que le patient se souvient de partager',
-        'Chaque séance repart de zéro',
+        'Reprennent chaque séance avec un temps de retard',
         'La moitié de la séance, du rattrapage',
       ],
       quote: '"Mon patient m\'a partagé quelque chose de douloureux mardi. À notre prochaine séance, j\'avais perdu le fil. J\'ai passé 15 minutes à rattraper au lieu de faire le travail."',
@@ -453,11 +510,11 @@ const translations = {
     origin: {
       label: 'COMMENT NOUS SOMMES ARRIVÉS ICI',
       headline: 'Nous avons d\'abord construit la mauvaise chose.',
-      para1: 'Doctalink, 2024. Trouver un thérapeute par valeurs, pas par diplômes. Les praticiens adoraient. Ce n\'était pas un business.',
-      para2: '100+ conversations. Le même insight revenait.',
-      para3: 'Le silence après, l\'était.',
-      para4: '',
-      quote: 'Nous n\'avons pas trouvé un problème puis construit un produit. Nous avons gagné l\'insight à travers un produit qui a échoué.',
+      para1: 'En 2024, nous avons créé Doctalink — trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les praticiens ont adoré. Mais ça n\'a jamais été un business.',
+      para2: 'Alors on a cherché pourquoi. 100+ conversations avec des thérapeutes et des patients — et la même chose revenait : ce n\'était jamais une question de trouver un thérapeute.',
+      para3: 'C\'était tout ce qui se passe entre les séances — ce silence où les progrès s\'effacent peu à peu.',
+      para4: 'C\'est devenu Bloomsline.',
+      quote: 'On n\'a pas deviné ce problème. On l\'a appris en échouant.',
       timeline: [
         { period: '2024', label: 'Doctalink' },
         { period: '2025', label: 'Découverte' },
@@ -500,16 +557,17 @@ const translations = {
       label: 'LA LIMITE',
       hero1: 'Il y a une limite en thérapie.',
       hero2: 'Nous la respectons.',
-      explanation: '',
-      howLabel: 'Nos principes :',
-      items: [
-        'Les patients réfléchissent seuls. Rien d\'obligatoire.',
-        'Les praticiens décident quoi voir, et quand.',
-        'Pas de streaks, pas de scores. Aucune pression.',
-        'Nous ajoutons du contexte, pas de l\'interaction.',
+      intro: 'La thérapie repose sur quelques principes essentiels. Nous avons construit à l\'intérieur de chacun — jamais par-dessus.',
+      defHint: 'Touchez un principe pour voir ce qu\'il signifie.',
+      principles: [
+        { name: 'Le cadre', respect: 'On agit autour de la séance, jamais dedans — rien ne change à la façon dont la thérapie se déroule.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
+        { name: 'L\'alliance', respect: 'On renforce le lien patient–praticien, jamais on ne le remplace. Aucun bot ne se substitue au thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
+        { name: 'L\'autonomie', respect: 'Réfléchir est toujours le choix du patient — jamais un devoir, jamais imposé. Il avance à son rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
+        { name: 'Ne pas nuire', respect: 'Ni séries, ni scores, ni notifications. Rien conçu pour accrocher. La thérapie n\'est pas un jeu.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
+        { name: 'Champ de compétence', respect: 'On apporte du contexte — jamais de conseil, de diagnostic ou de gestion de crise. Le clinicien décide.', definition: 'Le clinicien n\'agit que dans son domaine de compétence. Diagnostiquer, traiter et gérer les crises relève du clinicien — l\'outil reste à sa place.' },
+        { name: 'Confidentialité', respect: 'Chiffré, hébergé en UE, et le praticien contrôle ce qu\'il voit. Ce qui est partagé reste protégé.', definition: 'Ce que le patient partage est protégé. Fondamental pour la confiance en thérapie — et, pour un outil numérique, une obligation légale (RGPD / données de santé).' },
       ],
-      closing1: 'Rien de nouveau à maintenir.',
-      closing2: 'Juste rendre visible ce qui se passe déjà.',
+      closing: 'Ce ne sont pas nos règles. Ce sont celles de la thérapie — appliquées au logiciel.',
     },
     whyNow: {
       label: 'POURQUOI MAINTENANT',
@@ -539,28 +597,25 @@ const translations = {
       headline2: 'Nous les traitons comme telles.',
       intro: 'Trois couches — infrastructure, gouvernance, sécurité IA.',
       todayTag: 'Aujourd\'hui',
-      todayTitle: 'Sécurisé par défaut.',
+      todayTitle: 'En ligne — sécurisé par défaut.',
       todayItems: [
         'AES-256-GCM au repos. TLS 1.3 en transit.',
-        'Row-Level Security Postgres sur chaque table.',
-        'Résidence UE de bout en bout.',
-        'Droits RGPD : export, suppression, portabilité.',
+        'Row-Level Security sur chaque table.',
+        'Résidence des données en UE sur AWS (région UE).',
       ],
       nextTag: 'Ensuite',
-      nextTitle: 'Validé cette levée.',
+      nextTitle: 'Dès la levée — ce qu\'on fait d\'abord.',
       nextItems: [
+        'Certification HDS — la porte des données de santé en France.',
+        'Premier recrutement sécurité en interne, avec un CISO à temps partiel pour démarrer.',
         'Test d\'intrusion tiers (aligné ANSSI).',
-        'AIPD sur les fonctionnalités Bloom AI.',
-        'Conseiller sécurité au cap table.',
-        'Plan de réponse aux incidents 72h.',
       ],
       laterTag: 'Plus tard',
-      laterTitle: 'Prêt entreprise après le lancement.',
+      laterTitle: 'Puis, à mesure qu\'on passe aux cliniques.',
       laterItems: [
+        'Une équipe sécurité interne à temps plein.',
         'SOC 2 Type I → Type II.',
-        'Certification HDS.',
         'ISO 27001.',
-        'Ingénieur sécurité à temps plein.',
       ],
       aiSafetyLabel: 'Sécurité IA',
       aiSafetyBody: 'Bloom AI synthétise les notes thérapeutiques — elle ne diagnostique jamais, ne recommande pas de médication, n\'intervient pas en crise. Les limites sont dans les system prompts. Chaque sortie est traçable jusqu\'à la donnée source.',
@@ -615,28 +670,80 @@ const translations = {
       ],
       quote: 'Ce n\'est pas un concept. C\'est une plateforme fonctionnelle que vous pouvez utiliser aujourd\'hui.',
     },
+    gtm: {
+      label: 'GO-TO-MARKET',
+      headline: 'On n\'a pas construit un GTM.',
+      headline2: 'On l\'a gagné.',
+      intro: 'Les thérapeutes font confiance aux thérapeutes, pas aux pubs. On a parlé à 100 avant d\'écrire une ligne de code — et on gagnera les 1 000 suivants de la même façon.',
+      columns: [
+        {
+          tag: 'Passé',
+          title: 'On a commencé par la confiance.',
+          num: '01',
+          items: [
+            'Parlé à 100+ thérapeutes',
+            'Trouvé le vrai problème : le vide entre les séances',
+            'Construit notre réseau avant le produit',
+          ],
+        },
+        {
+          tag: 'Aujourd\'hui',
+          title: 'On les convainc un par un.',
+          num: '02',
+          items: [
+            'On contacte chaque praticien personnellement',
+            'Onboarding sur-mesure — on accompagne chacun de près',
+            'Appels hebdomadaires ; on s\'améliore avec leurs retours',
+            'Objectif : nos 10 premiers utilisateurs actifs',
+          ],
+        },
+        {
+          tag: 'Ensuite',
+          title: 'Une croissance qui se nourrit elle-même.',
+          num: '03',
+          items: [
+            'Les thérapeutes invitent d\'autres thérapeutes',
+            'Partenariats avec les écoles de psychologie',
+            'Partager de vraies histoires, écrire dans leurs revues',
+            'Objectif : 50 ce trimestre, 150 début 2027',
+          ],
+        },
+        {
+          tag: 'Plus tard',
+          title: 'Voir plus grand.',
+          num: '04',
+          items: [
+            'Vendre aux cliniques et cabinets de groupe',
+            'S\'étendre en Europe',
+            '1 500+ thérapeutes · 1M€+ de revenus',
+          ],
+        },
+      ],
+      dontLabel: 'Ce qu\'on ne fait pas',
+      dontItems: ['Publicité payante', 'Démarchage à froid', 'Acquisition patients B2C', 'Métriques de vanité'],
+      closing: 'On gagne la confiance lentement, puis elle se propage seule.',
+    },
     market: {
       label: 'LE MARCHÉ',
       headline: 'On démarre en France.',
       headline2: 'Le chemin est plus grand.',
-      franceTitle: 'La France aujourd\'hui',
+      franceTitle: 'En France aujourd\'hui',
       funnel: [
-        { value: '69M', label: 'personnes en France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/2381472' },
-        { value: '8,6M', label: 'adultes avec un épisode dépressif chaque année (15,6%)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
-        { value: '77K', label: 'psychologues en exercice en France', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
-        { value: '28K', label: 'en libéral / exercice mixte — notre TAM', source: 'DREES 2024', url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/la-demographie-des-professionnels-de-sante-de-2012-a-2024/' },
-        { value: '~15K', label: 'actifs sur les outils numériques (Doctolib, etc.) — notre SAM', source: 'estimation', url: '' },
-        { value: '1 000', label: 'praticiens en année 5 = ~350K€ ARR', source: 'notre SOM (~7% du SAM)', url: '' },
+        { value: '69M', label: 'personnes vivent en France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
+        { value: '~8M', label: 'adultes ont une dépression chaque année (environ 1 sur 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'psychologues — chacun doit s\'enregistrer par la loi', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'travaillent à leur compte — c\'est à eux qu\'on vend', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1 000', label: 'notre objectif en année 5 — environ 350K€ par an', source: 'notre cible · 3,5% d\'entre eux', url: '' },
       ],
       europeLabel: 'Europe',
-      europeValue: '~17× la France',
-      europeBody: 'UE27 — ~450M de personnes. La conformité construite en France se déploie dans toute l\'UE.',
+      europeValue: '17× plus grand',
+      europeBody: '450M de personnes. Les règles qu\'on suit déjà en France marchent aussi en Europe.',
       worldLabel: 'Monde',
       worldValue: '1Md+',
-      worldBody: 'de personnes vivant avec un trouble mental. Horizon long, pas une promesse pour cette année.',
+      worldBody: 'de personnes vivent avec un trouble mental. Un jour — pas aujourd\'hui.',
       worldSource: 'OMS 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      closing: 'On n\'a pas besoin du monde. On a besoin de 1 000 praticiens français.',
+      closing: 'On n\'a pas besoin du monde. On a besoin de 1 000 psychologues français.',
     },
     team: {
       label: 'L\'ÉQUIPE',
@@ -659,34 +766,38 @@ const translations = {
       whatWeDoLabel: 'Ce qu\'on fait',
       whyItMattersLabel: 'Pourquoi c\'est important',
       todayTag: 'Aujourd\'hui',
-      todayTitle: 'On vend une plateforme aux praticiens.',
-      todayBody: 'Les praticiens se préparent mieux. Les patients réfléchissent entre les séances. On prouve la rétention.',
-      todayWhatWeDo: 'Les praticiens paient €29/mois pour un outil qui améliore chaque séance. Les patients restent engagés entre les séances. Les deux côtés voient la valeur.',
-      todayWhyItMatters: '100+ praticiens payants. Les patients reviennent. Ça prouve que le modèle fonctionne.',
+      todayTitle: 'Un logiciel que les thérapeutes paient.',
+      todaySub: 'Déjà un vrai business — des revenus récurrents, au cœur du cabinet.',
+      todayBody: 'C\'est déjà réel. Les thérapeutes arrivent préparés à chaque séance au lieu de rattraper le retard — et les patients se sentent accompagnés entre les séances, plus seuls.',
+      todayWhatWeDo: 'Pour 29 €/mois, le thérapeute a un outil qui rend chaque séance plus juste, et ses patients restent reliés au travail entre les séances. Les deux côtés le ressentent.',
+      todayWhyItMatters: 'Les praticiens paient et continuent de payer. Les patients reviennent. Quand les deux côtés choisissent de rester, on sait que ça marche — en pratique, pas en théorie.',
       nextTag: 'Ensuite',
-      nextTitle: 'La plateforme commence à voir des patterns.',
-      nextBody: '"L\'anxiété de Sarah a baissé de 40% en 3 mois." De vrais signaux pour les praticiens. Des progrès visibles pour les patients.',
-      nextWhatWeDo: 'Les praticiens reçoivent des rapports. Les patients voient leur progression. Des preuves que la thérapie fonctionne. Tier premium avec des insights plus profonds.',
-      nextWhyItMatters: 'Le produit prend plus de valeur. Les praticiens upgradent. Les cabinets de groupe et cliniques s\'inscrivent.',
-      laterTag: 'Un jour',
-      laterTitle: 'Couche d\'intelligence.',
-      laterBody: 'De la plateforme de données aux produits grand public. La santé mentale devient personnalisée et proactive.',
-      laterWhatWeDo: 'Reconnaissance de patterns qui détecte les signaux tôt. Les praticiens interviennent avant une crise, pas après. Le produit passe de la visibilité à l\'intelligence.',
-      laterWhyItMatters: 'Les cliniques et systèmes de santé en ont besoin. Le produit passe des praticiens solo aux institutions. Le revenu croît parce que le produit devient plus intelligent.',
+      nextTitle: 'On rend la thérapie mesurable.',
+      nextSub: 'La donnée que personne d\'autre n\'a — la preuve de ce qui marche vraiment entre les séances.',
+      nextBody: 'Pour la première fois, les progrès deviennent visibles. Chaque séance — et chaque moment entre — compose une vraie image : « anxiété en baisse de 40 % en trois mois ». Le patient voit qu\'il va mieux ; le thérapeute voit son travail porter. Personne n\'a jamais eu ça.',
+      nextWhatWeDo: 'Les thérapeutes reçoivent de vrais rapports de résultats ; les patients suivent leur propre progression. Et nous détenons la seule chose que personne d\'autre n\'a — un registre continu de ce qui se passe entre les séances.',
+      nextWhyItMatters: 'La preuve change tout. C\'est ce qui pousse un praticien à passer en premium, une clinique à nous rejoindre — ce qui fait passer d\'un outil sympa à un outil essentiel.',
+      laterTag: 'À terme',
+      laterTitle: 'L\'infrastructure de la santé mentale.',
+      laterSub: 'La couche de confiance sur laquelle tout le secteur se construit — praticiens, cliniques, chercheurs et systèmes de santé.',
+      laterBody: 'La santé mentale n\'a jamais eu de façon commune de mesurer ce qui marche. Nous le devenons — du cabinet d\'un thérapeute aux cliniques, chercheurs et systèmes de santé partout en Europe, tous construisant sur la même fondation.',
+      laterWhatWeDo: 'De mesurer les résultats à les anticiper — des signaux qui repèrent les jours difficiles avant qu\'ils n\'arrivent, pour qu\'un praticien prenne les devants. Nous devenons la façon dont le soin se mesure.',
+      laterWhyItMatters: 'Quand tout un secteur mesure de la même façon, il se construit sur la même couche — la nôtre. Ce n\'est pas un produit plus gros. C\'est une infrastructure.',
       footnote: 'La vision gagne le droit d\'exister par l\'exécution. Là, on est concentrés sur Aujourd\'hui.',
     },
     ask: {
       label: 'LA DEMANDE',
-      headline: 'Levée de €500K en pre-seed.',
-      subhead: '18 mois de runway.',
+      headline: 'Levée de 1,1 M€ en pre-seed.',
+      subhead: '18 mois pour faire de la conformité européenne un avantage durable.',
       fundsLabel: 'Utilisation des fonds',
+      fundsHint: 'Touchez une ligne pour le détail',
       fundsItems: [
-        { label: 'Équipe', value: '40%' },
-        { label: 'Produit', value: '25%' },
-        { label: 'Croissance', value: '20%' },
-        { label: 'Réserve', value: '15%' },
+        { label: 'Équipe', value: '36%', why: 'Passer de nous deux à l\'équipe qu\'il faut pour avancer plus vite et signer nos premiers thérapeutes payants.' },
+        { label: 'Sécurité, Conformité & Juridique', value: '33%', why: 'Presque autant, car gérer les données de santé en Europe est la partie difficile et coûteuse, et c\'est ce qui nous permet de vendre.' },
+        { label: 'Produit & Croissance', value: '21%', why: 'Continuer à améliorer l\'app et la faire connaître à plus de thérapeutes.' },
+        { label: 'Réserve', value: '10%', why: 'Couvrir les coûts et retards imprévus.' },
       ],
-      closing: 'Assez pour trouver le product-market fit sans compromettre l\'histoire que nous construisons.',
+      closing: 'Assez pour atteindre le product-market fit, bâtir le rempart réglementaire, et protéger les données des patients.',
     },
     close: {
       line1: 'La thérapie a lieu en séance.',
@@ -719,6 +830,7 @@ export default function PitchNewPage() {
     { id: 'whyNow', title: t.slides.whyNow },
     { id: 'security', title: t.slides.security },
     { id: 'real', title: t.slides.real },
+    { id: 'gtm', title: t.slides.gtm },
     { id: 'market', title: t.slides.market },
     { id: 'model', title: t.slides.model },
     { id: 'team', title: t.slides.team },
@@ -860,12 +972,13 @@ export default function PitchNewPage() {
           {currentSlide === 6 && <WhyNowSlide t={t.whyNow} />}
           {currentSlide === 7 && <SecuritySlide t={t.security} />}
           {currentSlide === 8 && <RealSlide t={t.real} />}
-          {currentSlide === 9 && <MarketSlide t={t.market} />}
-          {currentSlide === 10 && <ModelSlide t={t.model} />}
-          {currentSlide === 11 && <TeamSlide t={t.team} />}
-          {currentSlide === 12 && <VisionSlide t={t.vision} />}
-          {currentSlide === 13 && <AskSlide t={t.ask} />}
-          {currentSlide === 14 && <CloseSlide t={t.close} />}
+          {currentSlide === 9 && <GTMSlide t={t.gtm} />}
+          {currentSlide === 10 && <MarketSlide t={t.market} />}
+          {currentSlide === 11 && <ModelSlide t={t.model} />}
+          {currentSlide === 12 && <TeamSlide t={t.team} />}
+          {currentSlide === 13 && <VisionSlide t={t.vision} />}
+          {currentSlide === 14 && <AskSlide t={t.ask} />}
+          {currentSlide === 15 && <CloseSlide t={t.close} />}
         </motion.div>
       </AnimatePresence>
 
@@ -1285,6 +1398,13 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
 // =============================================================================
 
 function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
+  const [openDefs, setOpenDefs] = useState<Set<number>>(new Set())
+  const toggleDef = (i: number) => setOpenDefs(prev => {
+    const next = new Set(prev)
+    if (next.has(i)) next.delete(i)
+    else next.add(i)
+    return next
+  })
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
       <div className="max-w-5xl w-full py-16">
@@ -1316,38 +1436,67 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           {t.hero2}
         </motion.h2>
 
-        {/* Explanation of what the boundary is */}
-        {/* How we protect it — label + 4 bullets */}
+        {/* Intro framing */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.65 }}
-          className="text-xs tracking-[0.25em] uppercase text-neutral-400 font-mono mb-4"
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="text-base text-neutral-600 font-light max-w-3xl mb-2"
         >
-          {t.howLabel}
+          {t.intro}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="text-xs text-neutral-400 font-light mb-8"
+        >
+          {(t as any).defHint}
         </motion.p>
 
+        {/* Six principles — therapy's principle (tap ⓘ for definition) + how we respect it */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="space-y-2 max-w-3xl mb-10"
+          transition={{ duration: 0.6, delay: 0.75 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-10"
         >
-          {(t.items as string[]).map((item, i) => (
-            <p key={i} className="text-base text-neutral-700 font-light">— {item}</p>
-          ))}
+          {(t.principles as Array<{ name: string; respect: string; definition: string }>).map((p, i) => {
+            const open = openDefs.has(i)
+            return (
+              <div key={i}>
+                <button onClick={() => toggleDef(i)} className="flex items-center gap-1.5 mb-1 group">
+                  <span className="text-sm font-semibold text-teal-700">{p.name}</span>
+                  <Info className={`w-3.5 h-3.5 transition-colors ${open ? 'text-teal-700' : 'text-neutral-300 group-hover:text-teal-600'}`} />
+                </button>
+                <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.p
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      className="overflow-hidden text-xs text-neutral-500 font-light leading-relaxed mt-2 pl-3 border-l-2 border-teal-100"
+                    >
+                      {p.definition}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            )
+          })}
         </motion.div>
 
-        {/* Closing philosophy */}
-        <motion.div
+        {/* Closing punch */}
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1 }}
-          className="max-w-3xl"
+          className="text-lg text-neutral-900 font-light italic max-w-3xl"
         >
-          <p className="text-lg text-neutral-400 font-light">{t.closing1}</p>
-          <p className="text-lg text-neutral-900 font-light">{t.closing2}</p>
-        </motion.div>
+          {t.closing}
+        </motion.p>
       </div>
     </div>
   )
@@ -1533,6 +1682,120 @@ function SecuritySlide({ t }: { t: typeof translations.en.security }) {
           <p className="text-base text-neutral-700 font-light leading-relaxed">
             {t.aiSafetyBody}
           </p>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-teal-700 italic font-light max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: GO-TO-MARKET — four horizons + what-we-don't-do strip
+// =============================================================================
+
+function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
+  const accents = ['teal', 'teal', 'amber', 'neutral'] as const
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <div className="mb-6">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight"
+          >
+            {t.headline}
+          </motion.h2>
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight"
+          >
+            {t.headline2}
+          </motion.h3>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-base text-neutral-500 font-light mb-10 max-w-4xl"
+        >
+          {t.intro}
+        </motion.p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {t.columns.map((col, i) => {
+            const accent = accents[i]
+            const tagClass =
+              accent === 'teal'
+                ? 'text-teal-700 bg-teal-50 border-teal-200'
+                : accent === 'amber'
+                ? 'text-amber-700 bg-amber-50 border-amber-200'
+                : 'text-neutral-600 bg-neutral-50 border-neutral-200'
+            const numClass =
+              accent === 'teal' ? 'text-teal-400/60' : accent === 'amber' ? 'text-amber-400/60' : 'text-neutral-400/60'
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.1 }}
+                className="flex flex-col"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`text-lg font-light ${numClass}`}>{col.num}</span>
+                  <span className={`text-[10px] tracking-[0.2em] uppercase font-medium px-2.5 py-1 rounded-full border ${tagClass}`}>
+                    {col.tag}
+                  </span>
+                </div>
+                <h4 className="text-base font-medium text-neutral-900 mb-3 leading-snug">{col.title}</h4>
+                <ul className="space-y-2">
+                  {col.items.map((item, j) => (
+                    <li key={j} className="text-sm text-neutral-600 font-light leading-relaxed flex gap-2">
+                      <span className="text-neutral-300 mt-0.5">—</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* What we don't do */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="border-t border-neutral-200 pt-6 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2"
+        >
+          <span className="text-xs tracking-[0.2em] uppercase text-neutral-500 font-medium">{t.dontLabel}</span>
+          {t.dontItems.map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-2 text-sm text-neutral-400 font-light">
+              <span className="text-rose-300">✕</span>
+              {item}
+            </span>
+          ))}
         </motion.div>
 
         <motion.p
@@ -1944,6 +2207,7 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
     {
       tag: t.todayTag,
       title: t.todayTitle,
+      sub: (t as any).todaySub,
       body: t.todayBody,
       items: [(t as any).todayWhatWeDo, (t as any).todayWhyItMatters],
       accent: true,
@@ -1951,6 +2215,7 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
     {
       tag: t.nextTag,
       title: t.nextTitle,
+      sub: (t as any).nextSub,
       body: t.nextBody,
       items: [(t as any).nextWhatWeDo, (t as any).nextWhyItMatters],
       accent: false,
@@ -1958,6 +2223,7 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
     {
       tag: t.laterTag,
       title: t.laterTitle,
+      sub: (t as any).laterSub,
       body: t.laterBody,
       items: [(t as any).laterWhatWeDo, (t as any).laterWhyItMatters],
       accent: false,
@@ -1994,66 +2260,76 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
           {t.headline2}
         </motion.h2>
 
-        {/* Three phases — one supporting line each, expandable */}
-        <div className="space-y-6 mb-8">
+        {/* The climb — three ascending steps: tool → proof → the standard */}
+        <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-5 mb-8">
           {phases.map((phase, i) => {
-            const isOpen = expanded.has(i)
+            const heights = ['md:min-h-[150px]', 'md:min-h-[210px]', 'md:min-h-[280px]']
+            const isLast = i === phases.length - 1
             return (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
-                className="grid grid-cols-12 gap-6 items-baseline"
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.2 }}
+                className={`flex-1 rounded-2xl border p-6 flex flex-col justify-end ${heights[i]} ${isLast ? 'bg-teal-700 border-teal-700' : 'bg-white border-neutral-200'}`}
               >
-                <div className="col-span-12 lg:col-span-2">
-                  <p className={`text-xs tracking-[0.25em] uppercase font-mono ${phase.accent ? 'text-teal-700' : 'text-neutral-400'}`}>
-                    {phase.tag}
-                  </p>
-                </div>
-                <div className="col-span-12 lg:col-span-10">
-                  <p className={`text-xl lg:text-2xl font-light leading-snug mb-2 ${phase.accent ? 'text-neutral-900' : 'text-neutral-700'}`}>
-                    {phase.title}
-                  </p>
-                  <p className="text-sm text-neutral-500 font-light">{phase.body}</p>
-
-                  <button
-                    onClick={() => toggle(i)}
-                    className="mt-3 inline-flex items-center gap-1 text-[11px] tracking-wide text-neutral-400 hover:text-teal-700 transition-colors group"
-                  >
-                    <span>{isOpen ? t.showLess : t.viewMore}</span>
-                    {isOpen
-                      ? <ChevronUp className="w-3 h-3 transition-transform group-hover:-translate-y-0.5" />
-                      : <ChevronDown className="w-3 h-3 transition-transform group-hover:translate-y-0.5" />
-                    }
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-5 pt-5 border-t border-neutral-200">
-                          {phase.items.map((item, j) => (
-                            <div key={j} className="flex flex-col gap-1">
-                              <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono">
-                                {subLabels[j]}
-                              </span>
-                              <span className="text-sm text-neutral-700 font-light leading-relaxed">
-                                {item}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <p className={`text-xs tracking-[0.25em] uppercase font-mono mb-2 ${isLast ? 'text-teal-100' : 'text-teal-700'}`}>
+                  {phase.tag}
+                </p>
+                <p className={`font-light leading-snug tracking-tight ${isLast ? 'text-2xl lg:text-3xl text-white' : 'text-xl lg:text-2xl text-neutral-900'}`}>
+                  {phase.title}
+                </p>
+                <p className={`text-sm font-light leading-relaxed mt-2 ${isLast ? 'text-teal-50' : 'text-neutral-500'}`}>
+                  {phase.sub}
+                </p>
               </motion.div>
+            )
+          })}
+        </div>
+
+        {/* Detail — one expandable row per step, below the climb */}
+        <div className="space-y-2 mb-8">
+          {phases.map((phase, i) => {
+            const isOpen = expanded.has(i)
+            return (
+              <div key={i}>
+                <button
+                  onClick={() => toggle(i)}
+                  className="inline-flex items-center gap-1.5 text-[11px] tracking-wide text-neutral-400 hover:text-teal-700 transition-colors group"
+                >
+                  <span className="font-mono uppercase tracking-[0.2em] text-neutral-500">{phase.tag}</span>
+                  <span>· {isOpen ? t.showLess : t.viewMore}</span>
+                  {isOpen
+                    ? <ChevronUp className="w-3 h-3" />
+                    : <ChevronDown className="w-3 h-3" />
+                  }
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-base text-neutral-600 font-light leading-relaxed mt-3 max-w-3xl">{phase.body}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-4 pt-4 border-t border-neutral-200 max-w-3xl">
+                        {phase.items.map((item, j) => (
+                          <div key={j} className="flex flex-col gap-1">
+                            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono">
+                              {subLabels[j]}
+                            </span>
+                            <span className="text-sm text-neutral-700 font-light leading-relaxed">
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )
           })}
         </div>
@@ -2076,6 +2352,7 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
 // =============================================================================
 
 function AskSlide({ t }: { t: typeof translations.en.ask }) {
+  const [active, setActive] = useState<number | null>(null)
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
       <div className="max-w-6xl w-full py-20">
@@ -2113,15 +2390,40 @@ function AskSlide({ t }: { t: typeof translations.en.ask }) {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="pt-8 border-t border-neutral-200 mb-10"
         >
-          <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 mb-4">{t.fundsLabel}</p>
+          <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 mb-4">
+            {t.fundsLabel}
+            <span className="ml-3 tracking-normal normal-case text-neutral-300">{(t as any).fundsHint}</span>
+          </p>
           <div className="flex flex-wrap gap-x-8 gap-y-2">
-            {t.fundsItems.map((item, i) => (
-              <div key={i} className="flex items-baseline gap-2">
-                <span className="text-2xl font-light text-neutral-900">{item.value}</span>
-                <span className="text-sm text-neutral-500">{item.label}</span>
-              </div>
-            ))}
+            {t.fundsItems.map((item, i) => {
+              const isOpen = active === i
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActive(isOpen ? null : i)}
+                  className="flex items-baseline gap-2 group text-left"
+                >
+                  <span className={`text-2xl font-light transition-colors ${isOpen ? 'text-teal-700' : 'text-neutral-900'}`}>{item.value}</span>
+                  <span className={`text-sm border-b border-dashed transition-colors ${isOpen ? 'text-teal-700 border-teal-300' : 'text-neutral-500 border-neutral-300 group-hover:text-neutral-900'}`}>{item.label}</span>
+                </button>
+              )
+            })}
           </div>
+
+          <AnimatePresence initial={false} mode="wait">
+            {active !== null && (
+              <motion.p
+                key={active}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="mt-5 text-sm text-neutral-600 font-light leading-relaxed max-w-3xl"
+              >
+                {(t.fundsItems[active] as any).why}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         <motion.p
