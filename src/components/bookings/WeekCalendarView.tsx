@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles } from 'lucide-react'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -36,6 +36,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
+import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
 
 interface CalendarEvent {
   id: string
@@ -116,6 +117,8 @@ const TOTAL_HOURS = END_HOUR - START_HOUR
 
 export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
+  // Session-prep drawer (opens from the event popover for upcoming sessions).
+  const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
   const supabase = createClient()
   const [internalWeekStart, setInternalWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   // Controlled when a parent passes weekStart (mini-calendar); else internal.
@@ -784,6 +787,20 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                               </>
                             )}
 
+                            {/* Session prep — quick AI orientation from the
+                                practitioner's last 2-3 notes. Shown for
+                                upcoming sessions (not closed ones). */}
+                            {event.source === 'booking' && event.memberId && event.status !== 'completed' && event.status !== 'cancelled' && event.status !== 'no_show' && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setPrepEvent(event); setSelectedEvent(null) }}
+                                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-medium rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 transition-colors"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                {locale === 'fr' ? 'Préparation' : 'Session prep'}
+                              </button>
+                            )}
+
                             {/* Session notes — opens the floating editor.
                                 Label flips between "View notes" and "Take
                                 notes" based on whether a session_summary
@@ -884,6 +901,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
         })}
       </div>
       </div>
+
+      <SessionPrepDrawer
+        isOpen={!!prepEvent}
+        booking={prepEvent && prepEvent.memberId ? {
+          member_id: prepEvent.memberId,
+          client_name: prepEvent.title,
+          start_time: prepEvent.start,
+          session_type: prepEvent.sessionType || '',
+        } : null}
+        onClose={() => setPrepEvent(null)}
+        locale={locale as 'en' | 'fr' | 'es'}
+      />
 
     </div>
   )

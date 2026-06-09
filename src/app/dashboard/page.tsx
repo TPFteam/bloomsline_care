@@ -37,6 +37,7 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { ConsentModal } from '@/components/consent-modal'
+import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
@@ -462,6 +463,10 @@ function DashboardInner() {
     if (!DASHBOARD_SLOTS.includes(sourceSlot) || !DASHBOARD_SLOTS.includes(targetSlot)) return
     swapDashboardWidgets(sourceSlot, targetSlot)
   }
+
+  // Session-prep drawer: a minimalist, AI-generated pre-session orientation
+  // from the practitioner's last 2-3 notes (opened from the "Up next" rows).
+  const [prepBooking, setPrepBooking] = useState<DashBooking | null>(null)
 
   // Open the global floating note panel scoped to this session. Mirrors
   // the bookings page so notes captured here land in the same surface.
@@ -1075,6 +1080,17 @@ function DashboardInner() {
                               {canTakeNotes && (
                                 <button
                                   type="button"
+                                  onClick={() => setPrepBooking(b)}
+                                  title={t('Session prep', 'Préparation', 'Preparación')}
+                                  aria-label={t('Session prep', 'Préparation', 'Preparación')}
+                                  className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-600 transition-colors"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {canTakeNotes && (
+                                <button
+                                  type="button"
                                   onClick={() => handleTakeNotes(b)}
                                   title={t('Take notes', 'Prendre des notes', 'Tomar notas')}
                                   aria-label={t('Take notes', 'Prendre des notes', 'Tomar notas')}
@@ -1108,7 +1124,7 @@ function DashboardInner() {
                     <EmptyUpNext t={t} />
                   ) : (
                     <ul className="space-y-2">
-                      {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} isFirst={i === 0} />)}
+                      {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} onSessionPrep={setPrepBooking} isFirst={i === 0} />)}
                     </ul>
                   )}
                 </div>
@@ -1544,6 +1560,19 @@ function DashboardInner() {
 
       {/* ── Modals ── */}
       <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
+
+      <SessionPrepDrawer
+        isOpen={!!prepBooking}
+        booking={prepBooking}
+        onClose={() => setPrepBooking(null)}
+        locale={locale as 'en' | 'fr' | 'es'}
+        sessionTypeLabel={(raw) => {
+          const st = sessionTypeMap[raw]
+          if (!st) return raw
+          return locale === 'fr' && st.name_fr ? st.name_fr : st.name
+        }}
+      />
+
 
       <NoteComposerPicker
         isOpen={showNoteComposer}
@@ -2386,13 +2415,14 @@ function UrgencyRow({
 }
 
 function UpNextRow({
-  booking, locale, t, sessionTypeMap, onTakeNotes, isFirst,
+  booking, locale, t, sessionTypeMap, onTakeNotes, onSessionPrep, isFirst,
 }: {
   booking: DashBooking
   locale: string
   t: (en: string, fr: string, es: string) => string
   sessionTypeMap: Record<string, { name: string; name_fr?: string }>
   onTakeNotes: (b: DashBooking) => void
+  onSessionPrep: (b: DashBooking) => void
   isFirst: boolean
 }) {
   const start = parseISO(booking.start_time)
@@ -2459,6 +2489,16 @@ function UpNextRow({
               <Video className="w-3.5 h-3.5" />
               {t('Join now', 'Rejoindre', 'Unirse')}
             </a>
+          )}
+          {booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending') && (
+            <button
+              type="button"
+              onClick={() => onSessionPrep(booking)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 hover:border-violet-300 rounded-md transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+              {t('Session prep', 'Préparation', 'Preparación')}
+            </button>
           )}
           {booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending') && (
             <button
