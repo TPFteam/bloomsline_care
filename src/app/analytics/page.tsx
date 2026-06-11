@@ -1436,7 +1436,7 @@ export default function AnalyticsPage() {
             className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
           >
             {/* My People — orbit */}
-            <div className="bg-white border border-gray-100 rounded-xl p-5">
+            <div className="bg-white border border-gray-100 rounded-xl p-5 order-2">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">
@@ -1555,7 +1555,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* My Sessions — trend chart (respects month / year / custom) */}
-            <div className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col">
+            <div className="bg-white border border-gray-100 rounded-xl p-5 flex flex-col order-1">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-medium text-gray-900">
                   {locale === 'fr' ? 'Mes séances' : locale === 'es' ? 'Mis sesiones' : 'My Sessions'}
