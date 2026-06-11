@@ -966,7 +966,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (notes) updateData.notes = (notes || '').trim() || null
       // Clear stale cancellation data when (re)closing as completed — relevant
       // when editing a previously cancelled/no-show session back to attended.
-      if (newStatus === 'completed') { updateData.cancellation_reason = null; updateData.cancelled_at = null }
+      // NB: only cancellation_reason — the sessions table has no cancelled_at
+      // column (that's on bookings); writing it makes Postgres reject the
+      // whole update and breaks closing the session.
+      if (newStatus === 'completed') { updateData.cancellation_reason = null }
       const { error } = await supabase
         .from('sessions')
         .update(updateData)

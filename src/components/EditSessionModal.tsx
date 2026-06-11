@@ -63,9 +63,11 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
         updates.status = outcome
         updates.payment_status = paymentStatus
         if (outcome === 'completed') {
-          // Re-attended: clear any stale cancellation data.
+          // Re-attended: clear any stale cancellation data. Note: the
+          // sessions table has no cancelled_at column (that lives on
+          // bookings) — writing it here makes Postgres reject the whole
+          // update and breaks closing the session.
           updates.cancellation_reason = null
-          updates.cancelled_at = null
         } else {
           updates.cancellation_reason = reason || null
         }
