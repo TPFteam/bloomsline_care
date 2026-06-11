@@ -40,7 +40,38 @@ interface BloomInlineChatProps {
   onClose: () => void
   initialMessage?: string
   suggestions?: string[]
+  // Visual accent. Default 'teal' (the app-wide Ask Bloom look). Pass 'blue'
+  // when launched from the Signals practice panel so the popup matches that
+  // panel's blue styling instead of showing a mismatched green chat.
+  accent?: 'teal' | 'blue'
 }
+
+const ACCENTS = {
+  teal: {
+    grad: 'from-teal-400 to-teal-600',
+    hoverDot: 'group-hover:bg-teal-500',
+    loadDot: 'bg-teal-400/50',
+    mentionHex: '#0d9488',
+    newBtn: 'text-teal-600 hover:bg-teal-500/5',
+    activeDot: 'bg-teal-500',
+    mentionRow: 'hover:bg-teal-50',
+    mentionHi: 'bg-teal-50',
+    mentionAvatar: 'from-teal-200 to-teal-400',
+    backdrop: 'bg-black/5',
+  },
+  blue: {
+    grad: 'from-blue-400 to-blue-600',
+    hoverDot: 'group-hover:bg-blue-500',
+    loadDot: 'bg-blue-400/50',
+    mentionHex: '#2563eb',
+    newBtn: 'text-blue-600 hover:bg-blue-500/5',
+    activeDot: 'bg-blue-500',
+    mentionRow: 'hover:bg-blue-50',
+    mentionHi: 'bg-blue-50',
+    mentionAvatar: 'from-blue-200 to-blue-400',
+    backdrop: 'bg-blue-900/10',
+  },
+} as const
 
 function timeAgo(dateStr: string, locale: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -55,7 +86,8 @@ function timeAgo(dateStr: string, locale: string): string {
   return new Date(dateStr).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' })
 }
 
-export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions = [] }: BloomInlineChatProps) {
+export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions = [], accent = 'teal' }: BloomInlineChatProps) {
+  const theme = ACCENTS[accent]
   const { locale } = useLanguage()
   const supabase = createClient()
   const [messages, setMessages] = useState<Message[]>([])
@@ -386,7 +418,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
               onClick={() => setMinimized(false)}
               className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
             >
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shrink-0" />
+              <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${theme.grad} shrink-0`} />
               <span className="text-sm text-gray-600 max-w-[180px] truncate">
                 {lastResponse
                   ? lastResponse.content.slice(0, 35) + (lastResponse.content.length > 35 ? '...' : '')
@@ -420,7 +452,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-[300] bg-black/5 backdrop-blur-sm flex items-start justify-center pt-[15vh]"
+            className={`fixed inset-0 z-[300] ${theme.backdrop} backdrop-blur-sm flex items-start justify-center pt-[15vh]`}
           >
             <motion.div
               ref={contentRef}
@@ -446,7 +478,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                           <form onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}>
                             <div className="relative">
                             <div className="flex items-center gap-3 px-5 py-4">
-                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shrink-0" />
+                              <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${theme.grad} shrink-0`} />
                               <input
                                 ref={isEmpty ? inputRef : undefined}
                                 type="text"
@@ -473,6 +505,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 anchorRef={inputRef}
                                 highlight={mentionHighlight}
                                 topAnchored
+                                accent={accent}
                               />
                             )}
                             </div>
@@ -486,7 +519,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                   onClick={() => sendMessage(s)}
                                   className="w-full flex items-center gap-3 px-2 py-2 -mx-2 rounded-lg text-left hover:bg-gray-50 transition-colors group"
                                 >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-teal-500 transition-colors shrink-0" />
+                                  <span className={`w-1.5 h-1.5 rounded-full bg-gray-300 ${theme.hoverDot} transition-colors shrink-0`} />
                                   <span className="text-sm text-gray-500 group-hover:text-gray-800 transition-colors">{s}</span>
                                 </button>
                               ))}
@@ -533,7 +566,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                                 {block.items.map((item, ii) => (
                                                   <div key={ii} className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.accent || '#0d9488' }} />
+                                                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.accent || theme.mentionHex }} />
                                                       <span className="text-sm text-gray-800 truncate">{item.label}</span>
                                                     </div>
                                                     <span className="text-xs text-gray-400 shrink-0">{item.detail}</span>
@@ -553,9 +586,9 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                             {isLoading && (
                               <div className="px-5 py-3">
                                 <div className="flex gap-1">
-                                  <span className="w-1.5 h-1.5 bg-teal-400/50 rounded-full animate-bounce [animation-delay:0ms]" />
-                                  <span className="w-1.5 h-1.5 bg-teal-400/50 rounded-full animate-bounce [animation-delay:150ms]" />
-                                  <span className="w-1.5 h-1.5 bg-teal-400/50 rounded-full animate-bounce [animation-delay:300ms]" />
+                                  <span className={`w-1.5 h-1.5 ${theme.loadDot} rounded-full animate-bounce [animation-delay:0ms]`} />
+                                  <span className={`w-1.5 h-1.5 ${theme.loadDot} rounded-full animate-bounce [animation-delay:150ms]`} />
+                                  <span className={`w-1.5 h-1.5 ${theme.loadDot} rounded-full animate-bounce [animation-delay:300ms]`} />
                                 </div>
                               </div>
                             )}
@@ -570,10 +603,11 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 onPick={pickMention}
                                 anchorRef={inputRef}
                                 highlight={mentionHighlight}
+                                accent={accent}
                               />
                             )}
                             <div className="flex items-center gap-3 px-5 py-3">
-                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shrink-0" />
+                              <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${theme.grad} shrink-0`} />
                               <input
                                 ref={isEmpty ? undefined : inputRef}
                                 type="text"
@@ -637,7 +671,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                         </span>
                         <button
                           onClick={startNewConversation}
-                          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-teal-600 hover:bg-teal-500/5 rounded-lg transition-colors"
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium ${theme.newBtn} rounded-lg transition-colors`}
                         >
                           <Plus className="w-3.5 h-3.5" />
                           {locale === 'fr' ? 'Nouveau' : locale === 'es' ? 'Nuevo' : 'New'}
@@ -676,7 +710,7 @@ export function BloomInlineChat({ isOpen, onClose, initialMessage, suggestions =
                                 </p>
                               </div>
                               {conv.id === conversationId && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0 ml-3" />
+                                <span className={`w-1.5 h-1.5 rounded-full ${theme.activeDot} shrink-0 ml-3`} />
                               )}
                             </button>
                           ))
@@ -706,13 +740,16 @@ function MentionDropdown({
   anchorRef,
   highlight,
   topAnchored,
+  accent = 'teal',
 }: {
   matches: Array<{ id: string; name: string }>
   onPick: (m: { id: string; name: string }) => void
   anchorRef: React.RefObject<HTMLInputElement | null>
   highlight: number
   topAnchored?: boolean
+  accent?: 'teal' | 'blue'
 }) {
+  const theme = ACCENTS[accent]
   // Position via fixed coordinates + portal so the dropdown escapes
   // the Ask Bloom modal's overflow-hidden container.
   const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -760,11 +797,11 @@ function MentionDropdown({
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); onPick(m) }}
-              className={`w-full text-left px-2.5 py-1.5 text-[13px] text-gray-900 hover:bg-teal-50 transition-colors flex items-center gap-2 ${
-                i === highlight ? 'bg-teal-50' : ''
+              className={`w-full text-left px-2.5 py-1.5 text-[13px] text-gray-900 ${theme.mentionRow} transition-colors flex items-center gap-2 ${
+                i === highlight ? theme.mentionHi : ''
               }`}
             >
-              <span className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-200 to-teal-400 text-[9px] font-semibold text-white flex items-center justify-center shrink-0">
+              <span className={`w-5 h-5 rounded-full bg-gradient-to-br ${theme.mentionAvatar} text-[9px] font-semibold text-white flex items-center justify-center shrink-0`}>
                 {(m.name[0] || '?').toUpperCase()}
               </span>
               <span className="truncate">{m.name}</span>
