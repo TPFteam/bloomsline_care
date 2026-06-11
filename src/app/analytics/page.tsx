@@ -357,6 +357,30 @@ export default function AnalyticsPage() {
     }
   }, [])
 
+  // Dynamic trailing spacer: when the Money zone is shorter than the viewport,
+  // add just enough empty space below it so it can pin to the top (under the
+  // 48px header) and stay there. Tall months get zero extra space. A
+  // ResizeObserver recomputes whenever the zone's height changes (month
+  // switch, expand/collapse) so this needs no render-derived deps — it must
+  // sit above the loading/empty early returns to keep hook order stable.
+  useEffect(() => {
+    const recompute = () => {
+      const zone = moneyZoneRef.current
+      if (!zone) return
+      const h = zone.getBoundingClientRect().height
+      const needed = window.innerHeight - 64 - h
+      setMoneySpacer(needed > 0 ? Math.ceil(needed) : 0)
+    }
+    recompute()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recompute) : null
+    if (ro && moneyZoneRef.current) ro.observe(moneyZoneRef.current)
+    window.addEventListener('resize', recompute)
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', recompute)
+    }
+  }, [data])
+
   const fetchAnalytics = async () => {
     try {
       const {
@@ -1073,23 +1097,6 @@ export default function AnalyticsPage() {
       </div>
     )
   }
-
-  // Dynamic trailing spacer: when the Money zone is shorter than the
-  // viewport, add just enough empty space below it so it can pin to the top
-  // (under the 48px header) and stay there. Tall months get zero extra space.
-  useEffect(() => {
-    const recompute = () => {
-      const zone = moneyZoneRef.current
-      if (!zone) return
-      const h = zone.getBoundingClientRect().height
-      const needed = window.innerHeight - 64 - h
-      setMoneySpacer(needed > 0 ? Math.ceil(needed) : 0)
-    }
-    recompute()
-    window.addEventListener('resize', recompute)
-    return () => window.removeEventListener('resize', recompute)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, viewMode, selectedMonth, customStart, customEnd, expandedOwedMember, owedByPerson.length, totalRevenue, owedTotal])
 
   // ── Render ────────────────────────────────────────────────────────────
 
