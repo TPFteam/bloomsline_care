@@ -125,11 +125,11 @@ const translations = {
       para2: 'So we asked why. 100+ conversations with therapists and patients — and the same thing kept surfacing: it was never about finding a therapist.',
       para3: 'It was everything that happens between sessions — the silence where progress quietly slips away.',
       para4: 'That became Bloomsline.',
-      quote: 'We didn\'t guess this problem. We failed our way into it.',
+      quote: 'We\'re not guessing — we heard this problem a hundred times first.',
       timeline: [
         { period: '2024', label: 'Doctalink', body: 'Find a therapist by values, not just degrees. Therapists liked it — but a nice-to-have, never a business.' },
         { period: '2025', label: 'Discovery', body: '100+ conversations. The problem wasn\'t just finding a therapist — it\'s everything that happens between sessions.' },
-        { period: '2026', label: 'Bloomsline — live', body: 'The silence where progress quietly slips away. That became Bloomsline.', accent: true },
+        { period: '2026', label: 'Bloomsline — live', body: 'So we built Bloomsline — for the silence between sessions. Live today.', accent: true },
       ],
     },
     product: {
@@ -163,11 +163,12 @@ const translations = {
           newWay: 'See real progress, not just snapshots.',
         },
       ],
+      closing: 'The person, the practitioner, and the space in between — one connected place.',
     },
     boundary: {
-      label: 'THE BOUNDARY',
-      hero1: 'There\'s a boundary in therapy.',
-      hero2: 'We respect it.',
+      label: 'THE FRAME',
+      hero1: 'Therapy works because of its frame.',
+      hero2: 'We protect it.',
       intro: 'Therapy runs on a few hard principles.',
       defHint: 'Tap any principle to see what it means.',
       frameLabel: 'The therapeutic frame',
@@ -519,11 +520,11 @@ const translations = {
       para2: 'Alors on a cherché pourquoi. 100+ conversations avec des thérapeutes et des patients — et la même chose revenait : ce n\'était jamais une question de trouver un thérapeute.',
       para3: 'C\'était tout ce qui se passe entre les séances — ce silence où les progrès s\'effacent peu à peu.',
       para4: 'C\'est devenu Bloomsline.',
-      quote: 'On n\'a pas deviné ce problème. On l\'a appris en échouant.',
+      quote: 'On ne devine pas — on a entendu ce problème une centaine de fois d\'abord.',
       timeline: [
         { period: '2024', label: 'Doctalink', body: 'Trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les thérapeutes appréciaient — un plus, jamais un business.' },
         { period: '2025', label: 'Découverte', body: '100+ conversations. Le problème n\'était pas seulement de trouver un thérapeute — c\'est tout ce qui se passe entre les séances.' },
-        { period: '2026', label: 'Bloomsline — en production', body: 'Ce silence où les progrès s\'effacent. C\'est devenu Bloomsline.', accent: true },
+        { period: '2026', label: 'Bloomsline — en production', body: 'Alors on a construit Bloomsline — pour le silence entre les séances. En ligne aujourd\'hui.', accent: true },
       ],
     },
     product: {
@@ -557,6 +558,7 @@ const translations = {
           newWay: 'Voir la vraie progression, pas juste des instantanés.',
         },
       ],
+      closing: 'La personne, le praticien, et l\'espace entre les deux — un seul lieu connecté.',
     },
     boundary: {
       label: 'LA LIMITE',
@@ -1290,9 +1292,9 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="border-l-2 border-teal-600 pl-6 py-1 max-w-3xl mb-14"
+          className="border-l-2 border-teal-600 pl-6 py-1 mb-14"
         >
-          <p className="text-2xl lg:text-3xl font-light italic text-neutral-900 leading-snug">
+          <p className="text-xl lg:text-2xl font-light italic text-neutral-900 leading-snug whitespace-nowrap">
             &ldquo;{t.quote}&rdquo;
           </p>
         </motion.blockquote>
@@ -1390,6 +1392,15 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
             );
           })}
         </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.95 }}
+          className="text-lg text-neutral-900 font-light italic max-w-3xl mt-10"
+        >
+          {(t as any).closing}
+        </motion.p>
       </div>
     </div>
   )
