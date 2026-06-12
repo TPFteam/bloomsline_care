@@ -311,14 +311,22 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   const bookingEvents: CalendarEvent[] = bookings
     .map(b => ({ id: b.id, title: b.client_name, start: b.start_time, end: b.end_time, source: 'booking' as const, status: b.status, email: b.client_email, sessionType: b.session_type, notes: b.notes || undefined, meetLink: b.meet_link, paymentStatus: (b.payment_status || 'unpaid') as 'paid' | 'unpaid', bookingId: b.id, memberId: b.member_id || null }))
 
-  // Deduplicate: remove Google Calendar events that are synced copies of Bloomsline bookings
-  // A Google event is a duplicate if its start time matches a booking's start time (within 1 min)
+  // Deduplicate: remove Google Calendar events that are already a Bloomsline
+  // booking. A Google event is a duplicate if EITHER its google_event_id matches
+  // a booking's (the reliable signal — survives reschedules / recurring instances
+  // that share a base id) OR its start time matches a booking's (covers older
+  // rows that linked by time only). The id check is what stops an already-linked
+  // event from still showing "Add to Bloomsline" after it was moved in Google.
+  const bookingGoogleIds = new Set(
+    bookings.map(b => b.google_event_id).filter((id): id is string => !!id)
+  )
   const bookingStartTimes = new Set(
     bookings
       .filter(b => b.google_event_id)
       .map(b => Math.floor(new Date(b.start_time).getTime() / 60000)) // round to minute
   )
   const dedupedGoogleEvents = googleEvents.filter(e => {
+    if (e.id && bookingGoogleIds.has(e.id)) return false
     const startMin = Math.floor(new Date(e.start).getTime() / 60000)
     return !bookingStartTimes.has(startMin)
   })
