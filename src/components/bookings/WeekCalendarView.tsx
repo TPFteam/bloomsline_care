@@ -113,7 +113,7 @@ interface WeekCalendarViewProps {
   // Claim an unlinked Google event into Bloomsline (opens the claim flow in
   // the parent — typically the rail's UnclaimedGoogleEventsCard). Called with
   // the Google event id.
-  onAddToBloomsline?: (googleEventId: string) => void
+  onAddToBloomsline?: (ev: { googleEventId: string; title: string; startTime: string; endTime: string; email?: string }) => void
 }
 
 const HOUR_HEIGHT = 56
@@ -915,7 +915,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                                 {onAddToBloomsline && (
                                   <button
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); onAddToBloomsline(event.id); setSelectedEvent(null) }}
+                                    onClick={(e) => { e.stopPropagation(); onAddToBloomsline({ googleEventId: event.id, title: event.title, startTime: event.start, endTime: event.end, email: event.email }); setSelectedEvent(null) }}
                                     className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded-lg transition-colors"
                                   >
                                     <Plus className="w-3.5 h-3.5" />

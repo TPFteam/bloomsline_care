@@ -810,8 +810,11 @@ export default function BookingsPage() {
   // path) rather than auto-preselecting.
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   // Set from the calendar popover's "Add to Bloomsline"; the rail's
-  // UnclaimedGoogleEventsCard picks it up and opens its claim modal.
-  const [claimGoogleEventId, setClaimGoogleEventId] = useState<string | null>(null)
+  // UnclaimedGoogleEventsCard picks it up and opens its claim modal. We carry
+  // the event data (not just the id) so the modal still opens for events the
+  // orphan list filtered out (e.g. no external attendee) — practitioner picks
+  // the patient manually.
+  const [claimGoogleEvent, setClaimGoogleEvent] = useState<{ googleEventId: string; title: string; startTime: string; endTime: string; email?: string } | null>(null)
   // "N pending" header badge → popup listing pending bookings to approve/reject.
   const [showPendingModal, setShowPendingModal] = useState(false)
 
@@ -1438,8 +1441,8 @@ export default function BookingsPage() {
                     locale={locale as 'en' | 'fr' | 'es'}
                     compact
                     onClaimed={fetchBookings}
-                    claimEventId={claimGoogleEventId}
-                    onClaimConsumed={() => setClaimGoogleEventId(null)}
+                    claimEvent={claimGoogleEvent}
+                    onClaimConsumed={() => setClaimGoogleEvent(null)}
                   />
                 )}
               </aside>
@@ -1646,7 +1649,7 @@ export default function BookingsPage() {
                         const b = bookings.find(x => x.id === bookingId)
                         if (b) openClosePopupBooking(b, outcome)
                       }}
-                      onAddToBloomsline={(googleEventId) => setClaimGoogleEventId(googleEventId)}
+                      onAddToBloomsline={(ev) => setClaimGoogleEvent(ev)}
                     />
                   ) : (
                   <>

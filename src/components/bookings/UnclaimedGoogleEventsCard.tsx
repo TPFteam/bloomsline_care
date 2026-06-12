@@ -51,14 +51,15 @@ interface Props {
   onClaimed?: () => void
   /** Narrow layout for the calendar left rail — stacks each event row vertically. */
   compact?: boolean
-  /** When set to a Google event id, open the claim modal for that event (e.g.
-   *  triggered from the calendar popover's "Add to Bloomsline"). */
-  claimEventId?: string | null
-  /** Called once the claimEventId has been handled, so the parent can clear it. */
+  /** When set, open the claim modal for this Google event (e.g. triggered from
+   *  the calendar popover's "Add to Bloomsline"). Carries the event data so the
+   *  modal opens even for events the orphan list filtered out (no attendee). */
+  claimEvent?: { googleEventId: string; title: string; startTime: string; endTime: string; email?: string } | null
+  /** Called once the claimEvent has been handled, so the parent can clear it. */
   onClaimConsumed?: () => void
 }
 
-export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed, compact = false, claimEventId, onClaimConsumed }: Props) {
+export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed, compact = false, claimEvent, onClaimConsumed }: Props) {
   const supabase = useMemo(() => createClient(), [])
   const [events, setEvents] = useState<OrphanEvent[] | null>(null)
   const [members, setMembers] = useState<MemberOption[]>([])
@@ -110,12 +111,34 @@ export function UnclaimedGoogleEventsCard({ sessionTypes, locale, onClaimed, com
   // the claim modal for a specific Google event. Match it against the loaded
   // orphan list; refetch first if the list hasn't loaded yet.
   useEffect(() => {
-    if (!claimEventId) return
+    if (!claimEvent) return
     if (!events) { fetchOrphans(); return }
-    const match = events.find(e => e.googleEventId === claimEventId)
-    if (match) setClaiming(match)
+    const match = events.find(e => e.googleEventId === claimEvent.googleEventId)
+    if (match) {
+      setClaiming(match)
+    } else {
+      // Not in the filtered orphan list (e.g. the event has no external
+      // attendee). Open the modal anyway from the clicked event's data so the
+      // practitioner can pick the patient manually. Pre-suggest a member if the
+      // event's email happens to match one on their roster.
+      const email = claimEvent.email?.toLowerCase()
+      const m = email ? members.find(mm => mm.email?.toLowerCase() === email) : undefined
+      setClaiming({
+        googleEventId: claimEvent.googleEventId,
+        title: claimEvent.title,
+        description: null,
+        startTime: claimEvent.startTime,
+        endTime: claimEvent.endTime,
+        timezone: '',
+        location: null,
+        hangoutLink: null,
+        attendees: claimEvent.email ? [{ email: claimEvent.email, displayName: null }] : [],
+        suggestedMember: m ? { id: m.id, name: `${m.first_name} ${m.last_name}`.trim() } : null,
+        suggestedAttendeeEmail: claimEvent.email || null,
+      })
+    }
     onClaimConsumed?.()
-  }, [claimEventId, events]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [claimEvent, events]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const t = (en: string, fr: string, es: string) => locale === 'fr' ? fr : locale === 'es' ? es : en
 
