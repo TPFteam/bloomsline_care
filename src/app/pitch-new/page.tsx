@@ -186,19 +186,19 @@ const translations = {
     whyNow: {
       label: 'WHY NOW',
       headline: 'Three things just became true.',
-      item1Title: 'B2C therapy collapsed.',
-      item1Body: 'BetterHelp revenue down 9%, $1B loss in 2024. Woebot shut down June 2025. The market learned you can\'t cut out the therapist.',
+      item1Title: 'Market',
+      item1Body: 'A multi-billion, double-digit-growth market — and the consumer-app space is already mature (BetterHelp, Woebot). The clinical layer underneath, between patient and therapist, is still unbuilt. That\'s the opening.',
       item1Sources: [
         { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
         { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
       ],
-      item2Title: 'AI is clinically acceptable.',
-      item2Body: '49% of people with mental health issues already use AI tools. The resistance is gone.',
+      item2Title: 'Adoption',
+      item2Body: '49% of people with mental-health needs already use AI tools. Acceptance is settled — the opening is AI that supports the clinician, not one that replaces them.',
       item2Sources: [
         { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
       ],
-      item3Title: 'Europe has a regulatory moat.',
-      item3Body: 'EU AI Act mandates healthcare AI compliance by August 2026. Building compliant from day 1 is a 12–24 month lead over US competitors.',
+      item3Title: 'Regulation',
+      item3Body: 'The EU AI Act mandates clinical-AI compliance by August 2026. Compliant from day one is a 12–24 month lead over US-first competitors.',
       item3Sources: [
         { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
         { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
@@ -270,10 +270,10 @@ const translations = {
       ],
       learnedLabel: 'LEARNED',
       learnedItems: [
-        '100+ conversations with practitioners and patients',
-        'Clear pattern: the gap is between sessions',
-        'Early testers using it in real workflows',
-        'Continuity drives engagement',
+        '100+ interviews before a line of code',
+        'The gap is between sessions — named in every conversation',
+        'In real use, it fits how practitioners already work',
+        'Continuity drives engagement — not features',
       ],
       honestLabel: 'HONEST',
       honestItems: [
@@ -581,19 +581,19 @@ const translations = {
     whyNow: {
       label: 'POURQUOI MAINTENANT',
       headline: 'Trois choses viennent de devenir vraies.',
-      item1Title: 'La thérapie B2C s\'est effondrée.',
-      item1Body: 'BetterHelp : revenus en baisse de 9%, perte de 1 Md$ en 2024. Woebot a fermé en juin 2025. Le marché a appris qu\'on ne peut pas exclure le thérapeute.',
+      item1Title: 'Marché',
+      item1Body: 'Un marché de plusieurs milliards en croissance à deux chiffres — et l\'espace des apps grand public est déjà mature (BetterHelp, Woebot). La couche clinique en dessous, entre patient et thérapeute, reste à construire. C\'est là l\'ouverture.',
       item1Sources: [
         { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
         { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
       ],
-      item2Title: 'L\'IA est cliniquement acceptable.',
-      item2Body: '49% des personnes ayant des problèmes de santé mentale utilisent déjà l\'IA. La résistance a disparu.',
+      item2Title: 'Adoption',
+      item2Body: '49% des personnes concernées par la santé mentale utilisent déjà l\'IA. L\'acceptation est acquise — l\'opportunité, c\'est une IA qui soutient le clinicien, pas qui le remplace.',
       item2Sources: [
         { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
       ],
-      item3Title: 'L\'Europe a un fossé réglementaire.',
-      item3Body: 'L\'AI Act européen impose la conformité IA santé d\'ici août 2026. Construire conforme dès le jour 1, c\'est 12–24 mois d\'avance sur les concurrents US.',
+      item3Title: 'Réglementation',
+      item3Body: 'L\'AI Act européen impose la conformité de l\'IA clinique d\'ici août 2026. Conforme dès le premier jour, c\'est 12–24 mois d\'avance sur les concurrents américains.',
       item3Sources: [
         { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
         { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
@@ -665,10 +665,10 @@ const translations = {
       ],
       learnedLabel: 'APPRIS',
       learnedItems: [
-        '100+ conversations avec praticiens et patients',
-        'Un pattern clair : le vide est entre les séances',
-        'Testeurs utilisant le produit dans de vrais workflows',
-        'La continuité génère l\'engagement',
+        '100+ entretiens avant la moindre ligne de code',
+        'Le vide est entre les séances — nommé à chaque conversation',
+        'À l\'usage, il s\'intègre à la façon dont les praticiens travaillent déjà',
+        'La continuité génère l\'engagement — pas les fonctionnalités',
       ],
       honestLabel: 'HONNÊTE',
       honestItems: [
