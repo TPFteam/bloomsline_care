@@ -37,6 +37,7 @@ function calStatusHeader(isGoogle: boolean, status: string | undefined, isPast: 
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { getCancelReasonGroups } from '@/lib/sessions/close-reasons'
+import { emitBookingsChanged } from '@/lib/bookings-events'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
 import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
@@ -278,6 +279,41 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   useEffect(() => {
     fetch('/api/calendar/sync-check', { method: 'POST' }).catch(() => {})
   }, [])
+
+  // Reconcile moved events: if a Google event shares its id with a booking but
+  // has been rescheduled to a new time, move the booking (and its session) to
+  // follow it. Only auto-syncs ids that appear once among the Google events, so
+  // recurring series (instances fighting over one booking) are left alone.
+  useEffect(() => {
+    if (googleEvents.length === 0 || bookings.length === 0) return
+    const idCount = new Map<string, number>()
+    for (const e of googleEvents) if (e.id) idCount.set(e.id, (idCount.get(e.id) || 0) + 1)
+    const bookingByGid = new Map(
+      bookings.filter(b => b.google_event_id).map(b => [b.google_event_id as string, b]),
+    )
+    const moves: { id: string; oldStart: string; memberId: string | null; start: string; end: string }[] = []
+    for (const e of googleEvents) {
+      if (!e.id || idCount.get(e.id) !== 1) continue
+      const b = bookingByGid.get(e.id)
+      if (!b || b.status === 'cancelled') continue
+      const bMin = Math.floor(new Date(b.start_time).getTime() / 60000)
+      const eMin = Math.floor(new Date(e.start).getTime() / 60000)
+      if (bMin !== eMin) moves.push({ id: b.id, oldStart: b.start_time, memberId: b.member_id ?? null, start: e.start, end: e.end })
+    }
+    if (moves.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      for (const m of moves) {
+        await supabase.from('bookings').update({ start_time: m.start, end_time: m.end, updated_at: new Date().toISOString() }).eq('id', m.id)
+        if (m.memberId) {
+          await supabase.from('sessions').update({ scheduled_at: m.start, updated_at: new Date().toISOString() }).eq('member_id', m.memberId).eq('scheduled_at', m.oldStart)
+        }
+      }
+      if (!cancelled) emitBookingsChanged()
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleEvents, bookings])
 
   // Fetch available slots for visible week
   useEffect(() => {
