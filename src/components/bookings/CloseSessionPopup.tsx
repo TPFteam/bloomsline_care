@@ -39,6 +39,8 @@ export interface CloseSessionBooking {
   client_name?: string | null
   start_time: string
   practitioner_notes?: string | null
+  /** Current payment so the close popup can pre-select it (Paid stays Paid). */
+  payment_status?: 'paid' | 'unpaid' | null
 }
 
 export interface CloseSessionResult {
@@ -83,11 +85,12 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
     if (!booking) return
     setOutcome(initialOutcome ?? null)
     setSaving(false)
-    setShowPayment(null)
+    // Carry the booking's current payment into the popup (Paid stays Paid).
+    setShowPayment(booking.payment_status ?? null)
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
     setShowNoteAction(hasExistingNote ? 'has' : null)
     setShowNoteDraft('')
-    setNoShowPayment(null)
+    setNoShowPayment(booking.payment_status === 'paid' ? 'paid' : null)
     setNoShowReason('')
     setNoShowComments('')
   }, [booking, initialOutcome])
@@ -414,7 +417,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                   setNoShowReason(r)
                   // Smart payment default: no-shows are billable (you held
                   // the slot) → Paid; cancellations → no default, practitioner picks.
-                  setNoShowPayment(reasonToPaymentDefault(r))
+                  setNoShowPayment(booking.payment_status === 'paid' ? 'paid' : reasonToPaymentDefault(r))
                 }}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
               >

@@ -898,11 +898,12 @@ export default function BookingsPage() {
     const isCompleted = booking.status === 'completed'
     const isClosedCancel = booking.status === 'cancelled' || booking.status === 'no_show'
     setClosePopupOutcome(presetOutcome ?? (isCompleted ? 'show' : isClosedCancel ? 'no_show' : null))
-    setShowBPayment(!presetOutcome && isCompleted ? booking.payment_status : null)
+    // Carry the booking's current payment into the close popup (Paid stays Paid).
+    setShowBPayment(booking.payment_status ?? null)
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
     setShowBNoteAction(hasExistingNote ? 'has' : null)
     setShowBNoteDraft('')
-    setNoShowBPayment(!presetOutcome && isClosedCancel ? booking.payment_status : null)
+    setNoShowBPayment(booking.payment_status === 'paid' ? 'paid' : (isClosedCancel ? booking.payment_status : null))
     setNoShowBReason(!presetOutcome && isClosedCancel ? (booking.cancellation_reason || '') : '')
     setNoShowBComments('')
   }
@@ -3773,7 +3774,7 @@ export default function BookingsPage() {
                       const r = e.target.value
                       setNoShowBReason(r)
                       // No-shows are billable (slot held) → Paid; cancellations → no default.
-                      setNoShowBPayment(reasonToPaymentDefault(r))
+                      setNoShowBPayment(closePopupBooking?.payment_status === 'paid' ? 'paid' : reasonToPaymentDefault(r))
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
                   >

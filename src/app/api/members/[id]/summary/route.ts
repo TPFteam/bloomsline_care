@@ -9,6 +9,7 @@ import {
   type SummaryContext,
   type SupportedLocale,
 } from '@/lib/summary/prompts'
+import { buildAboutText } from '@/lib/members/about-sections'
 import { extractAllMemberFiles, formatExtractionsForPrompt } from '@/lib/pulse/file-extraction'
 import { PULSE_VERSION } from '@/lib/bloom/pulse-version'
 import type { SummaryContent } from '@/types/member'
@@ -74,6 +75,10 @@ export async function POST(
     if (memberError || !member) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 })
     }
+
+    // Serialize the practitioner's "About patient" sections for this member
+    // (replaces the legacy internal_notes/preferences context).
+    const aboutText = await buildAboutText(supabase, user.id, member.overview_content)
 
     // Fetch all member data for context
     const [
@@ -262,7 +267,7 @@ export async function POST(
     })
     const bookings = bookingsRaw
 
-    const hasData = sessions.length > 0 || notes.length > 0 || milestones.length > 0 || member.internal_notes
+    const hasData = sessions.length > 0 || notes.length > 0 || milestones.length > 0 || !!aboutText
 
     if (!hasData) {
       return NextResponse.json({
@@ -274,6 +279,7 @@ export async function POST(
     // Build context for the prompt
     const context: SummaryContext = {
       member,
+      aboutText,
       sessions,
       notes,
       milestones,

@@ -8,7 +8,9 @@ export interface CardLayoutItem {
 
 export const DEFAULT_CARD_LAYOUT: CardLayoutItem[] = [
   { id: 'ai_summary', column: 0, order: 0 },
-  { id: 'about', column: 0, order: 1 }, // also renders Key considerations as a sub-section
+  // `about` (legacy "History" + Key considerations) retired — its data was
+  // migrated into custom_sections ("About patient"). Kept out of the layout.
+  { id: 'custom_sections', column: 0, order: 1 }, // practitioner-defined "About patient" sections
   { id: 'past_sessions', column: 0, order: 2 },
   { id: 'recent_notes', column: 1, order: 0 },
   { id: 'shared_resources', column: 1, order: 1 },

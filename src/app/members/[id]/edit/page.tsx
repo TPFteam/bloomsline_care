@@ -9,12 +9,8 @@ import {
   Mail,
   Phone,
   Calendar,
-  MessageSquare,
   Shield,
   Save,
-  X,
-  Plus,
-  Heart,
   AlertCircle,
   Users,
   Edit,
@@ -26,15 +22,10 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type {
-  Member,
   MemberStatus,
-  SessionFormat,
   EngagementLevel,
-  MemberPreferences,
   EmergencyContact,
 } from '@/types/member'
-
-type ContactMethod = 'email' | 'phone' | 'text'
 
 export default function EditMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
@@ -44,7 +35,7 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [activeSection, setActiveSection] = useState<'basic' | 'preferences' | 'emergency'>('basic')
+  const [activeSection, setActiveSection] = useState<'basic' | 'emergency'>('basic')
 
   // Basic info
   const [firstName, setFirstName] = useState('')
@@ -54,18 +45,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState<MemberStatus>('active')
   const [engagementLevel, setEngagementLevel] = useState<EngagementLevel>('medium')
-  const [internalNotes, setInternalNotes] = useState('')
-
-  // Preferences
-  const [communicationStyle, setCommunicationStyle] = useState('')
-  const [keyStrengths, setKeyStrengths] = useState<string[]>([])
-  const [strengthInput, setStrengthInput] = useState('')
-  const [areasOfSensitivity, setAreasOfSensitivity] = useState<string[]>([])
-  const [sensitivityInput, setSensitivityInput] = useState('')
-  const [therapeuticContext, setTherapeuticContext] = useState('')
-  const [currentTreatment, setCurrentTreatment] = useState('')
-  const [preferredContactMethod, setPreferredContactMethod] = useState<ContactMethod>('email')
-  const [preferredSessionFormat, setPreferredSessionFormat] = useState<SessionFormat>('in_person')
 
   // Emergency Contact
   const [emergencyName, setEmergencyName] = useState('')
@@ -108,16 +87,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
       setDateOfBirth(data.date_of_birth || '')
       setStatus(data.status)
       setEngagementLevel(data.engagement_level)
-      setInternalNotes(data.internal_notes || '')
-
-      // Preferences
-      setCommunicationStyle(data.preferences?.communication_style || '')
-      setKeyStrengths(data.preferences?.key_strengths || [])
-      setAreasOfSensitivity(data.preferences?.areas_of_sensitivity || [])
-      setTherapeuticContext(data.preferences?.therapeutic_context || '')
-      setCurrentTreatment(data.preferences?.current_treatment || '')
-      setPreferredContactMethod(data.preferences?.preferred_contact_method || 'email')
-      setPreferredSessionFormat(data.preferences?.preferred_session_format || 'in_person')
 
       // Emergency Contact
       setEmergencyName(data.emergency_contact?.name || '')
@@ -134,28 +103,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  const handleAddStrength = () => {
-    if (strengthInput.trim() && !keyStrengths.includes(strengthInput.trim())) {
-      setKeyStrengths([...keyStrengths, strengthInput.trim()])
-      setStrengthInput('')
-    }
-  }
-
-  const handleRemoveStrength = (strength: string) => {
-    setKeyStrengths(keyStrengths.filter(s => s !== strength))
-  }
-
-  const handleAddSensitivity = () => {
-    if (sensitivityInput.trim() && !areasOfSensitivity.includes(sensitivityInput.trim())) {
-      setAreasOfSensitivity([...areasOfSensitivity, sensitivityInput.trim()])
-      setSensitivityInput('')
-    }
-  }
-
-  const handleRemoveSensitivity = (area: string) => {
-    setAreasOfSensitivity(areasOfSensitivity.filter(a => a !== area))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -167,16 +114,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
     setSaving(true)
 
     try {
-      const preferences: MemberPreferences = {
-        communication_style: communicationStyle || null,
-        key_strengths: keyStrengths,
-        areas_of_sensitivity: areasOfSensitivity,
-        therapeutic_context: therapeuticContext || null,
-        current_treatment: currentTreatment || null,
-        preferred_contact_method: preferredContactMethod,
-        preferred_session_format: preferredSessionFormat,
-      }
-
       const emergencyContact: EmergencyContact = {
         name: emergencyName || null,
         relationship: emergencyRelationship || null,
@@ -195,8 +132,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
           date_of_birth: dateOfBirth || null,
           status,
           engagement_level: engagementLevel,
-          internal_notes: internalNotes.trim() || null,
-          preferences,
           emergency_contact: emergencyContact,
           updated_at: new Date().toISOString(),
         })
@@ -216,7 +151,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
 
   const sections = [
     { id: 'basic', label: t.members.form.basicInfo, icon: User },
-    { id: 'preferences', label: t.members.form.preferences, icon: Heart },
     { id: 'emergency', label: t.members.form.emergencyContact, icon: Shield },
   ] as const
 
@@ -392,195 +326,6 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
                     </select>
                   </div>
                 </div>
-
-                {/* Internal Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    <MessageSquare className="w-4 h-4 inline mr-1.5" />
-                    {t.members.form.internalNotes}
-                  </label>
-                  <textarea
-                    value={internalNotes}
-                    onChange={(e) => setInternalNotes(e.target.value)}
-                    placeholder={t.members.form.internalNotesPlaceholder}
-                    rows={4}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all resize-none"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Preferences Section */}
-          {activeSection === 'preferences' && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
-            >
-              <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <Heart className="w-5 h-5 text-coral-500" />
-                {t.members.form.preferences}
-              </h2>
-
-              <div className="space-y-5">
-                {/* Communication Style */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.communicationStyle}
-                  </label>
-                  <textarea
-                    value={communicationStyle}
-                    onChange={(e) => setCommunicationStyle(e.target.value)}
-                    placeholder={t.members.form.communicationStylePlaceholder}
-                    rows={3}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all resize-none"
-                  />
-                </div>
-
-                {/* Key Strengths */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.keyStrengths}
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={strengthInput}
-                      onChange={(e) => setStrengthInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddStrength()
-                        }
-                      }}
-                      placeholder={t.members.form.keyStrengthsPlaceholder}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddStrength}
-                      variant="outline"
-                      className="px-3"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {keyStrengths.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {keyStrengths.map((strength) => (
-                        <span
-                          key={strength}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm"
-                        >
-                          {strength}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveStrength(strength)}
-                            className="ml-1 hover:text-emerald-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Areas of Sensitivity */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.areasOfSensitivity}
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={sensitivityInput}
-                      onChange={(e) => setSensitivityInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddSensitivity()
-                        }
-                      }}
-                      placeholder={t.members.form.areasOfSensitivityPlaceholder}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddSensitivity}
-                      variant="outline"
-                      className="px-3"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {areasOfSensitivity.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {areasOfSensitivity.map((area) => (
-                        <span
-                          key={area}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm"
-                        >
-                          {area}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSensitivity(area)}
-                            className="ml-1 hover:text-amber-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Therapeutic Context */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.therapeuticContext}
-                  </label>
-                  <textarea
-                    value={therapeuticContext}
-                    onChange={(e) => setTherapeuticContext(e.target.value)}
-                    placeholder={t.members.form.therapeuticContextPlaceholder}
-                    rows={3}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all resize-none"
-                  />
-                </div>
-
-                {/* Contact and Session Preferences */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {t.members.form.preferredContactMethod}
-                    </label>
-                    <select
-                      value={preferredContactMethod}
-                      onChange={(e) => setPreferredContactMethod(e.target.value as ContactMethod)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all bg-white"
-                    >
-                      <option value="email">{t.members.contactMethods.email}</option>
-                      <option value="phone">{t.members.contactMethods.phone}</option>
-                      <option value="text">{t.members.contactMethods.text}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {t.members.form.preferredSessionFormat}
-                    </label>
-                    <select
-                      value={preferredSessionFormat}
-                      onChange={(e) => setPreferredSessionFormat(e.target.value as SessionFormat)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-lavender-400 focus:ring-2 focus:ring-lavender-100 outline-none transition-all bg-white"
-                    >
-                      <option value="in_person">{t.members.sessionFormats.in_person}</option>
-                      <option value="virtual">{t.members.sessionFormats.virtual}</option>
-                      <option value="phone">{t.members.sessionFormats.phone}</option>
-                    </select>
-                  </div>
-                </div>
               </div>
             </motion.div>
           )}
@@ -681,14 +426,11 @@ export default function EditMemberPage({ params }: { params: Promise<{ id: strin
             </Link>
 
             <div className="flex items-center gap-3">
-              {activeSection !== 'emergency' && (
+              {activeSection === 'basic' && (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    if (activeSection === 'basic') setActiveSection('preferences')
-                    else if (activeSection === 'preferences') setActiveSection('emergency')
-                  }}
+                  onClick={() => setActiveSection('emergency')}
                 >
                   Next
                 </Button>

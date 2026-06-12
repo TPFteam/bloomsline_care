@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { fetchAboutTemplate, serializeAboutSections } from '@/lib/members/about-sections'
 
 // ============================================
 // Practitioner Context Builder
@@ -30,10 +31,10 @@ interface MemberSummary {
   engagement_level: string
   last_session_at: string | null
   created_at: string
-  internal_notes: string | null
-  // Compact one-liners pulled from member.preferences JSONB so the
-  // prompt doesn't carry the full nested object.
-  preferences_digest: string | null
+  // Serialized "About patient" sections (replaces internal_notes +
+  // preferences_digest). Built from the practitioner's section template +
+  // this member's overview_content.
+  about_text: string | null
 }
 
 interface PulseSummary {
@@ -172,7 +173,7 @@ export async function buildPractitionerContext(
   ] = await Promise.all([
     supabase
       .from('members')
-      .select('id, user_id, first_name, last_name, status, engagement_level, last_session_at, created_at, is_demo, internal_notes, preferences')
+      .select('id, user_id, first_name, last_name, status, engagement_level, last_session_at, created_at, is_demo, overview_content')
       .eq('practitioner_id', practitionerId)
       .eq('is_demo', false)
       .order('last_session_at', { ascending: false, nullsFirst: false }),
@@ -296,6 +297,9 @@ export async function buildPractitionerContext(
   }
 
   const allMembers = (membersResult.data || [])
+  // The practitioner's section template (titles + types), fetched once and
+  // joined to each member's overview_content for the "About patient" text.
+  const aboutTemplate = await fetchAboutTemplate(supabase, practitionerId)
   // Keep ALL members in scope so name lookups, mention validation,
   // and per-member sections (notes, moments, reflections, etc.) can
   // resolve any member_id Bloom sees. The MEMBERS prompt section
@@ -308,8 +312,7 @@ export async function buildPractitionerContext(
     engagement_level: m.engagement_level,
     last_session_at: m.last_session_at,
     created_at: m.created_at,
-    internal_notes: m.internal_notes || null,
-    preferences_digest: digestPreferences(m.preferences),
+    about_text: serializeAboutSections(aboutTemplate, m.overview_content) || null,
   }))
   // user_id → member.id map. Lets us re-attach moments (keyed by
   // auth uid) back to the member record they belong to.
@@ -454,17 +457,6 @@ export async function buildPractitionerContext(
 }
 
 // ── Compaction helpers ─────────────────────────────────────────────
-
-function digestPreferences(prefs: unknown): string | null {
-  if (!prefs || typeof prefs !== 'object') return null
-  const p = prefs as Record<string, unknown>
-  const parts: string[] = []
-  for (const key of ['communication_style', 'key_strengths', 'areas_of_sensitivity', 'therapeutic_context', 'current_treatment']) {
-    const v = p[key]
-    if (typeof v === 'string' && v.trim()) parts.push(`${key.replace(/_/g, ' ')}: ${v.trim().slice(0, 120)}`)
-  }
-  return parts.length > 0 ? parts.join(' · ').slice(0, 320) : null
-}
 
 function digestNoteContent(content: string | null): string | null {
   if (!content) return null
@@ -767,10 +759,7 @@ export function formatPractitionerContextForPrompt(
   // ── MEMBER PROFILE NOTES ──
   const profileLines: string[] = []
   for (const m of members) {
-    const parts: string[] = []
-    if (m.internal_notes) parts.push(`internal: ${m.internal_notes.slice(0, 160)}`)
-    if (m.preferences_digest) parts.push(m.preferences_digest)
-    if (parts.length > 0) profileLines.push(`  - ${m.name}: ${parts.join(' · ')}`)
+    if (m.about_text) profileLines.push(`  - ${m.name}: ${m.about_text.slice(0, 240).replace(/\n/g, ' · ')}`)
   }
   const profileSection = profileLines.length > 0
     ? `\nMEMBER PROFILE NOTES:\n${profileLines.slice(0, 25).join('\n')}`

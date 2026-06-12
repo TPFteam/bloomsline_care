@@ -86,6 +86,8 @@ export interface SummaryContext {
   patientStories?: PatientStoryInput[]
   resourceResponses?: ResourceResponseInput[]
   bookings?: BookingInput[]
+  // Pre-serialized "About patient" sections (replaces internal_notes/preferences)
+  aboutText?: string
   locale: SupportedLocale
 }
 
@@ -214,7 +216,7 @@ Both the legacy fields AND v2 must be present — the legacy fields are for olde
  * Build the user prompt with all member context
  */
 export function buildSummaryPrompt(context: SummaryContext): string {
-  const { member, sessions, notes, milestones, reflections, sharedResources, milestoneComments, locale } = context
+  const { member, sessions, notes, milestones, reflections, sharedResources, milestoneComments, aboutText, locale } = context
 
   const sections: string[] = []
 
@@ -227,42 +229,10 @@ Engagement Level: ${member.engagement_level}
 Member Since: ${formatDate(member.created_at, locale)}
 Last Session: ${member.last_session_at ? formatDate(member.last_session_at, locale) : 'Never'}`)
 
-  // Therapeutic Context
-  if (member.internal_notes || member.preferences) {
-    const contextParts: string[] = []
-
-    if (member.internal_notes) {
-      contextParts.push(`Internal Notes: ${member.internal_notes}`)
-    }
-
-    const prefs = member.preferences
-    if (prefs) {
-      if (prefs.therapeutic_context) {
-        const context = typeof prefs.therapeutic_context === 'object' && 'en' in prefs.therapeutic_context
-          ? prefs.therapeutic_context[locale === 'fr' ? 'fr' : 'en']
-          : prefs.therapeutic_context
-        if (context) contextParts.push(`Therapeutic Context: ${context}`)
-      }
-
-      const strengths = getLocalizedArray(prefs.key_strengths, locale)
-      if (strengths.length > 0) {
-        contextParts.push(`Key Strengths: ${strengths.join(', ')}`)
-      }
-
-      const sensitivities = getLocalizedArray(prefs.areas_of_sensitivity, locale)
-      if (sensitivities.length > 0) {
-        contextParts.push(`Areas of Sensitivity: ${sensitivities.join(', ')}`)
-      }
-
-      const commStyles = getLocalizedArray(prefs.communication_style, locale)
-      if (commStyles.length > 0) {
-        contextParts.push(`Communication Style: ${commStyles.join(', ')}`)
-      }
-    }
-
-    if (contextParts.length > 0) {
-      sections.push(`## Background & Preferences\n\n${contextParts.join('\n')}`)
-    }
+  // About the patient — the practitioner's customizable sections
+  // (replaces the legacy internal_notes / preferences surface).
+  if (aboutText && aboutText.trim()) {
+    sections.push(`## Background & Preferences\n\n${aboutText.trim()}`)
   }
 
   // Sessions Summary — include IDs so AI can cite them
@@ -513,17 +483,4 @@ function getSessionTypeLabel(type: string): string {
     other: 'Other',
   }
   return labels[type] || type
-}
-
-function getLocalizedArray(
-  value: string[] | string | { en: string[]; fr: string[] } | null | undefined,
-  locale: string
-): string[] {
-  if (!value) return []
-  if (typeof value === 'object' && 'en' in value && 'fr' in value) {
-    return (value as { en: string[]; fr: string[] })[locale === 'fr' ? 'fr' : 'en'] || []
-  }
-  if (Array.isArray(value)) return value
-  if (typeof value === 'string') return [value]
-  return []
 }

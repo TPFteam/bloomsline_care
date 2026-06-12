@@ -77,6 +77,11 @@ export interface Member {
   // Notes
   internal_notes: string | null
 
+  // Customizable "About patient" sections content, keyed by section id
+  // (template lives on user_preferences.overview_sections). Replaces the
+  // legacy internal_notes/preferences history surface.
+  overview_content: Record<string, string | string[]> | null
+
   // Referral
   referral_source: string | null
   referral_name: string | null

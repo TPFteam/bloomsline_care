@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { ensureSections } from '@/lib/members/about-sections'
 
 // Demo members to create for new practitioners (bilingual EN/FR)
 const DEMO_MEMBERS = [
@@ -11,27 +12,14 @@ const DEMO_MEMBERS = [
     status: 'active' as const,
     engagement_level: 'high' as const,
     is_demo: true,
-    internal_notes: 'EN: Patient engaged in deep therapeutic work. Solid therapeutic alliance. Sensitive to recognition issues. Current work on internal safety and relationship patterns.\n\nFR: Patiente engagée dans un travail thérapeutique profond. Alliance thérapeutique solide. Sensible aux enjeux de reconnaissance. Travail actuel sur la sécurité interne et le rapport au lien.',
-    preferences: {
-      communication_style: {
-        en: ['Needs relational safety before any sensitive exploration', 'Tends to respond through thinking rather than feeling'],
-        fr: ['Besoin de sécurité relationnelle préalable avant toute exploration sensible', 'Tendance à répondre par la pensée plutôt que par l\'affect'],
-      },
-      key_strengths: {
-        en: ['Emotional intelligence', 'Reflective capacity', 'Therapeutic engagement'],
-        fr: ['Intelligence émotionnelle', 'Capacité de réflexion', 'Engagement thérapeutique'],
-      },
-      areas_of_sensitivity: {
-        en: ['Recognition in relationships', 'Body trauma', 'Dissociation'],
-        fr: ['Reconnaissance dans le lien', 'Trauma corporel', 'Dissociation'],
-      },
-      therapeutic_context: {
-        en: 'Relational functioning marked by early over-adaptation and strong control in relationships\n\nDevelopmental trauma history (body trauma during adolescence)\n\nOngoing therapeutic work around internal safety, relationship patterns, and subjective recognition\n\nCurrent life situation is fragile (unemployment, financial precarity, uncomfortable housing) which may increase dissociation/freezing\n\nEngaged therapy, solid alliance but sensitive to recognition issues in the relationship',
-        fr: 'Fonctionnement relationnel marqué par une suradaptation précoce et un fort contrôle du lien\n\nHistoire traumatique développementale (trauma corporel à l\'adolescence)\n\nTravail thérapeutique en cours autour de la sécurité interne, du rapport au lien, et de la reconnaissance subjective\n\nSituation de vie actuelle fragile (chômage, précarité matérielle, logement inconfortable) pouvant majorer la dissociation / le gel\n\nThérapie engagée, alliance solide mais sensible aux enjeux de reconnaissance dans le lien',
-      },
-      preferred_contact_method: 'email',
-      preferred_session_format: 'virtual',
-    },
+    // "About patient" sections content (keyed by starter section ids).
+    about: {
+      hist_notes: 'EN: Patient engaged in deep therapeutic work. Solid therapeutic alliance. Sensitive to recognition issues. Current work on internal safety and relationship patterns.\n\nFR: Patiente engagée dans un travail thérapeutique profond. Alliance thérapeutique solide. Sensible aux enjeux de reconnaissance. Travail actuel sur la sécurité interne et le rapport au lien.',
+      hist_context: 'Relational functioning marked by early over-adaptation and strong control in relationships\n\nDevelopmental trauma history (body trauma during adolescence)\n\nOngoing therapeutic work around internal safety, relationship patterns, and subjective recognition\n\nEngaged therapy, solid alliance but sensitive to recognition issues in the relationship',
+      hist_strengths: ['Emotional intelligence', 'Reflective capacity', 'Therapeutic engagement'],
+      hist_sensitivity: ['Recognition in relationships', 'Body trauma', 'Dissociation'],
+      hist_communication: ['Needs relational safety before any sensitive exploration', 'Tends to respond through thinking rather than feeling'],
+    } as Record<string, string | string[]>,
     emergency_contact: {
       name: 'David Thompson',
       relationship: 'Spouse',
@@ -49,15 +37,13 @@ const DEMO_MEMBERS = [
     status: 'active' as const,
     engagement_level: 'medium' as const,
     is_demo: true,
-    internal_notes: 'Lucas is a new client interested in developing better stress management techniques. Prefers direct, action-oriented approaches.',
-    preferences: {
-      communication_style: 'Direct and action-oriented. Prefers concrete techniques over abstract discussions.',
-      key_strengths: ['Problem-solving', 'Resilience', 'Logical thinking'],
-      areas_of_sensitivity: ['Discussing emotions directly', 'Vulnerability'],
-      therapeutic_context: 'Initial consultation pending. Interested in CBT-based approaches.',
-      preferred_contact_method: 'phone',
-      preferred_session_format: 'in_person',
-    },
+    about: {
+      hist_notes: 'Lucas is a new client interested in developing better stress management techniques. Prefers direct, action-oriented approaches.',
+      hist_context: 'Initial consultation pending. Interested in CBT-based approaches.',
+      hist_strengths: ['Problem-solving', 'Resilience', 'Logical thinking'],
+      hist_sensitivity: ['Discussing emotions directly', 'Vulnerability'],
+      hist_communication: ['Direct and action-oriented. Prefers concrete techniques over abstract discussions.'],
+    } as Record<string, string | string[]>,
     emergency_contact: {
       name: null,
       relationship: null,
@@ -73,8 +59,24 @@ const DEMO_MEMBERS = [
  * This includes members, sessions, milestones, milestone comments, and progress notes.
  */
 export async function createDemoMembers(serviceClient: SupabaseClient, practitionerId: string) {
-  const demoMembersWithPractitioner = DEMO_MEMBERS.map(member => ({
+  // Seed the practitioner's "About patient" section template (titled in their
+  // language) so the demo members' content has matching sections to render in.
+  const { data: pref } = await serviceClient
+    .from('users')
+    .select('preferred_language')
+    .eq('id', practitionerId)
+    .maybeSingle()
+  const locale = pref?.preferred_language === 'fr' ? 'fr' : 'en'
+  await ensureSections(
+    serviceClient,
+    practitionerId,
+    ['hist_notes', 'hist_context', 'hist_strengths', 'hist_sensitivity', 'hist_communication'],
+    locale,
+  )
+
+  const demoMembersWithPractitioner = DEMO_MEMBERS.map(({ about, ...member }) => ({
     ...member,
+    overview_content: about,
     practitioner_id: practitionerId,
   }))
 

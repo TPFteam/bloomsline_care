@@ -174,8 +174,10 @@ export function extrasToMemberColumns(
     }
   }
   if (visible('background_notes') && extras.backgroundNotes.trim()) {
-    // Maps to the existing `internal_notes` column.
-    out.internal_notes = extras.backgroundNotes.trim()
+    // Lands in the new "About patient" sections under the "History" section
+    // (members.overview_content.hist_notes). The caller seeds that section
+    // into the practitioner's template via ensureSections().
+    out.overview_content = { hist_notes: extras.backgroundNotes.trim() }
   }
   return out
 }

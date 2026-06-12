@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Mail, Phone, Calendar, Heart, Shield, Save, X, Plus, Loader2, MessageSquare } from 'lucide-react'
+import { User, Mail, Phone, Calendar, Shield, Save, X, Loader2 } from 'lucide-react'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Member, MemberStatus, SessionFormat, EngagementLevel, MemberPreferences, EmergencyContact } from '@/types/member'
+import type { Member, MemberStatus, EngagementLevel, EmergencyContact } from '@/types/member'
 
-type ContactMethod = 'email' | 'phone' | 'text'
-type Section = 'basic' | 'preferences' | 'emergency'
+type Section = 'basic' | 'emergency'
 
 interface EditMemberModalProps {
   memberId: string
@@ -35,18 +34,6 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState<MemberStatus>('active')
   const [engagementLevel, setEngagementLevel] = useState<EngagementLevel>('medium')
-  const [internalNotes, setInternalNotes] = useState('')
-
-  // Preferences
-  const [communicationStyle, setCommunicationStyle] = useState('')
-  const [keyStrengths, setKeyStrengths] = useState<string[]>([])
-  const [strengthInput, setStrengthInput] = useState('')
-  const [areasOfSensitivity, setAreasOfSensitivity] = useState<string[]>([])
-  const [sensitivityInput, setSensitivityInput] = useState('')
-  const [therapeuticContext, setTherapeuticContext] = useState('')
-  const [currentTreatment, setCurrentTreatment] = useState('')
-  const [preferredContactMethod, setPreferredContactMethod] = useState<ContactMethod>('email')
-  const [preferredSessionFormat, setPreferredSessionFormat] = useState<SessionFormat>('in_person')
 
   // Emergency
   const [emergencyName, setEmergencyName] = useState('')
@@ -71,14 +58,6 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
       setDateOfBirth(data.date_of_birth || '')
       setStatus(data.status)
       setEngagementLevel(data.engagement_level)
-      setInternalNotes(data.internal_notes || '')
-      setCommunicationStyle(data.preferences?.communication_style || '')
-      setKeyStrengths(data.preferences?.key_strengths || [])
-      setAreasOfSensitivity(data.preferences?.areas_of_sensitivity || [])
-      setTherapeuticContext(data.preferences?.therapeutic_context || '')
-      setCurrentTreatment(data.preferences?.current_treatment || '')
-      setPreferredContactMethod(data.preferences?.preferred_contact_method || 'email')
-      setPreferredSessionFormat(data.preferences?.preferred_session_format || 'in_person')
       setEmergencyName(data.emergency_contact?.name || '')
       setEmergencyRelationship(data.emergency_contact?.relationship || '')
       setEmergencyPhone(data.emergency_contact?.phone || '')
@@ -95,15 +74,6 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
     }
     setSaving(true)
     try {
-      const preferences: MemberPreferences = {
-        communication_style: communicationStyle || null,
-        key_strengths: keyStrengths,
-        areas_of_sensitivity: areasOfSensitivity,
-        therapeutic_context: therapeuticContext || null,
-        current_treatment: currentTreatment || null,
-        preferred_contact_method: preferredContactMethod,
-        preferred_session_format: preferredSessionFormat,
-      }
       const emergency_contact: EmergencyContact = {
         name: emergencyName || null,
         relationship: emergencyRelationship || null,
@@ -121,8 +91,6 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
           date_of_birth: dateOfBirth || null,
           status,
           engagement_level: engagementLevel,
-          internal_notes: internalNotes.trim() || null,
-          preferences,
           emergency_contact,
           updated_at: new Date().toISOString(),
         })
@@ -138,16 +106,8 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
     finally { setSaving(false) }
   }
 
-  const addTag = (list: string[], setList: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
-    if (input.trim() && !list.includes(input.trim())) {
-      setList([...list, input.trim()])
-      setInput('')
-    }
-  }
-
   const sections: { id: Section; label: string; icon: typeof User }[] = [
     { id: 'basic', label: locale === 'fr' ? 'Informations' : 'Basic Info', icon: User },
-    { id: 'preferences', label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: Heart },
     { id: 'emergency', label: locale === 'fr' ? 'Urgence' : 'Emergency', icon: Shield },
   ]
 
@@ -253,72 +213,6 @@ export function EditMemberModal({ memberId, isOpen, onClose, onSaved }: EditMemb
                           <option value="low">{locale === 'fr' ? 'Faible' : 'Low'}</option>
                           <option value="medium">{locale === 'fr' ? 'Moyen' : 'Medium'}</option>
                           <option value="high">{locale === 'fr' ? 'Élevé' : 'High'}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelClass}><MessageSquare className="w-3 h-3" /> {locale === 'fr' ? 'Notes internes' : 'Internal Notes'}</label>
-                      <textarea value={internalNotes} onChange={e => setInternalNotes(e.target.value)} rows={3} placeholder={locale === 'fr' ? 'Notes privées...' : 'Private notes...'} className={`${inputClass} resize-none`} />
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── Preferences ─── */}
-                {section === 'preferences' && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className={labelClass}>{locale === 'fr' ? 'Style de communication' : 'Communication Style'}</label>
-                      <textarea value={communicationStyle} onChange={e => setCommunicationStyle(e.target.value)} rows={2} placeholder={locale === 'fr' ? 'Comment ce client préfère communiquer...' : 'How this client prefers to communicate...'} className={`${inputClass} resize-none`} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>{locale === 'fr' ? 'Points forts' : 'Key Strengths'}</label>
-                      <div className="flex gap-2 mb-2 flex-wrap">
-                        {keyStrengths.map(s => (
-                          <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 bg-teal-50 text-teal-700 rounded-lg text-xs font-medium">
-                            {s}
-                            <button onClick={() => setKeyStrengths(keyStrengths.filter(x => x !== s))} className="hover:text-red-500"><X className="w-3 h-3" /></button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input value={strengthInput} onChange={e => setStrengthInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag(keyStrengths, setKeyStrengths, strengthInput, setStrengthInput))} placeholder={locale === 'fr' ? 'Ajouter...' : 'Add...'} className={inputClass} />
-                        <button onClick={() => addTag(keyStrengths, setKeyStrengths, strengthInput, setStrengthInput)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"><Plus className="w-4 h-4 text-gray-500" /></button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelClass}>{locale === 'fr' ? 'Zones de sensibilité' : 'Areas of Sensitivity'}</label>
-                      <div className="flex gap-2 mb-2 flex-wrap">
-                        {areasOfSensitivity.map(a => (
-                          <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium">
-                            {a}
-                            <button onClick={() => setAreasOfSensitivity(areasOfSensitivity.filter(x => x !== a))} className="hover:text-red-500"><X className="w-3 h-3" /></button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input value={sensitivityInput} onChange={e => setSensitivityInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag(areasOfSensitivity, setAreasOfSensitivity, sensitivityInput, setSensitivityInput))} placeholder={locale === 'fr' ? 'Ajouter...' : 'Add...'} className={inputClass} />
-                        <button onClick={() => addTag(areasOfSensitivity, setAreasOfSensitivity, sensitivityInput, setSensitivityInput)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"><Plus className="w-4 h-4 text-gray-500" /></button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className={labelClass}>{locale === 'fr' ? 'Contexte thérapeutique' : 'Therapeutic Context'}</label>
-                      <textarea value={therapeuticContext} onChange={e => setTherapeuticContext(e.target.value)} rows={2} className={`${inputClass} resize-none`} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelClass}>{locale === 'fr' ? 'Contact préféré' : 'Preferred Contact'}</label>
-                        <select value={preferredContactMethod} onChange={e => setPreferredContactMethod(e.target.value as ContactMethod)} className={selectClass}>
-                          <option value="email">Email</option>
-                          <option value="phone">{locale === 'fr' ? 'Téléphone' : 'Phone'}</option>
-                          <option value="text">SMS</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className={labelClass}>{locale === 'fr' ? 'Format préféré' : 'Preferred Format'}</label>
-                        <select value={preferredSessionFormat} onChange={e => setPreferredSessionFormat(e.target.value as SessionFormat)} className={selectClass}>
-                          <option value="in_person">{locale === 'fr' ? 'En personne' : 'In Person'}</option>
-                          <option value="virtual">{locale === 'fr' ? 'Virtuel' : 'Virtual'}</option>
-                          <option value="phone">{locale === 'fr' ? 'Téléphone' : 'Phone'}</option>
                         </select>
                       </div>
                     </div>

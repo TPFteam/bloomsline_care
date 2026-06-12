@@ -59,6 +59,7 @@ import {
   hasVisibleColumnExtras,
   type MemberExtras,
 } from '@/components/members/MemberFormExtras'
+import { ensureSections } from '@/lib/members/about-sections'
 import type { MemberFormFieldsConfig } from '@/types/calendar'
 import type { Member, MemberFilter, MemberHubStats, Session } from '@/types/member'
 import { getMemberFullName, getMemberInitials } from '@/types/member'
@@ -813,6 +814,13 @@ export default function MembersPage() {
       if (!authUser) {
         router.push('/sign-in')
         return
+      }
+
+      // A background note lands in the new "About patient" sections
+      // (overview_content.hist_notes); make sure the practitioner's template
+      // has a matching "History" section so it actually displays.
+      if (newMemberExtras.backgroundNotes.trim()) {
+        await ensureSections(supabase, authUser.id, ['hist_notes'], locale === 'fr' ? 'fr' : 'en')
       }
 
       const emailToAdd = newMember.email.trim().toLowerCase()

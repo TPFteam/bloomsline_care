@@ -250,11 +250,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     const isCompleted = session.status === 'completed'
     const isClosedCancel = session.status === 'cancelled' || session.status === 'no_show'
     setClosePopupOutcome(presetOutcome ?? (isCompleted ? 'show' : isClosedCancel ? 'no_show' : null))
-    setShowPopupPayment(!presetOutcome && isCompleted ? session.payment_status : null)
+    // Carry the session's current payment into the close popup. If it was
+    // already marked Paid (e.g. via the wallet before closing), pre-select Paid.
+    setShowPopupPayment(session.payment_status ?? null)
     const hasExistingNote = !!sessionSummaryNotes[session.id]?.content
     setShowPopupNoteAction(hasExistingNote ? 'has' : null)
     setShowPopupNoteDraft('')
-    setNoShowPopupPayment(!presetOutcome && isClosedCancel ? session.payment_status : null)
+    // Paid is sticky; an unpaid fresh no-show is left for the reason-based default.
+    setNoShowPopupPayment(session.payment_status === 'paid' ? 'paid' : (isClosedCancel ? session.payment_status : null))
     setNoShowPopupReason(!presetOutcome && isClosedCancel ? (session.cancellation_reason || '') : '')
     setNoShowPopupComments('')
   }
@@ -542,6 +545,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [summaryDraft, setSummaryDraft] = useState('')
   const [savingSummary, setSavingSummary] = useState(false)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  // "View more" toggle per History row — reveals the secondary details
+  // (format, duration, origin, series) that we hide by default to cut noise.
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set())
 
 
   // Scroll to highlighted session or section. Also auto-open the note
@@ -1577,7 +1583,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         }
 
         // ── Reusable timeline row renderer ──
-        const renderRow = (session: Session, _index: number, isLast: boolean) => {
+        const renderRow = (session: Session, _index: number, isLast: boolean, compact = false) => {
           const startTime = parseISO(session.scheduled_at)
           const durMin = session.duration_minutes
           const isAwaitingOutcome = session.status === 'scheduled' && isPast(startTime)
@@ -1602,6 +1608,24 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           const matchedBooking = getBookingForSession(session.scheduled_at)
           const isGoogleSynced = !!matchedBooking?.google_event_id
           const isNotesOpen = expandedNotes.has(session.id) || editingSummarySession === session.id
+          const detailsOpen = expandedDetails.has(session.id)
+          const reasonLabel = session.cancellation_reason ? (({
+            patient_no_show: locale === 'fr' ? 'Absent, aucun contact' : "Didn't show, no contact",
+            patient_cancelled: locale === 'fr' ? 'Annulé par le patient' : 'Patient cancelled',
+            practitioner_cancelled: locale === 'fr' ? 'Vous avez annulé' : 'You cancelled',
+            client_request: locale === 'fr' ? 'Annulé par le patient' : 'Patient cancelled',
+            practitioner_unavailable: locale === 'fr' ? 'Vous étiez indisponible' : 'You were unavailable',
+            scheduling_conflict: locale === 'fr' ? "Conflit d'agenda" : 'Scheduling conflict',
+            illness: locale === 'fr' ? 'Maladie' : 'Illness',
+            personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
+            rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
+            no_communication: locale === 'fr' ? 'Absent, aucun contact' : "Didn't show, no contact",
+            forgot: locale === 'fr' ? 'Patient a oublié' : 'Patient forgot',
+            late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
+            technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
+            emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
+            other: locale === 'fr' ? 'Autre' : 'Other',
+          } as Record<string, string>)[session.cancellation_reason] || session.cancellation_reason) : null
           const recordTable = session.id.startsWith('booking-') ? 'bookings' as const : 'sessions' as const
           const recordId = session.id.startsWith('booking-') ? session.id.replace('booking-', '') : session.id
 
@@ -1688,6 +1712,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
                     {/* Meta row: format · duration · series chip · attendee · reschedule banner · awaiting flag */}
                     <div className="flex items-center gap-x-3 gap-y-1 mt-1.5 flex-wrap text-xs">
+                      {(!compact) && (
                       <span className="inline-flex items-center gap-1 text-gray-500">
                         {session.session_format === 'in_person'
                           ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In Person'}</>
@@ -1695,9 +1720,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           ? <><Phone className="w-3 h-3" /> {locale === 'fr' ? 'Téléphone' : 'Phone'}</>
                           : <><Video className="w-3 h-3" /> {locale === 'fr' ? 'Vidéo' : 'Virtual'}</>}
                       </span>
+                      )}
+                      {(!compact) && (
                       <span className="text-gray-500 tabular-nums">{durMin} {t.members.sessions.minutes}</span>
-                      {/* Origin chip — Google Calendar / Manual */}
-                      {isGoogleSynced ? (
+                      )}
+                      {/* Origin chip — Google Calendar / Manual. Tucked into
+                          "View more" for History (irrelevant for a past session
+                          at a glance). */}
+                      {(!compact) && (isGoogleSynced ? (
                         <span
                           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium text-[10px]"
                           title={locale === 'fr' ? 'Synchronisé avec Google Agenda' : 'Synced with Google Calendar'}
@@ -1712,11 +1742,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                         >
                           {locale === 'fr' ? 'Manuelle' : 'Manual'}
                         </span>
-                      )}
+                      ))}
                       {/* "Confirmed" badge removed — every upcoming session is
                           confirmed by default; the tag added noise next to
                           the "Completed" tag we use post-session. */}
-                      {session.series_id && session.series_position && session.series_total && (
+                      {(!compact) && session.series_id && session.series_position && session.series_total && (
                         <button
                           type="button"
                           onClick={() => setViewingSeriesId(session.series_id!)}
@@ -1752,44 +1782,26 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           {locale === 'fr' ? 'Réponse en attente' : 'Awaiting member'}
                         </span>
                       )}
+                      {/* Status — a quiet coloured word (the timeline dot already
+                          carries the colour, so no need for a filled pill too). */}
                       {session.status === 'completed' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium text-[10px]">
-                          {locale === 'fr' ? 'Terminée' : 'Completed'}
-                        </span>
+                        <span className="text-emerald-600 font-medium">{locale === 'fr' ? 'Terminée' : 'Completed'}</span>
                       )}
                       {session.status === 'cancelled' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 font-medium text-[10px]">
-                          {locale === 'fr' ? 'Annulée' : 'Cancelled'}
-                        </span>
+                        <span className="text-rose-500 font-medium">{locale === 'fr' ? 'Annulée' : 'Cancelled'}</span>
                       )}
                       {session.status === 'no_show' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium text-[10px]">
-                          {locale === 'fr' ? 'Absent' : 'No show'}
-                        </span>
+                        <span className="text-gray-500 font-medium">{locale === 'fr' ? 'Absent' : 'No-show'}</span>
                       )}
                       {isAwaitingOutcome && (
                         <span className="text-orange-600 font-medium">{locale === 'fr' ? 'En attente du statut' : 'Awaiting outcome'}</span>
                       )}
                     </div>
 
-                    {/* Cancellation reason — inline */}
-                    {(session.status === 'cancelled' || session.status === 'no_show') && session.cancellation_reason && (
-                      <p className="text-xs text-red-500 mt-2">
-                        {({
-                          client_request: locale === 'fr' ? 'Demande du patient' : 'Client request',
-                          practitioner_unavailable: locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable',
-                          scheduling_conflict: locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict',
-                          illness: locale === 'fr' ? 'Maladie' : 'Illness',
-                          personal_reasons: locale === 'fr' ? 'Raisons personnelles' : 'Personal reasons',
-                          rescheduled: locale === 'fr' ? 'Reprogrammée' : 'Rescheduled',
-                          no_communication: locale === 'fr' ? 'Aucune communication' : 'No communication',
-                          forgot: locale === 'fr' ? 'Patient a oublié' : 'Client forgot',
-                          late_cancellation: locale === 'fr' ? 'Annulation tardive' : 'Late cancellation',
-                          technical_issue: locale === 'fr' ? 'Problème technique' : 'Technical issue',
-                          emergency: locale === 'fr' ? 'Urgence' : 'Emergency',
-                          other: locale === 'fr' ? 'Autre' : 'Other',
-                        } as Record<string, string>)[session.cancellation_reason] || session.cancellation_reason}
-                      </p>
+                    {/* Cancellation / no-show reason — inline for Up next; in
+                        History it moves into the "View more" details block. */}
+                    {!compact && (session.status === 'cancelled' || session.status === 'no_show') && reasonLabel && (
+                      <p className="text-xs text-gray-500 mt-1.5">{reasonLabel}</p>
                     )}
 
                     {/* Summary preview (read-only, when not actively editing) */}
@@ -1817,15 +1829,11 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             session call-to-action right before Take notes
                             so the practitioner can't miss it. */}
                         {isAwaitingOutcome && (
-                          <span className="relative inline-flex rounded-md gap-2">
-                            <span
-                              className="absolute inset-0 rounded-md bg-amber-400 opacity-40 animate-ping pointer-events-none"
-                              style={{ animationDuration: '2s' }}
-                            />
+                          <div className="inline-flex gap-2">
                             <button
                               type="button"
                               onClick={() => openClosePopup(session, 'show')}
-                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-colors"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
                               {locale === 'fr' ? 'Présent' : 'Show'}
@@ -1833,12 +1841,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             <button
                               type="button"
                               onClick={() => openClosePopup(session, 'no_show')}
-                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 text-xs font-medium rounded-md transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 text-xs font-medium rounded-md transition-colors"
                             >
                               <XCircle className="w-3.5 h-3.5" />
                               {locale === 'fr' ? 'Absent' : 'No-show'}
                             </button>
-                          </span>
+                          </div>
                         )}
                         <button
                           type="button"
@@ -1872,6 +1880,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           status={session.payment_status || 'unpaid'}
                           table={recordTable}
                           recordId={recordId}
+                          iconOnly={compact}
+                          readOnly
                         />
                       </div>
                     )}
@@ -1912,36 +1922,79 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                                 : (locale === 'fr' ? 'Voir les notes' : 'View notes')}
                             </button>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setExpandedNotes(prev => {
-                                    const next = new Set(prev)
-                                    next.add(session.id)
-                                    return next
-                                  })
-                                  setEditingSummarySession(session.id)
-                                  setSummaryDraft('')
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
-                              >
-                                <PenLine className="w-3.5 h-3.5 text-gray-500" />
-                                {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
-                              </button>
-                              <span className="text-xs text-gray-400 italic">
-                                {locale === 'fr' ? 'Aucune note' : 'No notes'}
-                              </span>
-                            </>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandedNotes(prev => {
+                                  const next = new Set(prev)
+                                  next.add(session.id)
+                                  return next
+                                })
+                                setEditingSummarySession(session.id)
+                                setSummaryDraft('')
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                            >
+                              <PenLine className="w-3.5 h-3.5 text-gray-500" />
+                              {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
+                            </button>
                           )}
                           <PaymentBadge
                             status={session.payment_status || 'unpaid'}
                             table={recordTable}
                             recordId={recordId}
+                            iconOnly={compact}
+                          readOnly
                           />
                         </div>
                       )
                     })()}
+
+                    {/* ── History "View more": one subtle toggle + a details block
+                        that opens BELOW it (format · duration · origin · series ·
+                        reason). Up next never shows this. ── */}
+                    {compact && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedDetails(prev => {
+                            const next = new Set(prev)
+                            next.has(session.id) ? next.delete(session.id) : next.add(session.id)
+                            return next
+                          })}
+                          className="inline-flex items-center gap-0.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {detailsOpen ? (locale === 'fr' ? 'Moins de détails' : 'Less') : (locale === 'fr' ? 'Plus de détails' : 'More details')}
+                          {detailsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                        {detailsOpen && (
+                          <div className="mt-2 pl-3 border-l-2 border-gray-100 flex flex-col gap-1.5 text-xs text-gray-500">
+                            <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+                              <span className="inline-flex items-center gap-1">
+                                {session.session_format === 'in_person'
+                                  ? <><Building2 className="w-3 h-3" /> {locale === 'fr' ? 'En personne' : 'In person'}</>
+                                  : session.session_format === 'phone'
+                                  ? <><Phone className="w-3 h-3" /> {locale === 'fr' ? 'Téléphone' : 'Phone'}</>
+                                  : <><Video className="w-3 h-3" /> {locale === 'fr' ? 'Vidéo' : 'Virtual'}</>}
+                              </span>
+                              <span className="tabular-nums">{durMin} {t.members.sessions.minutes}</span>
+                              <span>{isGoogleSynced ? (locale === 'fr' ? 'Google Agenda' : 'Google Calendar') : (locale === 'fr' ? 'Manuelle' : 'Manual')}</span>
+                              {session.series_id && session.series_position && session.series_total && (
+                                <button type="button" onClick={() => setViewingSeriesId(session.series_id!)} className="text-violet-600 hover:underline">
+                                  {locale === 'fr' ? `Séance ${session.series_position}/${session.series_total}` : `Session ${session.series_position}/${session.series_total}`}
+                                </button>
+                              )}
+                            </div>
+                            {(session.status === 'cancelled' || session.status === 'no_show') && reasonLabel && (
+                              <div>
+                                <span className="text-gray-400">{locale === 'fr' ? 'Raison : ' : 'Reason: '}</span>
+                                <span className="text-gray-600">{reasonLabel}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* The "Session N/Y" chip in the meta row above is
                         already clickable and opens the SeriesDetailDrawer
@@ -2122,7 +2175,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 <p className="text-sm text-gray-400">{t.members.sessions.noPast}</p>
               ) : (
                 <div>
-                  {pastSessions.map((s, i) => renderRow(s, i, i === pastSessions.length - 1))}
+                  {pastSessions.map((s, i) => renderRow(s, i, i === pastSessions.length - 1, true))}
                 </div>
               )}
             </section>
@@ -2439,7 +2492,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       const r = e.target.value
                       setNoShowPopupReason(r)
                       // No-shows are billable (slot held) → Paid; cancellations → no default.
-                      setNoShowPopupPayment(reasonToPaymentDefault(r))
+                      // An already-Paid session stays Paid; otherwise use the reason default.
+                      setNoShowPopupPayment(closePopupSession?.payment_status === 'paid' ? 'paid' : reasonToPaymentDefault(r))
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
                   >

@@ -1394,6 +1394,7 @@ function DashboardInner() {
                           member_id: b.member_id,
                           client_name: b.client_name,
                           start_time: b.start_time,
+                      payment_status: (b as any).payment_status ?? null,
                           practitioner_notes: (b as any).practitioner_notes ?? null,
                         }) }
                       }}
@@ -2317,6 +2318,7 @@ function DashboardInner() {
                                   member_id: b.member_id,
                                   client_name: b.client_name,
                                   start_time: b.start_time,
+                      payment_status: (b as any).payment_status ?? null,
                                   practitioner_notes: (b as any).practitioner_notes ?? null,
                                 })
                               }}
@@ -2405,6 +2407,7 @@ function DashboardInner() {
                       member_id: b.member_id,
                       client_name: b.client_name,
                       start_time: b.start_time,
+                      payment_status: (b as any).payment_status ?? null,
                       practitioner_notes: (b as any).practitioner_notes ?? null,
                     })
                   }

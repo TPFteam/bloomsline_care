@@ -1,17 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo, useCallback, DragEvent } from 'react'
+import { useState, useEffect, useMemo, useCallback, DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare,
-  Heart,
-  AlertCircle,
   Phone,
-  Plus,
   ChevronRight,
   User,
-  Lock,
-  Edit3,
   X,
   FileText,
   Clock,
@@ -27,7 +22,8 @@ import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Member, ProgressNote, NoteType, MemberPreferences, Milestone, MilestoneCategory, Session as MemberSession, MemberSummary, SummaryContent } from '@/types/member'
+import type { Member, ProgressNote, NoteType, Milestone, MilestoneCategory, Session as MemberSession, MemberSummary, SummaryContent } from '@/types/member'
+import CustomSections from './CustomSections'
 import { formatRelativeTime, getSessionTypeLabel, getSessionFormatLabel, getMemberFullName } from '@/types/member'
 import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { NotePreviewModal } from '@/components/members/NotePreviewModal'
@@ -53,26 +49,6 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
   }
 }
 
-// Helper to extract localized value from bilingual {en, fr} structure
-function getLocalizedValue<T>(value: T | { en: T; fr: T } | null | undefined, locale: string): T | null {
-  if (value === null || value === undefined) return null
-  if (typeof value === 'object' && value !== null && 'en' in value && 'fr' in value) {
-    return (value as { en: T; fr: T })[locale === 'fr' ? 'fr' : 'en']
-  }
-  return value as T
-}
-
-// Helper to extract localized array
-function getLocalizedArray(value: string[] | string | { en: string[]; fr: string[] } | null | undefined, locale: string): string[] {
-  if (!value) return []
-  if (typeof value === 'object' && 'en' in value && 'fr' in value) {
-    return (value as { en: string[]; fr: string[] })[locale === 'fr' ? 'fr' : 'en'] || []
-  }
-  if (Array.isArray(value)) return value
-  if (typeof value === 'string') return [value]
-  return []
-}
-
 export default function OverviewTab({ member, notes, sessions, onMemberUpdate, onNavigateToTab }: OverviewTabProps) {
   const { t, locale } = useLanguage()
   const supabase = createClient()
@@ -82,34 +58,9 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
   const [draggedCard, setDraggedCard] = useState<string | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-
-  // Edit states
-  const [editingAbout, setEditingAbout] = useState(false)
-  const [editingPreferences, setEditingPreferences] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  // Section refs for scrolling
-  const preferencesRef = useRef<HTMLDivElement>(null)
-
-  // About edit fields
-  const [aboutNotes, setAboutNotes] = useState(member.internal_notes || '')
-
-  // Preferences edit fields - handle bilingual structure
-  const [commStyles, setCommStyles] = useState<string[]>(
-    getLocalizedArray(member.preferences?.communication_style, locale)
-  )
-  const [commStyleInput, setCommStyleInput] = useState('')
-  const [strengths, setStrengths] = useState<string[]>(
-    getLocalizedArray(member.preferences?.key_strengths, locale)
-  )
-  const [strengthInput, setStrengthInput] = useState('')
-  const [sensitivities, setSensitivities] = useState<string[]>(
-    getLocalizedArray(member.preferences?.areas_of_sensitivity, locale)
-  )
-  const [sensitivityInput, setSensitivityInput] = useState('')
-  const [currentTreatment, setCurrentTreatment] = useState(
-    getLocalizedValue(member.preferences?.current_treatment, locale) || ''
-  )
+  // While the custom "About patient" card is being edited, disable its drag so
+  // text selection inside its inputs doesn't start a card drag.
+  const [editingSections, setEditingSections] = useState(false)
 
   // Active Goals state
   const [activeGoals, setActiveGoals] = useState<Milestone[]>([])
@@ -156,10 +107,21 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
             ...layout.map(c => ({ ...c, order: c.order + 1 }))
           ]
         }
+        // Add custom_sections ("About patient") card if it doesn't exist yet
+        // (for existing users) — slot it in column 0 after the About card.
+        if (!layout.some(c => c.id === 'custom_sections')) {
+          const aboutOrder = layout.find(c => c.id === 'about')?.order ?? 1
+          layout = layout.map(c =>
+            c.column === 0 && c.order > aboutOrder ? { ...c, order: c.order + 1 } : c
+          )
+          layout = [...layout, { id: 'custom_sections', column: 0 as const, order: aboutOrder + 1 }]
+        }
         // Drop cards that have been removed/merged:
-        //   - `preferences` is now a sub-section inside the About card
+        //   - `about` (legacy "History"/Key considerations) retired — data
+        //     migrated into custom_sections ("About patient")
+        //   - `preferences` was a sub-section of the old About card
         //   - `active_goals` is hidden for now (lives in the Journey tab)
-        layout = layout.filter(c => c.id !== 'preferences' && c.id !== 'active_goals')
+        layout = layout.filter(c => c.id !== 'about' && c.id !== 'preferences' && c.id !== 'active_goals')
         setCardLayout(layout)
       }
     })
@@ -417,101 +379,11 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
     fetchCombinedNotes()
   }, [member.id, sessions, supabase, locale])
 
-  // Helper functions
-  const handleAddCommStyle = () => {
-    if (commStyleInput.trim() && !commStyles.includes(commStyleInput.trim())) {
-      setCommStyles([...commStyles, commStyleInput.trim()])
-      setCommStyleInput('')
-    }
-  }
-
   const stripHtml = (html: string) => {
     // Decode entities first so encoded tags like &lt;mark&gt; become <mark> before stripping
     const decoded = html.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&nbsp;/g, ' ')
     return decoded.replace(/<br\s*\/?>/gi, ' ').replace(/<\/p>\s*<p>/gi, ' ').replace(/<[^>]+>/g, '').trim()
   }
-
-  const handleAddStrength = () => {
-    if (strengthInput.trim() && !strengths.includes(strengthInput.trim())) {
-      setStrengths([...strengths, strengthInput.trim()])
-      setStrengthInput('')
-    }
-  }
-
-  const handleAddSensitivity = () => {
-    if (sensitivityInput.trim() && !sensitivities.includes(sensitivityInput.trim())) {
-      setSensitivities([...sensitivities, sensitivityInput.trim()])
-      setSensitivityInput('')
-    }
-  }
-
-  // Save handlers
-  const handleSaveAbout = async () => {
-    setSaving(true)
-    try {
-      const { error } = await supabase
-        .from('members')
-        .update({ internal_notes: aboutNotes.trim() || null })
-        .eq('id', member.id)
-
-      if (error) throw error
-
-      toast.success(locale === 'fr' ? 'Section À propos mise à jour' : 'About section updated')
-      setEditingAbout(false)
-      onMemberUpdate()
-    } catch (error) {
-      console.error('Error updating about:', error)
-      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-
-  const handleSavePreferences = async () => {
-    setSaving(true)
-    try {
-      const preferences: MemberPreferences = {
-        communication_style: commStyles.length > 0 ? commStyles : null,
-        key_strengths: strengths,
-        areas_of_sensitivity: sensitivities,
-        therapeutic_context: member.preferences?.therapeutic_context ?? null,
-        current_treatment: currentTreatment.trim() || null,
-        preferred_contact_method: member.preferences?.preferred_contact_method ?? 'email',
-        preferred_session_format: member.preferences?.preferred_session_format ?? 'virtual',
-      }
-
-      const { error } = await supabase
-        .from('members')
-        .update({ preferences })
-        .eq('id', member.id)
-
-      if (error) throw error
-
-      toast.success(locale === 'fr' ? 'Préférences mises à jour' : 'Preferences updated')
-      setEditingPreferences(false)
-      onMemberUpdate()
-    } catch (error) {
-      console.error('Error updating preferences:', error)
-      toast.error(locale === 'fr' ? 'Impossible de mettre à jour' : 'Failed to update')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // Check if preferences section has any data - use localized values
-  const localizedCommStyles = getLocalizedArray(member.preferences?.communication_style, locale)
-  const localizedStrengths = getLocalizedArray(member.preferences?.key_strengths, locale)
-  const localizedSensitivities = getLocalizedArray(member.preferences?.areas_of_sensitivity, locale)
-  const localizedTherapeuticContext = getLocalizedValue(member.preferences?.therapeutic_context, locale)
-  const localizedCurrentTreatment = getLocalizedValue(member.preferences?.current_treatment, locale)
-
-  const hasPreferencesData =
-    localizedCommStyles.length > 0 ||
-    localizedStrengths.length > 0 ||
-    localizedSensitivities.length > 0 ||
-    localizedTherapeuticContext ||
-    localizedCurrentTreatment
 
   const noteTypeColors: Record<string, { bg: string; text: string }> = {
     general: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -548,11 +420,13 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       iconBg: 'bg-teal-500/10',
       iconColor: 'text-teal-600',
     },
-    about: {
-      label: t.members.overview.aboutClient,
+    custom_sections: {
+      // Self-rendered card (own chrome + header); this entry only satisfies
+      // the cardInfo guard in renderCard.
+      label: locale === 'fr' ? 'À propos du patient' : 'About patient',
       icon: <User className="w-4 h-4" />,
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      iconBg: 'bg-violet-50',
+      iconColor: 'text-violet-600',
     },
     active_goals: {
       label: locale === 'fr' ? 'Axes de travail actifs' : 'Active Goals',
@@ -565,12 +439,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
       icon: <Clock className="w-4 h-4" />,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600',
-    },
-    preferences: {
-      label: t.members.overview.preferences,
-      icon: <Heart className="w-4 h-4" />,
-      iconBg: 'bg-rose-50',
-      iconColor: 'text-rose-600',
     },
     recent_notes: {
       label: t.members.overview.recentNotes,
@@ -615,100 +483,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               {locale === 'fr' ? 'Générer' : locale === 'es' ? 'Generar' : 'Generate'}
             </Button>
           </div>
-        )
-
-      case 'about':
-        return (
-          <>
-            <AnimatePresence mode="wait">
-              {editingAbout ? (
-                <motion.div
-                  key="editing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <textarea
-                    value={aboutNotes}
-                    onChange={(e) => setAboutNotes(e.target.value)}
-                    placeholder="Add notes about this client..."
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none text-sm"
-                  />
-                  <div className="flex justify-end gap-2 mt-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setAboutNotes(member.internal_notes || '')
-                        setEditingAbout(false)
-                      }}
-                      className="rounded-lg"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveAbout}
-                      disabled={saving}
-                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                    >
-                      {saving ? 'Saving...' : 'Save'}
-                    </Button>
-                  </div>
-                </motion.div>
-              ) : member.internal_notes ? (
-                <motion.p
-                  key="content"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed"
-                >
-                  {member.internal_notes}
-                </motion.p>
-              ) : (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-8"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <FileText className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune note ajoutée' : 'No notes added yet'}</p>
-                  <Button
-                    size="sm"
-                    onClick={() => setEditingAbout(true)}
-                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    {locale === 'fr' ? 'Ajouter des notes' : 'Add Notes'}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Merged: Key considerations / Points d'attention as a sub-section */}
-            <div className="mt-5 pt-5 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-3 group/prefs">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  {locale === 'fr' ? "Points d'attention" : locale === 'es' ? 'Puntos de atención' : 'Key considerations'}
-                </h4>
-                {!editingPreferences && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingPreferences(true)}
-                    className="text-gray-400 hover:text-gray-700 h-6 w-6 p-0 rounded-md opacity-0 group-hover/prefs:opacity-100 transition-opacity"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </Button>
-                )}
-              </div>
-              {renderCardContent('preferences')}
-            </div>
-          </>
         )
 
       case 'active_goals':
@@ -840,287 +614,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-        )
-
-      case 'preferences':
-        return (
-          <AnimatePresence mode="wait">
-            {editingPreferences ? (
-              <motion.div
-                key="editing"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-4"
-              >
-                {/* Communication Style — hidden */}
-                {false && <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.communicationStyle}
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={commStyleInput}
-                      onChange={(e) => setCommStyleInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddCommStyle()
-                        }
-                      }}
-                      placeholder={t.members.form.communicationStylePlaceholder}
-                      className="flex-1 px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddCommStyle}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {commStyles.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {commStyles.map((style) => (
-                        <span
-                          key={style}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-blue-50 text-blue-700 text-sm"
-                        >
-                          {style}
-                          <button
-                            type="button"
-                            onClick={() => setCommStyles(commStyles.filter(s => s !== style))}
-                            className="hover:text-blue-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>}
-
-                {/* Key Strengths */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.keyStrengths}
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={strengthInput}
-                      onChange={(e) => setStrengthInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddStrength()
-                        }
-                      }}
-                      placeholder={t.members.form.keyStrengthsPlaceholder}
-                      className="flex-1 px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddStrength}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {strengths.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {strengths.map((strength) => (
-                        <span
-                          key={strength}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-sm"
-                        >
-                          {strength}
-                          <button
-                            type="button"
-                            onClick={() => setStrengths(strengths.filter(s => s !== strength))}
-                            className="hover:text-emerald-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Areas of Sensitivity */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.form.areasOfSensitivity}
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={sensitivityInput}
-                      onChange={(e) => setSensitivityInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddSensitivity()
-                        }
-                      }}
-                      placeholder={t.members.form.areasOfSensitivityPlaceholder}
-                      className="flex-1 px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddSensitivity}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {sensitivities.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {sensitivities.map((area) => (
-                        <span
-                          key={area}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-amber-50 text-amber-700 text-sm"
-                        >
-                          {area}
-                          <button
-                            type="button"
-                            onClick={() => setSensitivities(sensitivities.filter(s => s !== area))}
-                            className="hover:text-amber-900"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Current Treatment */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t.members.overview.currentTreatment}
-                  </label>
-                  <textarea
-                    value={currentTreatment}
-                    onChange={(e) => setCurrentTreatment(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Décrivez le traitement en cours...' : 'Describe current treatment...'}
-                    rows={3}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none transition-all text-sm resize-none"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setCommStyles(getLocalizedArray(member.preferences?.communication_style, locale))
-                      setStrengths(getLocalizedArray(member.preferences?.key_strengths, locale))
-                      setSensitivities(getLocalizedArray(member.preferences?.areas_of_sensitivity, locale))
-                      setCurrentTreatment(getLocalizedValue(member.preferences?.current_treatment, locale) || '')
-                      setEditingPreferences(false)
-                    }}
-                    className="rounded-lg"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSavePreferences}
-                    disabled={saving}
-                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              </motion.div>
-            ) : hasPreferencesData ? (
-              <motion.div
-                key="content"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-4"
-              >
-                {/* Communication Style — hidden */}
-
-                {localizedStrengths.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                      {t.members.overview.keyStrengths}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {localizedStrengths.map((strength) => (
-                        <span
-                          key={strength}
-                          className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm"
-                        >
-                          {strength}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {localizedSensitivities.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                      {t.members.overview.areasOfSensitivity}
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {localizedSensitivities.map((area) => (
-                        <span
-                          key={area}
-                          className="inline-flex items-center px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-sm"
-                        >
-                          {area}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {localizedCurrentTreatment && (
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                      {t.members.overview.currentTreatment}
-                    </h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
-                      {localizedCurrentTreatment}
-                    </p>
-                  </div>
-                )}
-
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8"
-              >
-                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Heart className="w-6 h-6 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-500 mb-3">{locale === 'fr' ? 'Aucune préférence définie' : 'No preferences set yet'}</p>
-                <Button
-                  size="sm"
-                  onClick={() => setEditingPreferences(true)}
-                  className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  {locale === 'fr' ? 'Ajouter des préférences' : 'Add Preferences'}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         )
 
       case 'recent_notes': {
@@ -1295,7 +788,30 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
 
     const isDragging = draggedCard === cardConfig.id
     const isDropTarget = dragOverColumn === columnIndex && dragOverIndex === cardIndex
-    const isEditing = (cardConfig.id === 'about' && editingAbout) || (cardConfig.id === 'preferences' && editingPreferences)
+    const isEditing = false
+
+    // custom_sections renders its OWN card chrome + header (Edit template /
+    // Edit live inside it), so we only wrap it in the drag shell. Drag is
+    // disabled while it's being edited (see editingSections).
+    if (cardConfig.id === 'custom_sections') {
+      return (
+        <div
+          key={cardConfig.id}
+          draggable={!editingSections}
+          onDragStart={(e) => editingSections ? e.preventDefault() : handleDragStart(e, cardConfig.id)}
+          onDragOver={(e) => handleDragOver(e, columnIndex as 0 | 1, cardIndex)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, columnIndex as 0 | 1, cardIndex)}
+          onDragEnd={handleDragEnd}
+          className={`group transition-all duration-200 ${isDragging ? 'opacity-50' : ''}`}
+        >
+          {isDropTarget && !isDragging && (
+            <div className="h-2 mb-2 bg-blue-100 rounded-full transition-all" />
+          )}
+          <CustomSections memberId={member.id} onEditingChange={setEditingSections} />
+        </div>
+      )
+    }
 
     // ai_summary, when a summary already exists, IS the embedded
     // Pulse panel — no extra card wrapper / duplicate "Bloom Pulse"
@@ -1359,7 +875,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
           layout={!isEditing}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          ref={cardConfig.id === 'preferences' ? preferencesRef : undefined}
           className={`bg-white rounded-2xl p-6 border border-gray-200 group ${isDragging ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
         >
           <div className="flex items-center justify-between mb-4">
@@ -1372,27 +887,6 @@ export default function OverviewTab({ member, notes, sessions, onMemberUpdate, o
               {cardInfo.label}
             </h3>
             <div className="flex items-center gap-1">
-              {/* Edit button for about and preferences */}
-              {cardConfig.id === 'about' && !editingAbout && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingAbout(true)}
-                  className="text-gray-500 hover:text-gray-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </Button>
-              )}
-              {cardConfig.id === 'preferences' && !editingPreferences && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingPreferences(true)}
-                  className="text-gray-500 hover:text-gray-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </Button>
-              )}
               {/* Drag handle */}
               <div className="cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
                 <GripVertical className="w-4 h-4" />

@@ -9,6 +9,7 @@ import {
   type SupportedLocale,
   type SessionPrep,
 } from '@/lib/session-prep/prompts'
+import { buildAboutText } from '@/lib/members/about-sections'
 
 /**
  * POST /api/members/[id]/sessions/prepare
@@ -137,8 +138,11 @@ export async function POST(
     const milestones = milestonesResult.data || []
     const reflections = reflectionsResult.data || []
 
+    // Serialize the practitioner's "About patient" sections for this member.
+    const aboutText = await buildAboutText(supabase, user.id, member.overview_content)
+
     // Check for minimum data
-    const hasData = sessions.length > 0 || notes.length > 0 || milestones.length > 0 || member.internal_notes
+    const hasData = sessions.length > 0 || notes.length > 0 || milestones.length > 0 || !!aboutText
 
     if (!hasData) {
       return NextResponse.json({
@@ -155,6 +159,7 @@ export async function POST(
       notes,
       milestones,
       reflections,
+      aboutText,
       locale,
     }
 
