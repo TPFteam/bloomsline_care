@@ -8,6 +8,7 @@ import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import type { Session } from '@/types/member'
+import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
 
 type SessionType = 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other'
 type SessionFormat = 'in_person' | 'virtual' | 'phone'
@@ -31,7 +32,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
   const [sessionType, setSessionType] = useState<SessionType>('follow_up')
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [duration, setDuration] = useState(60)
-  const [outcome, setOutcome] = useState<'completed' | 'cancelled'>('completed')
+  const [outcome, setOutcome] = useState<'completed' | 'no_show'>('completed')
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('unpaid')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
@@ -43,7 +44,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
       setSessionType(session.session_type as SessionType)
       setSessionFormat(session.session_format as SessionFormat)
       setDuration(session.duration_minutes)
-      setOutcome(session.status === 'completed' ? 'completed' : 'cancelled')
+      setOutcome(session.status === 'completed' ? 'completed' : 'no_show')
       setPaymentStatus((session.payment_status as 'paid' | 'unpaid') || 'unpaid')
       setReason(session.cancellation_reason || '')
     }
@@ -59,8 +60,11 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
         duration_minutes: duration,
         updated_at: new Date().toISOString(),
       }
+      // For "didn't happen", the reason decides: no-contact → no_show;
+      // called-off → cancelled.
+      const finalStatus = outcome === 'completed' ? 'completed' : reasonToStatus(reason)
       if (showOutcome) {
-        updates.status = outcome
+        updates.status = finalStatus
         updates.payment_status = paymentStatus
         if (outcome === 'completed') {
           // Re-attended: clear any stale cancellation data. Note: the
@@ -87,7 +91,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
             .maybeSingle()
           if (b) {
             const bUpd: Record<string, unknown> = {
-              status: outcome,
+              status: finalStatus,
               payment_status: paymentStatus,
               updated_at: new Date().toISOString(),
             }
@@ -175,9 +179,9 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
                       </button>
                       <button
                         type="button"
-                        onClick={() => setOutcome('cancelled')}
+                        onClick={() => setOutcome('no_show')}
                         className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium border transition ${
-                          outcome === 'cancelled'
+                          outcome === 'no_show'
                             ? 'bg-amber-600 text-white border-amber-600'
                             : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
                         }`}
@@ -188,32 +192,37 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
                   </div>
 
                   {/* Reason — only for No-show, editable, pre-filled. */}
-                  {outcome === 'cancelled' && (
+                  {outcome === 'no_show' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         {locale === 'fr' ? 'Raison' : 'Reason'}
                       </label>
                       <select
                         value={reason}
-                        onChange={(e) => setReason(e.target.value)}
+                        onChange={(e) => {
+                          const r = e.target.value
+                          setReason(r)
+                          // No-shows are billable (slot held) → default Paid.
+                          const pd = reasonToPaymentDefault(r); if (pd) setPaymentStatus(pd)
+                        }}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-300 focus:ring-2 focus:ring-gray-100 outline-none bg-white"
                       >
                         <option value="">{locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}</option>
-                        {([
-                          ['no_communication', locale === 'fr' ? 'Aucune communication' : 'No communication'],
-                          ['client_request', locale === 'fr' ? 'Demande du patient' : 'Client request'],
-                          ['late_cancellation', locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'],
-                          ['illness', locale === 'fr' ? 'Maladie' : 'Illness'],
-                          ['forgot', locale === 'fr' ? 'Patient a oublié' : 'Client forgot'],
-                          ['emergency', locale === 'fr' ? 'Urgence' : 'Emergency'],
-                          ['technical_issue', locale === 'fr' ? 'Problème technique' : 'Technical issue'],
-                          ['scheduling_conflict', locale === 'fr' ? "Conflit d'agenda" : 'Scheduling conflict'],
-                          ['practitioner_unavailable', locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'],
-                          ['other', locale === 'fr' ? 'Autre' : 'Other'],
-                        ] as const).map(([value, label]) => (
+                        {getCloseReasonGroups(locale).map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.options.map(([value, label]) => (
                           <option key={value} value={value}>{label}</option>
                         ))}
+                      </optgroup>
+                    ))}
                       </select>
+                      {reason && (
+                        <p className="text-[11px] text-gray-400 mt-1.5">
+                          {reasonToStatus(reason) === 'cancelled'
+                            ? (locale === 'fr' ? 'Sera enregistrée comme annulation.' : 'Will be recorded as a cancellation.')
+                            : (locale === 'fr' ? 'Sera enregistrée comme absence.' : 'Will be recorded as a no-show.')}
+                        </p>
+                      )}
                     </div>
                   )}
 

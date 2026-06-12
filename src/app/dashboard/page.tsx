@@ -269,6 +269,47 @@ function DashboardInner() {
   // opens the close-session popup inline (no navigation).
   const [showAwaitingClosure, setShowAwaitingClosure] = useState(false)
   const [closingBooking, setClosingBooking] = useState<CloseSessionBooking | null>(null)
+  // Pre-selected outcome when opened from a Show / No-show button (skips the
+  // popup's "How did it go?" toggle). undefined = edit/legacy open → toggle shown.
+  const [closingOutcome, setClosingOutcome] = useState<'show' | 'no_show' | undefined>(undefined)
+  // Cancel a future appointment from the calendar popover (notifies the patient,
+  // stores the reason, keeps a cancelled record). Wired to WeekCalendarView's onReject.
+  const handleCancelBooking = async (bookingId: string, cancellationReason?: string) => {
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', cancellation_reason: cancellationReason }),
+      })
+      if (!res.ok) throw new Error('cancel failed')
+      setBookings(prev => prev.map(b => (b.id === bookingId ? { ...b, status: 'cancelled', cancellation_reason: cancellationReason } as DashBooking : b)))
+      toast.success(t('Appointment cancelled', 'Rendez-vous annulé', 'Cita cancelada'))
+    } catch (e) {
+      console.error('Cancel booking failed:', e)
+      toast.error(t('Failed to cancel', "Échec de l'annulation", 'Error al cancelar'))
+    }
+  }
+  // Permanently delete an event (mistakes/duplicates). Removes the paired
+  // session row + the booking, then drops it from the calendar.
+  const handleDeleteBookingDash = async (bookingId: string) => {
+    try {
+      const b = (bookings as any[]).find(x => x.id === bookingId)
+      if (b?.member_id) {
+        const { data: sess } = await supabase.from('sessions').select('id')
+          .eq('practitioner_id', b.practitioner_id).eq('member_id', b.member_id).eq('scheduled_at', b.start_time).maybeSingle()
+        if (sess?.id) await supabase.from('progress_notes').update({ session_id: null }).eq('session_id', sess.id)
+        await supabase.from('sessions').delete()
+          .eq('practitioner_id', b.practitioner_id).eq('member_id', b.member_id).eq('scheduled_at', b.start_time)
+      }
+      const { error } = await supabase.from('bookings').delete().eq('id', bookingId)
+      if (error) throw error
+      setBookings(prev => prev.filter(x => x.id !== bookingId))
+      toast.success(t('Event deleted', 'Événement supprimé', 'Evento eliminado'))
+    } catch (e) {
+      console.error('Delete booking failed:', e)
+      toast.error(t('Failed to delete', 'Échec de la suppression', 'Error al eliminar'))
+    }
+  }
 
   // Practitioner-configured dashboard layout. Null until loaded; the
   // DnD-enabled section falls back to the default until then.
@@ -1337,23 +1378,24 @@ function DashboardInner() {
                     <WeekCalendarView
                       bookings={bookings as any}
                       onApprove={async () => {}}
-                      onReject={async () => {}}
+                      onReject={handleCancelBooking}
+                      onDelete={handleDeleteBookingDash}
                       processingId={null}
                       onSlotClick={(day, time, options) => {
                         setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
                       }}
                       hideLegend
                       gridMaxHeight={280}
-                      onCloseSession={(bookingId) => {
+                      onCloseSession={(bookingId, outcome) => {
                         const b = (bookings as any[]).find((x) => x.id === bookingId)
-                        if (b) setClosingBooking({
+                        if (b) { setClosingOutcome(outcome); setClosingBooking({
                           id: b.id,
                           practitioner_id: b.practitioner_id,
                           member_id: b.member_id,
                           client_name: b.client_name,
                           start_time: b.start_time,
                           practitioner_notes: (b as any).practitioner_notes ?? null,
-                        })
+                        }) }
                       }}
                     />
                     <button
@@ -2248,25 +2290,11 @@ function DashboardInner() {
                         : format(start, locale === 'fr' ? 'EEE d MMM' : 'EEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
                     const timeFmt = locale === 'en' ? 'h:mm a' : 'HH:mm'
                     return (
-                      <li key={b.id}>
-                        <button
-                          type="button"
-                          // Open the close-session popup *on the
-                          // dashboard* — no navigation. Practitioner
-                          // never leaves the page they're on.
-                          onClick={() => {
-                            setShowAwaitingClosure(false)
-                            setClosingBooking({
-                              id: b.id,
-                              practitioner_id: b.practitioner_id,
-                              member_id: b.member_id,
-                              client_name: b.client_name,
-                              start_time: b.start_time,
-                              practitioner_notes: (b as any).practitioner_notes ?? null,
-                            })
-                          }}
-                          className="w-full flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 text-left transition group"
-                        >
+                      <li>
+                        {/* Open the close-session popup *on the dashboard* —
+                            no navigation. Show / No-show go straight to the
+                            relevant fields (the popup skips its toggle). */}
+                        <div className="w-full flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition">
                           <div className="px-2 h-9 rounded-lg bg-orange-50 text-orange-700 flex flex-col items-center justify-center text-[10px] font-semibold shrink-0 tabular-nums leading-tight">
                             <span>{format(start, timeFmt)}</span>
                           </div>
@@ -2276,8 +2304,28 @@ function DashboardInner() {
                             </p>
                             <p className="text-xs text-gray-500 truncate">{dateLabel}</p>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 shrink-0" />
-                        </button>
+                          {([['show', t('Show', 'Présent', 'Asistió'), 'bg-emerald-600 hover:bg-emerald-700 text-white'], ['no_show', t('No-show', 'Absent', 'Ausente'), 'bg-white text-amber-700 border border-amber-300 hover:bg-amber-50']] as const).map(([oc, label, cls]) => (
+                            <button
+                              key={oc}
+                              type="button"
+                              onClick={() => {
+                                setShowAwaitingClosure(false)
+                                setClosingOutcome(oc)
+                                setClosingBooking({
+                                  id: b.id,
+                                  practitioner_id: b.practitioner_id,
+                                  member_id: b.member_id,
+                                  client_name: b.client_name,
+                                  start_time: b.start_time,
+                                  practitioner_notes: (b as any).practitioner_notes ?? null,
+                                })
+                              }}
+                              className={`px-2.5 py-1.5 rounded-md text-xs font-medium shrink-0 transition-colors ${cls}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       </li>
                     )
                   })}
@@ -2305,7 +2353,8 @@ function DashboardInner() {
           navigation. Same component the bookings page uses. */}
       <CloseSessionPopup
         booking={closingBooking}
-        onClose={() => setClosingBooking(null)}
+        initialOutcome={closingOutcome}
+        onClose={() => { setClosingBooking(null); setClosingOutcome(undefined) }}
         onSaved={(result) => {
           // Patch the local bookings cache so the "Sessions to close"
           // count drops immediately without waiting for a refetch.
@@ -2338,16 +2387,18 @@ function DashboardInner() {
               <WeekCalendarView
                 bookings={bookings as any}
                 onApprove={async () => {}}
-                onReject={async () => {}}
+                onReject={handleCancelBooking}
+                      onDelete={handleDeleteBookingDash}
                 processingId={null}
                 onSlotClick={(day, time, options) => {
                   setShowCalendar(false)
                   setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
                 }}
-                onCloseSession={(bookingId) => {
+                onCloseSession={(bookingId, outcome) => {
                   const b = (bookings as any[]).find((x) => x.id === bookingId)
                   if (b) {
                     setShowCalendar(false)
+                    setClosingOutcome(outcome)
                     setClosingBooking({
                       id: b.id,
                       practitioner_id: b.practitioner_id,

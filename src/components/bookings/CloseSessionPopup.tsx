@@ -20,6 +20,7 @@ import { X, CheckCircle, XCircle, PenLine, Loader2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { emitBookingsChanged } from '@/lib/bookings-events'
 import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
+import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
 
 const TAG_LABELS: Record<string, { en: string; fr: string; es: string }> = {
   recurrence:          { en: 'Recurrence',          fr: 'Récurrence',          es: 'Recurrencia' },
@@ -42,7 +43,7 @@ export interface CloseSessionBooking {
 
 export interface CloseSessionResult {
   bookingId: string
-  status: 'completed' | 'cancelled'
+  status: 'completed' | 'cancelled' | 'no_show'
   payment_status: 'paid' | 'unpaid'
 }
 
@@ -52,10 +53,17 @@ interface Props {
   /** Called after a successful save so the host can refresh local data. */
   onSaved?: (result: CloseSessionResult) => void
   locale: string
+  /**
+   * Pre-selected outcome. When set (the practitioner clicked Show / No-show
+   * directly on the row), we skip the "How did this session go?" toggle and
+   * go straight to the fields. Omitted for "Edit close", which keeps the
+   * toggle so the recorded outcome can be switched.
+   */
+  initialOutcome?: 'show' | 'no_show'
 }
 
-export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) {
-  const [outcome, setOutcome] = useState<'show' | 'no_show' | null>(null)
+export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOutcome }: Props) {
+  const [outcome, setOutcome] = useState<'show' | 'no_show' | null>(initialOutcome ?? null)
   const [saving, setSaving] = useState(false)
   // Show branch
   const [showPayment, setShowPayment] = useState<'paid' | 'unpaid' | null>(null)
@@ -73,7 +81,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
   // already carries practitioner_notes.
   useEffect(() => {
     if (!booking) return
-    setOutcome(null)
+    setOutcome(initialOutcome ?? null)
     setSaving(false)
     setShowPayment(null)
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
@@ -82,7 +90,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
     setNoShowPayment(null)
     setNoShowReason('')
     setNoShowComments('')
-  }, [booking])
+  }, [booking, initialOutcome])
 
   // Build the practitioner's tag list (defaults + custom) so the inline
   // editor here gets the same tag-insert button as the main notes editor.
@@ -153,10 +161,11 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
       // member page's Sessions tab doesn't show it as "scheduled"
       // while bookings already has it closed.
       //   'show'    → both rows status='completed'
-      //   'no_show' → both rows status='cancelled' (no_show is just a
-      //               reason; we store it as cancelled per founder's call).
+      //   'no_show' → both rows status='no_show' (distinct from a real
+      //               cancellation so the calendar reads "No-show", not
+      //               "Cancelled").
       const mirrorToSession = async (
-        sessionStatus: 'completed' | 'cancelled',
+        sessionStatus: 'completed' | 'cancelled' | 'no_show',
         paymentStatus: 'paid' | 'unpaid',
         cancellationReason?: string,
       ) => {
@@ -174,7 +183,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
             .eq('practitioner_id', booking.practitioner_id)
             .eq('member_id', booking.member_id)
             .eq('scheduled_at', booking.start_time)
-            .not('status', 'in', '("completed","cancelled")')
+            .not('status', 'in', '("completed","cancelled","no_show")')
         } catch (sessErr) {
           console.warn('Could not propagate close to matching session:', sessErr)
         }
@@ -205,11 +214,12 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         toast.success(locale === 'fr' ? 'Rendez-vous marqué comme terminé' : 'Booking marked as completed')
       } else {
         if (noShowPayment === null || !noShowReason) { setSaving(false); return }
+        // The reason decides: no-contact reasons → no_show; called-off → cancelled.
+        const closeStatus = reasonToStatus(noShowReason)
         const updates: Record<string, unknown> = {
-          status: 'cancelled',
+          status: closeStatus,
           payment_status: noShowPayment,
           cancellation_reason: noShowReason,
-          cancelled_at: new Date().toISOString(),
         }
         if (noShowComments.trim()) {
           const existing = booking.practitioner_notes || ''
@@ -219,12 +229,14 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         }
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
-        await mirrorToSession('cancelled', noShowPayment, noShowReason)
+        await mirrorToSession(closeStatus, noShowPayment, noShowReason)
         emitBookingsChanged()
         if (booking.member_id) void triggerPulseRegen(sb, booking.member_id, locale)
-        onSaved?.({ bookingId: booking.id, status: 'cancelled', payment_status: noShowPayment })
+        onSaved?.({ bookingId: booking.id, status: closeStatus, payment_status: noShowPayment })
         onClose()
-        toast.success(locale === 'fr' ? 'Rendez-vous marqué comme annulé' : 'Booking marked as cancelled')
+        toast.success(closeStatus === 'cancelled'
+          ? (locale === 'fr' ? 'Rendez-vous marqué comme annulé' : 'Booking marked as cancelled')
+          : (locale === 'fr' ? 'Rendez-vous marqué comme absence' : 'Booking marked as no-show'))
       }
     } catch (err) {
       console.error('CloseSessionPopup save error:', err)
@@ -254,7 +266,11 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900">
-            {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+            {initialOutcome === 'show'
+              ? (locale === 'fr' ? 'Séance présente' : 'Mark as attended')
+              : initialOutcome === 'no_show'
+                ? (locale === 'fr' ? 'Marquer absence' : 'Mark as no-show')
+                : (locale === 'fr' ? 'Clôturer la séance' : 'Close session')}
           </h3>
           <button
             type="button"
@@ -267,7 +283,8 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
           </button>
         </div>
 
-        {/* Outcome */}
+        {/* Outcome — hidden when pre-selected from a Show / No-show row button */}
+        {!initialOutcome && (
         <div className="mb-5">
           <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
             {locale === 'fr' ? "Comment s'est passée la séance ?" : 'How did this session go?'}
@@ -299,6 +316,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
             </button>
           </div>
         </div>
+        )}
 
         {/* Show branch */}
         {outcome === 'show' && (
@@ -383,7 +401,50 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
         {/* No-show branch */}
         {outcome === 'no_show' && (
           <>
+            {/* Reason first — what happened decides no-show vs cancelled,
+                and you can't judge payment until you know. */}
             <div className="mb-5">
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                {locale === 'fr' ? 'Que s\'est-il passé ?' : 'What happened?'}
+              </p>
+              <select
+                value={noShowReason}
+                onChange={(e) => {
+                  const r = e.target.value
+                  setNoShowReason(r)
+                  // Smart payment default: no-shows are billable (you held
+                  // the slot) → Paid; cancellations → no default, practitioner picks.
+                  setNoShowPayment(reasonToPaymentDefault(r))
+                }}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+              >
+                <option value="" disabled>
+                  {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
+                </option>
+                {getCloseReasonGroups(locale).map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.options.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+              </select>
+              {noShowReason && (
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  {reasonToStatus(noShowReason) === 'cancelled'
+                    ? (locale === 'fr' ? 'Sera enregistrée comme annulation.' : 'Will be recorded as a cancellation.')
+                    : (locale === 'fr' ? 'Sera enregistrée comme absence.' : 'Will be recorded as a no-show.')}
+                </p>
+              )}
+              <textarea
+                value={noShowComments}
+                onChange={(e) => setNoShowComments(e.target.value)}
+                placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
+                rows={3}
+                className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+              />
+            </div>
+            <div className="mb-6">
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
                 {locale === 'fr' ? 'Paiement' : 'Payment'}
               </p>
@@ -405,41 +466,6 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale }: Props) 
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="mb-6">
-              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                {locale === 'fr' ? 'Raison' : 'Reason'}
-              </p>
-              <select
-                value={noShowReason}
-                onChange={(e) => setNoShowReason(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
-              >
-                <option value="" disabled>
-                  {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
-                </option>
-                {([
-                  ['no_communication', locale === 'fr' ? 'Aucune communication' : 'No communication'],
-                  ['client_request', locale === 'fr' ? 'Demande du patient' : 'Client request'],
-                  ['late_cancellation', locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'],
-                  ['illness', locale === 'fr' ? 'Maladie' : 'Illness'],
-                  ['forgot', locale === 'fr' ? 'Patient a oublié' : 'Client forgot'],
-                  ['emergency', locale === 'fr' ? 'Urgence' : 'Emergency'],
-                  ['technical_issue', locale === 'fr' ? 'Problème technique' : 'Technical issue'],
-                  ['scheduling_conflict', locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'],
-                  ['practitioner_unavailable', locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'],
-                  ['other', locale === 'fr' ? 'Autre' : 'Other'],
-                ] as const).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-              <textarea
-                value={noShowComments}
-                onChange={(e) => setNoShowComments(e.target.value)}
-                placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
-                rows={3}
-                className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
-              />
             </div>
           </>
         )}

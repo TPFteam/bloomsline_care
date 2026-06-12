@@ -42,6 +42,7 @@ import { createClient } from '@/lib/supabase/browser-client'
 import { useSearchParams } from 'next/navigation'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { toast } from 'sonner'
+import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
 import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { EditSessionModal } from '@/components/EditSessionModal'
@@ -219,6 +220,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // Show by accident.
   const [closePopupSession, setClosePopupSession] = useState<Session | null>(null)
   const [closePopupOutcome, setClosePopupOutcome] = useState<'show' | 'no_show' | null>(null)
+  // True when the outcome was pre-selected from a Show / No-show row button —
+  // hides the in-popup toggle (pure 2-step). Edit-close keeps it switchable.
+  const [closePopupPreset, setClosePopupPreset] = useState(false)
   // Show-branch state. Every required field starts null/empty so the
   // practitioner must explicitly answer each section — no silent
   // defaults that they might miss.
@@ -236,26 +240,29 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // Shared saving flag
   const [closePopupSaving, setClosePopupSaving] = useState(false)
 
-  const openClosePopup = (session: Session) => {
+  const openClosePopup = (session: Session, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupSession(session)
+    setClosePopupPreset(!!presetOutcome)
     // Editing an already-closed session: pre-fill outcome + payment (+ reason)
     // so the practitioner adjusts what they recorded. Completed → "show";
-    // cancelled/no_show → "no_show".
+    // cancelled/no_show → "no_show". A presetOutcome (Show / No-show row
+    // button) wins and starts the fields blank.
     const isCompleted = session.status === 'completed'
     const isClosedCancel = session.status === 'cancelled' || session.status === 'no_show'
-    setClosePopupOutcome(isCompleted ? 'show' : isClosedCancel ? 'no_show' : null)
-    setShowPopupPayment(isCompleted ? session.payment_status : null)
+    setClosePopupOutcome(presetOutcome ?? (isCompleted ? 'show' : isClosedCancel ? 'no_show' : null))
+    setShowPopupPayment(!presetOutcome && isCompleted ? session.payment_status : null)
     const hasExistingNote = !!sessionSummaryNotes[session.id]?.content
     setShowPopupNoteAction(hasExistingNote ? 'has' : null)
     setShowPopupNoteDraft('')
-    setNoShowPopupPayment(isClosedCancel ? session.payment_status : null)
-    setNoShowPopupReason(isClosedCancel ? (session.cancellation_reason || '') : '')
+    setNoShowPopupPayment(!presetOutcome && isClosedCancel ? session.payment_status : null)
+    setNoShowPopupReason(!presetOutcome && isClosedCancel ? (session.cancellation_reason || '') : '')
     setNoShowPopupComments('')
   }
 
   const closeClosePopup = () => {
     setClosePopupSession(null)
     setClosePopupOutcome(null)
+    setClosePopupPreset(false)
     setShowPopupNoteDraft('')
     setNoShowPopupComments('')
   }
@@ -287,9 +294,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         if (noShowPopupPayment !== session.payment_status) {
           await supabase.from('sessions').update({ payment_status: noShowPopupPayment }).eq('id', session.id)
         }
-        // Always store as cancelled — no_communication is just one
-        // reason among many, per founder's decision.
-        await handleUpdateStatus(session.id, 'cancelled', noShowPopupReason, noShowPopupComments)
+        // The reason decides the outcome: no-contact → no_show; called-off
+        // → cancelled. Both are local closes (no patient notification).
+        await handleUpdateStatus(session.id, reasonToStatus(noShowPopupReason), noShowPopupReason, noShowPopupComments)
         closeClosePopup()
       }
     } finally {
@@ -977,15 +984,13 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
 
       if (error) throw error
 
-      // When closing as completed (or no-show, which we store as
-      // cancelled), mirror the new status to the paired booking row so
-      // the bookings page doesn't keep showing "Clôturer la séance".
-      // Cancelled goes through the PATCH endpoint below to also trigger
-      // Google Calendar updates; completed is local-only (the event
-      // already happened, nothing to sync to Google).
-      let cancelledBookingId: string | null = null
+      // Mirror the close to the paired booking row (so the bookings page
+      // stops showing "needs outcome"). The session already happened, so
+      // this is a LOCAL mirror only — nothing syncs to Google and the
+      // patient isn't notified, whether recorded as completed, no-show, or
+      // cancelled. (Cancelling a *future* appointment is a different flow.)
       const sessionRow = sessions.find(s => s.id === sessionId)
-      if (newStatus === 'completed' && sessionRow) {
+      if ((newStatus === 'completed' || newStatus === 'no_show' || newStatus === 'cancelled') && sessionRow) {
         try {
           const { data: matchingBooking } = await supabase
             .from('bookings')
@@ -1006,9 +1011,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               .eq('id', sessionId)
               .maybeSingle()
             const updates: Record<string, unknown> = {
-              status: 'completed',
+              status: newStatus,
               updated_at: new Date().toISOString(),
             }
+            if ((newStatus === 'no_show' || newStatus === 'cancelled') && reason) updates.cancellation_reason = reason
             if (freshSession?.payment_status && freshSession.payment_status !== matchingBooking.payment_status) {
               updates.payment_status = freshSession.payment_status
             }
@@ -1018,70 +1024,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           console.warn('Could not propagate completed to matching booking:', bookingErr)
         }
       }
-      if (newStatus === 'cancelled') {
-        try {
-          if (sessionRow) {
-            // Find the matching booking by member + start time
-            const { data: matchingBooking } = await supabase
-              .from('bookings')
-              .select('id, status')
-              .eq('member_id', memberId)
-              .eq('start_time', sessionRow.scheduled_at)
-              .neq('status', 'cancelled')
-              .maybeSingle()
-
-            if (matchingBooking) {
-              cancelledBookingId = matchingBooking.id
-              await fetch(`/api/bookings/${matchingBooking.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  status: 'cancelled',
-                  practitioner_notes: reason || undefined,
-                  series_scope: seriesScope || 'this',
-                }),
-              })
-            }
-          }
-        } catch (bookingErr) {
-          console.warn('Could not cancel matching booking:', bookingErr)
-          // Don't block — session was already cancelled successfully
-        }
-      }
-
-      // Undo affordance for series-occurrence cancels (scope='this'). The
-      // restore endpoint flips DB rows back and PATCHes the Google instance
-      // to confirmed. We don't offer undo for 'following' scope — restoring
-      // a multi-row series cancel correctly is more involved (recreating
-      // RRULE state) and out of v1 scope.
-      const showUndo =
-        newStatus === 'cancelled' &&
-        sessionRow?.series_id &&
-        (seriesScope === 'this' || seriesScope === undefined) &&
-        cancelledBookingId
-      if (showUndo) {
-        toast.success(
-          locale === 'fr' ? 'Séance annulée' : 'Session cancelled',
-          {
-            duration: 8000,
-            action: {
-              label: locale === 'fr' ? 'Annuler' : 'Undo',
-              onClick: async () => {
-                try {
-                  const r = await fetch(`/api/bookings/${cancelledBookingId}/restore`, { method: 'POST' })
-                  if (!r.ok) throw new Error('restore failed')
-                  toast.success(locale === 'fr' ? 'Séance restaurée' : 'Session restored')
-                  notifyMutation()
-                } catch {
-                  toast.error(locale === 'fr' ? 'Échec de la restauration' : 'Restore failed')
-                }
-              },
-            },
-          }
-        )
-      } else {
-        toast.success(t.members.success.sessionUpdated)
-      }
+      toast.success(t.members.success.sessionUpdated)
       notifyMutation()
     } catch (error) {
       console.error('Error updating session:', error)
@@ -1874,18 +1817,26 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             session call-to-action right before Take notes
                             so the practitioner can't miss it. */}
                         {isAwaitingOutcome && (
-                          <span className="relative inline-flex rounded-md">
+                          <span className="relative inline-flex rounded-md gap-2">
                             <span
-                              className="absolute inset-0 rounded-md bg-amber-400 opacity-40 animate-ping"
+                              className="absolute inset-0 rounded-md bg-amber-400 opacity-40 animate-ping pointer-events-none"
                               style={{ animationDuration: '2s' }}
                             />
                             <button
                               type="button"
-                              onClick={() => openClosePopup(session)}
-                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md transition-colors"
+                              onClick={() => openClosePopup(session, 'show')}
+                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-colors"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
-                              {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
+                              {locale === 'fr' ? 'Présent' : 'Show'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openClosePopup(session, 'no_show')}
+                              className="relative inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-amber-700 border border-amber-300 hover:bg-amber-50 text-xs font-medium rounded-md transition-colors"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              {locale === 'fr' ? 'Absent' : 'No-show'}
                             </button>
                           </span>
                         )}
@@ -2348,7 +2299,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               </button>
             </div>
 
-            {/* Outcome — Show or No-show. Required first choice. */}
+            {/* Outcome — hidden when pre-selected from a Show / No-show row button */}
+            {!closePopupPreset && (
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
                 {locale === 'fr' ? 'Comment s\'est passée la séance ?' : 'How did this session go?'}
@@ -2380,6 +2332,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 </button>
               </div>
             </div>
+            )}
 
             {/* ─── Show branch ─── */}
             {closePopupOutcome === 'show' && (
@@ -2475,8 +2428,50 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             {/* ─── No-show branch ─── */}
             {closePopupOutcome === 'no_show' && (
               <>
-                {/* Section 1 — Payment */}
+                {/* Section 1 — What happened (reason decides no-show vs cancelled) */}
                 <div className="mb-5">
+                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    {locale === 'fr' ? 'Que s\'est-il passé ?' : 'What happened?'}
+                  </p>
+                  <select
+                    value={noShowPopupReason}
+                    onChange={(e) => {
+                      const r = e.target.value
+                      setNoShowPopupReason(r)
+                      // No-shows are billable (slot held) → Paid; cancellations → no default.
+                      setNoShowPopupPayment(reasonToPaymentDefault(r))
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    <option value="" disabled>
+                      {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
+                    </option>
+                    {getCloseReasonGroups(locale).map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.options.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  {noShowPopupReason && (
+                    <p className="text-[11px] text-gray-400 mt-1.5">
+                      {reasonToStatus(noShowPopupReason) === 'cancelled'
+                        ? (locale === 'fr' ? 'Sera enregistrée comme annulation.' : 'Will be recorded as a cancellation.')
+                        : (locale === 'fr' ? 'Sera enregistrée comme absence.' : 'Will be recorded as a no-show.')}
+                    </p>
+                  )}
+                  <textarea
+                    value={noShowPopupComments}
+                    onChange={(e) => setNoShowPopupComments(e.target.value)}
+                    placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
+                    rows={3}
+                    className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                  />
+                </div>
+
+                {/* Section 2 — Payment */}
+                <div className="mb-6">
                   <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
                     {locale === 'fr' ? 'Paiement' : 'Payment'}
                   </p>
@@ -2498,43 +2493,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Section 2 — Reason + comments */}
-                <div className="mb-6">
-                  <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                    {locale === 'fr' ? 'Raison' : 'Reason'}
-                  </p>
-                  <select
-                    value={noShowPopupReason}
-                    onChange={(e) => setNoShowPopupReason(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  >
-                    <option value="" disabled>
-                      {locale === 'fr' ? 'Sélectionner une raison…' : 'Select a reason…'}
-                    </option>
-                    {([
-                      ['no_communication', locale === 'fr' ? 'Aucune communication' : 'No communication'],
-                      ['client_request', locale === 'fr' ? 'Demande du patient' : 'Client request'],
-                      ['late_cancellation', locale === 'fr' ? 'Annulation tardive' : 'Late cancellation'],
-                      ['illness', locale === 'fr' ? 'Maladie' : 'Illness'],
-                      ['forgot', locale === 'fr' ? 'Patient a oublié' : 'Client forgot'],
-                      ['emergency', locale === 'fr' ? 'Urgence' : 'Emergency'],
-                      ['technical_issue', locale === 'fr' ? 'Problème technique' : 'Technical issue'],
-                      ['scheduling_conflict', locale === 'fr' ? 'Conflit d\'agenda' : 'Scheduling conflict'],
-                      ['practitioner_unavailable', locale === 'fr' ? 'Praticien indisponible' : 'Practitioner unavailable'],
-                      ['other', locale === 'fr' ? 'Autre' : 'Other'],
-                    ] as const).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                  <textarea
-                    value={noShowPopupComments}
-                    onChange={(e) => setNoShowPopupComments(e.target.value)}
-                    placeholder={locale === 'fr' ? 'Commentaires supplémentaires (optionnel)' : 'Additional comments (optional)'}
-                    rows={3}
-                    className="w-full mt-2 px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
-                  />
                 </div>
               </>
             )}

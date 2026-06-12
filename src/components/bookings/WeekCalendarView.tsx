@@ -1,24 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ExternalLink, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2 } from 'lucide-react'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
 //   scheduled=blue · awaiting=amber · pending=amber · completed=green ·
 //   cancelled=red · no_show=gray. Google (external) gets its own violet so it
 //   never clashes with a status colour.
+// Modern minimal event chip: a clean flat soft-tinted fill, no borders.
+// `bg` = light fill, `text` = label colour, `ring` = subtle select highlight.
 function calStatusVisual(isGoogle: boolean, status: string | undefined, isPast: boolean) {
-  if (isGoogle) return { fill: 'bg-violet-50 border-violet-400 text-violet-700', ring: 'ring-violet-300', Icon: CalendarClock, showIcon: true }
-  if (status === 'pending') return { fill: 'bg-amber-50 border-amber-300 text-amber-700', ring: 'ring-amber-200', Icon: Hourglass, showIcon: true }
-  if (status === 'completed') return { fill: 'bg-emerald-50 border-emerald-400 text-emerald-700', ring: 'ring-emerald-400', Icon: CheckCircle2, showIcon: true }
-  if (status === 'cancelled') return { fill: 'bg-rose-50 border-rose-400 text-rose-700', ring: 'ring-rose-300', Icon: XCircle, showIcon: true }
-  if (status === 'no_show') return { fill: 'bg-gray-100 border-gray-400 text-gray-600', ring: 'ring-gray-300', Icon: Ban, showIcon: true }
+  if (isGoogle) return { bg: 'bg-violet-50', text: 'text-violet-700', ring: 'ring-violet-300', Icon: CalendarClock, showIcon: true }
+  if (status === 'pending') return { bg: 'bg-amber-50', text: 'text-amber-800', ring: 'ring-amber-300', Icon: Hourglass, showIcon: true }
+  if (status === 'completed') return { bg: 'bg-emerald-50', text: 'text-emerald-800', ring: 'ring-emerald-300', Icon: CheckCircle2, showIcon: true }
+  if (status === 'cancelled') return { bg: 'bg-rose-50/70', text: 'text-rose-600', ring: 'ring-rose-300', Icon: XCircle, showIcon: true }
+  if (status === 'no_show') return { bg: 'bg-gray-50', text: 'text-gray-500', ring: 'ring-gray-300', Icon: Ban, showIcon: true }
   // confirmed: past start + not closed = "needs outcome" (orange); else scheduled (blue)
-  if (isPast) return { fill: 'bg-orange-50 border-orange-500 text-orange-800', ring: 'ring-orange-300', Icon: AlertCircle, showIcon: true }
-  return { fill: 'bg-blue-50 border-blue-400 text-blue-700', ring: 'ring-blue-300', Icon: CalendarClock, showIcon: true }
+  if (isPast) return { bg: 'bg-orange-50', text: 'text-orange-800', ring: 'ring-orange-300', Icon: AlertCircle, showIcon: true }
+  return { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-300', Icon: CalendarClock, showIcon: true }
 }
 
 // Status header for the event popover — a solid top bar + a clear label so the
@@ -34,6 +36,7 @@ function calStatusHeader(isGoogle: boolean, status: string | undefined, isPast: 
 }
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
+import { getCancelReasonGroups } from '@/lib/sessions/close-reasons'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
 import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
@@ -70,7 +73,9 @@ interface WeekCalendarViewProps {
     member_id?: string | null
   }>
   onApprove?: (id: string) => void
-  onReject?: (id: string) => void
+  onReject?: (id: string, cancellationReason?: string) => void
+  // Permanently delete an event (silent — for mistakes/duplicates).
+  onDelete?: (id: string) => void
   processingId?: string | null
   onSlotClick?: (day: Date, time: string, options?: { outsideHours?: boolean }) => void
   // When true, the toolbar (legend / week nav / Today / Availability)
@@ -94,9 +99,10 @@ interface WeekCalendarViewProps {
   // resolves bookingId → Booking and calls into the shared
   // handleTakeNotes flow.
   onTakeNotes?: (bookingId: string) => void
-  // Opens the close-session flow for a booking (confirmed → close,
-  // completed → edit close). Wired per host page to its close popup.
-  onCloseSession?: (bookingId: string) => void
+  // Opens the close-session flow for a booking. `outcome` pre-selects
+  // Show / No-show (the practitioner clicked it directly on the row), so
+  // the popup skips the "How did it go?" step. Omitted = edit close.
+  onCloseSession?: (bookingId: string, outcome?: 'show' | 'no_show') => void
   // Optional controlled week (so an external mini-calendar can drive it).
   // Falls back to internal state when omitted.
   weekStart?: Date
@@ -115,7 +121,7 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   // Session-prep drawer (opens from the event popover for upcoming sessions).
   const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
@@ -131,6 +137,49 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
   const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  // Event popover positioning. We anchor to the clicked event's viewport rect
+  // and render the popover `fixed`, flipping above / clamping so it always
+  // stays fully on screen (low events used to open off the bottom edge).
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number; maxHeight: number } | null>(null)
+  // Which event is mid-"are you sure?" for an appointment cancellation — so a
+  // single click can't fire an irreversible patient-notifying cancel.
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const popoverRef = useRef<HTMLDivElement | null>(null)
+  const openEventPopover = (eventId: string, isSelected: boolean, e: React.MouseEvent) => {
+    const willOpen = !isSelected
+    setAnchorRect(willOpen ? (e.currentTarget as HTMLElement).getBoundingClientRect() : null)
+    setPopoverPos(null)
+    setCancelConfirmId(null)
+    setCancelReason('')
+    setDeleteConfirmId(null)
+    setSelectedEvent(willOpen ? eventId : null)
+  }
+  useLayoutEffect(() => {
+    if (!selectedEvent || !anchorRect) { setPopoverPos(null); return }
+    const el = popoverRef.current
+    if (!el) return
+    const M = 8 // viewport margin
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const w = el.offsetWidth || 256
+    const h = el.offsetHeight
+    const left = Math.max(M, Math.min(anchorRect.left, vw - w - M))
+    const spaceBelow = vh - anchorRect.bottom - M
+    const spaceAbove = anchorRect.top - M
+    let top: number
+    let maxHeight: number
+    if (h + 4 <= spaceBelow || spaceBelow >= spaceAbove) {
+      top = anchorRect.bottom + 4
+      maxHeight = vh - top - M
+    } else {
+      maxHeight = spaceAbove - 4
+      top = Math.max(M, anchorRect.top - 4 - Math.min(h, maxHeight))
+    }
+    setPopoverPos({ top, left, maxHeight: Math.max(140, maxHeight) })
+  }, [selectedEvent, anchorRect])
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
   const [showAvailability, setShowAvailability] = useState(false)
@@ -656,7 +705,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 const isGoogle = event.source === 'google'
                 const isPending = event.status === 'pending'
                 const isSelected = selectedEvent === event.id
-                const isPast = new Date(event.start).getTime() < Date.now()
+                // "Closeable" from 30 min before the start: the practitioner can
+                // mark Show / No-show then (a no-show is usually known by start
+                // time). Before that window the event reads as upcoming (Cancel).
+                const isPast = new Date(event.start).getTime() - 30 * 60 * 1000 < Date.now()
                 const sv = calStatusVisual(isGoogle, event.status, isPast)
                 const SvIcon = sv.Icon
                 const sh = calStatusHeader(isGoogle, event.status, isPast)
@@ -670,9 +722,9 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                 return (
                   <div key={event.id} data-event>
                     <div
-                      onClick={() => setSelectedEvent(isSelected ? null : event.id)}
-                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 border cursor-pointer transition-all ${sv.fill} ${dim ? 'opacity-70' : ''} ${
-                        isSelected ? `shadow-lg z-20 ring-2 ring-offset-1 ${sv.ring}` : 'hover:shadow-md'
+                      onClick={(e) => openEventPopover(event.id, isSelected, e)}
+                      className={`absolute rounded-lg px-2 py-1.5 overflow-hidden z-10 cursor-pointer transition-all ${sv.bg} ${sv.text} ${dim ? 'opacity-60' : ''} ${
+                        isSelected ? `ring-1 ${sv.ring} shadow-md z-20` : 'hover:shadow-sm'
                       }`}
                       style={{ top, height: Math.max(height, 26), left: `calc(${left} + 4px)`, width: `calc(${width} - 2px)` }}
                     >
@@ -692,18 +744,36 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setSelectedEvent(null)} />
                         <div
-                          className={`absolute z-50 bg-white rounded-xl shadow-xl border border-gray-200 border-t-[3px] ${sh.borderT} w-64 overflow-hidden`}
-                          style={{ top: top + Math.min(height, 40), left: `calc(${left} + 4px)` }}
+                          ref={popoverRef}
+                          className="fixed z-50 bg-white rounded-2xl shadow-xl shadow-gray-900/[0.08] border border-gray-100 w-64 overflow-y-auto"
+                          style={{
+                            top: popoverPos?.top ?? 0,
+                            left: popoverPos?.left ?? 0,
+                            maxHeight: popoverPos?.maxHeight,
+                            visibility: popoverPos ? 'visible' : 'hidden',
+                          }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* Header — status pill + name + view profile. The
                               colored top edge (above) + this pill make the
                               status clear without the legend. */}
                           <div className="px-4 pt-3.5 pb-3 border-b border-gray-100">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mb-2 ${sh.tint} ${sh.text}`}>
-                              <ShIcon className="w-3 h-3" />
-                              {locale === 'fr' ? sh.fr : sh.en}
-                            </span>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${sh.text}`}>
+                                <ShIcon className="w-3 h-3" />
+                                {locale === 'fr' ? sh.fr : sh.en}
+                              </span>
+                              {event.source === 'booking' && event.bookingId && onDelete && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(event.id); setCancelConfirmId(null) }}
+                                  title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                  aria-label={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                  className="p-1 -m-1 text-gray-300 hover:text-rose-600 rounded transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <p className="font-semibold text-gray-900 text-sm leading-tight flex-1 break-words">{event.title}</p>
                               {event.memberId && (
@@ -723,6 +793,33 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             </p>
                           </div>
 
+                          {/* Delete confirm — destructive, so it asks first. */}
+                          {deleteConfirmId === event.id && onDelete && event.bookingId && (
+                            <div className="px-4 py-3 bg-rose-50/60 border-b border-rose-100 space-y-2">
+                              <p className="text-[11px] text-gray-600 leading-snug">
+                                {locale === 'fr'
+                                  ? 'Supprimer définitivement cet événement ? Action irréversible.'
+                                  : "Delete this event permanently? This can't be undone."}
+                              </p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null) }}
+                                  className="flex-1 px-2 py-1.5 text-gray-600 border border-gray-200 hover:bg-white text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  {locale === 'fr' ? 'Garder' : 'Keep'}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onDelete(event.bookingId!); setDeleteConfirmId(null); setSelectedEvent(null) }}
+                                  disabled={processingId === event.bookingId}
+                                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Body */}
                           <div className="px-4 py-3 space-y-2.5">
                             {/* Payment + session type — the status itself now
@@ -738,7 +835,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                                   />
                                 )}
                                 {event.sessionType && (
-                                  <span className="text-[10px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full font-medium">
+                                  <span className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md font-medium capitalize">
                                     {event.sessionType.replace(/_/g, ' ')}
                                   </span>
                                 )}
@@ -753,20 +850,62 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                               </p>
                             )}
 
-                            {/* Meet link — primary action */}
-                            {event.meetLink && (
-                              <a
-                                href={event.meetLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg transition-colors"
-                              >
-                                <Video className="w-3.5 h-3.5" />
-                                {locale === 'fr' ? 'Rejoindre Google Meet' : 'Join Google Meet'}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
+                            {/* Quick actions — one row of icon buttons
+                                (Join Meet · Session prep · Take notes). Labels
+                                live in the tooltip / aria-label to keep the
+                                popover compact. */}
+                            {(() => {
+                              const meetLabel = locale === 'fr' ? 'Rejoindre Google Meet' : 'Join Google Meet'
+                              const prepLabel = locale === 'fr' ? 'Préparation' : 'Session prep'
+                              const showPrep = event.source === 'booking' && event.memberId && event.status !== 'completed' && event.status !== 'cancelled' && event.status !== 'no_show'
+                              const showNotes = event.source === 'booking' && event.bookingId && event.memberId && !!onTakeNotes
+                              const hasNote = showNotes ? (hasNotesForBooking?.(event.bookingId!) ?? false) : false
+                              const notesLabel = hasNote ? (locale === 'fr' ? 'Voir les notes' : 'View notes') : (locale === 'fr' ? 'Prendre des notes' : 'Take notes')
+                              if (!event.meetLink && !showPrep && !showNotes) return null
+                              return (
+                                <div className="flex gap-2">
+                                  {event.meetLink && (
+                                    <a
+                                      href={event.meetLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title={meetLabel}
+                                      aria-label={meetLabel}
+                                      className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors"
+                                    >
+                                      <Video className="w-4 h-4" />
+                                    </a>
+                                  )}
+                                  {showPrep && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setPrepEvent(event); setSelectedEvent(null) }}
+                                      title={prepLabel}
+                                      aria-label={prepLabel}
+                                      className="flex-1 flex items-center justify-center px-3 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 transition-colors"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                  {showNotes && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); onTakeNotes!(event.bookingId!); setSelectedEvent(null) }}
+                                      title={notesLabel}
+                                      aria-label={notesLabel}
+                                      className={`flex-1 flex items-center justify-center px-3 py-2 rounded-lg transition-colors ${
+                                        hasNote
+                                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+                                          : 'bg-amber-50 hover:bg-amber-100 text-amber-700'
+                                      }`}
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              )
+                            })()}
 
                             {/* Google source tag + claim action — these events
                                 live only in Google, not Bloomsline yet, so offer
@@ -786,44 +925,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                                 <p className="text-[10px] text-blue-500">Google Calendar</p>
                               </>
                             )}
-
-                            {/* Session prep — quick AI orientation from the
-                                practitioner's last 2-3 notes. Shown for
-                                upcoming sessions (not closed ones). */}
-                            {event.source === 'booking' && event.memberId && event.status !== 'completed' && event.status !== 'cancelled' && event.status !== 'no_show' && (
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setPrepEvent(event); setSelectedEvent(null) }}
-                                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-medium rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 transition-colors"
-                              >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                {locale === 'fr' ? 'Préparation' : 'Session prep'}
-                              </button>
-                            )}
-
-                            {/* Session notes — opens the floating editor.
-                                Label flips between "View notes" and "Take
-                                notes" based on whether a session_summary
-                                note already exists for this booking. */}
-                            {event.source === 'booking' && event.bookingId && event.memberId && onTakeNotes && (() => {
-                              const hasNote = hasNotesForBooking?.(event.bookingId) ?? false
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); onTakeNotes(event.bookingId!); setSelectedEvent(null) }}
-                                  className={`flex items-center justify-center gap-1.5 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                                    hasNote
-                                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
-                                      : 'bg-amber-50 hover:bg-amber-100 text-amber-700'
-                                  }`}
-                                >
-                                  <FileText className="w-3.5 h-3.5" />
-                                  {hasNote
-                                    ? (locale === 'fr' ? 'Voir les notes' : 'View notes')
-                                    : (locale === 'fr' ? 'Prendre des notes' : 'Take notes')}
-                                </button>
-                              )
-                            })()}
 
                             {/* Notes */}
                             {event.notes && (
@@ -853,27 +954,83 @@ export function WeekCalendarView({ bookings, onApprove, onReject, processingId, 
                             </div>
                           )}
 
-                          {/* Confirmed booking: Close session (primary) + Cancel */}
+                          {/* Confirmed booking — time-aware actions.
+                              Past  → record the outcome (Show / No-show). "Patient
+                                      cancelled" lives inside No-show, so there's no
+                                      separate Cancel here.
+                              Future → call off the appointment (notifies the patient). */}
                           {event.status === 'confirmed' && event.source === 'booking' && (
                             <div className="px-4 pb-3 pt-2 border-t border-gray-100 space-y-2">
-                              {event.bookingId && onCloseSession && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!); setSelectedEvent(null) }}
-                                  className="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors"
-                                >
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  {locale === 'fr' ? 'Clôturer la séance' : 'Close session'}
-                                </button>
-                              )}
-                              {onReject && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onReject(event.id); setSelectedEvent(null) }}
-                                  disabled={processingId === event.id}
-                                  className="w-full flex items-center justify-center gap-1 px-2 py-2 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-50 disabled:opacity-50"
-                                >
-                                  {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                                  {locale === 'fr' ? 'Annuler' : 'Cancel'}
-                                </button>
+                              {isPast ? (
+                                event.bookingId && onCloseSession && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!, 'show'); setSelectedEvent(null) }}
+                                      className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      {locale === 'fr' ? 'Présent' : 'Show'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onCloseSession(event.bookingId!, 'no_show'); setSelectedEvent(null) }}
+                                      className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-white text-amber-700 border border-amber-200 hover:bg-amber-50 text-xs font-medium rounded-lg transition-colors"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      {locale === 'fr' ? 'Absent' : 'No-show'}
+                                    </button>
+                                  </div>
+                                )
+                              ) : (
+                                onReject && (
+                                  cancelConfirmId === event.id ? (
+                                    <div className="space-y-2">
+                                      <p className="text-[11px] text-gray-500 leading-snug">
+                                        {locale === 'fr'
+                                          ? 'Annuler ce rendez-vous ? Le patient sera prévenu.'
+                                          : 'Cancel this appointment? The patient will be notified.'}
+                                      </p>
+                                      <select
+                                        value={cancelReason}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => { e.stopPropagation(); setCancelReason(e.target.value) }}
+                                        className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-300"
+                                      >
+                                        <option value="" disabled>{locale === 'fr' ? 'Raison…' : 'Reason…'}</option>
+                                        {getCancelReasonGroups(locale).map((group) => (
+                                          <optgroup key={group.label} label={group.label}>
+                                            {group.options.map(([value, label]) => (
+                                              <option key={value} value={value}>{label}</option>
+                                            ))}
+                                          </optgroup>
+                                        ))}
+                                      </select>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setCancelConfirmId(null); setCancelReason('') }}
+                                          className="flex-1 px-2 py-2 text-gray-600 border border-gray-200 hover:bg-gray-50 text-xs font-medium rounded-lg transition-colors"
+                                        >
+                                          {locale === 'fr' ? 'Garder' : 'Keep'}
+                                        </button>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); onReject(event.id, cancelReason || undefined); setCancelConfirmId(null); setCancelReason(''); setSelectedEvent(null) }}
+                                          disabled={processingId === event.id || !cancelReason}
+                                          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
+                                        >
+                                          {processingId === event.id ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                          {locale === 'fr' ? "Oui, annuler" : 'Yes, cancel'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setCancelConfirmId(event.id) }}
+                                      className="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-medium rounded-lg transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                      {locale === 'fr' ? 'Annuler le rendez-vous' : 'Cancel appointment'}
+                                    </button>
+                                  )
+                                )
                               )}
                             </div>
                           )}

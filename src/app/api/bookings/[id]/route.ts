@@ -30,7 +30,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, practitioner_notes } = body;
+    const { status, practitioner_notes, cancellation_reason } = body;
     // Optional: scope of the cancel for a series booking.
     //   'this'      = only this occurrence (DB row + the matching Google instance)
     //   'following' = this occurrence and every later sibling in the same series
@@ -98,6 +98,7 @@ export async function PATCH(
     if (status === 'cancelled') {
       updateData.cancelled_at = new Date().toISOString();
       updateData.cancelled_by = 'practitioner';
+      if (cancellation_reason) updateData.cancellation_reason = cancellation_reason;
     }
 
     // Update the booking
