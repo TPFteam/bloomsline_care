@@ -22,7 +22,7 @@ import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 
-const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
+const DEMO_BOOKING_URL = 'https://calendar.notion.so/meet/bloomsline/hibloomsline'
 
 // ─────────────────────────────────────────────────────
 // TRANSLATIONS
@@ -241,22 +241,25 @@ const translations = {
       flow1Label: '1 practitioner',
       flow1Value: '€29 / month',
       flow2Label: 'invites',
-      flow2Value: 'their own clients',
+      flow2Value: 'their own patients',
       flow3Label: 'and refers',
       flow3Value: 'peers in their network',
       revenueTitle: 'Revenue',
       revenueItems: [
-        '€29 / month per practitioner',
-        'Members free',
+        '€29 / practitioner — our landing price',
+        'Patients free — brought in at zero CAC',
         'High-margin SaaS',
+        'Expansion: clinics, premium AI, B2C',
       ],
       compoundTitle: 'Why it compounds',
       compoundItems: [
-        'Practitioners bring their own members from day one',
+        'Practitioners bring their own patients from day one',
         'Engagement is driven by the practitioner relationship',
         'Growth happens through practitioner networks',
       ],
-      footnote: '~20 sessions/week × ~€60/session = ~€4,800/mo. One retained patient covers Bloomsline for 6 months.',
+      footnote: '15 sessions/week × €60 × ~4 weeks ≈ €3,600/month. We charge €29 — less than one session. Too small to ever cancel, with huge room to charge more.',
+      footnoteSource: 'Avg revenue ~€51,671/yr · UNASA 2024',
+      footnoteUrl: 'https://propulsebyca.fr/idees-business/psychologue',
     },
     real: {
       label: "WHAT'S REAL",
@@ -264,7 +267,7 @@ const translations = {
       builtLabel: 'BUILT',
       builtItems: [
         'Practitioner platform live',
-        'Member app in use',
+        'Patient app in use',
         'Real users interacting with the product',
         'End-to-end system built in-house',
       ],
@@ -294,43 +297,29 @@ const translations = {
           tag: 'Past',
           title: 'We started with trust.',
           num: '01',
-          items: [
-            'Talked to 100+ therapists',
-            'Found the real problem: the gap between sessions',
-            'Built our network before the product',
-          ],
+          action: 'Talked to 100+ therapists and built our network — before any code.',
+          goal: '100+ conversations · 0 ads',
         },
         {
           tag: 'Now',
           title: 'We win them one by one.',
           num: '02',
-          items: [
-            'We reach out to each practitioner personally',
-            'Hands-on onboarding — we hand-hold every one',
-            'Weekly calls; we improve on their feedback',
-            'Goal: our first 10 active users',
-          ],
+          action: 'Personal outreach and hands-on onboarding, one practitioner at a time.',
+          goal: 'First 10 active users',
         },
         {
           tag: 'Next',
           title: 'Growth that builds itself.',
           num: '03',
-          items: [
-            'Therapists invite other therapists',
-            'Partner with psychology schools',
-            'Share real stories, write for their journals',
-            'Goal: 50 next quarter, 150 by early 2027',
-          ],
+          action: 'Therapists invite therapists; we partner with psychology schools.',
+          goal: '150 therapists by early 2027',
         },
         {
           tag: 'Later',
           title: 'Go bigger.',
           num: '04',
-          items: [
-            'Sell to clinics and group practices',
-            'Expand across Europe',
-            '1,500+ therapists · €1M+ revenue',
-          ],
+          action: 'Clinics and group practices, expanding across Europe.',
+          goal: '1,500+ therapists · €1M+ revenue',
         },
       ],
       dontLabel: 'What we don\'t do',
@@ -394,8 +383,8 @@ const translations = {
       laterTag: 'Eventually',
       laterTitle: 'The infrastructure for mental health.',
       laterSub: 'The trusted layer the whole field is built on — practitioners, clinics, researchers and health systems.',
-      laterBody: 'Mental health has never had a shared way to measure what works. We become it — from one therapist\'s room to clinics, researchers, and health systems across Europe, all building on the same foundation.',
-      laterWhatWeDo: 'From measuring outcomes to seeing them coming — patterns that flag the hard days before they arrive, so a practitioner can reach out first. We become how care is measured.',
+      laterBody: 'Mental health has never had a shared way to measure what works. We become it — from one therapist\'s room to clinics, researchers, and health systems across Europe, and even consumer apps that plug into the same model, all building on the same foundation.',
+      laterWhatWeDo: 'From measuring outcomes to seeing them coming — patterns that flag the hard days before they arrive, so a practitioner can reach out first. And we open the layer: clinics, researchers and consumer apps plug into the same standard. We become how care is measured.',
       laterWhyItMatters: 'When a whole field measures the same way, it builds on the same layer — ours. That\'s not a bigger product. That\'s infrastructure.',
       footnote: 'Vision earns the right to exist through execution. Right now, we\'re heads-down on Today.',
     },
@@ -419,7 +408,7 @@ const translations = {
       line3: 'And today, nothing connects the two.',
       line4: "That's the layer we're building.",
       cta: "Let's talk.",
-      bookCall: 'Book a 20-min call',
+      bookCall: 'Book a 30-min call',
       emailUs: 'hi@bloomsline.com',
       copyright: '© 2026 Bloomsline',
     },
@@ -636,22 +625,25 @@ const translations = {
       flow1Label: '1 praticien',
       flow1Value: '€29 / mois',
       flow2Label: 'invite',
-      flow2Value: 'ses propres clients',
+      flow2Value: 'ses propres patients',
       flow3Label: 'et recommande',
       flow3Value: 'ses pairs dans son réseau',
       revenueTitle: 'Revenus',
       revenueItems: [
-        '€29 / mois par praticien',
-        'Membres gratuits',
+        '€29 / praticien — notre prix d\'entrée',
+        'Patients gratuits — acquis à coût nul',
         'SaaS à forte marge',
+        'Expansion : cliniques, IA premium, B2C',
       ],
       compoundTitle: 'Pourquoi ça compose',
       compoundItems: [
-        'Les praticiens amènent leurs propres membres dès le premier jour',
+        'Les praticiens amènent leurs propres patients dès le premier jour',
         'L\'engagement est porté par la relation praticien',
         'La croissance passe par les réseaux de praticiens',
       ],
-      footnote: '~20 séances/semaine × ~€60/séance = ~€4 800/mois. Un patient retenu couvre Bloomsline pendant 6 mois.',
+      footnote: '15 séances/semaine × 60€ × ~4 semaines ≈ 3 600€/mois. On facture 29€ — moins d\'une séance. Trop petit pour résilier un jour, avec une marge énorme pour augmenter nos prix.',
+      footnoteSource: 'CA moyen ~51 671€/an · UNASA 2024',
+      footnoteUrl: 'https://propulsebyca.fr/idees-business/psychologue',
     },
     real: {
       label: 'CE QUI EST RÉEL',
@@ -659,7 +651,7 @@ const translations = {
       builtLabel: 'CONSTRUIT',
       builtItems: [
         'Plateforme praticien en ligne',
-        'App membre en utilisation',
+        'App patient en utilisation',
         'De vrais utilisateurs interagissent avec le produit',
         'Système complet construit en interne',
       ],
@@ -689,43 +681,29 @@ const translations = {
           tag: 'Passé',
           title: 'On a commencé par la confiance.',
           num: '01',
-          items: [
-            'Parlé à 100+ thérapeutes',
-            'Trouvé le vrai problème : le vide entre les séances',
-            'Construit notre réseau avant le produit',
-          ],
+          action: 'Parlé à 100+ thérapeutes et construit notre réseau — avant le code.',
+          goal: '100+ échanges · 0 pub',
         },
         {
           tag: 'Aujourd\'hui',
           title: 'On les convainc un par un.',
           num: '02',
-          items: [
-            'On contacte chaque praticien personnellement',
-            'Onboarding sur-mesure — on accompagne chacun de près',
-            'Appels hebdomadaires ; on s\'améliore avec leurs retours',
-            'Objectif : nos 10 premiers utilisateurs actifs',
-          ],
+          action: 'Contact personnel et onboarding accompagné, un praticien à la fois.',
+          goal: '10 premiers utilisateurs actifs',
         },
         {
           tag: 'Ensuite',
           title: 'Une croissance qui se nourrit elle-même.',
           num: '03',
-          items: [
-            'Les thérapeutes invitent d\'autres thérapeutes',
-            'Partenariats avec les écoles de psychologie',
-            'Partager de vraies histoires, écrire dans leurs revues',
-            'Objectif : 50 ce trimestre, 150 début 2027',
-          ],
+          action: 'Les thérapeutes en invitent d\'autres ; partenariats avec les écoles.',
+          goal: '150 thérapeutes début 2027',
         },
         {
           tag: 'Plus tard',
           title: 'Voir plus grand.',
           num: '04',
-          items: [
-            'Vendre aux cliniques et cabinets de groupe',
-            'S\'étendre en Europe',
-            '1 500+ thérapeutes · 1M€+ de revenus',
-          ],
+          action: 'Cliniques et cabinets de groupe, expansion en Europe.',
+          goal: '1 500+ thérapeutes · 1M€+ de revenus',
         },
       ],
       dontLabel: 'Ce qu\'on ne fait pas',
@@ -789,8 +767,8 @@ const translations = {
       laterTag: 'À terme',
       laterTitle: 'L\'infrastructure de la santé mentale.',
       laterSub: 'La couche de confiance sur laquelle tout le secteur se construit — praticiens, cliniques, chercheurs et systèmes de santé.',
-      laterBody: 'La santé mentale n\'a jamais eu de façon commune de mesurer ce qui marche. Nous le devenons — du cabinet d\'un thérapeute aux cliniques, chercheurs et systèmes de santé partout en Europe, tous construisant sur la même fondation.',
-      laterWhatWeDo: 'De mesurer les résultats à les anticiper — des signaux qui repèrent les jours difficiles avant qu\'ils n\'arrivent, pour qu\'un praticien prenne les devants. Nous devenons la façon dont le soin se mesure.',
+      laterBody: 'La santé mentale n\'a jamais eu de façon commune de mesurer ce qui marche. Nous le devenons — du cabinet d\'un thérapeute aux cliniques, chercheurs et systèmes de santé partout en Europe, et même aux applications grand public qui se branchent sur le même modèle, tous construisant sur la même fondation.',
+      laterWhatWeDo: 'De mesurer les résultats à les anticiper — des signaux qui repèrent les jours difficiles avant qu\'ils n\'arrivent, pour qu\'un praticien prenne les devants. Et nous ouvrons la couche : cliniques, chercheurs et applications grand public se branchent sur le même standard. Nous devenons la façon dont le soin se mesure.',
       laterWhyItMatters: 'Quand tout un secteur mesure de la même façon, il se construit sur la même couche — la nôtre. Ce n\'est pas un produit plus gros. C\'est une infrastructure.',
       footnote: 'La vision gagne le droit d\'exister par l\'exécution. Là, on est concentrés sur Aujourd\'hui.',
     },
@@ -814,7 +792,7 @@ const translations = {
       line3: 'Et aujourd\'hui, rien ne relie les deux.',
       line4: 'C\'est la couche que nous construisons.',
       cta: 'Discutons.',
-      bookCall: 'Réserver un appel de 20 min',
+      bookCall: 'Réserver un appel de 30 min',
       emailUs: 'hi@bloomsline.com',
       copyright: '© 2026 Bloomsline',
     },
@@ -1776,26 +1754,19 @@ function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
                     </div>
                   </div>
                   <span className={`text-[10px] tracking-[0.25em] uppercase font-mono mb-1 ${tagColor}`}>{col.tag}</span>
-                  <h4 className="text-base font-medium text-neutral-900 mb-2.5 leading-snug">{col.title}</h4>
-                  <ul className="space-y-1.5">
-                    {col.items.map((item, j) => (
-                      <li key={j} className="text-xs text-neutral-500 font-light leading-relaxed flex gap-1.5">
-                        <span className="text-neutral-300">·</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h4 className="text-base font-medium text-neutral-900 mb-2 leading-snug">{col.title}</h4>
+                  <p className="text-xs text-neutral-500 font-light leading-relaxed mb-3">{col.action}</p>
+                  <span className={`inline-block self-start text-[11px] font-medium px-2.5 py-1 rounded-full ${
+                    accent === 'teal' ? 'text-teal-700 bg-teal-50' : accent === 'amber' ? 'text-amber-700 bg-amber-50' : 'text-neutral-600 bg-neutral-100'
+                  }`}>{col.goal}</span>
                 </motion.div>
               )
             })}
           </div>
 
           {/* baseline — it spreads on its own */}
-          <div className="mt-6">
+          <div className="mt-12">
             <div className="h-0.5 rounded-full bg-gradient-to-r from-neutral-200 via-teal-300 to-teal-500" />
-            <p className="text-[11px] text-neutral-400 font-light mt-2 tracking-wide">
-              One by one <span className="text-neutral-300">———</span> then it <span className="text-teal-700">spreads on its own</span>
-            </p>
           </div>
         </div>
 
@@ -1804,7 +1775,7 @@ function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.9 }}
-          className="border-t border-neutral-200 pt-6 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2"
+          className="pt-6 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2"
         >
           <span className="text-xs tracking-[0.2em] uppercase text-neutral-500 font-medium">{t.dontLabel}</span>
           {t.dontItems.map((item, i) => (
@@ -2048,7 +2019,15 @@ function ModelSlide({ t }: { t: typeof translations.en.model }) {
           transition={{ duration: 0.5, delay: 1 }}
           className="text-sm text-neutral-500 italic pt-8 border-t border-neutral-200"
         >
-          {t.footnote}
+          {t.footnote}{' '}
+          <a
+            href={t.footnoteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="not-italic text-neutral-400 hover:text-teal-700 underline underline-offset-2 decoration-neutral-300"
+          >
+            {t.footnoteSource}
+          </a>
         </motion.p>
       </div>
     </div>
@@ -2221,16 +2200,9 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
 // =============================================================================
 
 function VisionSlide({ t }: { t: typeof translations.en.vision }) {
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
-
-  const toggle = (i: number) => {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      if (next.has(i)) next.delete(i)
-      else next.add(i)
-      return next
-    })
-  }
+  // One open at a time (accordion): opening a card closes the others.
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const toggle = (i: number) => setOpenIndex(prev => (prev === i ? null : i))
 
   const subLabels = [(t as any).whatWeDoLabel, (t as any).whyItMattersLabel]
 
@@ -2313,56 +2285,54 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
                 <p className={`text-sm font-light leading-relaxed mt-2 ${isLast ? 'text-teal-50' : 'text-neutral-500'}`}>
                   {phase.sub}
                 </p>
+                <button
+                  onClick={() => toggle(i)}
+                  className={`mt-4 self-start inline-flex items-center gap-1.5 text-[11px] tracking-wide font-medium transition-colors ${
+                    isLast ? 'text-teal-100 hover:text-white' : 'text-neutral-400 hover:text-teal-700'
+                  }`}
+                >
+                  <span>{openIndex === i ? t.showLess : t.viewMore}</span>
+                  {openIndex === i
+                    ? <ChevronUp className="w-3 h-3" />
+                    : <ChevronDown className="w-3 h-3" />}
+                </button>
               </motion.div>
             )
           })}
         </div>
 
-        {/* Detail — one expandable row per step, below the climb */}
-        <div className="space-y-2 mb-8">
-          {phases.map((phase, i) => {
-            const isOpen = expanded.has(i)
-            return (
-              <div key={i}>
-                <button
-                  onClick={() => toggle(i)}
-                  className="inline-flex items-center gap-1.5 text-[11px] tracking-wide text-neutral-400 hover:text-teal-700 transition-colors group"
+        {/* Detail — expands below the climb when a card's "View more" is clicked */}
+        <div className="mb-8">
+          {phases.map((phase, i) => (
+            <AnimatePresence initial={false} key={i}>
+              {openIndex === i && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden"
                 >
-                  <span className="font-mono uppercase tracking-[0.2em] text-neutral-500">{phase.tag}</span>
-                  <span>· {isOpen ? t.showLess : t.viewMore}</span>
-                  {isOpen
-                    ? <ChevronUp className="w-3 h-3" />
-                    : <ChevronDown className="w-3 h-3" />
-                  }
-                </button>
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      <p className="text-base text-neutral-600 font-light leading-relaxed mt-3 max-w-3xl">{phase.body}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-4 pt-4 border-t border-neutral-200 max-w-3xl">
-                        {phase.items.map((item, j) => (
-                          <div key={j} className="flex flex-col gap-1">
-                            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono">
-                              {subLabels[j]}
-                            </span>
-                            <span className="text-sm text-neutral-700 font-light leading-relaxed">
-                              {item}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )
-          })}
+                  <div className="pt-2 pb-4">
+                    <span className="text-[10px] tracking-[0.25em] uppercase font-mono text-teal-700">{phase.tag}</span>
+                    <p className="text-base text-neutral-600 font-light leading-relaxed mt-2 max-w-3xl">{phase.body}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-4 pt-4 border-t border-neutral-200 max-w-3xl">
+                      {phase.items.map((item, j) => (
+                        <div key={j} className="flex flex-col gap-1">
+                          <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono">
+                            {subLabels[j]}
+                          </span>
+                          <span className="text-sm text-neutral-700 font-light leading-relaxed">
+                            {item}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          ))}
         </div>
 
         <motion.p
