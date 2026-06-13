@@ -47,19 +47,25 @@ export async function POST(request: NextRequest) {
         }, { status: 409 })
       }
 
-      // Check eligibility: waitlist (status = invited) OR practitioner invite
-      const { data: waitlistEntry } = await adminClient
+      // Check eligibility: waitlist (status = invited) OR practitioner invite.
+      // NOTE: use limit(1) + array, never .single() — an email can legitimately
+      // match multiple member rows (same person invited by >1 practitioner, or
+      // demo patients sharing an inbox), and .single() ERRORS on >1 row, which
+      // would wrongly reject an eligible signup.
+      const { data: waitlistRows } = await adminClient
         .from('early_access_waitlist')
         .select('id, status, user_type')
         .eq('email', cleanEmail)
-        .single()
+        .limit(1)
+      const waitlistEntry = waitlistRows?.[0] || null
 
-      const { data: memberEntry } = await adminClient
+      const { data: memberRows } = await adminClient
         .from('members')
         .select('id, practitioner_id')
         .eq('email', cleanEmail)
         .is('user_id', null)
-        .single()
+        .limit(1)
+      const memberEntry = memberRows?.[0] || null
 
       const isEligible =
         (waitlistEntry && waitlistEntry.status === 'invited') || !!memberEntry
