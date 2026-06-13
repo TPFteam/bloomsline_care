@@ -34,6 +34,7 @@ import {
   parseEngagementSettings,
   DEFAULT_ENGAGEMENT_SETTINGS,
   type EngagementSettings,
+  type EngagementSignalId,
 } from '@/lib/analytics/engagement'
 import { EngagementSettingsDrawer } from '@/components/analytics/EngagementSettingsDrawer'
 import { PatientQuickViewDrawer } from '@/components/analytics/PatientQuickViewDrawer'
@@ -630,28 +631,18 @@ export default function AnalyticsPage() {
   // ── Loading ──────────────────────────────────────────────────────────
 
   if (loading) {
+    // Match the standard full-screen loader used across the other pages
+    // (members, resources) instead of a Signals-specific one.
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <AppSidebar activeItem="analytics" />
-        <main className="flex-1 ml-14">
-          <AppHeader
-            user={null}
-            leftContent={
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                <Activity className="w-4 h-4" />
-                <span>{locale === 'fr' ? 'Signaux' : locale === 'es' ? 'Señales' : 'Signals'}</span>
-              </div>
-            }
-          />
-          <div className="flex items-center justify-center h-[calc(100vh-65px)]">
-            <div className="text-center">
-              <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500">
-                {locale === 'fr' ? 'Chargement...' : locale === 'es' ? 'Cargando...' : 'Loading...'}
-              </p>
-            </div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-400 rounded-full animate-spin" />
+          <span className="text-gray-500 text-sm">
+            {locale === 'fr' ? 'Chargement de votre espace de travail...'
+              : locale === 'es' ? 'Cargando tu espacio de trabajo...'
+              : 'Loading your workspace...'}
+          </span>
+        </div>
       </div>
     )
   }
@@ -747,6 +738,37 @@ export default function AnalyticsPage() {
     pulseOverride: 'up' | 'down' | null
   }
 
+  // Self-tuning denominator: only score against signals this practice actually
+  // uses. A signal counts only if a meaningful share of active patients have any
+  // data for it — otherwise dead signals (e.g. patient-app reflections/stories
+  // in a practice that doesn't use the app) drag everyone below the green tier.
+  const activeMemberList = members.filter((m) => m.status === 'active')
+  const signalHasData: Record<EngagementSignalId, (id: string) => boolean> = {
+    sessions:    (id) => sessions.some((s) => s.member_id === id),
+    notes:       (id) => (data.notesByMember[id]?.length ?? 0) > 0,
+    milestones:  (id) => milestones.some((ms) => ms.member_id === id),
+    reflections: (id) => (data.reflectionsByMember[id]?.length ?? 0) > 0,
+    resources:   (id) => (data.resourceResponsesByMember[id]?.length ?? 0) > 0,
+    stories:     (id) => (data.storiesByMember[id]?.length ?? 0) > 0,
+    files:       (id) => (data.filesByMember[id]?.length ?? 0) > 0,
+    bookings:    (id) => bookings.some((b) => b.member_id === id),
+  }
+  const coverageMin = Math.max(3, Math.ceil(activeMemberList.length * 0.2))
+  const effectiveSettings: EngagementSettings = (() => {
+    const next: EngagementSettings = { ...engagementSettings, signals: { ...engagementSettings.signals } }
+    const enabledIds = (Object.keys(next.signals) as EngagementSignalId[]).filter((id) => next.signals[id].enabled)
+    const coverage = (sig: EngagementSignalId) => activeMemberList.filter((m) => signalHasData[sig](m.id)).length
+    const inUse = enabledIds.filter((id) => coverage(id) >= coverageMin)
+    // Only prune when at least one enabled signal is actually in use, so a
+    // deliberate single-signal filter still works on a sparse practice.
+    if (inUse.length > 0) {
+      for (const id of enabledIds) {
+        if (coverage(id) < coverageMin) next.signals[id] = { ...next.signals[id], enabled: false }
+      }
+    }
+    return next
+  })()
+
   const engagementScores: EngagementEntry[] = members
     .filter((m) => m.status === 'active')
     .map((m) => {
@@ -765,7 +787,7 @@ export default function AnalyticsPage() {
         files: data.filesByMember[m.id] || [],
         bookings: bookings.filter(b => b.member_id === m.id).map(b => ({ id: b.id, start_time: b.start_time, status: b.status })),
         pulseSentiment: data.pulseSentimentByMember[m.id] || null,
-      }, engagementSettings, locale as 'en' | 'fr' | 'es')
+      }, effectiveSettings, locale as 'en' | 'fr' | 'es')
       return { member: m, score: result.score, tier: result.tier, riskReason: result.riskReason, pulseOverride: result.pulseOverride }
     })
     .sort((a, b) => a.score - b.score)
@@ -992,7 +1014,15 @@ export default function AnalyticsPage() {
       : ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
   // ── Orbit data ────────────────────────────────────────────────────
-  const orbitMembers = engagementScores.slice(0, 20).map((e, i) => {
+  // engagementScores is sorted ascending; rank DESCENDING for the orbit so the
+  // most-engaged patients are actually shown near the centre (the old
+  // slice(0,20) on the ascending list rendered the 20 LEAST engaged and hid the
+  // engaged ones under "+N more"). Cap bounds crowding for large practices.
+  const ORBIT_CAP = 30
+  const orbitMembers = [...engagementScores]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, ORBIT_CAP)
+    .map((e, i) => {
     const distance = 15 + ((100 - e.score) / 100) * 115
     const angle = (137.508 * i * Math.PI) / 180
     const offsetX = Math.cos(angle) * distance
@@ -1002,7 +1032,7 @@ export default function AnalyticsPage() {
     const level = e.tier
     return { ...e, distance, angle, offsetX, offsetY, color, level, index: i }
   })
-  const orbitOverflow = Math.max(0, engagementScores.length - 20)
+  const orbitOverflow = Math.max(0, engagementScores.length - orbitMembers.length)
 
   // ── Weekly bars data ──────────────────────────────────────────────
   const weeklyBars: number[] = []
