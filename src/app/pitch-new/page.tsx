@@ -17,6 +17,7 @@ import {
   Hammer,
   Lightbulb,
   Check,
+  Download,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
@@ -169,7 +170,7 @@ const translations = {
       label: 'THE FRAME',
       hero1: 'Therapy works because of its frame.',
       hero2: 'We protect it.',
-      intro: 'Therapy runs on a few hard principles.',
+      intro: 'Therapy runs on a few hard principles — and here\'s how we keep every one of them safe.',
       defHint: 'Tap any principle to see what it means.',
       frameLabel: 'The therapeutic frame',
       frameNote: 'We build inside the frame — never over it.',
@@ -210,29 +211,25 @@ const translations = {
       headline: 'Mental health data is the highest-stakes category in EU law.',
       headline2: 'We treat it that way.',
       intro: 'Three layers — infrastructure, governance, AI safety.',
-      todayTag: 'Today',
-      todayTitle: 'Live now',
-      todayItems: [
-        'AES-256-GCM at rest, TLS 1.3 in transit',
-        'Row-Level Security on every table',
-        'EU data residency (AWS)',
+      liveTag: 'Live',
+      soonTag: 'Soon',
+      layers: [
+        { name: 'Infrastructure', items: [
+          { t: 'AES-256-GCM at rest, TLS 1.3 in transit', live: true },
+          { t: 'Row-Level Security on every table', live: true },
+          { t: 'EU data residency (AWS)', live: true },
+        ] },
+        { name: 'Governance', items: [
+          { t: 'HDS certification — the French gate', live: false },
+          { t: 'Fractional CISO, then in-house security team', live: false },
+          { t: 'Pen test (ANSSI) · SOC 2 → ISO 27001', live: false },
+        ] },
+        { name: 'AI safety', items: [
+          { t: 'Summarizes notes — never diagnoses, medicates, or intervenes', live: true },
+          { t: 'Bounds written into the system prompts', live: true },
+          { t: 'Every output traces back to source data', live: true },
+        ] },
       ],
-      nextTag: 'Next',
-      nextTitle: 'This round',
-      nextItems: [
-        'HDS certification — the French gate',
-        'First security hire + fractional CISO',
-        'Third-party pen test (ANSSI)',
-      ],
-      laterTag: 'Later',
-      laterTitle: 'At scale',
-      laterItems: [
-        'Full in-house security team',
-        'SOC 2 Type I → Type II',
-        'ISO 27001',
-      ],
-      aiSafetyLabel: 'AI safety',
-      aiSafetyBody: 'Bloom AI summarizes therapy notes — it never diagnoses, recommends medication, or intervenes in crisis. Bounds are written into the system prompts. Every output traces back to source data.',
       closing: 'Security isn\'t a slide. It\'s the precondition.',
     },
     model: {
@@ -553,7 +550,7 @@ const translations = {
       label: 'LA LIMITE',
       hero1: 'Il y a une limite en thérapie.',
       hero2: 'Nous la respectons.',
-      intro: 'La thérapie repose sur quelques principes essentiels.',
+      intro: 'La thérapie repose sur quelques principes essentiels — et voici comment nous protégeons chacun d\'eux.',
       defHint: 'Touchez un principe pour voir ce qu\'il signifie.',
       frameLabel: 'Le cadre thérapeutique',
       frameNote: 'On construit à l\'intérieur du cadre — jamais par-dessus.',
@@ -594,29 +591,25 @@ const translations = {
       headline: 'Les données de santé mentale sont la catégorie la plus sensible du droit européen.',
       headline2: 'Nous les traitons comme telles.',
       intro: 'Trois couches — infrastructure, gouvernance, sécurité IA.',
-      todayTag: 'Aujourd\'hui',
-      todayTitle: 'En ligne',
-      todayItems: [
-        'AES-256-GCM au repos, TLS 1.3 en transit',
-        'Row-Level Security sur chaque table',
-        'Résidence des données en UE (AWS)',
+      liveTag: 'En place',
+      soonTag: 'En cours',
+      layers: [
+        { name: 'Infrastructure', items: [
+          { t: 'AES-256-GCM au repos, TLS 1.3 en transit', live: true },
+          { t: 'Row-Level Security sur chaque table', live: true },
+          { t: 'Données hébergées en UE (AWS)', live: true },
+        ] },
+        { name: 'Gouvernance', items: [
+          { t: 'Certification HDS — la porte française', live: false },
+          { t: 'CISO externalisé, puis équipe sécurité interne', live: false },
+          { t: 'Test d\'intrusion (ANSSI) · SOC 2 → ISO 27001', live: false },
+        ] },
+        { name: 'Sécurité IA', items: [
+          { t: 'Synthétise les notes — ne diagnostique, médicamente, ni n\'intervient', live: true },
+          { t: 'Limites inscrites dans les system prompts', live: true },
+          { t: 'Chaque sortie traçable jusqu\'à la donnée source', live: true },
+        ] },
       ],
-      nextTag: 'Ensuite',
-      nextTitle: 'Cette levée',
-      nextItems: [
-        'Certification HDS — la porte française',
-        'Premier recrutement sécurité + CISO à temps partiel',
-        'Test d\'intrusion tiers (ANSSI)',
-      ],
-      laterTag: 'Plus tard',
-      laterTitle: 'À l\'échelle',
-      laterItems: [
-        'Équipe sécurité interne à temps plein',
-        'SOC 2 Type I → Type II',
-        'ISO 27001',
-      ],
-      aiSafetyLabel: 'Sécurité IA',
-      aiSafetyBody: 'Bloom AI synthétise les notes thérapeutiques — elle ne diagnostique jamais, ne recommande pas de médication, n\'intervient pas en crise. Les limites sont dans les system prompts. Chaque sortie est traçable jusqu\'à la donnée source.',
       closing: 'La sécurité n\'est pas un slide. C\'est la condition préalable.',
     },
     model: {
@@ -862,10 +855,47 @@ export default function PitchNewPage() {
   // Dark slide gets dark nav styling
   const isDark = currentSlide === 6 // whyNow
 
+  // One place to render a slide by index — used by the on-screen view and the
+  // print stack (PDF export).
+  const renderSlide = (i: number) => {
+    switch (i) {
+      case 0: return <HeroSlide onNext={nextSlide} t={t.hero} />
+      case 1: return <SilenceSlide t={t.silence} />
+      case 2: return <WhyItMattersSlide t={t.whyItMatters} />
+      case 3: return <OriginSlide t={t.origin} />
+      case 4: return <ProductSlide t={t.product} />
+      case 5: return <BoundarySlide t={t.boundary} />
+      case 6: return <WhyNowSlide t={t.whyNow} />
+      case 7: return <SecuritySlide t={t.security} />
+      case 8: return <RealSlide t={t.real} />
+      case 9: return <GTMSlide t={t.gtm} />
+      case 10: return <MarketSlide t={t.market} />
+      case 11: return <ModelSlide t={t.model} />
+      case 12: return <TeamSlide t={t.team} />
+      case 13: return <VisionSlide t={t.vision} />
+      case 14: return <AskSlide t={t.ask} />
+      case 15: return <CloseSlide t={t.close} />
+      default: return null
+    }
+  }
+
   return (
-    <div className="h-screen w-screen overflow-hidden" style={{ backgroundColor: isDark ? '#0a0a0a' : '#FAF8F5' }}>
-      {/* Language Toggle */}
+    <>
+    <div className="pdf-screen h-screen w-screen overflow-hidden" style={{ backgroundColor: isDark ? '#0a0a0a' : '#FAF8F5' }}>
+      {/* Language Toggle + Download PDF */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-2">
+        <button
+          onClick={() => window.print()}
+          title="Download as PDF"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm border transition-all text-sm font-medium ${
+            isDark
+              ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+              : 'bg-white/80 border-neutral-200 hover:bg-white hover:border-neutral-300 text-neutral-700'
+          }`}
+        >
+          <Download className="w-4 h-4" />
+          PDF
+        </button>
         <button
           onClick={() => setLocale(locale === 'en' ? 'fr' : 'en', false)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm border transition-all text-sm font-medium ${
@@ -950,22 +980,7 @@ export default function PitchNewPage() {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="h-full w-full"
         >
-          {currentSlide === 0 && <HeroSlide onNext={nextSlide} t={t.hero} />}
-          {currentSlide === 1 && <SilenceSlide t={t.silence} />}
-          {currentSlide === 2 && <WhyItMattersSlide t={t.whyItMatters} />}
-          {currentSlide === 3 && <OriginSlide t={t.origin} />}
-          {currentSlide === 4 && <ProductSlide t={t.product} />}
-          {currentSlide === 5 && <BoundarySlide t={t.boundary} />}
-          {currentSlide === 6 && <WhyNowSlide t={t.whyNow} />}
-          {currentSlide === 7 && <SecuritySlide t={t.security} />}
-          {currentSlide === 8 && <RealSlide t={t.real} />}
-          {currentSlide === 9 && <GTMSlide t={t.gtm} />}
-          {currentSlide === 10 && <MarketSlide t={t.market} />}
-          {currentSlide === 11 && <ModelSlide t={t.model} />}
-          {currentSlide === 12 && <TeamSlide t={t.team} />}
-          {currentSlide === 13 && <VisionSlide t={t.vision} />}
-          {currentSlide === 14 && <AskSlide t={t.ask} />}
-          {currentSlide === 15 && <CloseSlide t={t.close} />}
+          {renderSlide(currentSlide)}
         </motion.div>
       </AnimatePresence>
 
@@ -974,6 +989,50 @@ export default function PitchNewPage() {
         {currentSlide + 1} / {slides.length}
       </div>
     </div>
+
+    {/* Print-only stack — every slide, one per page, for the PDF export.
+        Hidden on screen; revealed by the print stylesheet below. */}
+    <div className="pdf-print" aria-hidden>
+      {slides.map((_, i) => (
+        <div key={i} className="pdf-page" style={{ backgroundColor: i === 6 ? '#0a0a0a' : '#FAF8F5' }}>
+          {renderSlide(i)}
+        </div>
+      ))}
+    </div>
+
+    <style>{`
+      .pdf-print { display: none; }
+      @media print {
+        @page { size: 1280px 720px; margin: 0; }
+        html, body { margin: 0; }
+        .pdf-screen { display: none !important; }
+        .pdf-print { display: block !important; }
+        .pdf-page {
+          width: 1280px; height: 720px; overflow: hidden; position: relative;
+          break-after: page; page-break-after: always;
+        }
+        .pdf-page:last-child { break-after: auto; page-break-after: auto; }
+        /* Kill the slide scrollbars (overflow-y-auto) that print as a grey bar. */
+        .pdf-print [class*="overflow-y-auto"],
+        .pdf-print [class*="overflow-auto"] { overflow: hidden !important; }
+        .pdf-print *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .pdf-print * { scrollbar-width: none !important; }
+        /* Neutralize framer-motion mount state so content is visible in the PDF */
+        .pdf-page [style*="opacity"] { opacity: 1 !important; }
+        /* The print viewport doesn't trigger md:/lg: breakpoints, so the deck
+           would render in its (taller) mobile layout and clip. Force the
+           desktop layout for the handful of responsive utilities the slides use. */
+        .pdf-print .sm\\:grid-cols-2,
+        .pdf-print .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        .pdf-print .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        .pdf-print .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+        .pdf-print .md\\:flex-row { flex-direction: row !important; }
+        .pdf-print .md\\:items-end { align-items: flex-end !important; }
+        /* Preserve backgrounds/colors in the PDF */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      }
+    `}</style>
+    </>
   )
 }
 
@@ -1318,7 +1377,7 @@ function OriginSlide({ t }: { t: typeof translations.en.origin }) {
 function ProductSlide({ t }: { t: typeof translations.en.product }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-5xl w-full py-16">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1358,12 +1417,14 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
-                className="rounded-xl border border-neutral-200 bg-white p-6"
+                className="rounded-xl border border-neutral-200 bg-white p-5"
               >
-                <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center mb-4">
-                  <IconComponent className="w-4.5 h-4.5 text-teal-600" />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
+                    <IconComponent className="w-4.5 h-4.5 text-teal-600" />
+                  </div>
+                  <h3 className="text-base font-medium text-neutral-900">{card.title}</h3>
                 </div>
-                <h3 className="text-base font-medium text-neutral-900 mb-2">{card.title}</h3>
                 <p className="text-sm text-neutral-400 line-through mb-1">{card.oldWay}</p>
                 <p className="text-sm text-neutral-700">{card.newWay}</p>
               </motion.div>
@@ -1371,14 +1432,6 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
           })}
         </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.95 }}
-          className="text-lg text-neutral-900 font-light italic max-w-3xl mt-10"
-        >
-          {(t as any).closing}
-        </motion.p>
       </div>
     </div>
   )
@@ -1398,12 +1451,12 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
   })
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-5xl w-full py-16">
+      <div className="max-w-6xl w-full py-12">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-8"
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
           {t.label}
         </motion.p>
@@ -1422,7 +1475,7 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-12"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-7"
         >
           {t.hero2}
         </motion.h2>
@@ -1432,7 +1485,7 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-base text-neutral-600 font-light max-w-3xl mb-8"
+          className="text-base text-neutral-600 font-light max-w-3xl mb-5"
         >
           {t.intro}
         </motion.p>
@@ -1441,12 +1494,12 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.75 }}
-          className="relative border border-teal-200 rounded-2xl px-6 md:px-10 pt-9 pb-8 mb-3"
+          className="relative border border-teal-200 rounded-2xl px-6 md:px-10 pt-7 pb-6 mb-3"
         >
           <span className="absolute -top-2.5 left-6 px-3 bg-[#FAF8F5] text-[10px] tracking-[0.3em] uppercase font-mono text-teal-700">
             {(t as any).frameLabel}
           </span>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
             {(t.principles as Array<{ name: string; respect: string; definition: string }>).map((p, i) => {
               const open = openDefs.has(i)
               return (
@@ -1475,17 +1528,6 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           </div>
         </motion.div>
 
-        <div className="mb-8" />
-
-        {/* Closing punch */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          className="text-lg text-neutral-900 font-light italic max-w-3xl"
-        >
-          {t.closing}
-        </motion.p>
       </div>
     </div>
   )
@@ -1517,7 +1559,7 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
           {t.headline}
         </motion.h2>
 
-        <div className="space-y-8 mb-10 max-w-4xl">
+        <div className="space-y-6 mb-10 max-w-4xl">
           {[
             { title: t.item1Title, body: t.item1Body, sources: t.item1Sources as Array<{ label: string; url: string }>, num: '01' },
             { title: t.item2Title, body: t.item2Body, sources: t.item2Sources as Array<{ label: string; url: string }>, num: '02' },
@@ -1532,23 +1574,21 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
             >
               <span className="text-2xl font-light text-teal-400/50 mt-1">{item.num}</span>
               <div className="flex-1">
-                <h3 className="text-2xl font-medium text-white mb-2">{item.title}</h3>
+                <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 mb-2">
+                  <h3 className="text-2xl font-medium text-white">{item.title}</h3>
+                  {item.sources && item.sources.map((src, j) => (
+                    <a
+                      key={j}
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-neutral-600 hover:text-teal-400 underline decoration-dotted underline-offset-2 transition-colors"
+                    >
+                      {src.label} ↗
+                    </a>
+                  ))}
+                </div>
                 <p className="text-lg text-neutral-400 font-light leading-relaxed">{item.body}</p>
-                {item.sources && (
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {item.sources.map((src, j) => (
-                      <a
-                        key={j}
-                        href={src.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-neutral-600 hover:text-teal-400 underline decoration-dotted underline-offset-2 transition-colors"
-                      >
-                        {src.label} ↗
-                      </a>
-                    ))}
-                  </div>
-                )}
               </div>
             </motion.div>
           ))}
@@ -1572,12 +1612,6 @@ function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
 // =============================================================================
 
 function SecuritySlide({ t }: { t: typeof translations.en.security }) {
-  const horizons = [
-    { tag: t.todayTag, title: t.todayTitle, items: t.todayItems, accent: 'teal' as const, num: '01' },
-    { tag: t.nextTag, title: t.nextTitle, items: t.nextItems, accent: 'amber' as const, num: '02' },
-    { tag: t.laterTag, title: t.laterTitle, items: t.laterItems, accent: 'neutral' as const, num: '03' },
-  ]
-
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
       <div className="max-w-6xl w-full py-16">
@@ -1612,67 +1646,36 @@ function SecuritySlide({ t }: { t: typeof translations.en.security }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-base text-neutral-500 font-light mb-12 max-w-3xl"
+          className="text-base text-neutral-500 font-light mb-10 max-w-3xl"
         >
           {t.intro}
         </motion.p>
 
-        {/* Progress roadmap — done → now → future */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 mb-12">
-          {horizons.map((h, i) => {
-            const dotClass =
-              h.accent === 'teal'
-                ? 'bg-teal-600 border-teal-600'
-                : h.accent === 'amber'
-                ? 'bg-amber-400 border-amber-500 ring-4 ring-amber-100'
-                : 'bg-white border-neutral-300'
-            const lineClass = h.accent === 'teal' ? 'bg-teal-200' : 'bg-amber-200'
-            const tagColor =
-              h.accent === 'teal' ? 'text-teal-700' : h.accent === 'amber' ? 'text-amber-700' : 'text-neutral-500'
-            const isLast = i === horizons.length - 1
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
-                className="relative"
-              >
-                {/* connector to next node */}
-                {!isLast && (
-                  <div className={`hidden md:block absolute top-[7px] left-5 right-[-1.5rem] h-px ${lineClass}`} />
-                )}
-                <div className={`w-4 h-4 rounded-full border-2 mb-5 relative z-10 ${dotClass}`} />
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className={`text-[10px] tracking-[0.25em] uppercase font-mono ${tagColor}`}>{h.tag}</span>
-                  <span className="text-sm font-medium text-neutral-900">{h.title}</span>
-                </div>
-                <ul className="space-y-2">
-                  {h.items.map((item, j) => (
-                    <li key={j} className="text-sm text-neutral-600 font-light leading-relaxed flex gap-2">
-                      <span className={`mt-px ${tagColor}`}>·</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )
-          })}
+        {/* The three layers, each item tagged Live / Soon */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 mb-10">
+          {t.layers.map((layer, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
+            >
+              <h3 className="text-sm font-semibold text-neutral-900 pb-2 mb-3 border-b border-neutral-200">{layer.name}</h3>
+              <ul className="space-y-2.5">
+                {layer.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <span className={`shrink-0 mt-0.5 text-[9px] tracking-[0.15em] uppercase font-mono px-1.5 py-0.5 rounded-full ${
+                      item.live ? 'text-teal-700 bg-teal-50' : 'text-amber-700 bg-amber-50'
+                    }`}>
+                      {item.live ? t.liveTag : t.soonTag}
+                    </span>
+                    <span className="text-sm text-neutral-600 font-light leading-relaxed">{item.t}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
-          className="border-t border-neutral-200 pt-8 mb-8 max-w-4xl"
-        >
-          <p className="text-xs tracking-[0.2em] uppercase text-neutral-500 font-medium mb-2">
-            {t.aiSafetyLabel}
-          </p>
-          <p className="text-base text-neutral-700 font-light leading-relaxed">
-            {t.aiSafetyBody}
-          </p>
-        </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -1816,24 +1819,15 @@ function MarketSlide({ t }: { t: typeof translations.en.market }) {
           {t.label}
         </motion.p>
 
-        <div className="mb-10">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight"
-          >
-            {t.headline}
-          </motion.h2>
-          <motion.h3
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight"
-          >
-            {t.headline2}
-          </motion.h3>
-        </div>
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.15] tracking-tight mb-10"
+        >
+          <span className="text-neutral-900">{t.headline}</span>{' '}
+          <span className="text-teal-700">{t.headline2}</span>
+        </motion.h2>
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -1844,8 +1838,8 @@ function MarketSlide({ t }: { t: typeof translations.en.market }) {
           {t.franceTitle}
         </motion.p>
 
-        {/* Funnel — narrowing rows */}
-        <div className="space-y-3 mb-10">
+        {/* Funnel — narrowing rows (tightened to save vertical space) */}
+        <div className="space-y-2 mb-8">
           {t.funnel.map((row, i) => {
             const isLast = i === t.funnel.length - 1
             const isPenultimate = i === t.funnel.length - 2
@@ -1857,7 +1851,7 @@ function MarketSlide({ t }: { t: typeof translations.en.market }) {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
-                className={`${widthClasses[i] || 'w-full'} border-l-2 ${isHighlight ? 'border-teal-500' : 'border-neutral-200'} pl-5 py-2 flex items-baseline gap-4`}
+                className={`${widthClasses[i] || 'w-full'} border-l-2 ${isHighlight ? 'border-teal-500' : 'border-neutral-200'} pl-5 py-1.5 flex items-baseline gap-4`}
               >
                 <span className={`text-2xl sm:text-3xl font-light tabular-nums ${isHighlight ? 'text-teal-700' : 'text-neutral-900'} min-w-[5rem]`}>
                   {row.value}
@@ -1922,15 +1916,6 @@ function MarketSlide({ t }: { t: typeof translations.en.market }) {
             </div>
           </div>
         </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.4 }}
-          className="text-lg text-teal-700 italic font-light max-w-3xl"
-        >
-          {t.closing}
-        </motion.p>
       </div>
     </div>
   )
@@ -1957,29 +1942,31 @@ function ModelSlide({ t }: { t: typeof translations.en.model }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-16"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-10"
         >
           {t.headline}
         </motion.h2>
 
-        {/* Flow math */}
+        {/* Flow — horizontal progression: practitioner → patients → network */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="space-y-4 mb-16 max-w-3xl"
+          className="flex flex-wrap items-end gap-x-5 gap-y-4 mb-12"
         >
-          <div className="flex items-baseline gap-4">
-            <span className="text-sm text-neutral-500 w-32">{t.flow1Label}</span>
-            <span className="text-2xl font-light text-neutral-900">{t.flow1Value}</span>
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow1Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-neutral-900">{t.flow1Value}</p>
           </div>
-          <div className="flex items-baseline gap-4">
-            <span className="text-sm text-neutral-500 w-32">→ {t.flow2Label}</span>
-            <span className="text-2xl font-light text-teal-700">{t.flow2Value}</span>
+          <ArrowRight className="w-6 h-6 text-neutral-300 shrink-0 mb-1.5" />
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow2Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-teal-700">{t.flow2Value}</p>
           </div>
-          <div className="flex items-baseline gap-4">
-            <span className="text-sm text-neutral-500 w-32">→ {t.flow3Label}</span>
-            <span className="text-2xl font-light text-neutral-900">{t.flow3Value}</span>
+          <ArrowRight className="w-6 h-6 text-neutral-300 shrink-0 mb-1.5" />
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow3Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-neutral-900">{t.flow3Value}</p>
           </div>
         </motion.div>
 
