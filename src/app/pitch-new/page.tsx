@@ -51,11 +51,11 @@ const translations = {
     },
     hero: {
       tag: 'Bloomsline',
-      title1: 'Therapy happens in sessions.',
-      title2: 'Change happens between sessions.',
+      title1: 'There\'s a part of therapy no one sees.',
+      title2: 'It\'s where the work actually happens.',
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
-      subtitle: 'The continuity layer for clinical practice.',
-      stage: '',
+      subtitle: 'This part is unstructured, unmeasured, and invisible.',
+      stage: 'The continuity layer for clinical practice.',
       cta: 'See what\'s missing',
     },
     silence: {
@@ -431,11 +431,11 @@ const translations = {
     },
     hero: {
       tag: 'Bloomsline',
-      title1: 'La thérapie a lieu en séance.',
-      title2: 'Le changement se passe entre les séances.',
+      title1: 'Il y a une partie de la thérapie que personne ne voit.',
+      title2: 'C\'est là que le vrai travail se fait.',
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
-      subtitle: 'La couche de continuité pour la pratique clinique.',
-      stage: '',
+      subtitle: 'Cette partie est désorganisée, non mesurée et invisible.',
+      stage: 'La couche de continuité pour la pratique clinique.',
       cta: 'Voyez ce qui manque',
     },
     silence: {
@@ -1048,15 +1048,6 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
       <div className="absolute bottom-20 left-20 w-[400px] h-[400px] bg-gradient-to-br from-amber-100/30 to-transparent rounded-full mix-blend-multiply filter blur-3xl" />
 
       <div className="relative z-10 max-w-5xl w-full">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-sm tracking-[0.3em] text-neutral-500 mb-12 uppercase"
-        >
-          {t.tag}
-        </motion.p>
-
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1079,32 +1070,28 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="text-xl text-neutral-600 mb-2"
+          className="text-2xl sm:text-3xl font-light text-neutral-700 mb-4 max-w-2xl leading-snug"
         >
           {t.subtitle}
-        </motion.p>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
-          className="text-sm text-neutral-400 mb-12"
-        >
-          {t.stage}
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1 }}
+          className="flex items-center gap-4 mt-10"
         >
-          <Button
+          <p className="text-sm text-neutral-400">
+            {t.stage} <span className="text-neutral-600 font-medium">— Bloomsline</span>
+          </p>
+          <button
             onClick={onNext}
-            className="px-12 py-5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium"
+            aria-label={t.cta}
+            title={t.cta}
+            className="shrink-0 w-10 h-10 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 flex items-center justify-center transition-colors"
           >
-            {t.cta}
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </motion.div>
       </div>
     </div>
