@@ -54,25 +54,25 @@ const translations = {
       title1: 'There\'s a part of therapy no one sees.',
       title2: 'It\'s where the work actually happens.',
       changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
-      subtitle: 'This part is unstructured, unmeasured, and invisible.',
+      subtitle: 'This part is unstructured, unmeasured, and unusable.',
       stage: 'The continuity layer for clinical practice.',
       cta: 'See what\'s missing',
     },
     silence: {
       label: 'THE PROBLEM',
-      headline: 'Between sessions, everything depends on memory.',
-      headline2: 'And memory fades.',
+      headline: 'The continuity gap is where therapy fails.',
+      headline2: 'Quietly, and at scale.',
       patientLabel: 'For patients',
       patientItems: [
-        'Forget what they discussed',
-        'Fall back into old patterns',
-        'Feel like they\'re starting over',
+        'They drop out and stay in pain',
+        'No control over their own recovery',
+        'They relapse once support stops',
       ],
       practitionerLabel: 'For practitioners',
       practitionerItems: [
-        'Know only what patients remember to share',
-        'Start each session a step behind',
-        'Half the session is catch-up',
+        'Deciding on partial, outdated information',
+        'Time lost to admin, not care',
+        'Hard to see when a patient is collapsing',
       ],
       quote: '"My client shared something painful on Tuesday. By our next session, I\'d lost the thread. I spent 15 minutes catching up instead of doing the work."',
       quoteAttribution: 'Practitioner, Paris',
@@ -82,6 +82,12 @@ const translations = {
           label: 'of patients drop out of therapy',
           source: 'PMC meta-analysis, 146 studies, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+        },
+        {
+          value: '~50%',
+          label: 'relapse — most within 6 months',
+          source: 'Depression relapse meta-analyses',
+          url: 'https://bjgp.org/content/70/691/54',
         },
         {
           value: '9%',
@@ -96,14 +102,14 @@ const translations = {
       headline1: 'This isn\'t just inefficient.',
       headline2: 'It changes the depth of care.',
       item1Label: 'TIME',
-      item1Body: '10–15 minutes per session rebuilding context.',
+      item1Body: 'A quarter of every session lost to rebuilding context.',
       item2Label: 'SIGNALS',
-      item2Body: 'Patterns, improvements, relapses — invisible.',
+      item2Body: 'Patterns, improvements, relapses are hard to catch in time.',
       item3Label: 'FEELING',
-      item3Body: '"I\'m not progressing. I\'m not understood."',
+      item3Body: '"I\'m coming to therapy, but nothing\'s changing."',
       item4Label: 'BUSINESS',
-      item4Body: 'Disengagement. Dropout. Lower retention.',
-      closing: 'Lost time. Lost signals. Lost patients.',
+      item4Body: 'Disengagement. Lower retention. Reputation at risk.',
+      closing: '',
       stats: [
         {
           value: '35%',
@@ -126,11 +132,11 @@ const translations = {
       para2: 'So we asked why. 100+ conversations with therapists and patients — and the same thing kept surfacing: it was never about finding a therapist.',
       para3: 'It was everything that happens between sessions — the silence where progress quietly slips away.',
       para4: 'That became Bloomsline.',
-      quote: 'We\'re not guessing — we heard this problem a hundred times first.',
+      quote: 'We\'re not guessing. It\'s what a failed product and 100+ conversations taught us.',
       timeline: [
-        { period: '2024', label: 'Doctalink', body: 'Find a therapist by values, not just degrees. Therapists liked it — but a nice-to-have, never a business.' },
-        { period: '2025', label: 'Discovery', body: '100+ conversations. The problem wasn\'t just finding a therapist — it\'s everything that happens between sessions.' },
-        { period: '2026', label: 'Bloomsline — live', body: 'So we built Bloomsline — for the silence between sessions. Live today.', accent: true },
+        { period: '2024', label: 'Doctalink', body: 'Find a therapist by values, not just degrees. Practitioners liked it, but matching was only part of the problem.' },
+        { period: '2025', label: 'Discovery', body: '100+ conversations revealed the deeper problem: the unsupported space between sessions.' },
+        { period: '2026', label: 'Bloomsline — live', body: 'So we built Bloomsline to fill the gap between sessions and create a continuity layer for clinical practice.', accent: true },
       ],
     },
     product: {
@@ -177,8 +183,8 @@ const translations = {
       principles: [
         { name: 'The frame', respect: 'We work around the session, never inside it — nothing changes about how therapy happens.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
         { name: 'The alliance', respect: 'We strengthen the patient–practitioner bond, never replace it. No bot stands in for the therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
-        { name: 'Autonomy', respect: 'Reflecting is always the patient\'s choice — never homework, never required. They set the pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
-        { name: 'Do no harm', respect: 'No streaks, scores, or nudges. Nothing built to hook. Therapy isn\'t a game.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
+        { name: 'Non-dependence', respect: 'Reflecting is always the patient\'s choice — never homework, never required. They set the pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
+        { name: 'Non-intrusion', respect: 'No streaks, scores, or nudges. Nothing built to hook. Therapy isn\'t a game.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
         { name: 'Scope of practice', respect: 'We give context — never advice, a diagnosis, or crisis handling. The clinician decides.', definition: 'Clinicians act only within their trained competence. Diagnosing, treating, and handling crises is the clinician\'s role — a tool must stay in its lane.' },
         { name: 'Confidentiality', respect: 'Encrypted, EU-hosted, and the practitioner controls what they see. What\'s shared stays protected.', definition: 'What a patient shares is protected. Foundational to trust in therapy — and, for digital tools, a legal duty (GDPR / health-data rules).' },
       ],
@@ -434,25 +440,25 @@ const translations = {
       title1: 'Il y a une partie de la thérapie que personne ne voit.',
       title2: 'C\'est là que le vrai travail se fait.',
       changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
-      subtitle: 'Cette partie est désorganisée, non mesurée et invisible.',
+      subtitle: 'Cette partie est désorganisée, non mesurée et inutilisable.',
       stage: 'La couche de continuité pour la pratique clinique.',
       cta: 'Voyez ce qui manque',
     },
     silence: {
       label: 'LE PROBLÈME',
-      headline: 'Entre les séances, tout repose sur la mémoire.',
-      headline2: 'Et la mémoire s\'efface.',
+      headline: 'La rupture de continuité, c\'est là que la thérapie échoue.',
+      headline2: 'En silence, et à grande échelle.',
       patientLabel: 'Pour les patients',
       patientItems: [
-        'Oublient ce qu\'ils ont abordé',
-        'Retombent dans les anciens schémas',
-        'Ont l\'impression de tout recommencer',
+        'Ils abandonnent et restent dans la souffrance',
+        'Aucun contrôle sur leur propre rétablissement',
+        'Rechutent dès que l\'accompagnement s\'arrête',
       ],
       practitionerLabel: 'Pour les praticiens',
       practitionerItems: [
-        'Ne savent que ce que le patient se souvient de partager',
-        'Reprennent chaque séance avec un temps de retard',
-        'La moitié de la séance, du rattrapage',
+        'Décider sur des informations partielles et dépassées',
+        'Du temps perdu en administratif, pas en soin',
+        'Difficile de voir quand un patient s\'effondre',
       ],
       quote: '"Mon patient m\'a partagé quelque chose de douloureux mardi. À notre prochaine séance, j\'avais perdu le fil. J\'ai passé 15 minutes à rattraper au lieu de faire le travail."',
       quoteAttribution: 'Praticienne, Paris',
@@ -462,6 +468,12 @@ const translations = {
           label: 'des patients abandonnent la thérapie',
           source: 'PMC méta-analyse, 146 études, 2022',
           url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+        },
+        {
+          value: '~50%',
+          label: 'rechutent — la plupart sous 6 mois',
+          source: 'Méta-analyses, rechute dépressive',
+          url: 'https://bjgp.org/content/70/691/54',
         },
         {
           value: '9%',
@@ -476,14 +488,14 @@ const translations = {
       headline1: 'Ce n\'est pas juste inefficace.',
       headline2: 'Ça change la profondeur des soins.',
       item1Label: 'TEMPS',
-      item1Body: '10–15 minutes par séance à reconstruire le contexte.',
+      item1Body: 'Un quart de chaque séance perdu à reconstruire le contexte.',
       item2Label: 'SIGNAUX',
-      item2Body: 'Patterns, progrès, rechutes — invisibles.',
+      item2Body: 'Patterns, progrès, rechutes difficiles à repérer à temps.',
       item3Label: 'RESSENTI',
-      item3Body: '« Je n\'avance pas. On ne me comprend pas. »',
+      item3Body: '« Je viens en thérapie, mais rien ne change. »',
       item4Label: 'BUSINESS',
-      item4Body: 'Désengagement. Abandon. Rétention en baisse.',
-      closing: 'Temps perdu. Signaux perdus. Patients perdus.',
+      item4Body: 'Désengagement. Rétention en baisse. Réputation en jeu.',
+      closing: '',
       stats: [
         {
           value: '35%',
@@ -506,11 +518,11 @@ const translations = {
       para2: 'Alors on a cherché pourquoi. 100+ conversations avec des thérapeutes et des patients — et la même chose revenait : ce n\'était jamais une question de trouver un thérapeute.',
       para3: 'C\'était tout ce qui se passe entre les séances — ce silence où les progrès s\'effacent peu à peu.',
       para4: 'C\'est devenu Bloomsline.',
-      quote: 'On ne devine pas — on a entendu ce problème une centaine de fois d\'abord.',
+      quote: 'On ne devine pas. C\'est ce qu\'un produit raté et 100+ conversations nous ont appris.',
       timeline: [
-        { period: '2024', label: 'Doctalink', body: 'Trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les thérapeutes appréciaient — un plus, jamais un business.' },
-        { period: '2025', label: 'Découverte', body: '100+ conversations. Le problème n\'était pas seulement de trouver un thérapeute — c\'est tout ce qui se passe entre les séances.' },
-        { period: '2026', label: 'Bloomsline — en production', body: 'Alors on a construit Bloomsline — pour le silence entre les séances. En ligne aujourd\'hui.', accent: true },
+        { period: '2024', label: 'Doctalink', body: 'Trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les praticiens appréciaient, mais la mise en relation n\'était qu\'une partie du problème.' },
+        { period: '2025', label: 'Découverte', body: '100+ conversations ont révélé le problème plus profond : l\'espace sans accompagnement entre les séances.' },
+        { period: '2026', label: 'Bloomsline — en production', body: 'Alors on a construit Bloomsline pour combler le vide entre les séances et créer une couche de continuité pour la pratique clinique.', accent: true },
       ],
     },
     product: {
@@ -557,8 +569,8 @@ const translations = {
       principles: [
         { name: 'Le cadre', respect: 'On agit autour de la séance, jamais dedans — rien ne change à la façon dont la thérapie se déroule.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
         { name: 'L\'alliance', respect: 'On renforce le lien patient–praticien, jamais on ne le remplace. Aucun bot ne se substitue au thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
-        { name: 'L\'autonomie', respect: 'Réfléchir est toujours le choix du patient — jamais un devoir, jamais imposé. Il avance à son rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
-        { name: 'Ne pas nuire', respect: 'Ni séries, ni scores, ni notifications. Rien conçu pour accrocher. La thérapie n\'est pas un jeu.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
+        { name: 'La non-dépendance', respect: 'Réfléchir est toujours le choix du patient — jamais un devoir, jamais imposé. Il avance à son rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
+        { name: 'La non-intrusion', respect: 'Ni séries, ni scores, ni notifications. Rien conçu pour accrocher. La thérapie n\'est pas un jeu.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
         { name: 'Champ de compétence', respect: 'On apporte du contexte — jamais de conseil, de diagnostic ou de gestion de crise. Le clinicien décide.', definition: 'Le clinicien n\'agit que dans son domaine de compétence. Diagnostiquer, traiter et gérer les crises relève du clinicien — l\'outil reste à sa place.' },
         { name: 'Confidentialité', respect: 'Chiffré, hébergé en UE, et le praticien contrôle ce qu\'il voit. Ce qui est partagé reste protégé.', definition: 'Ce que le patient partage est protégé. Fondamental pour la confiance en thérapie — et, pour un outil numérique, une obligation légale (RGPD / données de santé).' },
       ],
@@ -1081,8 +1093,8 @@ function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.e
           transition={{ duration: 0.6, delay: 1 }}
           className="flex items-center gap-4 mt-10"
         >
-          <p className="text-sm text-neutral-400">
-            {t.stage} <span className="text-neutral-600 font-medium">— Bloomsline</span>
+          <p className="text-base text-neutral-500">
+            <span className="text-neutral-700 font-medium">Bloomsline</span> — {t.stage}
           </p>
           <button
             onClick={onNext}
