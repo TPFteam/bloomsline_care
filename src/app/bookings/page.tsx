@@ -803,6 +803,9 @@ export default function BookingsPage() {
   const [noShowBPayment, setNoShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
   const [noShowBReason, setNoShowBReason] = useState<string>('')
   const [noShowBComments, setNoShowBComments] = useState('')
+  // Guard against closing the close-popup (backdrop / X / Cancel) while a
+  // note is in progress and silently losing it.
+  const [confirmingDiscardBooking, setConfirmingDiscardBooking] = useState(false)
 
   // For the post-Show "Schedule next" branch — opens ScheduleSessionModal.
   // Bookings page doesn't have the full Member shape on hand, so the modal
@@ -913,6 +916,24 @@ export default function BookingsPage() {
     setClosePopupPreset(false)
     setShowBNoteDraft('')
     setNoShowBComments('')
+    setConfirmingDiscardBooking(false)
+  }
+
+  // Has the practitioner typed note content that would be lost on close?
+  const bookingHasUnsavedNote = () =>
+    (showBNoteAction === 'take' && showBNoteDraft.replace(/<[^>]*>/g, '').trim().length > 0) ||
+    noShowBComments.trim().length > 0
+
+  // Guarded close used by the backdrop / X / Cancel — confirms first when a
+  // note is in progress. (The post-save path still calls closeClosePopupBooking
+  // directly, since the note is already persisted there.)
+  const requestCloseClosePopupBooking = () => {
+    if (closePopupSaving) return
+    if (bookingHasUnsavedNote()) {
+      setConfirmingDiscardBooking(true)
+      return
+    }
+    closeClosePopupBooking()
   }
 
   const confirmClosePopupBooking = async () => {
@@ -3605,7 +3626,7 @@ export default function BookingsPage() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
           style={{ zIndex: 9999 }}
-          onClick={closeClosePopupBooking}
+          onClick={requestCloseClosePopupBooking}
         >
           <div
             // Widen the popup when the inline note editor is open so the
@@ -3631,7 +3652,7 @@ export default function BookingsPage() {
               </h3>
               <button
                 type="button"
-                onClick={closeClosePopupBooking}
+                onClick={requestCloseClosePopupBooking}
                 className="text-gray-400 hover:text-gray-600"
                 aria-label="Close"
               >
@@ -3833,7 +3854,7 @@ export default function BookingsPage() {
             )}
 
             <div className="flex items-center justify-end gap-2">
-              <Button variant="ghost" onClick={closeClosePopupBooking} disabled={closePopupSaving}>
+              <Button variant="ghost" onClick={requestCloseClosePopupBooking} disabled={closePopupSaving}>
                 {locale === 'fr' ? 'Annuler' : 'Cancel'}
               </Button>
               <Button
@@ -3852,6 +3873,40 @@ export default function BookingsPage() {
               </Button>
             </div>
           </div>
+
+          {/* Unsaved-note guard: confirm before discarding a note in progress. */}
+          {confirmingDiscardBooking && (
+            <div
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 10000 }}
+              onClick={(e) => { e.stopPropagation(); setConfirmingDiscardBooking(false) }}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {locale === 'fr' ? 'Note non enregistrée' : 'Unsaved note'}
+                </h3>
+                <p className="text-sm text-gray-600 mb-5">
+                  {locale === 'fr'
+                    ? 'Vous avez commencé une note qui n\'a pas encore été enregistrée. Si vous fermez maintenant, elle sera perdue.'
+                    : "You've started a note that hasn't been saved yet. If you close now, it will be lost."}
+                </p>
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setConfirmingDiscardBooking(false)}>
+                    {locale === 'fr' ? 'Continuer la note' : 'Keep editing'}
+                  </Button>
+                  <Button
+                    onClick={() => { setConfirmingDiscardBooking(false); closeClosePopupBooking() }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {locale === 'fr' ? 'Abandonner' : 'Discard'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

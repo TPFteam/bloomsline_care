@@ -77,6 +77,9 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
   const [noShowComments, setNoShowComments] = useState('')
   // Tag types for the inline tag picker — same shape as the main notes editor
   const [noteTypes, setNoteTypes] = useState<{ type: string; label: string }[]>([])
+  // Guard against accidentally closing (backdrop / X / Cancel) while an
+  // unsaved note is being written and losing it.
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
 
   // Reset state each time a new booking opens. "Note already added"
   // detection auto-satisfies the note requirement when the booking
@@ -93,6 +96,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
     setNoShowPayment(booking.payment_status === 'paid' ? 'paid' : null)
     setNoShowReason('')
     setNoShowComments('')
+    setConfirmingDiscard(false)
   }, [booking, initialOutcome])
 
   // Build the practitioner's tag list (defaults + custom) so the inline
@@ -150,8 +154,19 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
 
   if (!booking) return null
 
+  // Has the practitioner typed note content that would be lost on close?
+  // (session note draft, or the no-show free-text comments)
+  const hasUnsavedNote =
+    (showNoteAction === 'take' && showNoteDraft.replace(/<[^>]*>/g, '').trim().length > 0) ||
+    noShowComments.trim().length > 0
+
   const handleClose = () => {
     if (saving) return
+    // Don't silently drop a note in progress — confirm first.
+    if (hasUnsavedNote) {
+      setConfirmingDiscard(true)
+      return
+    }
     onClose()
   }
 
@@ -256,6 +271,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
     (outcome === 'no_show' && (noShowPayment === null || !noShowReason))
 
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
@@ -488,6 +504,44 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
         </div>
       </div>
     </div>
+
+    {/* Unsaved-note guard: confirm before discarding a note in progress. */}
+    {confirmingDiscard && (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+        style={{ zIndex: 10000 }}
+        onClick={() => setConfirmingDiscard(false)}
+      >
+        <div
+          className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="text-lg font-bold text-gray-900 mb-2">
+            {locale === 'fr' ? 'Note non enregistrée' : 'Unsaved note'}
+          </h3>
+          <p className="text-sm text-gray-600 mb-5">
+            {locale === 'fr'
+              ? 'Vous avez commencé une note qui n\'a pas encore été enregistrée. Si vous fermez maintenant, elle sera perdue.'
+              : "You've started a note that hasn't been saved yet. If you close now, it will be lost."}
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmingDiscard(false)}
+            >
+              {locale === 'fr' ? 'Continuer la note' : 'Keep editing'}
+            </Button>
+            <Button
+              onClick={() => { setConfirmingDiscard(false); onClose() }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {locale === 'fr' ? 'Abandonner' : 'Discard'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 

@@ -239,6 +239,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [noShowPopupComments, setNoShowPopupComments] = useState('')
   // Shared saving flag
   const [closePopupSaving, setClosePopupSaving] = useState(false)
+  // Guard against closing the close-popup (backdrop / X / Cancel) while a
+  // note is in progress and silently losing it.
+  const [confirmingDiscardSession, setConfirmingDiscardSession] = useState(false)
 
   const openClosePopup = (session: Session, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupSession(session)
@@ -268,6 +271,24 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setClosePopupPreset(false)
     setShowPopupNoteDraft('')
     setNoShowPopupComments('')
+    setConfirmingDiscardSession(false)
+  }
+
+  // Has the practitioner typed note content that would be lost on close?
+  const sessionHasUnsavedNote = () =>
+    (showPopupNoteAction === 'take' && showPopupNoteDraft.replace(/<[^>]*>/g, '').trim().length > 0) ||
+    noShowPopupComments.trim().length > 0
+
+  // Guarded close used by the backdrop / X / Cancel — confirms first when a
+  // note is in progress. (The post-save path still calls closeClosePopup
+  // directly, since the note is already persisted there.)
+  const requestCloseClosePopup = () => {
+    if (closePopupSaving) return
+    if (sessionHasUnsavedNote()) {
+      setConfirmingDiscardSession(true)
+      return
+    }
+    closeClosePopup()
   }
 
   const confirmClosePopup = async () => {
@@ -2321,7 +2342,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
           style={{ zIndex: 9999 }}
-          onClick={closeClosePopup}
+          onClick={requestCloseClosePopup}
         >
           <div
             // Widen the popup when the inline RichTextEditor is open —
@@ -2344,7 +2365,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               </h3>
               <button
                 type="button"
-                onClick={closeClosePopup}
+                onClick={requestCloseClosePopup}
                 className="text-gray-400 hover:text-gray-600"
                 aria-label="Close"
               >
@@ -2552,7 +2573,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             )}
 
             <div className="flex items-center justify-end gap-2">
-              <Button variant="ghost" onClick={closeClosePopup} disabled={closePopupSaving}>
+              <Button variant="ghost" onClick={requestCloseClosePopup} disabled={closePopupSaving}>
                 {locale === 'fr' ? 'Annuler' : 'Cancel'}
               </Button>
               <Button
@@ -2571,6 +2592,40 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               </Button>
             </div>
           </div>
+
+          {/* Unsaved-note guard: confirm before discarding a note in progress. */}
+          {confirmingDiscardSession && (
+            <div
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+              style={{ zIndex: 10000 }}
+              onClick={(e) => { e.stopPropagation(); setConfirmingDiscardSession(false) }}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {locale === 'fr' ? 'Note non enregistrée' : 'Unsaved note'}
+                </h3>
+                <p className="text-sm text-gray-600 mb-5">
+                  {locale === 'fr'
+                    ? 'Vous avez commencé une note qui n\'a pas encore été enregistrée. Si vous fermez maintenant, elle sera perdue.'
+                    : "You've started a note that hasn't been saved yet. If you close now, it will be lost."}
+                </p>
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setConfirmingDiscardSession(false)}>
+                    {locale === 'fr' ? 'Continuer la note' : 'Keep editing'}
+                  </Button>
+                  <Button
+                    onClick={() => { setConfirmingDiscardSession(false); closeClosePopup() }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {locale === 'fr' ? 'Abandonner' : 'Discard'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
