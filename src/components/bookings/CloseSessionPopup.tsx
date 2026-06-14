@@ -80,6 +80,9 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
   // Guard against accidentally closing (backdrop / X / Cancel) while an
   // unsaved note is being written and losing it.
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  // True when editing an already-saved note (Edit on "Note already added").
+  // Editing REPLACES the existing note instead of appending a new entry.
+  const [noteEditing, setNoteEditing] = useState(false)
 
   // Reset state each time a new booking opens. "Note already added"
   // detection auto-satisfies the note requirement when the booking
@@ -93,6 +96,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
     setShowNoteAction(hasExistingNote ? 'has' : null)
     setShowNoteDraft('')
+    setNoteEditing(false)
     setNoShowPayment(booking.payment_status === 'paid' ? 'paid' : null)
     setNoShowReason('')
     setNoShowComments('')
@@ -213,7 +217,12 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
           status: 'completed',
           payment_status: showPayment,
         }
-        if (showNoteAction === 'take' && showNoteDraft.replace(/<[^>]*>/g, '').trim()) {
+        // Editing an existing note REPLACES it (or clears it when emptied);
+        // a fresh note APPENDS so a prior entry isn't lost.
+        if (noteEditing) {
+          const plain = showNoteDraft.replace(/<[^>]*>/g, '').trim()
+          updates.practitioner_notes = plain ? showNoteDraft : null
+        } else if (showNoteAction === 'take' && showNoteDraft.replace(/<[^>]*>/g, '').trim()) {
           const existing = booking.practitioner_notes || ''
           updates.practitioner_notes = existing
             ? existing + '\n\n' + showNoteDraft
@@ -368,9 +377,22 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                 {locale === 'fr' ? 'Note de séance' : 'Session note'}
               </p>
               {showNoteAction === 'has' ? (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>{locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}</span>
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    {locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNoteDraft(booking.practitioner_notes || '')
+                      setNoteEditing(true)
+                      setShowNoteAction('take')
+                    }}
+                    className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline shrink-0"
+                  >
+                    {locale === 'fr' ? 'Modifier' : 'Edit'}
+                  </button>
                 </div>
               ) : showNoteAction === 'take' ? (
                 <div>
@@ -386,13 +408,23 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                       noteTypes={noteTypes}
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setShowNoteAction('skip'); setShowNoteDraft('') }}
-                    className="text-xs text-gray-500 hover:text-gray-700 mt-2"
-                  >
-                    {locale === 'fr' ? '← Sans note' : '← No note'}
-                  </button>
+                  {noteEditing ? (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNoteAction('has'); setShowNoteDraft(''); setNoteEditing(false) }}
+                      className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                    >
+                      {locale === 'fr' ? '← Garder la note d\'origine' : '← Keep original note'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setShowNoteAction('skip'); setShowNoteDraft('') }}
+                      className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                    >
+                      {locale === 'fr' ? '← Sans note' : '← No note'}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex gap-2">

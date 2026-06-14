@@ -242,6 +242,8 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // Guard against closing the close-popup (backdrop / X / Cancel) while a
   // note is in progress and silently losing it.
   const [confirmingDiscardSession, setConfirmingDiscardSession] = useState(false)
+  // True when editing the already-saved note (Edit on "Note already added").
+  const [showPopupNoteEditing, setShowPopupNoteEditing] = useState(false)
 
   const openClosePopup = (session: Session, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupSession(session)
@@ -259,6 +261,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     const hasExistingNote = !!sessionSummaryNotes[session.id]?.content
     setShowPopupNoteAction(hasExistingNote ? 'has' : null)
     setShowPopupNoteDraft('')
+    setShowPopupNoteEditing(false)
     // Paid is sticky; an unpaid fresh no-show is left for the reason-based default.
     setNoShowPopupPayment(session.payment_status === 'paid' ? 'paid' : (isClosedCancel ? session.payment_status : null))
     setNoShowPopupReason(!presetOutcome && isClosedCancel ? (session.cancellation_reason || '') : '')
@@ -270,6 +273,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setClosePopupOutcome(null)
     setClosePopupPreset(false)
     setShowPopupNoteDraft('')
+    setShowPopupNoteEditing(false)
     setNoShowPopupComments('')
     setConfirmingDiscardSession(false)
   }
@@ -303,8 +307,12 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         if (showPopupPayment !== session.payment_status) {
           await supabase.from('sessions').update({ payment_status: showPopupPayment }).eq('id', session.id)
         }
-        // Save new note if the practitioner wrote one inside the popup
-        if (showPopupNoteAction === 'take' && showPopupNoteDraft.replace(/<[^>]*>/g, '').trim()) {
+        // Save the note. A fresh note saves only when non-empty; editing an
+        // existing note also runs when emptied so it can be cleared/deleted.
+        if (
+          showPopupNoteAction === 'take' &&
+          (showPopupNoteDraft.replace(/<[^>]*>/g, '').trim() || showPopupNoteEditing)
+        ) {
           await handleSaveSessionSummary(session.id, showPopupNoteDraft)
         }
         await handleUpdateStatus(session.id, 'completed')
@@ -2442,9 +2450,22 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {locale === 'fr' ? 'Note de séance' : 'Session note'}
                   </p>
                   {showPopupNoteAction === 'has' ? (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>{locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}</span>
+                    <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        {locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPopupNoteDraft(sessionSummaryNotes[closePopupSession.id]?.content || '')
+                          setShowPopupNoteEditing(true)
+                          setShowPopupNoteAction('take')
+                        }}
+                        className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline shrink-0"
+                      >
+                        {locale === 'fr' ? 'Modifier' : 'Edit'}
+                      </button>
                     </div>
                   ) : showPopupNoteAction === 'take' ? (
                     <div>
@@ -2467,13 +2488,23 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           memberName={member?.first_name}
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => { setShowPopupNoteAction('skip'); setShowPopupNoteDraft('') }}
-                        className="text-xs text-gray-500 hover:text-gray-700 mt-2"
-                      >
-                        {locale === 'fr' ? '← Sans note' : '← No note'}
-                      </button>
+                      {showPopupNoteEditing ? (
+                        <button
+                          type="button"
+                          onClick={() => { setShowPopupNoteAction('has'); setShowPopupNoteDraft(''); setShowPopupNoteEditing(false) }}
+                          className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                        >
+                          {locale === 'fr' ? '← Garder la note d\'origine' : '← Keep original note'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setShowPopupNoteAction('skip'); setShowPopupNoteDraft('') }}
+                          className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                        >
+                          {locale === 'fr' ? '← Sans note' : '← No note'}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex gap-2">

@@ -806,6 +806,9 @@ export default function BookingsPage() {
   // Guard against closing the close-popup (backdrop / X / Cancel) while a
   // note is in progress and silently losing it.
   const [confirmingDiscardBooking, setConfirmingDiscardBooking] = useState(false)
+  // True when editing an already-saved note (Edit on "Note already added").
+  // Editing REPLACES the existing note instead of appending a new entry.
+  const [showBNoteEditing, setShowBNoteEditing] = useState(false)
 
   // For the post-Show "Schedule next" branch — opens ScheduleSessionModal.
   // Bookings page doesn't have the full Member shape on hand, so the modal
@@ -906,6 +909,7 @@ export default function BookingsPage() {
     const hasExistingNote = !!(booking.practitioner_notes && booking.practitioner_notes.trim().length > 0)
     setShowBNoteAction(hasExistingNote ? 'has' : null)
     setShowBNoteDraft('')
+    setShowBNoteEditing(false)
     setNoShowBPayment(booking.payment_status === 'paid' ? 'paid' : (isClosedCancel ? booking.payment_status : null))
     setNoShowBReason(!presetOutcome && isClosedCancel ? (booking.cancellation_reason || '') : '')
     setNoShowBComments('')
@@ -915,6 +919,7 @@ export default function BookingsPage() {
     setClosePopupOutcome(null)
     setClosePopupPreset(false)
     setShowBNoteDraft('')
+    setShowBNoteEditing(false)
     setNoShowBComments('')
     setConfirmingDiscardBooking(false)
   }
@@ -985,9 +990,12 @@ export default function BookingsPage() {
           cancellation_reason: null,
           cancelled_at: null,
         }
-        // Save new note inline by appending to practitioner_notes (don't
-        // overwrite an existing entry).
-        if (showBNoteAction === 'take' && showBNoteDraft.replace(/<[^>]*>/g, '').trim()) {
+        // Save the note. Editing an existing one REPLACES it (or clears it
+        // when emptied); a fresh note APPENDS so a prior entry isn't lost.
+        if (showBNoteEditing) {
+          const plain = showBNoteDraft.replace(/<[^>]*>/g, '').trim()
+          updates.practitioner_notes = plain ? showBNoteDraft : null
+        } else if (showBNoteAction === 'take' && showBNoteDraft.replace(/<[^>]*>/g, '').trim()) {
           const existing = booking.practitioner_notes || ''
           updates.practitioner_notes = existing
             ? existing + '\n\n' + showBNoteDraft
@@ -3732,9 +3740,22 @@ export default function BookingsPage() {
                     {locale === 'fr' ? 'Note de séance' : 'Session note'}
                   </p>
                   {showBNoteAction === 'has' ? (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>{locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}</span>
+                    <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        {locale === 'fr' ? 'Note déjà ajoutée' : 'Note already added'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowBNoteDraft(closePopupBooking?.practitioner_notes || '')
+                          setShowBNoteEditing(true)
+                          setShowBNoteAction('take')
+                        }}
+                        className="text-xs font-medium text-emerald-700 hover:text-emerald-900 underline shrink-0"
+                      >
+                        {locale === 'fr' ? 'Modifier' : 'Edit'}
+                      </button>
                     </div>
                   ) : showBNoteAction === 'take' ? (
                     <div>
@@ -3749,13 +3770,23 @@ export default function BookingsPage() {
                           memberName={closePopupBooking?.client_name?.split(' ')[0]}
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => { setShowBNoteAction('skip'); setShowBNoteDraft('') }}
-                        className="text-xs text-gray-500 hover:text-gray-700 mt-2"
-                      >
-                        {locale === 'fr' ? '← Sans note' : '← No note'}
-                      </button>
+                      {showBNoteEditing ? (
+                        <button
+                          type="button"
+                          onClick={() => { setShowBNoteAction('has'); setShowBNoteDraft(''); setShowBNoteEditing(false) }}
+                          className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                        >
+                          {locale === 'fr' ? '← Garder la note d\'origine' : '← Keep original note'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setShowBNoteAction('skip'); setShowBNoteDraft('') }}
+                          className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                        >
+                          {locale === 'fr' ? '← Sans note' : '← No note'}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex gap-2">

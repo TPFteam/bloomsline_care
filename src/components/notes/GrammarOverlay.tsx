@@ -408,8 +408,10 @@ function GrammarPopover({
   return (
     <div
       ref={ref}
-      className="fixed z-[80] w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
-      style={{ left: Math.max(8, Math.min(left, window.innerWidth - 264)), top }}
+      // z above app modals (close-session popup, notes panel use z-9999) so the
+      // suggestion popover isn't hidden behind them when the editor is in a modal.
+      className="fixed w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      style={{ left: Math.max(8, Math.min(left, window.innerWidth - 264)), top, zIndex: 10001 }}
     >
       <p className="mb-2 text-xs leading-snug text-gray-600">{box.match.message}</p>
       {box.match.replacements.length > 0 ? (
