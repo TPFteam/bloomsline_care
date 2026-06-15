@@ -410,6 +410,11 @@ function ZonedCanvasRender({ block }: { block: any }) {
   }
   const labelOf = (z: any): string => z?.label?.en || z?.label?.fr || ''
   const zones = Array.isArray(block.zones) ? block.zones : []
+  // SVG <text> doesn't wrap — long custom labels spill outside the canvas.
+  // Draw a small numbered badge on each zone; the full labels show in the
+  // legend/list below (number → label), so nothing is cut or overflows.
+  const zoneNumber: Record<string, number> = {}
+  zones.forEach((z: any, i: number) => { zoneNumber[z.id] = i + 1 })
   const canvas = block.canvas || { width: 800, height: 600 }
   const ordered = [...zones].sort((a: any, b: any) => {
     const area = (z: any): number => {
@@ -450,8 +455,9 @@ function ZonedCanvasRender({ block }: { block: any }) {
             return (
               <g key={z.id}>
                 {shapeEl}
-                <text x={cx} y={cy} fill={a.stroke} fontSize={14} fontWeight={600} textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
-                  {labelOf(z)}
+                <circle cx={cx} cy={cy} r={12} fill={a.stroke} pointerEvents="none" />
+                <text x={cx} y={cy} fill="#ffffff" fontSize={13} fontWeight={700} textAnchor="middle" dominantBaseline="central" pointerEvents="none">
+                  {zoneNumber[z.id]}
                 </text>
               </g>
             )
@@ -468,7 +474,15 @@ function ZonedCanvasRender({ block }: { block: any }) {
               className="rounded-lg border px-3 py-2 flex items-center justify-between gap-2"
               style={{ borderColor: a.stroke + '33', background: a.bg }}
             >
-              <p className="text-[12px] font-semibold" style={{ color: a.stroke }}>{labelOf(z)}</p>
+              <div className="flex items-start gap-2 min-w-0">
+                <span
+                  className="shrink-0 mt-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold text-white"
+                  style={{ background: a.stroke }}
+                >
+                  {zoneNumber[z.id]}
+                </span>
+                <p className="text-[12px] font-semibold" style={{ color: a.stroke }}>{labelOf(z)}</p>
+              </div>
               <span className="text-[11px] text-gray-400">+ Add</span>
             </div>
           )

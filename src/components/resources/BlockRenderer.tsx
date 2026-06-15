@@ -1989,6 +1989,10 @@ function ZonedCanvasRenderer({
   const [editingZone, setEditingZone] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
+  // Which on-canvas tag is tapped open to show its full sentence. The
+  // expanded bubble is allowed to overflow its zone (e.g. over the circle);
+  // the compact tags themselves are kept inside their zone.
+  const [openEntry, setOpenEntry] = useState<string | null>(null)
 
   // ESC closes the expanded view — standard modal behaviour, expected
   // on web. Without this, keyboard-only users get stuck.
@@ -2002,8 +2006,15 @@ function ZonedCanvasRenderer({
   const labelOf = (z: CanvasZone) => z.label[locale] || z.label.en
   const descOf = (z: CanvasZone) => z.description?.[locale] || z.description?.en
 
+  // SVG <text> doesn't wrap, so long custom labels spill outside the canvas.
+  // We draw a small numbered badge on each zone and show the full labels in
+  // the legend/list below (number → label), so nothing is cut or overflows.
+  const zoneNumber: Record<string, number> = {}
+  b.zones.forEach((z, i) => { zoneNumber[z.id] = i + 1 })
+
   const startAdd = (zoneId: string) => {
     if (disabled) return
+    setOpenEntry(null)
     setEditingZone(zoneId)
     setDraft('')
   }
@@ -2115,19 +2126,20 @@ function ZonedCanvasRenderer({
     const colour = ACCENT_COLORS[z.accent ?? 'slate']
     const { cx, labelY } = zonePos(z)
     return (
-      <text
-        key={`label-${z.id}`}
-        x={cx}
-        y={labelY}
-        fill={colour.text}
-        fontSize={18}
-        fontWeight={700}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        pointerEvents="none"
-      >
-        {labelOf(z)}
-      </text>
+      <g key={`label-${z.id}`} pointerEvents="none">
+        <circle cx={cx} cy={labelY} r={14} fill={colour.stroke} />
+        <text
+          x={cx}
+          y={labelY}
+          fill="#ffffff"
+          fontSize={16}
+          fontWeight={700}
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          {zoneNumber[z.id]}
+        </text>
+      </g>
     )
   }
 
@@ -2164,24 +2176,65 @@ function ZonedCanvasRenderer({
     }
     return false
   }
+  // Does an (axis-aligned, slightly padded) pill box overlap a shape? Used to
+  // keep outer-zone tags clear of a nested inner shape (e.g. the circle).
+  const boxOverlapsShape = (
+    cx: number, cy: number, w: number, h: number,
+    s: { kind: string; x?: number; y?: number; w?: number; h?: number; cx?: number; cy?: number; r?: number; rx?: number; ry?: number },
+    clearance = 0,
+  ): boolean => {
+    const hw = w / 2 + clearance, hh = h / 2 + clearance
+    if (s.kind === 'circle' || s.kind === 'ellipse') {
+      const r = s.kind === 'circle' ? (s.r ?? 0) : Math.min(s.rx ?? 0, s.ry ?? 0)
+      const nx = Math.max(cx - hw, Math.min(s.cx ?? 0, cx + hw))
+      const ny = Math.max(cy - hh, Math.min(s.cy ?? 0, cy + hh))
+      return Math.hypot((s.cx ?? 0) - nx, (s.cy ?? 0) - ny) < r
+    }
+    if (s.kind === 'rect') {
+      const scx = (s.x ?? 0) + (s.w ?? 0) / 2, scy = (s.y ?? 0) + (s.h ?? 0) / 2
+      return Math.abs(cx - scx) < hw + (s.w ?? 0) / 2 && Math.abs(cy - scy) < hh + (s.h ?? 0) / 2
+    }
+    return false
+  }
+  // Zones nested inside `z` (by explicit parentZoneId, or geometrically: a
+  // smaller zone whose centre sits inside z). Tags in z must avoid these.
+  const childrenOf = (z: CanvasZone): CanvasZone[] =>
+    b.zones.filter((c: CanvasZone) => {
+      if (c.id === z.id) return false
+      if (c.parentZoneId === z.id) return true
+      if (zoneArea(c) >= zoneArea(z)) return false
+      const s = c.shape as { kind: string; x?: number; y?: number; w?: number; h?: number; cx?: number; cy?: number; r?: number; rx?: number; ry?: number; points?: [number, number][] }
+      let ccx = 0, ccy = 0
+      if (s.kind === 'rect') { ccx = (s.x ?? 0) + (s.w ?? 0) / 2; ccy = (s.y ?? 0) + (s.h ?? 0) / 2 }
+      else if (s.kind === 'circle' || s.kind === 'ellipse') { ccx = s.cx ?? 0; ccy = s.cy ?? 0 }
+      else if (s.kind === 'polygon' && s.points?.length) {
+        ccx = s.points.reduce((a, p) => a + p[0], 0) / s.points.length
+        ccy = s.points.reduce((a, p) => a + p[1], 0) / s.points.length
+      }
+      return insideShape(ccx, ccy, z.shape as Parameters<typeof insideShape>[2], 0)
+    })
   type Placed = { id: string; text: string; cx: number; cy: number; w: number; h: number; angle: number }
   const planEntries = (z: CanvasZone): Placed[] => {
     const list = entries[z.id] ?? []
     if (list.length === 0) return []
     const maxVisible = 8
     const visible = list.slice(0, maxVisible)
-    const children = b.zones.filter((c: CanvasZone) => c.parentZoneId === z.id)
+    const children = childrenOf(z)
     const { labelY } = zonePos(z)
     const fontSize = 13
     const h = fontSize + 14
     const placed: Placed[] = []
     const margin = 12
     for (const entry of visible) {
-      const text = (entry.text || '').length > 24 ? (entry.text || '').slice(0, 22) + '…' : (entry.text || '')
+      // Keep tags compact so they fit inside their zone; the full sentence is
+      // revealed on tap (and only then is allowed to overflow).
+      const raw = entry.text || ''
+      const text = raw.length > 18 ? raw.slice(0, 16) + '…' : raw
       const w = estimatePillWidth(text, fontSize)
+      const halfDiag = Math.hypot(w / 2, h / 2)  // rotation-safe radius
       const rng = seededRand(z.id + entry.id)
       let chosen: Placed | null = null
-      for (let t = 0; t < 60; t++) {
+      for (let t = 0; t < 80; t++) {
         const s = z.shape as any
         let cx = 0, cy = 0
         if (s.kind === 'rect') {
@@ -2189,7 +2242,7 @@ function ZonedCanvasRenderer({
           cy = labelY + 26 + h / 2 + rng() * ((s.y ?? 0) + (s.h ?? 0) - labelY - 26 - h - 2 * margin)
         } else if (s.kind === 'circle') {
           const angle = rng() * Math.PI * 2
-          const maxR = Math.max(0, (s.r ?? 0) - Math.max(w, h) / 2 - margin)
+          const maxR = Math.max(0, (s.r ?? 0) - halfDiag - margin)
           const radius = Math.sqrt(rng()) * maxR
           cx = (s.cx ?? 0) + Math.cos(angle) * radius
           cy = (s.cy ?? 0) + Math.sin(angle) * radius
@@ -2206,11 +2259,13 @@ function ZonedCanvasRenderer({
           cx = Math.min(...xs) + margin + rng() * (Math.max(...xs) - Math.min(...xs) - 2 * margin)
           cy = Math.min(...ys) + margin + rng() * (Math.max(...ys) - Math.min(...ys) - 2 * margin)
         }
-        let insideChild = false
+        // Keep the whole tag box clear of any nested zone (e.g. the circle),
+        // not just its centre — so outer tags never spill onto the circle.
+        let hitsChild = false
         for (const c of children) {
-          if (insideShape(cx, cy, c.shape as any, -6)) { insideChild = true; break }
+          if (boxOverlapsShape(cx, cy, w, h, c.shape as any, 4)) { hitsChild = true; break }
         }
-        if (insideChild) continue
+        if (hitsChild) continue
         const angle = (rng() - 0.5) * 6
         const candidate: Placed = { id: entry.id, text, cx, cy, w, h, angle }
         let collides = false
@@ -2227,16 +2282,20 @@ function ZonedCanvasRenderer({
     }
     return placed
   }
-  const renderEntries = (z: CanvasZone) => {
+  const renderEntries = (z: CanvasZone, placed: Placed[]) => {
     const list = entries[z.id] ?? []
     if (list.length === 0) return null
     const colour = ACCENT_COLORS[z.accent ?? 'slate']
-    const placed = planEntries(z)
     const overflow = list.length - placed.length
     return (
       <g key={`entries-${z.id}`}>
         {placed.map(p => (
-          <g key={`entry-${p.id}`} transform={`translate(${p.cx} ${p.cy}) rotate(${p.angle})`}>
+          <g
+            key={`entry-${p.id}`}
+            transform={`translate(${p.cx} ${p.cy}) rotate(${p.angle})`}
+            style={{ cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); setOpenEntry(prev => prev === p.id ? null : p.id) }}
+          >
             <rect
               x={-p.w / 2} y={-p.h / 2}
               width={p.w} height={p.h} rx={p.h / 2}
@@ -2275,6 +2334,52 @@ function ZonedCanvasRenderer({
     )
   }
 
+  // Plan all zones once so the entry layer and the tap-to-expand overlay
+  // agree on positions.
+  const placedByZone: Record<string, Placed[]> = {}
+  for (const z of b.zones) placedByZone[z.id] = planEntries(z)
+
+  // The tapped tag, shown in full as a wrapped bubble. It is allowed to
+  // overflow its zone (e.g. over the circle) since it's a transient view.
+  const renderExpandedTag = () => {
+    if (!openEntry) return null
+    let pos: Placed | undefined
+    let colour = ACCENT_COLORS.slate
+    for (const z of b.zones) {
+      const hit = (placedByZone[z.id] ?? []).find(p => p.id === openEntry)
+      if (hit) { pos = hit; colour = ACCENT_COLORS[z.accent ?? 'slate']; break }
+    }
+    if (!pos) return null
+    const full = Object.values(entries).flat().find(e => e.id === openEntry)?.text ?? pos.text
+    const W = Math.min(260, b.canvas.width - 16)
+    const charsPerLine = Math.max(8, Math.floor(W / 7))
+    const lines = Math.max(1, Math.ceil(full.length / charsPerLine))
+    const H = lines * 18 + 22
+    const x = Math.max(8, Math.min(pos.cx - W / 2, b.canvas.width - 8 - W))
+    const y = Math.max(8, Math.min(pos.cy - H / 2, b.canvas.height - 8 - H))
+    return (
+      <foreignObject x={x} y={y} width={W} height={H} style={{ overflow: 'visible' }}>
+        <div
+          onClick={(e) => { e.stopPropagation(); setOpenEntry(null) }}
+          style={{
+            background: '#ffffff',
+            border: `1.5px solid ${colour.stroke}`,
+            borderRadius: 12,
+            padding: '8px 12px',
+            fontSize: 13,
+            lineHeight: '18px',
+            color: '#1f2937',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.16)',
+            cursor: 'pointer',
+            wordBreak: 'break-word',
+          }}
+        >
+          {full}
+        </div>
+      </foreignObject>
+    )
+  }
+
   return (
     <div>
       {b.content && (
@@ -2301,7 +2406,8 @@ function ZonedCanvasRenderer({
           )}
           {paintOrder.map(renderShape)}
           {paintOrder.map(renderLabel)}
-          {paintOrder.map(renderEntries)}
+          {paintOrder.map(z => renderEntries(z, placedByZone[z.id] ?? []))}
+          {renderExpandedTag()}
         </svg>
         <button
           type="button"
@@ -2363,7 +2469,8 @@ function ZonedCanvasRenderer({
                 )}
                 {paintOrder.map(renderShape)}
                 {paintOrder.map(renderLabel)}
-                {paintOrder.map(renderEntries)}
+                {paintOrder.map(z => renderEntries(z, placedByZone[z.id] ?? []))}
+                {renderExpandedTag()}
               </svg>
               {/* Floating close on the card itself — always reachable, even
                   if header chrome overlaps. */}
@@ -2393,11 +2500,19 @@ function ZonedCanvasRenderer({
               style={{ borderColor: colour.stroke + '88', borderWidth: 1.5 }}
             >
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-700">
-                    {labelOf(zone)}
-                  </p>
-                  {descOf(zone) && <p className="text-xs text-gray-500 leading-tight">{descOf(zone)}</p>}
+                <div className="min-w-0 flex items-start gap-2">
+                  <span
+                    className="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold text-white"
+                    style={{ background: colour.stroke }}
+                  >
+                    {zoneNumber[zone.id]}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-700">
+                      {labelOf(zone)}
+                    </p>
+                    {descOf(zone) && <p className="text-xs text-gray-500 leading-tight">{descOf(zone)}</p>}
+                  </div>
                 </div>
                 {!disabled && (
                   <button
@@ -2412,10 +2527,10 @@ function ZonedCanvasRenderer({
               </div>
               {list.length > 0 ? (
                 <ul className="space-y-1">
-                  {list.map(entry => (
+                  {list.map((entry, i) => (
                     <li key={entry.id} className="flex items-start gap-2 group">
-                      <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: colour.stroke }} />
-                      <span className="flex-1 text-sm text-gray-800 whitespace-pre-wrap break-words">{entry.text}</span>
+                      <span className="text-sm font-semibold flex-shrink-0 tabular-nums" style={{ color: colour.stroke }}>{i + 1}.</span>
+                      <span className="flex-1 min-w-0 text-sm text-gray-800 whitespace-pre-wrap break-words">{entry.text}</span>
                       {!disabled && (
                         <button
                           type="button"
