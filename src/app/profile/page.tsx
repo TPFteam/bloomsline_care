@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
+import { BrandBadgeCard } from '@/components/embed/BrandBadgeCard'
 import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -1548,6 +1549,28 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+
+                {/* Introduce Bloomsline on your website (public embed) */}
+                {profile.is_public && profile.slug ? (
+                  <BrandBadgeCard slug={profile.slug} locale={locale as 'en' | 'fr' | 'es'} />
+                ) : (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      {locale === 'fr'
+                        ? 'Présentez Bloomsline sur votre site web'
+                        : locale === 'es'
+                        ? 'Presenta Bloomsline en tu sitio web'
+                        : 'Introduce Bloomsline on your website'}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {locale === 'fr'
+                        ? 'Rendez votre profil public et choisissez votre adresse ci-dessus pour générer un badge à intégrer à votre site.'
+                        : locale === 'es'
+                        ? 'Haz tu perfil público y elige tu dirección arriba para generar una insignia para tu sitio.'
+                        : 'Make your profile public and pick your address above to generate a badge you can add to your website.'}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             </motion.div>

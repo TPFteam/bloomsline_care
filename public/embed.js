@@ -46,6 +46,13 @@
     return ORIGIN + '/practitioner/' + encodeURIComponent(slug) + '/book?' + p.toString()
   }
 
+  function buildBadgeSrc(slug, opts) {
+    var p = new URLSearchParams()
+    if (opts.lang) p.set('lang', opts.lang)
+    var qs = p.toString()
+    return ORIGIN + '/embed/badge/' + encodeURIComponent(slug) + (qs ? '?' + qs : '')
+  }
+
   function mountOne(el) {
     if (el.__bloomslineMounted) return
     el.__bloomslineMounted = true
@@ -58,6 +65,7 @@
 
     var iframe = document.createElement('iframe')
     iframe.src = buildSrc(slug, { primary: primary })
+    iframe.className = 'bloomsline-embed-frame'
     iframe.style.border = '0'
     iframe.style.width = '100%'
     iframe.style.minHeight = '600px'
@@ -72,9 +80,41 @@
     el.__bloomslineIframe = iframe
   }
 
+  // Brand / collaboration badge — a small "I work with Bloomsline" card that
+  // links to the patient-facing explainer. Same loader, different widget.
+  function mountBadgeOne(el) {
+    if (el.__bloomslineMounted) return
+    el.__bloomslineMounted = true
+
+    var slug = el.getAttribute('data-bloomsline-badge')
+    if (!slug) return
+
+    var lang = el.getAttribute('data-lang') || ''
+    var maxWidth = el.getAttribute('data-max-width') || '340'
+
+    var iframe = document.createElement('iframe')
+    iframe.src = buildBadgeSrc(slug, { lang: lang })
+    iframe.className = 'bloomsline-embed-frame'
+    iframe.style.border = '0'
+    iframe.style.width = '100%'
+    iframe.style.minHeight = '180px'
+    iframe.style.display = 'block'
+    iframe.style.transition = 'height 200ms ease'
+    iframe.style.colorScheme = 'normal'
+    if (maxWidth) iframe.style.maxWidth = maxWidth + 'px'
+    iframe.setAttribute('title', 'Bloomsline')
+    iframe.setAttribute('scrolling', 'no')
+
+    el.innerHTML = ''
+    el.appendChild(iframe)
+    el.__bloomslineIframe = iframe
+  }
+
   function mountAll() {
-    var nodes = document.querySelectorAll('[data-bloomsline-booking]')
-    for (var i = 0; i < nodes.length; i++) mountOne(nodes[i])
+    var booking = document.querySelectorAll('[data-bloomsline-booking]')
+    for (var i = 0; i < booking.length; i++) mountOne(booking[i])
+    var badges = document.querySelectorAll('[data-bloomsline-badge]')
+    for (var j = 0; j < badges.length; j++) mountBadgeOne(badges[j])
   }
 
   // Listen for height-update messages from any embedded iframe and resize
@@ -86,8 +126,8 @@
       if (e.data.type !== 'bloomsline:embed:height') return
       if (e.origin !== ORIGIN) return
       var h = parseInt(e.data.height, 10)
-      if (!h || h < 100) return
-      var iframes = document.querySelectorAll('[data-bloomsline-booking] iframe')
+      if (!h || h < 60) return
+      var iframes = document.querySelectorAll('.bloomsline-embed-frame')
       for (var i = 0; i < iframes.length; i++) {
         if (iframes[i].contentWindow === e.source) {
           iframes[i].style.height = h + 'px'

@@ -33,7 +33,7 @@ function isMemberRoute(pathname: string): boolean {
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone', '/p/', '/shared/']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone', '/p/', '/shared/', '/embed/']
 
 const ADMIN_USER_IDS = [
   '3548c40c-22d6-43e9-8835-0ef9db6abe76',
