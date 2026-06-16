@@ -79,23 +79,18 @@ export function generateEmailHtml(params: {
   const { subject, body, actionUrl, actionText, preheader, practitionerName, practitionerAvatar, recipientName } = params
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.bloomsline.com'
 
+  // Plain text link (not a big CTA button) so the email reads as a personal,
+  // transactional note rather than a promotion (keeps it out of Gmail's
+  // Promotions tab).
   const buttonHtml = actionUrl
     ? `
       <tr>
-        <td style="padding: 28px 0 8px;">
-          <table cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background-color: #0D9488; border-radius: 28px;">
-                <a href="${actionUrl.startsWith('http') ? actionUrl : `${appUrl}${actionUrl}`}"
-                   style="display: inline-block; color: #ffffff; padding: 14px 32px;
-                          text-decoration: none; font-weight: 600; font-size: 14px;
-                          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                          letter-spacing: 0.3px;">
-                  ${actionText || 'View'}
-                </a>
-              </td>
-            </tr>
-          </table>
+        <td style="padding: 20px 0 4px;">
+          <a href="${actionUrl.startsWith('http') ? actionUrl : `${appUrl}${actionUrl}`}"
+             style="color: #0D9488; font-weight: 600; font-size: 15px; text-decoration: underline;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            ${actionText || 'View'} &rarr;
+          </a>
         </td>
       </tr>
     `
@@ -153,12 +148,7 @@ export function generateEmailHtml(params: {
           <!-- Card -->
           <tr>
             <td>
-              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-
-                <!-- Accent line -->
-                <tr>
-                  <td style="height: 3px; background: linear-gradient(90deg, #0D9488, #14B8A6, #5EEAD4);"></td>
-                </tr>
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #F0EEEA;">
 
                 <!-- Card content -->
                 <tr>
