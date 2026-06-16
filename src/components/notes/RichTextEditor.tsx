@@ -67,7 +67,11 @@ function getCleanHtml(el: HTMLElement): string {
   clone.querySelectorAll('mark[data-verbatim-type="mention"]').forEach(mark => {
     mark.parentNode?.removeChild(mark)
   })
-  return clone.innerHTML
+  // contentEditable injects non-breaking spaces (serialized as &nbsp;) for
+  // repeated/leading spaces. They render fine on the web but show up as literal
+  // "&nbsp;" wherever the note is consumed as plain text (mobile app, AI
+  // context, exports). Normalize them to regular spaces at the source.
+  return clone.innerHTML.replace(/&nbsp;| /g, ' ')
 }
 
 /** Inject --tag-color and --tag-bg + recolor old goal greens to navy + rewrite tag colors to palette */
