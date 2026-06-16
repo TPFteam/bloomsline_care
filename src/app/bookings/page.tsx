@@ -774,6 +774,9 @@ export default function BookingsPage() {
   const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string; outsideHours?: boolean } | null>(null)
   const [cancelConfirmBooking, setCancelConfirmBooking] = useState<any | null>(null)
   const [deleteConfirmBooking, setDeleteConfirmBooking] = useState<any | null>(null)
+  // For recurring-series bookings: delete only this occurrence, or this + all
+  // following ones (past occurrences are always preserved).
+  const [deleteSeriesScope, setDeleteSeriesScope] = useState<'this' | 'following'>('this')
 
   // ── Close-session popup state ──────────────────────────────────────
   // Mirrors SessionsTab. A single dialog asks "How did this session go?"
@@ -1049,27 +1052,99 @@ export default function BookingsPage() {
     }
   }
 
-  const handleDeleteBooking = async (bookingId: string) => {
+  const handleDeleteBooking = async (bookingId: string, scope: 'this' | 'following' = 'this') => {
     try {
       setProcessingId(bookingId)
       const sb = createClient()
       const booking = bookings.find(b => b.id === bookingId)
+      const seriesFollowing = scope === 'following' && !!booking?.series_id
 
       // 1. If still active and on Google Calendar, cancel via API
       //    first. The PATCH endpoint removes the Google event and
-      //    notifies the patient (cancellation email). Skip when the
-      //    booking is already cancelled to avoid hitting Google with a
-      //    delete on an event that's already gone.
+      //    notifies the patient (cancellation email). For a series
+      //    "following" delete, pass series_scope so the API shortens the
+      //    parent RRULE (past occurrences stay) or deletes the anchor.
+      //    Skip when the booking is already cancelled to avoid hitting
+      //    Google with a delete on an event that's already gone.
       if (booking && booking.status !== 'cancelled' && booking.google_event_id) {
         try {
           await fetch(`/api/bookings/${bookingId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'cancelled' }),
+            body: JSON.stringify(
+              seriesFollowing
+                ? { status: 'cancelled', series_scope: 'following' }
+                : { status: 'cancelled' },
+            ),
           })
         } catch (cancelErr) {
           console.warn('Booking cancel-before-delete failed (continuing):', cancelErr)
         }
+      }
+
+      // 1b. Series "this and following": hard-delete this occurrence and
+      //     every later sibling (by series_position, so independently-moved
+      //     rows are still caught) — past occurrences are left untouched.
+      //     This removes the rows entirely rather than leaving them as
+      //     lingering "cancelled" entries.
+      if (seriesFollowing && booking) {
+        const usePosition = typeof booking.series_position === 'number'
+
+        // Detach progress_notes from the sessions we're about to delete so
+        // they survive as standalone observations under the patient.
+        let sessSel = sb
+          .from('sessions')
+          .select('id')
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('series_id', booking.series_id!)
+        sessSel = usePosition
+          ? sessSel.gte('series_position', booking.series_position!)
+          : sessSel.gte('scheduled_at', booking.start_time)
+        const { data: sessRows } = await sessSel
+        if (sessRows && sessRows.length) {
+          await sb
+            .from('progress_notes')
+            .update({ session_id: null })
+            .in('session_id', sessRows.map((s: any) => s.id))
+        }
+
+        // Delete the session rows (this + following).
+        let sessDel = sb
+          .from('sessions')
+          .delete()
+          .eq('practitioner_id', booking.practitioner_id)
+          .eq('series_id', booking.series_id!)
+        sessDel = usePosition
+          ? sessDel.gte('series_position', booking.series_position!)
+          : sessDel.gte('scheduled_at', booking.start_time)
+        await sessDel
+
+        // Delete the booking rows (this + following).
+        let bookDel = sb
+          .from('bookings')
+          .delete({ count: 'exact' })
+          .eq('series_id', booking.series_id!)
+        bookDel = usePosition
+          ? bookDel.gte('series_position', booking.series_position!)
+          : bookDel.gte('start_time', booking.start_time)
+        const { error, count } = await bookDel
+        if (error) throw error
+        if ((count ?? 0) === 0) {
+          throw new Error('Delete matched 0 rows — likely RLS or wrong practitioner_id')
+        }
+
+        // Drop this + every following sibling from local state (keep past).
+        setBookings(prev => prev.filter(b => {
+          if (b.series_id !== booking.series_id) return true
+          if (usePosition && typeof b.series_position === 'number') {
+            return b.series_position < booking.series_position!
+          }
+          return new Date(b.start_time) < new Date(booking.start_time)
+        }))
+        emitBookingsChanged()
+        setDeleteConfirmBooking(null)
+        toast.success(locale === 'fr' ? 'Séances restantes supprimées' : 'Remaining sessions deleted')
+        return
       }
 
       // 2. Find the matching session and detach any progress_notes
@@ -2061,7 +2136,7 @@ export default function BookingsPage() {
                                   ...(isCancelledB ? [
                                     { label: locale === 'fr' ? 'Restaurer la séance' : 'Reopen session', icon: RefreshCw, onClick: () => handleReopenBooking(booking), tone: 'success' as const },
                                   ] : []),
-                                  { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => setDeleteConfirmBooking(booking), danger: true },
+                                  { label: locale === 'fr' ? 'Supprimer' : 'Delete', icon: Trash2, onClick: () => { setDeleteSeriesScope('this'); setDeleteConfirmBooking(booking) }, danger: true },
                                 ]} />
                               )
                             })()}
@@ -3499,37 +3574,83 @@ export default function BookingsPage() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmBooking && (
+      {deleteConfirmBooking && (() => {
+        const dcb = deleteConfirmBooking
+        const usePos = typeof dcb.series_position === 'number'
+        // Count this + every later still-active occurrence in the series.
+        const followingActive = dcb.series_id
+          ? bookings.filter(b =>
+              b.series_id === dcb.series_id &&
+              (usePos && typeof b.series_position === 'number'
+                ? b.series_position >= dcb.series_position
+                : new Date(b.start_time) >= new Date(dcb.start_time)) &&
+              b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'no_show'
+            ).length
+          : 0
+        const showScope = !!dcb.series_id && followingActive > 1
+        const followingOnly = Math.max(0, followingActive - 1)
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setDeleteConfirmBooking(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {locale === 'fr' ? 'Supprimer ce rendez-vous ?' : 'Delete this booking?'}
+              {showScope
+                ? (locale === 'fr' ? 'Supprimer cette séance récurrente ?' : locale === 'es' ? '¿Eliminar esta sesión recurrente?' : 'Delete this recurring session?')
+                : (locale === 'fr' ? 'Supprimer ce rendez-vous ?' : locale === 'es' ? '¿Eliminar esta reserva?' : 'Delete this booking?')}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              {deleteConfirmBooking.client_name} — {new Date(deleteConfirmBooking.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
+              {dcb.client_name} — {new Date(dcb.start_time).toLocaleDateString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
             </p>
-            <p className="text-xs text-gray-400 mb-6">
-              {locale === 'fr' ? 'Cette action est irréversible. Le rendez-vous sera définitivement supprimé.' : 'This action cannot be undone. The booking will be permanently deleted.'}
-            </p>
+
+            {showScope ? (
+              <div className="space-y-2 mb-5">
+                {([
+                  { key: 'this' as const,
+                    title: locale === 'fr' ? 'Seulement cette séance' : locale === 'es' ? 'Solo esta sesión' : 'Only this session',
+                    desc: locale === 'fr' ? 'Les autres séances de la série restent.' : locale === 'es' ? 'Las demás sesiones de la serie permanecen.' : 'The other sessions in the series stay.' },
+                  { key: 'following' as const,
+                    title: locale === 'fr' ? `Cette séance et les ${followingOnly} suivantes` : locale === 'es' ? `Esta sesión y las ${followingOnly} siguientes` : `This and the following ${followingOnly} session${followingOnly === 1 ? '' : 's'}`,
+                    desc: locale === 'fr' ? 'Les séances passées sont conservées.' : locale === 'es' ? 'Las sesiones pasadas se conservan.' : 'Past sessions are kept.' },
+                ]).map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setDeleteSeriesScope(opt.key)}
+                    className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${deleteSeriesScope === opt.key ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${deleteSeriesScope === opt.key ? 'border-red-500 bg-red-500' : 'border-gray-300'}`} />
+                      <span className="text-sm font-medium text-gray-900">{opt.title}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 mb-6">
+                {locale === 'fr' ? 'Cette action est irréversible. Le rendez-vous sera définitivement supprimé.' : locale === 'es' ? 'Esta acción es irreversible. La reserva se eliminará permanentemente.' : 'This action cannot be undone. The booking will be permanently deleted.'}
+              </p>
+            )}
+
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirmBooking(null)}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
               >
-                {locale === 'fr' ? 'Retour' : 'Back'}
+                {locale === 'fr' ? 'Retour' : locale === 'es' ? 'Volver' : 'Back'}
               </button>
               <button
-                onClick={() => handleDeleteBooking(deleteConfirmBooking.id)}
-                disabled={processingId === deleteConfirmBooking.id}
+                onClick={() => handleDeleteBooking(dcb.id, showScope ? deleteSeriesScope : 'this')}
+                disabled={processingId === dcb.id}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
-                {processingId === deleteConfirmBooking.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                {processingId === dcb.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
               </button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Reschedule Modal — reuses ScheduleSessionModal in reschedule mode */}
       <ScheduleSessionModal

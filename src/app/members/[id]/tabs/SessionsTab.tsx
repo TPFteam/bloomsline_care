@@ -484,6 +484,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   // complete, cancel, and no_show all go through the Close session
   // popup now.
   const [confirmAction, setConfirmAction] = useState<{ sessionId: string; action: 'delete' } | null>(null)
+  // For recurring-series sessions: delete only this occurrence, or this + all
+  // following ones (past occurrences are always preserved).
+  const [sessDeleteScope, setSessDeleteScope] = useState<'this' | 'following'>('this')
   // Modal that asks the practitioner what to do with notes attached to a
   // session they're about to delete. We branch the delete flow through
   // here only when the count > 0; otherwise the session is deleted directly.
@@ -1170,13 +1173,23 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     }
   }
 
-  const handleDeleteSession = async (sessionId: string) => {
+  const handleDeleteSession = async (sessionId: string, scope: 'this' | 'following' = 'this') => {
     // Synthetic rows for pending bookings have IDs prefixed with
     // "booking-". They don't exist in the sessions table — delete the
     // underlying booking row instead.
     if (sessionId.startsWith('booking-')) {
       await deleteBookingRow(sessionId.slice('booking-'.length))
       return
+    }
+    // Series "this and following": hard-delete this occurrence and every
+    // later sibling (past ones preserved). Notes on removed sessions are
+    // detached (kept), so we skip the per-session notes prompt here.
+    if (scope === 'following') {
+      const session = sessions.find(s => s.id === sessionId)
+      if (session?.series_id) {
+        await deleteSeriesFollowingSessions(session)
+        return
+      }
     }
     // Before deleting, find out if any notes are linked to this session
     // so we can ask the practitioner whether to keep them (detach) or
@@ -1221,6 +1234,96 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         code: err?.code,
       })
       toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete booking')
+    }
+  }
+
+  /**
+   * Hard-delete this occurrence and every later sibling in the series
+   * (matched by series_position so independently-moved rows are caught);
+   * past occurrences are left untouched. Mirrors the Bookings-page
+   * "this and following" delete: shortens the Google Calendar series via
+   * the API, detaches notes (kept), and removes both session + booking rows
+   * instead of leaving lingering "cancelled" entries.
+   */
+  const deleteSeriesFollowingSessions = async (session: Session) => {
+    try {
+      const usePos = typeof session.series_position === 'number'
+
+      // 1. Google Calendar cleanup via the matching booking (shorten parent
+      //    RRULE so past stays, or delete the anchor) + patient notification.
+      let bq = supabase
+        .from('bookings')
+        .select('id, google_event_id, status')
+        .eq('practitioner_id', session.practitioner_id)
+        .eq('start_time', session.scheduled_at)
+        .neq('status', 'cancelled')
+      if (session.member_id) bq = bq.eq('member_id', session.member_id)
+      const { data: mb } = await bq.maybeSingle()
+      if (mb?.id && mb.google_event_id) {
+        try {
+          await fetch(`/api/bookings/${mb.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled', series_scope: 'following' }),
+          })
+        } catch (gErr) {
+          console.warn('Series Google cleanup failed (continuing):', gErr)
+        }
+      }
+
+      // 2. Detach notes from the sessions we're about to delete.
+      let ssel = supabase
+        .from('sessions')
+        .select('id')
+        .eq('practitioner_id', session.practitioner_id)
+        .eq('series_id', session.series_id!)
+      ssel = usePos
+        ? ssel.gte('series_position', session.series_position!)
+        : ssel.gte('scheduled_at', session.scheduled_at)
+      const { data: srows } = await ssel
+      if (srows && srows.length) {
+        await supabase
+          .from('progress_notes')
+          .update({ session_id: null })
+          .in('session_id', srows.map((s: any) => s.id))
+      }
+
+      // 3. Delete the session rows (this + following).
+      let sdel = supabase
+        .from('sessions')
+        .delete()
+        .eq('practitioner_id', session.practitioner_id)
+        .eq('series_id', session.series_id!)
+      sdel = usePos
+        ? sdel.gte('series_position', session.series_position!)
+        : sdel.gte('scheduled_at', session.scheduled_at)
+      await sdel
+
+      // 4. Delete the matching booking rows (this + following).
+      let bdel = supabase
+        .from('bookings')
+        .delete()
+        .eq('series_id', session.series_id!)
+      bdel = usePos
+        ? bdel.gte('series_position', session.series_position!)
+        : bdel.gte('start_time', session.scheduled_at)
+      await bdel
+
+      // 5. Drop the affected bookings from local caches.
+      const keepPast = (b: any) =>
+        b.series_id !== session.series_id ||
+        (usePos && typeof b.series_position === 'number'
+          ? b.series_position < session.series_position!
+          : new Date(b.start_time) < new Date(session.scheduled_at))
+      setPendingBookings(prev => prev.filter(keepPast))
+      setAllBookings(prev => prev.filter(keepPast))
+
+      toast.success(locale === 'fr' ? 'Séances restantes supprimées' : locale === 'es' ? 'Sesiones restantes eliminadas' : 'Remaining sessions deleted')
+      setConfirmAction(null)
+      notifyMutation()
+    } catch (err) {
+      console.error('Error deleting following series sessions:', err)
+      toast.error(locale === 'fr' ? 'Échec de la suppression' : 'Failed to delete session')
     }
   }
 
@@ -1695,7 +1798,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
             {
               label: locale === 'fr' ? 'Supprimer' : 'Delete',
               icon: Trash2,
-              onClick: () => setConfirmAction({ sessionId: session.id, action: 'delete' }),
+              onClick: () => { setSessDeleteScope('this'); setConfirmAction({ sessionId: session.id, action: 'delete' }) },
               danger: true,
             },
           ]
@@ -2219,6 +2322,19 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           dialog. Status changes (complete/cancel/no_show) all go through
           the Close session popup. */}
       {confirmAction && (() => {
+        const cs = sessions.find(s => s.id === confirmAction.sessionId)
+        const usePos = typeof cs?.series_position === 'number'
+        const followingActive = cs?.series_id
+          ? sessions.filter(s =>
+              s.series_id === cs.series_id &&
+              (usePos && typeof s.series_position === 'number'
+                ? s.series_position >= (cs.series_position as number)
+                : new Date(s.scheduled_at) >= new Date(cs.scheduled_at)) &&
+              s.status !== 'cancelled' && s.status !== 'completed' && s.status !== 'no_show'
+            ).length
+          : 0
+        const showScope = !!cs?.series_id && followingActive > 1
+        const followingOnly = Math.max(0, followingActive - 1)
         return (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
@@ -2226,11 +2342,42 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {locale === 'fr' ? 'Supprimer cette séance ?' : 'Delete this session?'}
+              {showScope
+                ? (locale === 'fr' ? 'Supprimer cette séance récurrente ?' : locale === 'es' ? '¿Eliminar esta sesión recurrente?' : 'Delete this recurring session?')
+                : (locale === 'fr' ? 'Supprimer cette séance ?' : locale === 'es' ? '¿Eliminar esta sesión?' : 'Delete this session?')}
             </h3>
-            <p className="text-sm text-gray-500 mt-2 mb-4">
-              {locale === 'fr' ? 'Cette action est irréversible.' : 'This action cannot be undone.'}
-            </p>
+
+            {showScope ? (
+              <div className="space-y-2 mt-2 mb-4">
+                {([
+                  { key: 'this' as const,
+                    title: locale === 'fr' ? 'Seulement cette séance' : locale === 'es' ? 'Solo esta sesión' : 'Only this session',
+                    desc: locale === 'fr' ? 'Les autres séances de la série restent.' : locale === 'es' ? 'Las demás sesiones de la serie permanecen.' : 'The other sessions in the series stay.' },
+                  { key: 'following' as const,
+                    title: locale === 'fr' ? `Cette séance et les ${followingOnly} suivantes` : locale === 'es' ? `Esta sesión y las ${followingOnly} siguientes` : `This and the following ${followingOnly} session${followingOnly === 1 ? '' : 's'}`,
+                    desc: locale === 'fr' ? 'Les séances passées sont conservées.' : locale === 'es' ? 'Las sesiones pasadas se conservan.' : 'Past sessions are kept.' },
+                ]).map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setSessDeleteScope(opt.key)}
+                    disabled={confirmDeleting}
+                    className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${sessDeleteScope === opt.key ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${sessDeleteScope === opt.key ? 'border-red-500 bg-red-500' : 'border-gray-300'}`} />
+                      <span className="text-sm font-medium text-gray-900">{opt.title}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mt-2 mb-4">
+                {locale === 'fr' ? 'Cette action est irréversible.' : locale === 'es' ? 'Esta acción es irreversible.' : 'This action cannot be undone.'}
+              </p>
+            )}
+
             <div className="flex gap-3 justify-end mt-6">
               <Button
                 variant="outline"
@@ -2245,7 +2392,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   if (confirmDeleting) return
                   setConfirmDeleting(true)
                   try {
-                    await handleDeleteSession(confirmAction.sessionId)
+                    await handleDeleteSession(confirmAction.sessionId, showScope ? sessDeleteScope : 'this')
                   } finally {
                     setConfirmDeleting(false)
                     setConfirmAction(null)
