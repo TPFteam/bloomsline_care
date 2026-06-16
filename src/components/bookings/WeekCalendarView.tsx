@@ -188,8 +188,10 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   const [userId, setUserId] = useState<string | null>(null)
   const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
-  const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
   const [hoveredDay, setHoveredDay] = useState<string | null>(null)
+  // The hour (in the practitioner's grid) the cursor is over → drives the
+  // single 1-hour booking preview that follows the mouse.
+  const [hoverHour, setHoverHour] = useState<number | null>(null)
   const [clickHint, setClickHint] = useState<{ x: number; y: number; key: string } | null>(null)
 
   useEffect(() => {
@@ -615,27 +617,31 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
             <div
               key={day.toISOString()}
               onMouseEnter={() => setHoveredDay(day.toISOString())}
-              onMouseLeave={() => setHoveredDay(prev => prev === day.toISOString() ? null : prev)}
-              className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick && !showAvailability ? 'cursor-pointer' : ''}`}
+              onMouseMove={(e) => {
+                if (!showAvailability) return
+                const rect = e.currentTarget.getBoundingClientRect()
+                const h = Math.min(END_HOUR - 1, Math.max(START_HOUR, START_HOUR + Math.floor((e.clientY - rect.top) / HOUR_HEIGHT)))
+                if (hoveredDay !== day.toISOString()) setHoveredDay(day.toISOString())
+                if (h !== hoverHour) setHoverHour(h)
+              }}
+              onMouseLeave={() => { setHoveredDay(prev => prev === day.toISOString() ? null : prev); setHoverHour(null) }}
+              className={`relative border-l border-gray-50 ${today ? 'bg-teal-50/20' : ''} ${onSlotClick ? 'cursor-pointer' : ''}`}
               style={{ touchAction: onSlotClick ? 'manipulation' : undefined }}
               onClick={(e) => {
                 if (!onSlotClick) return
                 if ((e.target as HTMLElement).closest('[data-event]')) return
-                // Whitespace click only reveals the availability overlay.
-                // Booking is triggered exclusively by clicking a teal slot
-                // pill — clicks on empty grid space never open the modal,
-                // so practitioners can't accidentally book non-configured
-                // times.
-                if (!showAvailability) {
-                  setShowAvailability(true)
-                  return
-                }
+                // First click reveals availability (loads working hours);
+                // after that, clicking books the hovered 1-hour slot.
+                if (!showAvailability) { setShowAvailability(true); return }
                 const rect = e.currentTarget.getBoundingClientRect()
-                setClickHint({
-                  x: e.clientX - rect.left,
-                  y: e.clientY - rect.top,
-                  key: day.toISOString(),
-                })
+                const h = Math.min(END_HOUR - 1, Math.max(START_HOUR, START_HOUR + Math.floor((e.clientY - rect.top) / HOUR_HEIGHT)))
+                // Don't book over an existing event.
+                if (dayEvents.some(ev => { const s = getHoursInTz(ev.start); const en = getHoursInTz(ev.end); return s < h + 1 && en > h })) return
+                const inHrsSlots = (availSlots[format(day, 'yyyy-MM-dd')] || []).filter(s => !s.outside)
+                const wStart = inHrsSlots.length ? Math.min(...inHrsSlots.map(s => getHoursInTz(s.start))) : null
+                const wEnd = inHrsSlots.length ? Math.max(...inHrsSlots.map(s => getHoursInTz(s.end))) : 0
+                const inHrs = wStart != null && h >= wStart && h < wEnd
+                onSlotClick(day, `${String(h).padStart(2, '0')}:00`, inHrs ? undefined : { outsideHours: true })
               }}
             >
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -669,79 +675,32 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                 </div>
               )}
 
-              {/* Available slots — teal pill for in-hours (always shown).
-                  After-hours pills are always in the DOM but invisible
-                  outside the hovered day, fading in/out smoothly via CSS
-                  opacity — no flickery mount/unmount. Both go through
-                  calendar-mode submit (Google Calendar sync intact);
-                  after-hours clicks carry an outsideHours flag so the modal
-                  skips the (now redundant) datetime picker step. */}
-              {showAvailability && (availSlots[format(day, 'yyyy-MM-dd')] || []).map((slot, si) => {
-                const startH = getHoursInTz(slot.start)
-                const endH = getHoursInTz(slot.end)
-                const slotTop = (startH - START_HOUR) * HOUR_HEIGHT
-                const fullHeight = Math.max((endH - startH) * HOUR_HEIGHT, 24)
-                const isHovered = hoveredSlot === slot.start
-                const isOutside = slot.outside
-                const isDayHovered = hoveredDay === day.toISOString()
-                // After-hours pills: invisible (and non-interactive) unless
-                // this day is hovered. Inside-hours pills are always
-                // visible/interactive.
-                const outsideHidden = isOutside && !isDayHovered
+              {/* Single hover preview — a 1-hour slot wherever the cursor is.
+                  Teal in working hours, grey "Hors horaires" after hours,
+                  hidden over an existing booking. Click anywhere books it. */}
+              {showAvailability && hoveredDay === day.toISOString() && hoverHour != null && (() => {
+                const h = hoverHour
+                if (dayEvents.some(ev => { const s = getHoursInTz(ev.start); const en = getHoursInTz(ev.end); return s < h + 1 && en > h })) return null
+                const inHrsSlots = (availSlots[format(day, 'yyyy-MM-dd')] || []).filter(s => !s.outside)
+                const wStart = inHrsSlots.length ? Math.min(...inHrsSlots.map(s => getHoursInTz(s.start))) : null
+                const wEnd = inHrsSlots.length ? Math.max(...inHrsSlots.map(s => getHoursInTz(s.end))) : 0
+                const inHrs = wStart != null && h >= wStart && h < wEnd
+                const endLabel = (h + 1) === 24 ? '00' : String(h + 1).padStart(2, '0')
                 return (
                   <div
-                    key={`slot-${si}`}
-                    data-event
-                    title={isOutside ? (locale === 'fr' ? 'Hors horaires' : 'After-hours') : undefined}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (!onSlotClick) return
-                      const d = new Date(slot.start)
-                      const tz = practitionerTz || 'UTC'
-                      const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
-                      const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
-                      const time = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
-                      onSlotClick(day, time, isOutside ? { outsideHours: true } : undefined)
-                    }}
-                    onMouseEnter={() => setHoveredSlot(slot.start)}
-                    onMouseLeave={() => setHoveredSlot(null)}
-                    className={`absolute left-1 right-1 rounded-lg overflow-hidden transition-opacity duration-200 ${
-                      outsideHidden ? 'opacity-0 pointer-events-none' : 'opacity-100 cursor-pointer'
-                    } ${
-                      isOutside
-                        ? isHovered
-                          ? 'bg-gray-700 border border-gray-700 shadow-lg text-white z-[8]'
-                          : 'bg-white border border-dashed border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-500 z-[5]'
-                        : isHovered
-                          ? 'bg-teal-500 border border-teal-600 shadow-lg text-white z-[8]'
-                          : 'bg-teal-50 border border-teal-200 hover:bg-teal-100 text-teal-700 z-[5]'
-                    }`}
-                    style={{
-                      top: slotTop + 1,
-                      height: isHovered ? fullHeight - 2 : 24,
-                      transitionDuration: '200ms',
-                    }}
+                    className={`absolute left-1 right-1 rounded-lg overflow-hidden pointer-events-none shadow-lg z-[8] ${inHrs ? 'bg-teal-500 border border-teal-600' : 'bg-gray-700 border border-gray-700'}`}
+                    style={{ top: (h - START_HOUR) * HOUR_HEIGHT + 1, height: HOUR_HEIGHT - 2 }}
                   >
-                    <div className="flex items-center gap-1 px-2 h-full">
-                      {isOutside && <Clock className={`w-2.5 h-2.5 shrink-0 ${isHovered ? 'text-white' : 'text-gray-400'}`} />}
-                      <span className={`text-[10px] font-semibold truncate ${
-                        isOutside
-                          ? isHovered ? 'text-white' : 'text-gray-500'
-                          : isHovered ? 'text-white' : 'text-teal-700'
-                      }`}>
-                        {formatTimeInTz(slot.start)} → {formatTimeInTz(slot.end)}
-                      </span>
+                    <div className="flex items-center gap-1 px-2 pt-1.5">
+                      {!inHrs && <Clock className="w-2.5 h-2.5 shrink-0 text-white/80" />}
+                      <span className="text-[10px] font-semibold text-white truncate">{`${String(h).padStart(2, '0')}:00 → ${endLabel}:00`}</span>
                     </div>
-                    {isHovered && (
-                      <div className="px-2 pb-1">
-                        <span className={`text-[10px] ${isOutside ? 'text-gray-300' : 'text-teal-100'}`}>
-                          {isOutside ? (locale === 'fr' ? '60 min · hors horaires' : '60 min · after-hours') : '60 min'}
-                        </span>
-                      </div>
-                    )}
+                    <div className="px-2 pb-1">
+                      <span className="text-[10px] text-white/80">{inHrs ? '60 min' : (locale === 'fr' ? '60 min · hors horaires' : '60 min · after-hours')}</span>
+                    </div>
                   </div>
                 )
-              })}
+              })()}
 
               {/* Events */}
               {laid.map(event => {
