@@ -164,15 +164,30 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       }
     }
   }, [disabledDaysOfWeek, selectedDate])
-  // Calendar-slot bookings: lock the format to the clicked day's configured
-  // format. Single-format days use that format; "both" / unconfigured /
-  // after-hours days default to in-person. The practitioner can't change it.
+  // Calendar-slot bookings: seed the format from the clicked day's configured
+  // format. A SINGLE-format day locks to that format (video-only → video,
+  // in-person-only → in-person). A day that allows BOTH lets the practitioner
+  // choose (we only seed a default and keep any existing valid choice).
+  // Unconfigured / after-hours days default to in-person.
   useEffect(() => {
     if (!fromCalendarSlot || !selectedDate) return
     const fmts = scheduleDayFormats[String(selectedDate.getDay())] || []
-    const fmt: 'in_person' | 'video' = (fmts.includes('video') && !fmts.includes('in_person')) ? 'video' : 'in_person'
-    setSelectedSessionFormat(fmt)
+    if (fmts.length === 1) {
+      setSelectedSessionFormat(fmts[0] === 'video' ? 'video' : 'in_person')
+    } else {
+      // "Both" or unconfigured → keep a valid existing choice, else default.
+      setSelectedSessionFormat(prev =>
+        prev && (fmts.length === 0 || fmts.includes(prev)) ? prev : 'in_person')
+    }
   }, [fromCalendarSlot, selectedDate, scheduleDayFormats])
+
+  // Calendar-slot format is locked unless the clicked day allows BOTH formats
+  // (then the practitioner picks video or in-person).
+  const slotDayFmts = fromCalendarSlot && selectedDate
+    ? (scheduleDayFormats[String(selectedDate.getDay())] || [])
+    : []
+  const slotFormatLocked = fromCalendarSlot &&
+    !(slotDayFmts.includes('in_person') && slotDayFmts.includes('video'))
 
   const [quickDays, setQuickDays] = useState<{ date: string; dayLabel: string; slots: { slot_start: string; slot_end: string }[] }[]>([])
   const [quickLoading, setQuickLoading] = useState(false)
@@ -1338,7 +1353,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                     <p className="text-sm font-medium text-gray-700">
                       {locale === 'fr' ? 'Format de séance' : locale === 'es' ? 'Formato de sesión' : 'Session Format'}
                     </p>
-                    {fromCalendarSlot ? (
+                    {slotFormatLocked ? (
                       // Locked to the clicked day's format — shown, not editable.
                       <div className="w-full p-3.5 rounded-xl border-2 border-mint-500 bg-mint-50/50">
                         <div className="flex items-center gap-3">
