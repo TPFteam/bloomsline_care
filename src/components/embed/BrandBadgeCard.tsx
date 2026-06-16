@@ -34,7 +34,7 @@ export function BrandBadgeCard({ slug, locale, origin }: Props) {
     () => `<iframe
   src="${baseOrigin}/embed/badge/${slug}?lang=${badgeLang}"
   width="100%"
-  height="240"
+  height="260"
   frameborder="0"
   scrolling="no"
   style="border: none; max-width: 340px; display: block;"
@@ -131,7 +131,7 @@ export function BrandBadgeCard({ slug, locale, origin }: Props) {
             <iframe
               key={previewUrl}
               src={previewUrl}
-              style={{ width: '100%', maxWidth: 340, height: 240, border: 'none', display: 'block' }}
+              style={{ width: '100%', maxWidth: 340, height: 260, border: 'none', display: 'block' }}
               scrolling="no"
               title="Bloomsline badge preview"
             />

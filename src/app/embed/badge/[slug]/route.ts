@@ -54,24 +54,24 @@ const COPY: Record<Lang, {
   cta: string
 }> = {
   en: {
-    tagline: 'Small moments, deeper understanding.',
-    subtitle: 'A calm, private space your patients carry between sessions.',
-    collab: (name) => `In collaboration with ${name}`,
-    collabGeneric: 'A space offered to my patients',
+    tagline: 'Your space between sessions.',
+    subtitle: 'A private space to capture how you feel and stay connected between our sessions.',
+    collab: (name) => `Offered to you by ${name}`,
+    collabGeneric: 'Offered to you by your practitioner',
     cta: 'Discover Bloomsline',
   },
   fr: {
-    tagline: 'Petits moments, grande compréhension.',
-    subtitle: 'Un espace apaisant et confidentiel, entre les séances.',
-    collab: (name) => `En collaboration avec ${name}`,
-    collabGeneric: 'Un espace offert à mes patients',
+    tagline: 'Votre espace entre les séances.',
+    subtitle: 'Un espace privé pour capturer ce que vous ressentez et garder le lien entre nos séances.',
+    collab: (name) => `Proposé par ${name}`,
+    collabGeneric: 'Proposé par votre praticien',
     cta: 'En savoir plus',
   },
   es: {
-    tagline: 'Pequeños momentos, gran comprensión.',
-    subtitle: 'Un espacio tranquilo y privado entre sesiones.',
-    collab: (name) => `En colaboración con ${name}`,
-    collabGeneric: 'Un espacio para mis pacientes',
+    tagline: 'Tu espacio entre sesiones.',
+    subtitle: 'Un espacio privado para capturar cómo te sientes y mantener el vínculo entre nuestras sesiones.',
+    collab: (name) => `Ofrecido por ${name}`,
+    collabGeneric: 'Ofrecido por tu profesional',
     cta: 'Descubrir Bloomsline',
   },
 }
@@ -129,8 +129,10 @@ export async function GET(
     background:#FFFFFF;border:1px solid #ECEAE5;border-radius:16px;padding:20px 22px;
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
     box-shadow:0 1px 2px rgba(17,24,39,0.04);transition:box-shadow .15s ease,transform .15s ease;
+    outline:none;-webkit-tap-highlight-color:transparent;
   }
   .bl-card:hover{box-shadow:0 6px 20px rgba(17,24,39,0.10);transform:translateY(-1px);}
+  .bl-card:focus-visible{outline:2px solid ${TEAL};outline-offset:3px;}
   .bl-cta{
     margin-top:16px;display:inline-flex;align-items:center;gap:6px;background:${TEAL};color:#fff;
     font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;
