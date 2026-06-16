@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
-import type { Session } from '@/types/member'
+import type { Session, PaymentStatus } from '@/types/member'
+import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
 
 type SessionType = 'initial_consultation' | 'follow_up' | 'check_in' | 'crisis' | 'group' | 'other'
@@ -33,7 +34,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
   const [sessionFormat, setSessionFormat] = useState<SessionFormat>('in_person')
   const [duration, setDuration] = useState(60)
   const [outcome, setOutcome] = useState<'completed' | 'no_show'>('completed')
-  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('unpaid')
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('unpaid')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -45,7 +46,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
       setSessionFormat(session.session_format as SessionFormat)
       setDuration(session.duration_minutes)
       setOutcome(session.status === 'completed' ? 'completed' : 'no_show')
-      setPaymentStatus((session.payment_status as 'paid' | 'unpaid') || 'unpaid')
+      setPaymentStatus((session.payment_status as PaymentStatus) || 'unpaid')
       setReason(session.cancellation_reason || '')
     }
   }, [session])
@@ -231,7 +232,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
                       {locale === 'fr' ? 'Paiement' : 'Payment'}
                     </label>
                     <div className="flex gap-2">
-                      {(['paid', 'unpaid'] as const).map((opt) => (
+                      {PAYMENT_OPTIONS.map((opt) => (
                         <button
                           key={opt}
                           type="button"
@@ -242,9 +243,7 @@ export function EditSessionModal({ session, onClose, onSave, showOutcome = false
                               : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          {opt === 'paid'
-                            ? (locale === 'fr' ? 'Payé' : 'Paid')
-                            : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                          {paymentLabel(opt, locale)}
                         </button>
                       ))}
                     </div>

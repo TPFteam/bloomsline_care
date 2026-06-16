@@ -43,6 +43,7 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { useBookingsChanged } from '@/lib/bookings-events'
 import { CloseSessionPopup, type CloseSessionBooking } from '@/components/bookings/CloseSessionPopup'
+import { AwaitingPaymentButton } from '@/components/payments/awaiting-payment-button'
 import {
   MemberFormExtras,
   MemberFormFieldsConfigPanel,
@@ -976,6 +977,7 @@ function DashboardInner() {
                   setShowMemberPicker(true)
                 }}
               />
+              <AwaitingPaymentButton />
             </div>
           </section>
 

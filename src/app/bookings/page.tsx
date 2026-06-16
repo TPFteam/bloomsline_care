@@ -39,6 +39,7 @@ import { toast } from 'sonner'
 import { TutorialVideo } from '@/components/ui/tutorial-video'
 import { Button } from '@/components/ui/button'
 import { PaymentBadge } from '@/components/ui/payment-badge'
+import { PaymentReminderButton } from '@/components/ui/payment-reminder-button'
 import { TimeSelect } from '@/components/ui/time-select'
 import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
 import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
@@ -59,6 +60,8 @@ import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { MiniMonthCalendar } from '@/components/bookings/MiniMonthCalendar'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
+import type { PaymentStatus } from '@/types/member'
+import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -82,7 +85,7 @@ interface Booking {
   end_time: string
   timezone: string
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
-  payment_status: 'paid' | 'unpaid'
+  payment_status: PaymentStatus
   notes: string | null
   practitioner_notes: string | null
   google_event_id: string | null
@@ -788,7 +791,7 @@ export default function BookingsPage() {
   // Show-branch fields
   // Every required field starts null — practitioner must explicitly
   // answer each section before Confirm enables. No silent defaults.
-  const [showBPayment, setShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [showBPayment, setShowBPayment] = useState<PaymentStatus | null>(null)
   const [showBNoteAction, setShowBNoteAction] = useState<'take' | 'skip' | 'has' | null>(null)
   const [showBNoteDraft, setShowBNoteDraft] = useState('')
   // Schedule-next is asked AFTER Close is confirmed, via a small
@@ -800,7 +803,7 @@ export default function BookingsPage() {
   const [scheduleNextMemberId, setScheduleNextMemberId] = useState<string | null>(null)
 
   // No-show-branch fields
-  const [noShowBPayment, setNoShowBPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [noShowBPayment, setNoShowBPayment] = useState<PaymentStatus | null>(null)
   const [noShowBReason, setNoShowBReason] = useState<string>('')
   const [noShowBComments, setNoShowBComments] = useState('')
   // Guard against closing the close-popup (backdrop / X / Cancel) while a
@@ -955,7 +958,7 @@ export default function BookingsPage() {
       //             cancellation so the calendar reads "No-show").
       const mirrorToSession = async (
         sessionStatus: 'completed' | 'cancelled' | 'no_show',
-        paymentStatus: 'paid' | 'unpaid',
+        paymentStatus: PaymentStatus,
         cancellationReason?: string,
       ) => {
         if (!booking.member_id) return
@@ -1839,7 +1842,16 @@ export default function BookingsPage() {
                               {(() => {
                                 const hasActionRow = (booking.member_id && (booking.status === 'confirmed' || booking.status === 'pending')) || (booking.status === 'confirmed' && booking.meet_link && !isAwaitingOutcome) || isAwaitingOutcome
                                 if (hasActionRow) return null
-                                return (
+                                const canRemind = (booking.status === 'completed' || booking.status === 'no_show') && booking.payment_status === 'unpaid' && !!booking.client_email
+                                return canRemind ? (
+                                  <PaymentReminderButton
+                                    table="bookings"
+                                    recordId={booking.id}
+                                    patientName={booking.client_name || (locale === 'fr' ? 'ce patient' : 'this patient')}
+                                    dateLabel={new Date(booking.start_time).toLocaleString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                                    reminderSentAt={(booking as { payment_reminder_sent_at?: string | null }).payment_reminder_sent_at}
+                                  />
+                                ) : (
                                   <PaymentBadge
                                     status={booking.payment_status || 'unpaid'}
                                     table="bookings"
@@ -1955,11 +1967,6 @@ export default function BookingsPage() {
                                       {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                                     </button>
                                   )}
-                                <PaymentBadge
-                                  status={booking.payment_status || 'unpaid'}
-                                  table="bookings"
-                                  recordId={booking.id}
-                                />
                               </div>
                             )}
 
@@ -2127,10 +2134,7 @@ export default function BookingsPage() {
                         })()}
                         typeFilters={typeFilters}
                         onTypeFiltersChange={setTypeFilters}
-                        paymentOptions={[
-                          { key: 'paid',   label: locale === 'fr' ? 'Payé' : 'Paid' },
-                          { key: 'unpaid', label: locale === 'fr' ? 'Non payé' : 'Unpaid' },
-                        ]}
+                        paymentOptions={PAYMENT_OPTIONS.map(k => ({ key: k, label: paymentLabel(k, locale) }))}
                         paymentFilters={paymentFilters}
                         onPaymentFiltersChange={setPaymentFilters}
                         memberOptions={(() => {
@@ -3327,8 +3331,8 @@ export default function BookingsPage() {
                           </span>
                           <p className="text-xs text-gray-500 mt-0.5">
                             {locale === 'fr'
-                              ? "Quand activé, le patient voit une étiquette « Payé » ou « Non payé » sur chaque séance dans son application."
-                              : "When on, the patient sees a 'Paid' or 'Unpaid' tag on each session in their mobile app."}
+                              ? "Quand activé, le patient voit le statut de paiement (Payé / En attente) sur chaque séance dans son application."
+                              : "When on, the patient sees the payment status (Paid / Awaiting payment) on each session in their mobile app."}
                           </p>
                         </div>
                       </label>
@@ -3712,7 +3716,7 @@ export default function BookingsPage() {
                     {locale === 'fr' ? 'Paiement' : 'Payment'}
                   </p>
                   <div className="flex gap-2">
-                    {(['paid', 'unpaid'] as const).map(opt => (
+                    {PAYMENT_OPTIONS.map(opt => (
                       <button
                         key={opt}
                         type="button"
@@ -3723,9 +3727,7 @@ export default function BookingsPage() {
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {opt === 'paid'
-                          ? (locale === 'fr' ? 'Payé' : 'Paid')
-                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                        {paymentLabel(opt, locale)}
                       </button>
                     ))}
                   </div>
@@ -3863,7 +3865,7 @@ export default function BookingsPage() {
                     {locale === 'fr' ? 'Paiement' : 'Payment'}
                   </p>
                   <div className="flex gap-2">
-                    {(['paid', 'unpaid'] as const).map(opt => (
+                    {PAYMENT_OPTIONS.map(opt => (
                       <button
                         key={opt}
                         type="button"
@@ -3874,9 +3876,7 @@ export default function BookingsPage() {
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {opt === 'paid'
-                          ? (locale === 'fr' ? 'Payé' : 'Paid')
-                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                        {paymentLabel(opt, locale)}
                       </button>
                     ))}
                   </div>

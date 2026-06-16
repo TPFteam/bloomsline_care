@@ -50,6 +50,8 @@ interface MemberRow {
   last_session_at: string | null
   created_at: string
   date_of_birth?: string | null
+  /** Per-patient price override (beats the session-type rate when set). */
+  session_price?: number | null
 }
 
 interface SessionRow {
@@ -283,6 +285,8 @@ export default function AnalyticsPage() {
   // Blue hero panel: tabbed views that swap the middle while the ask bar stays.
   const [signalsTab, setSignalsTab] = useState<'overview' | 'sessions' | 'engagement' | 'progress' | 'attention'>('overview')
   const [expandedOwedMember, setExpandedOwedMember] = useState<string | null>(null)
+  // Which Payments block is selected → drives the detail list below.
+  const [moneyTab, setMoneyTab] = useState<'paid' | 'unpaid' | 'free'>('unpaid')
   const moneyZoneRef = useRef<HTMLDivElement>(null)
   const [moneySpacer, setMoneySpacer] = useState(0)
   const tt = (en: string, fr: string, es: string) => (locale === 'fr' ? fr : locale === 'es' ? es : en)
@@ -421,7 +425,7 @@ export default function AnalyticsPage() {
       ] = await Promise.all([
           supabase
             .from('members')
-            .select('id, first_name, last_name, status, last_session_at, created_at, is_demo, date_of_birth')
+            .select('id, first_name, last_name, status, last_session_at, created_at, is_demo, date_of_birth, session_price')
             .eq('practitioner_id', user.id)
             .is('deleted_at', null),
           supabase
@@ -817,8 +821,13 @@ export default function AnalyticsPage() {
     return d >= selMonthStart && d <= selMonthEnd
   })
   const paidSessions = sessionsForPayment.filter(s => s.payment_status === 'paid')
-  const unpaidSessions = sessionsForPayment.filter(s => s.payment_status !== 'paid')
-  const getSessionPrice = (s: SessionRow) => s.price || sessionTypePrices[s.session_type] || 0
+  // "Owed" = To be paid only. 'free' (Not billed) is excluded from revenue.
+  const unpaidSessions = sessionsForPayment.filter(s => s.payment_status === 'unpaid')
+  const notBilledSessions = sessionsForPayment.filter(s => s.payment_status === 'free')
+  // Resolve a session's amount: recorded price → per-patient rate → session-type rate.
+  const memberPriceById = new Map(members.map(m => [m.id, m.session_price]))
+  const getSessionPrice = (s: SessionRow) =>
+    s.price || memberPriceById.get(s.member_id) || sessionTypePrices[s.session_type] || 0
   const totalRevenue = paidSessions.reduce((sum, s) => sum + getSessionPrice(s), 0)
   const pendingRevenue = unpaidSessions.reduce((sum, s) => sum + getSessionPrice(s), 0)
 
@@ -830,23 +839,39 @@ export default function AnalyticsPage() {
   const outstandingSessions = unpaidSessions.filter((s) =>
     new Date(s.scheduled_at).getTime() <= nowMs
   )
-  type OwedPerson = { memberId: string; name: string; initials: string; amount: number; count: number; lastMs: number }
-  const owedByPersonMap = new Map<string, OwedPerson>()
-  for (const s of outstandingSessions) {
-    const m = members.find((mm) => mm.id === s.member_id)
-    const name = m ? `${m.first_name} ${m.last_name}`.trim() : (locale === 'fr' ? 'Inconnu' : locale === 'es' ? 'Desconocido' : 'Unknown')
-    const initials = m ? `${(m.first_name || '?')[0] || '?'}${(m.last_name || '')[0] || ''}`.toUpperCase() : '–'
-    const ms = new Date(s.scheduled_at).getTime()
-    const cur = owedByPersonMap.get(s.member_id) || { memberId: s.member_id, name, initials, amount: 0, count: 0, lastMs: 0 }
-    cur.amount += getSessionPrice(s)
-    cur.count += 1
-    cur.lastMs = Math.max(cur.lastMs, ms)
-    owedByPersonMap.set(s.member_id, cur)
+  // Group any set of sessions by patient — used by all three Payments tabs.
+  type PersonGroup = { memberId: string; name: string; initials: string; amount: number; count: number; lastMs: number }
+  const groupByPerson = (sess: SessionRow[]): PersonGroup[] => {
+    const map = new Map<string, PersonGroup>()
+    for (const s of sess) {
+      if (!s.member_id) continue
+      const m = members.find((mm) => mm.id === s.member_id)
+      const name = m ? `${m.first_name} ${m.last_name}`.trim() : (locale === 'fr' ? 'Inconnu' : locale === 'es' ? 'Desconocido' : 'Unknown')
+      const initials = m ? `${(m.first_name || '?')[0] || '?'}${(m.last_name || '')[0] || ''}`.toUpperCase() : '–'
+      const ms = new Date(s.scheduled_at).getTime()
+      const cur = map.get(s.member_id) || { memberId: s.member_id, name, initials, amount: 0, count: 0, lastMs: 0 }
+      cur.amount += getSessionPrice(s)
+      cur.count += 1
+      cur.lastMs = Math.max(cur.lastMs, ms)
+      map.set(s.member_id, cur)
+    }
+    return Array.from(map.values()).sort((a, b) => b.amount - a.amount)
   }
-  const owedByPerson = Array.from(owedByPersonMap.values()).sort((a, b) => b.amount - a.amount)
+  const owedByPerson = groupByPerson(outstandingSessions)
   const owedTotal = owedByPerson.reduce((sum, p) => sum + p.amount, 0)
+  const paidByPerson = groupByPerson(paidSessions)
+  const notBilledByPerson = groupByPerson(notBilledSessions)
+  const notBilledTotal = notBilledSessions.reduce((sum, s) => sum + getSessionPrice(s), 0)
   const billedThisPeriod = totalRevenue + owedTotal
   const collectedPct = billedThisPeriod > 0 ? Math.round((totalRevenue / billedThisPeriod) * 100) : 0
+  // Selected Payments block → which list + sessions show below.
+  const activeByPerson = moneyTab === 'paid' ? paidByPerson : moneyTab === 'free' ? notBilledByPerson : owedByPerson
+  const activeSessions = moneyTab === 'paid' ? paidSessions : moneyTab === 'free' ? notBilledSessions : outstandingSessions
+  const moneyTabLabel = moneyTab === 'paid'
+    ? tt('Paid', 'Payé', 'Pagado')
+    : moneyTab === 'free'
+      ? tt('Not billed', 'Non facturé', 'No facturado')
+      : tt('Awaiting payment', 'En attente de paiement', 'A la espera de pago')
 
   const formatCurrency = (amount: number) => {
     try {
@@ -1654,22 +1679,33 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            {/* This month's money: what came in vs what's still owed (they add up) */}
-            <div className="flex items-end gap-10">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">{tt('Collected', 'Encaissé', 'Cobrado')}</p>
-                <p className="text-3xl font-bold text-emerald-600 leading-none">{formatCurrency(totalRevenue)}</p>
-                <p className="text-xs text-gray-400 mt-1.5">{tt(`${paidSessions.length} ${paidSessions.length === 1 ? 'session' : 'sessions'} paid`, `${paidSessions.length} séance${paidSessions.length > 1 ? 's' : ''} payée${paidSessions.length > 1 ? 's' : ''}`, `${paidSessions.length} sesión${paidSessions.length > 1 ? 'es' : ''} pagada${paidSessions.length > 1 ? 's' : ''}`)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">{tt('Still owed', 'Encore dû', 'Aún se debe')}</p>
-                <p className="text-3xl font-bold text-gray-900 leading-none">{formatCurrency(owedTotal)}</p>
-                <p className="text-xs text-gray-400 mt-1.5">
-                  {owedByPerson.length === 0
-                    ? tt('all paid up', 'tout est réglé', 'todo saldado')
-                    : tt(`${owedByPerson.length} ${owedByPerson.length === 1 ? 'person' : 'people'}`, `${owedByPerson.length} personne${owedByPerson.length > 1 ? 's' : ''}`, `${owedByPerson.length} persona${owedByPerson.length > 1 ? 's' : ''}`)}
-                </p>
-              </div>
+            {/* Three tappable blocks — Collected / Still owed / Not billed.
+                Tapping one shows its session list below. */}
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { key: 'paid' as const, label: tt('Collected', 'Encaissé', 'Cobrado'), amount: totalRevenue, count: paidSessions.length, dot: 'bg-emerald-500', amountClass: 'text-emerald-600' },
+                { key: 'unpaid' as const, label: tt('Still owed', 'Encore dû', 'Aún se debe'), amount: owedTotal, count: outstandingSessions.length, dot: 'bg-amber-500', amountClass: 'text-gray-900' },
+                { key: 'free' as const, label: tt('Not billed', 'Non facturé', 'No facturado'), amount: notBilledTotal, count: notBilledSessions.length, dot: 'bg-gray-300', amountClass: 'text-gray-400' },
+              ]).map((b) => {
+                const selected = moneyTab === b.key
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => { setMoneyTab(b.key); setExpandedOwedMember(null) }}
+                    className={`text-left rounded-xl border p-3 transition-colors ${selected ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'}`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className={`w-2 h-2 rounded-full ${b.dot}`} />
+                      <span className="text-xs text-gray-500">{b.label}</span>
+                    </div>
+                    <p className={`text-2xl font-bold leading-none ${b.amountClass}`}>{formatCurrency(b.amount)}</p>
+                    <p className="text-[11px] text-gray-400 mt-1.5">
+                      {tt(`${b.count} ${b.count === 1 ? 'session' : 'sessions'}`, `${b.count} séance${b.count > 1 ? 's' : ''}`, `${b.count} sesión${b.count > 1 ? 'es' : ''}`)}
+                    </p>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Collected-vs-billed bar — makes the two numbers reconcile at a glance */}
@@ -1693,16 +1729,18 @@ export default function AnalyticsPage() {
               </div>
             )}
 
-            {/* Who hasn't paid this month — sorted by amount owed */}
-            {owedByPerson.length > 0 && (
-              <div className="border-t border-gray-100 mt-6 pt-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{tt('Awaiting payment', 'En attente de paiement', 'A la espera de pago')}</p>
+            {/* Detail list for the selected block (Paid / Owed / Not billed) */}
+            <div className="border-t border-gray-100 mt-6 pt-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{moneyTabLabel}</p>
+              {activeByPerson.length === 0 ? (
+                <p className="text-sm text-gray-400 py-2">{tt('Nothing here', 'Rien ici', 'Nada aquí')}</p>
+              ) : (
                 <div className="divide-y divide-gray-50">
-                  {owedByPerson.map((p) => {
+                  {activeByPerson.map((p) => {
                     const expandable = p.count > 1
                     const expanded = expandedOwedMember === p.memberId
                     const memberSessions = expanded
-                      ? outstandingSessions
+                      ? activeSessions
                           .filter((s) => s.member_id === p.memberId)
                           .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())
                       : []
@@ -1730,7 +1768,7 @@ export default function AnalyticsPage() {
                             {memberSessions.map((s, i) => (
                               <div key={s.id || i} className="flex items-center justify-between text-xs">
                                 <span className="text-gray-500">
-                                  {new Date(s.scheduled_at).toLocaleDateString(localeId(locale), { weekday: 'short', month: 'short', day: 'numeric' })}
+                                  {new Date(s.scheduled_at).toLocaleString(localeId(locale), { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 <span className="text-gray-600 font-medium text-right min-w-[60px]">{formatCurrency(getSessionPrice(s))}</span>
                               </div>
@@ -1741,8 +1779,8 @@ export default function AnalyticsPage() {
                     )
                   })}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </motion.div>
           </div>
 

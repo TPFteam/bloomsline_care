@@ -20,6 +20,8 @@ import { X, CheckCircle, XCircle, PenLine, Loader2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { emitBookingsChanged } from '@/lib/bookings-events'
 import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
+import type { PaymentStatus } from '@/types/member'
+import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
 
 const TAG_LABELS: Record<string, { en: string; fr: string; es: string }> = {
@@ -40,13 +42,13 @@ export interface CloseSessionBooking {
   start_time: string
   practitioner_notes?: string | null
   /** Current payment so the close popup can pre-select it (Paid stays Paid). */
-  payment_status?: 'paid' | 'unpaid' | null
+  payment_status?: PaymentStatus | null
 }
 
 export interface CloseSessionResult {
   bookingId: string
   status: 'completed' | 'cancelled' | 'no_show'
-  payment_status: 'paid' | 'unpaid'
+  payment_status: PaymentStatus
 }
 
 interface Props {
@@ -68,11 +70,11 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
   const [outcome, setOutcome] = useState<'show' | 'no_show' | null>(initialOutcome ?? null)
   const [saving, setSaving] = useState(false)
   // Show branch
-  const [showPayment, setShowPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [showPayment, setShowPayment] = useState<PaymentStatus | null>(null)
   const [showNoteAction, setShowNoteAction] = useState<'take' | 'skip' | 'has' | null>(null)
   const [showNoteDraft, setShowNoteDraft] = useState('')
   // No-show branch
-  const [noShowPayment, setNoShowPayment] = useState<'paid' | 'unpaid' | null>(null)
+  const [noShowPayment, setNoShowPayment] = useState<PaymentStatus | null>(null)
   const [noShowReason, setNoShowReason] = useState('')
   const [noShowComments, setNoShowComments] = useState('')
   // Tag types for the inline tag picker — same shape as the main notes editor
@@ -188,7 +190,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
       //               "Cancelled").
       const mirrorToSession = async (
         sessionStatus: 'completed' | 'cancelled' | 'no_show',
-        paymentStatus: 'paid' | 'unpaid',
+        paymentStatus: PaymentStatus,
         cancellationReason?: string,
       ) => {
         if (!booking.member_id) return
@@ -354,7 +356,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                 {locale === 'fr' ? 'Paiement' : 'Payment'}
               </p>
               <div className="flex gap-2">
-                {(['paid', 'unpaid'] as const).map(opt => (
+                {PAYMENT_OPTIONS.map(opt => (
                   <button
                     key={opt}
                     type="button"
@@ -365,9 +367,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {opt === 'paid'
-                      ? (locale === 'fr' ? 'Payé' : 'Paid')
-                      : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                    {paymentLabel(opt, locale)}
                   </button>
                 ))}
               </div>
@@ -500,7 +500,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                 {locale === 'fr' ? 'Paiement' : 'Payment'}
               </p>
               <div className="flex gap-2">
-                {(['paid', 'unpaid'] as const).map(opt => (
+                {PAYMENT_OPTIONS.map(opt => (
                   <button
                     key={opt}
                     type="button"
@@ -511,9 +511,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                         : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {opt === 'paid'
-                      ? (locale === 'fr' ? 'Payé' : 'Paid')
-                      : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                    {paymentLabel(opt, locale)}
                   </button>
                 ))}
               </div>

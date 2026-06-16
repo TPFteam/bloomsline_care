@@ -24,6 +24,8 @@ export interface SendEmailOptions {
   tag?: string
   metadata?: Record<string, string>
   attachments?: Array<{ Name: string; Content: string; ContentType: string }>
+  /** Reply-To header — e.g. route patient replies back to the practitioner. */
+  replyTo?: string
 }
 
 export async function sendEmail({
@@ -34,6 +36,7 @@ export async function sendEmail({
   tag,
   metadata,
   attachments,
+  replyTo,
 }: SendEmailOptions) {
   const postmarkClient = getClient()
 
@@ -46,6 +49,7 @@ export async function sendEmail({
     const response = await postmarkClient.sendEmail({
       From: `${FROM_NAME} <${FROM_EMAIL}>`,
       To: to,
+      ReplyTo: replyTo,
       Subject: subject,
       HtmlBody: htmlBody,
       TextBody: textBody || htmlBody.replace(/<[^>]*>/g, ''),

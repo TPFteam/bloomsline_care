@@ -49,6 +49,8 @@ import { EditSessionModal } from '@/components/EditSessionModal'
 import { SeriesDetailDrawer } from '@/components/SeriesDetailDrawer'
 import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { PaymentBadge } from '@/components/ui/payment-badge'
+import { PaymentReminderButton } from '@/components/ui/payment-reminder-button'
+import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
 import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
@@ -1905,13 +1907,6 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           <PenLine className="w-3.5 h-3.5 text-gray-500" />
                           {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                         </button>
-                        <PaymentBadge
-                          status={session.payment_status || 'unpaid'}
-                          table={recordTable}
-                          recordId={recordId}
-                          iconOnly={compact}
-                          readOnly
-                        />
                       </div>
                     )}
 
@@ -1968,13 +1963,23 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                             </button>
                           )}
-                          <PaymentBadge
-                            status={session.payment_status || 'unpaid'}
-                            table={recordTable}
-                            recordId={recordId}
-                            iconOnly={compact}
-                          readOnly
-                          />
+                          {session.payment_status === 'unpaid' && member?.email && session.status !== 'cancelled' ? (
+                            <PaymentReminderButton
+                              table={recordTable}
+                              recordId={recordId}
+                              patientName={[member.first_name, member.last_name].filter(Boolean).join(' ') || (locale === 'fr' ? 'ce patient' : 'this patient')}
+                              dateLabel={new Date(session.scheduled_at).toLocaleString(locale === 'fr' ? 'fr-FR' : locale === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                              reminderSentAt={(session as { payment_reminder_sent_at?: string | null }).payment_reminder_sent_at}
+                            />
+                          ) : (
+                            <PaymentBadge
+                              status={session.payment_status || 'unpaid'}
+                              table={recordTable}
+                              recordId={recordId}
+                              iconOnly={compact}
+                              readOnly
+                            />
+                          )}
                         </div>
                       )
                     })()}
@@ -2142,10 +2147,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                 })()}
                 typeFilters={typeFilters}
                 onTypeFiltersChange={setTypeFilters}
-                paymentOptions={[
-                  { key: 'paid',   label: locale === 'fr' ? 'Payé' : 'Paid' },
-                  { key: 'unpaid', label: locale === 'fr' ? 'Non payé' : 'Unpaid' },
-                ]}
+                paymentOptions={PAYMENT_OPTIONS.map(k => ({ key: k, label: paymentLabel(k, locale) }))}
                 paymentFilters={paymentFilters}
                 onPaymentFiltersChange={setPaymentFilters}
                 locale={locale}
@@ -2425,7 +2427,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {locale === 'fr' ? 'Paiement' : 'Payment'}
                   </p>
                   <div className="flex gap-2">
-                    {(['paid', 'unpaid'] as const).map(opt => (
+                    {PAYMENT_OPTIONS.map(opt => (
                       <button
                         key={opt}
                         type="button"
@@ -2436,9 +2438,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {opt === 'paid'
-                          ? (locale === 'fr' ? 'Payé' : 'Paid')
-                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                        {paymentLabel(opt, locale)}
                       </button>
                     ))}
                   </div>
@@ -2582,7 +2582,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     {locale === 'fr' ? 'Paiement' : 'Payment'}
                   </p>
                   <div className="flex gap-2">
-                    {(['paid', 'unpaid'] as const).map(opt => (
+                    {PAYMENT_OPTIONS.map(opt => (
                       <button
                         key={opt}
                         type="button"
@@ -2593,9 +2593,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                             : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {opt === 'paid'
-                          ? (locale === 'fr' ? 'Payé' : 'Paid')
-                          : (locale === 'fr' ? 'Non payé' : 'Unpaid')}
+                        {paymentLabel(opt, locale)}
                       </button>
                     ))}
                   </div>
