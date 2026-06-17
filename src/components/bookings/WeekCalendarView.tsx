@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -109,6 +109,11 @@ interface WeekCalendarViewProps {
   // Show / No-show (the practitioner clicked it directly on the row), so
   // the popup skips the "How did it go?" step. Omitted = edit close.
   onCloseSession?: (bookingId: string, outcome?: 'show' | 'no_show') => void
+  // Reschedule a booking — opens the parent's reschedule flow.
+  onReschedule?: (bookingId: string) => void
+  // Delete a booking — opens the parent's delete-confirm flow (with the
+  // recurring-series this/following scope).
+  onDeleteRequest?: (bookingId: string) => void
   // Optional controlled week (so an external mini-calendar can drive it).
   // Falls back to internal state when omitted.
   weekStart?: Date
@@ -127,7 +132,7 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   // Session-prep drawer (opens from the event popover for upcoming sessions).
   const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
@@ -143,6 +148,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  // The ⋮ action menu inside the event popover (reschedule / delete).
+  const [eventMenuOpen, setEventMenuOpen] = useState(false)
   // Event popover positioning. We anchor to the clicked event's viewport rect
   // and render the popover `fixed`, flipping above / clamping so it always
   // stays fully on screen (low events used to open off the bottom edge).
@@ -161,6 +168,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
     setCancelConfirmId(null)
     setCancelReason('')
     setDeleteConfirmId(null)
+    setEventMenuOpen(false)
     setSelectedEvent(willOpen ? eventId : null)
   }
   useLayoutEffect(() => {
@@ -790,34 +798,39 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                               colored top edge (above) + this pill make the
                               status clear without the legend. */}
                           <div className="px-4 pt-3.5 pb-3 border-b border-gray-100">
-                            <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between gap-2 mb-2">
                               <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${sh.text}`}>
                                 <ShIcon className="w-3 h-3" />
                                 {locale === 'fr' ? sh.fr : sh.en}
                               </span>
-                              {event.source === 'booking' && event.bookingId && onDelete && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(event.id); setCancelConfirmId(null) }}
-                                  title={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                                  aria-label={locale === 'fr' ? 'Supprimer' : 'Delete'}
-                                  className="p-1 -m-1 text-gray-300 hover:text-rose-600 rounded transition-colors"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
+                              <div className="flex items-center gap-2 shrink-0">
+                                {event.memberId && (
+                                  <Link
+                                    href={`/members/${event.memberId}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-0.5 text-[11px] text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap"
+                                  >
+                                    {locale === 'fr' ? 'Profil' : 'Profile'}
+                                    <ArrowRight className="w-3 h-3" />
+                                  </Link>
+                                )}
+                                {/* Top delete icon — only when there's no ⋮ menu delete
+                                    (e.g. dashboard mini-calendar). On the full Bookings
+                                    calendar, Delete lives in the ⋮ menu instead. */}
+                                {event.source === 'booking' && event.bookingId && onDelete && !onDeleteRequest && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(event.id); setCancelConfirmId(null) }}
+                                    title={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                    aria-label={locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                    className="p-1 -m-1 text-gray-300 hover:text-rose-600 rounded transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <p className="font-semibold text-gray-900 text-sm leading-tight flex-1 break-words">{event.title}</p>
-                              {event.memberId && (
-                                <Link
-                                  href={`/members/${event.memberId}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-0.5 text-[11px] text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap shrink-0 mt-0.5"
-                                >
-                                  {locale === 'fr' ? 'Profil' : 'Profile'}
-                                  <ArrowRight className="w-3 h-3" />
-                                </Link>
-                              )}
+                            <div className="mb-1.5">
+                              <p className="font-semibold text-gray-900 text-sm leading-tight break-words">{event.title}</p>
                             </div>
                             <p className="flex items-center gap-1.5 text-xs text-gray-500">
                               <Clock className="w-3 h-3" />
@@ -1056,13 +1069,51 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                                       </div>
                                     </div>
                                   ) : (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setCancelConfirmId(event.id) }}
-                                      className="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-medium rounded-lg transition-colors"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                      {locale === 'fr' ? 'Annuler le rendez-vous' : 'Cancel appointment'}
-                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setCancelConfirmId(event.id) }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-rose-600 border border-rose-200 hover:bg-rose-50 text-xs font-medium rounded-lg transition-colors"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                        {locale === 'fr' ? 'Annuler le rendez-vous' : 'Cancel appointment'}
+                                      </button>
+                                      {(onReschedule || onDeleteRequest) && event.bookingId && (
+                                        <div className="relative">
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); setEventMenuOpen((v) => !v) }}
+                                            className="px-2 py-2 text-gray-500 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors"
+                                            aria-label={locale === 'fr' ? "Plus d'actions" : 'More actions'}
+                                          >
+                                            <MoreHorizontal className="w-4 h-4" />
+                                          </button>
+                                          {eventMenuOpen && (
+                                            <div
+                                              className="absolute right-0 bottom-full mb-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {onReschedule && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); onReschedule(event.bookingId!); setEventMenuOpen(false); setSelectedEvent(null) }}
+                                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                                >
+                                                  <RefreshCw className="w-3.5 h-3.5 text-gray-400" />
+                                                  {locale === 'fr' ? 'Reprogrammer' : 'Reschedule'}
+                                                </button>
+                                              )}
+                                              {onDeleteRequest && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); onDeleteRequest(event.bookingId!); setEventMenuOpen(false); setSelectedEvent(null) }}
+                                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                  {locale === 'fr' ? 'Supprimer' : 'Delete'}
+                                                </button>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
                                   )
                                 )
                               )}

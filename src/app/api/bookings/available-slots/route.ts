@@ -32,6 +32,10 @@ export async function GET(request: NextRequest) {
   const duration = parseInt(searchParams.get('duration') || '60', 10);
   const skipNotice = searchParams.get('skipNotice') === 'true';
   const formatFilter = searchParams.get('format'); // 'in_person', 'video', or null (all)
+  // Reschedule: free up the booking's own slot so its current time shows as
+  // selectable (and can be highlighted) instead of being filtered out as busy.
+  const excludeStart = searchParams.get('excludeStart');
+  const excludeStartMs = excludeStart ? new Date(excludeStart).getTime() : null;
 
   if (!practitionerId || !date) {
     return NextResponse.json(
@@ -206,7 +210,7 @@ export async function GET(request: NextRequest) {
     const allConflicts = [
       ...(bookings || []).map(b => ({ start: new Date(b.start_time).getTime(), end: new Date(b.end_time).getTime() })),
       ...(sessionConflicts || []).map(s => ({ start: new Date(s.scheduled_at).getTime(), end: new Date(s.scheduled_at).getTime() + s.duration_minutes * 60 * 1000 })),
-    ];
+    ].filter(c => excludeStartMs === null || c.start !== excludeStartMs);
 
     // Pre-compute schedule windows in UTC ms so we can tag each generated
     // slot as inside-hours or after-hours in O(1).

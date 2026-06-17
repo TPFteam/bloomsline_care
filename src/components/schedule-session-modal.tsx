@@ -104,6 +104,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [userId, setUserId] = useState<string | null>(null)
   const [showSlotCalendar, setShowSlotCalendar] = useState(false)
   const keepTimeRef = useRef(false)
+  // One-time prefill of the rescheduled booking's current time, so it shows
+  // highlighted on the date/time step ("this is currently at 10:00 AM").
+  const reschedulePrefilledRef = useRef(false)
 
   // Selected values
   const [selectedMember, setSelectedMember] = useState<Member | null>(preselectedMember || null)
@@ -249,9 +252,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     if (isOpen) {
       // Reset selections to a clean slate
       if (rescheduleData) {
-        // Reschedule mode: start at session step with pre-filled data
-        // so practitioner can change type/format if needed
-        setStep('session')
+        // Reschedule mode: skip straight to the date/time step (type + format
+        // are already known from the existing booking and are pre-filled). The
+        // date defaults to the booking's current date so the practitioner just
+        // picks a new time. They can still step back to change type/format.
+        setStep('datetime')
         setSelectedMember(null)
         setSelectedSessionType(null) // will be set after fetchInitialData
         setSelectedSessionFormat(
@@ -259,8 +264,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
           : rescheduleData.session_format === 'video' || rescheduleData.session_format === 'virtual' ? 'video'
           : null
         )
-        setSelectedDate(startOfDay(new Date()))
+        setSelectedDate(startOfDay(new Date(rescheduleData.start_time)))
         setSelectedTime(null)
+        reschedulePrefilledRef.current = false
         setNotes('')
         setScheduleMode('calendar')
       } else {
@@ -414,7 +420,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
       // Fetch available slots + existing bookings for the day in parallel
       const [slotsRes, bookingsRes] = await Promise.all([
-        fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}`)
+        fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=${selectedSessionType.duration}&skipNotice=true${selectedSessionFormat ? `&format=${selectedSessionFormat}` : ''}${isReschedule && rescheduleData ? `&excludeStart=${encodeURIComponent(rescheduleData.start_time)}` : ''}`)
           .then(r => r.json()),
         // Use timezone-aware boundaries so we only get bookings for the
         // selected day in the practitioner's timezone, not UTC.
@@ -521,6 +527,21 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       })
     return () => { cancelled = true }
   }, [recurEnabled, recurFrequency, recurCount, selectedDate, selectedTime, selectedSessionType, practitionerTz, scheduleMode, isReschedule, userId, supabase])
+
+  // Reschedule: once the day's slots have loaded, highlight the booking's
+  // current time (it reappears because the API excludes the booking's own
+  // slot). One-shot — the practitioner can then pick a different slot.
+  useEffect(() => {
+    if (!isReschedule || !rescheduleData || reschedulePrefilledRef.current) return
+    if (slotsLoading || availableSlots.length === 0) return
+    const tz = practitionerTz || 'UTC'
+    const d = new Date(rescheduleData.start_time)
+    const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
+    const m = d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' })
+    const hhmm = `${String(h === 24 ? 0 : h).padStart(2, '0')}:${m.padStart(2, '0')}`
+    setSelectedTime(hhmm)
+    reschedulePrefilledRef.current = true
+  }, [isReschedule, rescheduleData, slotsLoading, availableSlots, practitionerTz])
 
   const handleBookSession = async () => {
     // Reschedule mode: call the reschedule API instead of creating fresh
