@@ -1758,6 +1758,14 @@ export default function BookingsPage() {
                         const b = bookings.find(x => x.id === bookingId)
                         if (b) openClosePopupBooking(b, outcome)
                       }}
+                      onReschedule={(bookingId) => {
+                        const b = bookings.find(x => x.id === bookingId)
+                        if (b) openRescheduleModal(b)
+                      }}
+                      onDeleteRequest={(bookingId) => {
+                        const b = bookings.find(x => x.id === bookingId)
+                        if (b) { setDeleteSeriesScope('this'); setDeleteConfirmBooking(b) }
+                      }}
                       onAddToBloomsline={(ev) => setClaimGoogleEvent(ev)}
                     />
                   ) : (
@@ -2836,6 +2844,38 @@ export default function BookingsPage() {
 
               {/* ─── Preferences tab ─── */}
               {settingsTab === 'preferences' && (<>
+              {/* Booking page welcome message — free text shown at the top of
+                  the public booking page (accepting new patients, how it
+                  works, etc.). Saved with the other preferences below. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Message d’accueil de la réservation' : 'Booking page welcome message'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr'
+                      ? 'Un court texte affiché en haut de votre page de réservation — par ex. « J’accepte de nouveaux patients », le déroulement des séances, ou toute consigne utile.'
+                      : 'A short note shown at the top of your booking page — e.g. "I accept new patients", how sessions work, or any helpful instructions.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <textarea
+                    value={bookingSettings?.booking_instructions ?? ''}
+                    onChange={(e) => setBookingSettings((prev) => prev ? { ...prev, booking_instructions: e.target.value } : prev)}
+                    rows={5}
+                    placeholder={locale === 'fr'
+                      ? 'Ex. J’accepte de nouveaux patients. Si vous êtes déjà suivi(e), merci de me contacter. Les consultations se déroulent en visio via Google Meet — un lien vous sera envoyé par e-mail à la confirmation.'
+                      : 'E.g. I accept new patients. If you already see me, please contact me directly. Sessions are held by video via Google Meet — a link is sent by email once confirmed.'}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none bg-white placeholder-gray-400 text-sm"
+                  />
+                  <Button type="button" onClick={() => handleSaveBookingSettings()} disabled={isSavingSettings}>
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </Button>
+                </CardContent>
+              </Card>
+
               {/* SMS confirmation toggle — when on, the client gets a text on
                   booking confirm / reschedule / cancel (if a mobile is on file). */}
               <Card>

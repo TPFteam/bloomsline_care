@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video, Globe } from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video, Globe, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import { PhoneInput } from '@/components/ui/phone-input'
@@ -109,6 +109,13 @@ export default function BookingPage() {
   const [clientEmail, setClientEmail] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [notes, setNotes] = useState('')
+  // Required consent — the patient must accept the terms + teleconsultation
+  // before a booking can be confirmed (shown on every practitioner's page).
+  const [consentGiven, setConsentGiven] = useState(false)
+  // Opens an in-page privacy/data-protection summary (no redirect off the page).
+  const [consentInfoOpen, setConsentInfoOpen] = useState(false)
+  // Expand/collapse the practitioner's welcome message when it's long.
+  const [welcomeExpanded, setWelcomeExpanded] = useState(false)
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -484,6 +491,7 @@ export default function BookingPage() {
           client_phone: clientPhone || undefined,
           notes: notes || undefined,
           session_format: selectedFormat === 'in_person' ? 'in_person' : 'video',
+          consent: consentGiven,
         }),
       })
 
@@ -513,6 +521,7 @@ export default function BookingPage() {
         const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail.trim())
         const baseValid = clientName.trim() !== '' && emailValid
         if (selectedService?.notesRequired && !notes.trim()) return false
+        if (!consentGiven) return false
         return baseValid
       }
       default:
@@ -757,6 +766,7 @@ export default function BookingPage() {
                     </p>
                   )}
 
+
                   {/* Address */}
                   {(practitioner.profile.address || practitioner.profile.city) && (
                     <div className="mt-4 text-left">
@@ -935,6 +945,32 @@ export default function BookingPage() {
                 {currentStep === 'details' && t(locale, { en: 'We\'ll use this to confirm your appointment', fr: 'Ces informations serviront à confirmer votre rendez-vous' })}
               </p>
             </div>
+
+            {/* Practitioner welcome message — shown in the main panel so it's
+                visible on mobile too (the sidebar is hidden on small screens).
+                Long messages collapse to a short preview with View more. */}
+            {currentStep === 'schedule' && practitioner.settings?.booking_instructions?.trim() && (() => {
+              const msg = practitioner.settings.booking_instructions!.trim()
+              const PREVIEW = 100
+              const isLong = msg.length > PREVIEW
+              const shown = (welcomeExpanded || !isLong) ? msg : msg.slice(0, PREVIEW).trimEnd() + '…'
+              return (
+                <div className="mb-6 bg-teal-50/60 border border-teal-100 rounded-2xl p-4">
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{shown}</p>
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={() => setWelcomeExpanded((v) => !v)}
+                      className="mt-1.5 text-xs font-semibold text-teal-700 hover:text-teal-800"
+                    >
+                      {welcomeExpanded
+                        ? (locale === 'fr' ? 'Voir moins' : 'View less')
+                        : (locale === 'fr' ? 'Voir plus' : 'View more')}
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* ─── Schedule step: service chips + format chips + calendar/slots ─── */}
             {currentStep === 'schedule' && sessionTypes.length > 1 && (
@@ -1380,6 +1416,26 @@ export default function BookingPage() {
               </div>
             )}
 
+            {/* Consent — required before confirming a booking */}
+            {currentStep === 'details' && (
+              <label className="mt-5 flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={consentGiven}
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                  {locale === 'fr' ? (
+                    <>Je consens à ce que mes données personnelles soient collectées et conservées de manière sécurisée pour gérer ce rendez-vous — voir notre <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConsentInfoOpen(true) }} className="text-teal-600 underline hover:text-teal-700">politique de confidentialité et protection des données</button> — et je consens à une téléconsultation réalisée en ligne.</>
+                  ) : (
+                    <>I consent to my personal data being collected and securely stored to manage this appointment — see our <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConsentInfoOpen(true) }} className="text-teal-600 underline hover:text-teal-700">Privacy Policy &amp; Data Protection</button> notice — and I consent to a teleconsultation conducted online.</>
+                  )}
+                  {' '}<span className="text-red-500">*</span>
+                </span>
+              </label>
+            )}
+
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
               {currentStep !== 'schedule' ? (
@@ -1439,6 +1495,51 @@ export default function BookingPage() {
             </a>
           </p>
         </motion.div>
+
+        {/* Privacy & data protection — in-page popup (no redirect) */}
+        {consentInfoOpen && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40"
+            onClick={() => setConsentInfoOpen(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setConsentInfoOpen(false)}
+                className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label={locale === 'fr' ? 'Fermer' : 'Close'}
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 pr-8">
+                {locale === 'fr' ? 'Confidentialité et protection des données' : 'Privacy & data protection'}
+              </h3>
+              <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+                {locale === 'fr' ? (
+                  <>
+                    <p>Les informations que vous fournissez pour réserver — nom, e-mail, téléphone et notes éventuelles — servent uniquement à planifier et gérer votre rendez-vous avec votre praticien.</p>
+                    <p>Vos données sont conservées de manière sécurisée : chiffrées, à accès restreint et hébergées dans l&apos;Union européenne. Votre praticien est responsable de vos données cliniques ; Bloomsline les traite de façon sécurisée pour son compte.</p>
+                    <p>Conformément au RGPD, vous pouvez demander l&apos;accès, la rectification ou la suppression de vos données personnelles à tout moment.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>The details you provide to book — your name, email, phone, and any notes — are used only to schedule and manage your appointment with your practitioner.</p>
+                    <p>Your information is stored securely: encrypted, access-controlled, and hosted within the European Union. Your practitioner is the controller of your clinical data; Bloomsline processes it securely on their behalf.</p>
+                    <p>In line with GDPR, you can request access to, correction of, or deletion of your personal data at any time.</p>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => setConsentInfoOpen(false)}
+                className="mt-5 w-full py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+              >
+                {locale === 'fr' ? 'Fermer' : 'Close'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

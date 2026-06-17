@@ -142,6 +142,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Record the patient's consent timestamp (best-effort). The booking is
+    // already gated on consent client-side; this writes the audit trail and
+    // is a no-op until the consent_accepted_at column exists.
+    if ((body as { consent?: boolean }).consent) {
+      const { error: consentErr } = await supabase
+        .from('bookings')
+        .update({ consent_accepted_at: new Date().toISOString() })
+        .eq('id', booking.id);
+      if (consentErr) console.warn('Consent not recorded (column missing?):', consentErr.message);
+    }
+
     // Backdated booking: skip notifications and confirmation emails — already happened
     const isBackdated = new Date(body.start_time).getTime() < Date.now();
 
