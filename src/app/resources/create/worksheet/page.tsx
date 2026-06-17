@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Check,
   Lightbulb,
   Image as ImageIcon,
   Video,
@@ -1035,6 +1036,12 @@ function CreateWorksheetContent() {
   const [showMoreMediaBlocks, setShowMoreMediaBlocks] = useState(false)
   const [showMoreQuestionBlocks, setShowMoreQuestionBlocks] = useState(false)
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null)
+  // Multi-select + bulk actions on blocks (delete / duplicate / move-as-group).
+  const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set())
+  // "Cut & place" move mode: after picking Move, the practitioner clicks a gap
+  // to drop the whole selection there (order preserved).
+  const [moveMode, setMoveMode] = useState(false)
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
 
   // View mode: 'edit' | 'preview' | 'test'
@@ -1675,6 +1682,52 @@ function CreateWorksheetContent() {
         }
       }, 100)
     }
+  }
+
+  // ── Multi-select bulk actions ──────────────────────────────────────────
+  const toggleBlockSelected = (id: string) => {
+    setSelectedBlockIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  const clearSelection = () => { setSelectedBlockIds(new Set()); setMoveMode(false) }
+
+  const confirmBulkDelete = () => {
+    setBlocks(blocks.filter(b => !selectedBlockIds.has(b.id)))
+    if (expandedBlock && selectedBlockIds.has(expandedBlock)) setExpandedBlock(null)
+    markAsModified()
+    clearSelection()
+    setBulkDeleteOpen(false)
+  }
+
+  const bulkDuplicate = () => {
+    if (selectedBlockIds.size === 0) return
+    // Insert copies (in original order) right after the last selected block,
+    // keeping the duplicated group together.
+    const selected = blocks.filter(b => selectedBlockIds.has(b.id))
+    const copies = selected.map(b => ({ ...b, id: generateId() }))
+    const lastIdx = blocks.reduce((acc, b, i) => selectedBlockIds.has(b.id) ? i : acc, -1)
+    const next = [...blocks]
+    next.splice(lastIdx + 1, 0, ...copies)
+    setBlocks(next)
+    markAsModified()
+    clearSelection()
+  }
+
+  // Cut & place: drop the selected blocks (order preserved) before the
+  // non-selected block `anchorId`, or at the end when anchorId is '__end__'.
+  const placeSelectionBefore = (anchorId: string) => {
+    const selected = blocks.filter(b => selectedBlockIds.has(b.id))
+    const remaining = blocks.filter(b => !selectedBlockIds.has(b.id))
+    const k = anchorId === '__end__'
+      ? remaining.length
+      : Math.max(0, remaining.findIndex(b => b.id === anchorId))
+    const next = [...remaining.slice(0, k), ...selected, ...remaining.slice(k)]
+    setBlocks(next)
+    markAsModified()
+    clearSelection()
   }
 
   // Add checklist item
@@ -3228,13 +3281,27 @@ function CreateWorksheetContent() {
     return (
       <div
         id={`block-${block.id}`}
-        className={`group transition-all ${isExpanded ? 'bg-white rounded-xl shadow-lg border border-gray-200' : ''}`}
+        className={`group transition-all ${isExpanded ? 'bg-white rounded-xl shadow-lg border border-gray-200' : ''} ${selectedBlockIds.has(block.id) ? 'ring-2 ring-teal-400/70 rounded-xl bg-teal-50/40' : ''}`}
       >
         {/* Block Header */}
         <div
           className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer rounded-lg transition-colors ${isExpanded ? 'bg-gray-50/80' : 'hover:bg-gray-100/60'}`}
           onClick={() => setExpandedBlock(isExpanded ? null : block.id)}
         >
+          {/* Multi-select checkbox */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); toggleBlockSelected(block.id) }}
+            className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center flex-shrink-0 transition-colors ${
+              selectedBlockIds.has(block.id)
+                ? 'bg-teal-500 border-teal-500 text-white'
+                : 'border-gray-300 hover:border-teal-400 bg-white'
+            }`}
+            aria-label={locale === 'fr' ? 'Sélectionner ce bloc' : 'Select this block'}
+          >
+            {selectedBlockIds.has(block.id) && <Check className="w-3 h-3" strokeWidth={3} />}
+          </button>
+
           <div
             className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 touch-none select-none"
             onPointerDown={(e) => {
@@ -5895,13 +5962,51 @@ function CreateWorksheetContent() {
 
                       {/* Blocks */}
                       <div className="space-y-1">
-                        <Reorder.Group axis="y" values={blocks} onReorder={(newBlocks) => { setBlocks(newBlocks); markAsModified(); }} className="space-y-1">
-                          {blocks.map((block) => (
-                            <SortableBlockItem key={block.id} block={block}>
-                              {(dragControls) => renderBlockEditor(block, dragControls)}
-                            </SortableBlockItem>
-                          ))}
-                        </Reorder.Group>
+                        {moveMode ? (
+                          // Cut & place: the selected blocks are "lifted out"; click a
+                          // gap between the remaining blocks to drop them there.
+                          <div className="space-y-1">
+                            {(() => {
+                              const remaining = blocks.filter(b => !selectedBlockIds.has(b.id))
+                              const gap = (anchorId: string, key: string) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => placeSelectionBefore(anchorId)}
+                                  className="group/gap w-full flex items-center gap-2 py-1"
+                                >
+                                  <span className="flex-1 h-[2px] rounded-full bg-teal-200 group-hover/gap:bg-teal-500 transition-colors" />
+                                  <span className="text-[11px] font-medium text-teal-600 whitespace-nowrap">
+                                    {locale === 'fr' ? 'Déposer ici' : locale === 'es' ? 'Soltar aquí' : 'Drop here'}
+                                  </span>
+                                  <span className="flex-1 h-[2px] rounded-full bg-teal-200 group-hover/gap:bg-teal-500 transition-colors" />
+                                </button>
+                              )
+                              const out: React.ReactNode[] = []
+                              remaining.forEach((b) => {
+                                const bt = blockTypes.find(x => x.type === b.type)
+                                const Icon = bt?.icon || FileText
+                                out.push(gap(b.id, `gap-${b.id}`))
+                                out.push(
+                                  <div key={`row-${b.id}`} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-gray-50/70 text-gray-500">
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-sm truncate flex-1">{b.content || (bt ? lt(bt.label, locale) : '')}</span>
+                                  </div>
+                                )
+                              })
+                              out.push(gap('__end__', 'gap-end'))
+                              return out
+                            })()}
+                          </div>
+                        ) : (
+                          <Reorder.Group axis="y" values={blocks} onReorder={(newBlocks) => { setBlocks(newBlocks); markAsModified(); }} className="space-y-1">
+                            {blocks.map((block) => (
+                              <SortableBlockItem key={block.id} block={block}>
+                                {(dragControls) => renderBlockEditor(block, dragControls)}
+                              </SortableBlockItem>
+                            ))}
+                          </Reorder.Group>
+                        )}
                       </div>
 
                       {/* Add Block Button */}
@@ -7132,6 +7237,96 @@ function CreateWorksheetContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={(open) => { if (!open) setBulkDeleteOpen(false) }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'fr'
+                ? `Supprimer ${selectedBlockIds.size} bloc${selectedBlockIds.size > 1 ? 's' : ''} ?`
+                : locale === 'es'
+                  ? `¿Eliminar ${selectedBlockIds.size} bloque${selectedBlockIds.size > 1 ? 's' : ''}?`
+                  : `Delete ${selectedBlockIds.size} card${selectedBlockIds.size > 1 ? 's' : ''}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'fr'
+                ? 'Cette action est irréversible. Les blocs sélectionnés seront supprimés.'
+                : locale === 'es'
+                  ? 'Esta acción es irreversible. Los bloques seleccionados se eliminarán.'
+                  : 'This action cannot be undone. The selected cards will be removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} className="flex-1 sm:flex-none">
+              {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button onClick={confirmBulkDelete} className="flex-1 sm:flex-none bg-red-500 hover:bg-red-600 text-white">
+              {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Multi-select floating action bar */}
+      {step === 'build' && selectedBlockIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4">
+          <div className="flex items-center gap-1.5 bg-gray-900 text-white rounded-2xl shadow-2xl shadow-gray-900/30 px-3 py-2">
+            {moveMode ? (
+              <>
+                <span className="text-sm font-medium px-2">
+                  {locale === 'fr'
+                    ? `Placement de ${selectedBlockIds.size} bloc${selectedBlockIds.size > 1 ? 's' : ''} — choisissez un emplacement`
+                    : locale === 'es'
+                      ? `Colocando ${selectedBlockIds.size} bloque${selectedBlockIds.size > 1 ? 's' : ''} — elige un lugar`
+                      : `Placing ${selectedBlockIds.size} card${selectedBlockIds.size > 1 ? 's' : ''} — pick a spot`}
+                </span>
+                <button
+                  onClick={() => setMoveMode(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors"
+                >
+                  {locale === 'fr' ? 'Annuler' : locale === 'es' ? 'Cancelar' : 'Cancel'}
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm font-medium px-2 whitespace-nowrap">
+                  {selectedBlockIds.size} {locale === 'fr' ? 'sélectionné' + (selectedBlockIds.size > 1 ? 's' : '') : locale === 'es' ? 'seleccionado' + (selectedBlockIds.size > 1 ? 's' : '') : 'selected'}
+                </span>
+                <div className="w-px h-5 bg-white/20 mx-0.5" />
+                <button
+                  onClick={() => setMoveMode(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors"
+                >
+                  <MoveVertical className="w-4 h-4" />
+                  {locale === 'fr' ? 'Déplacer' : locale === 'es' ? 'Mover' : 'Move'}
+                </button>
+                <button
+                  onClick={bulkDuplicate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/10 transition-colors"
+                >
+                  <Copy className="w-4 h-4" />
+                  {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
+                </button>
+                <button
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-red-300 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {locale === 'fr' ? 'Supprimer' : locale === 'es' ? 'Eliminar' : 'Delete'}
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label={locale === 'fr' ? 'Effacer la sélection' : 'Clear selection'}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* PDF Viewer Popup */}
       {pdfViewerUrl && (
