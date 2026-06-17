@@ -65,6 +65,11 @@ export async function GET(request: NextRequest) {
 
   let slots: TimeSlot[];
   let knownTz: string | null = null;
+  // The day's working-hours windows (independent of bookings / past time), so
+  // the practitioner calendar can colour working hours correctly even when
+  // every in-hours slot is already booked or in the past. Additive — other
+  // consumers (slot pickers) just ignore it.
+  let scheduleWindows: Array<{ start: string; end: string }> = [];
 
   if (skipNotice) {
     // Practitioner scheduling internally — build slots without min_notice_hours filter
@@ -213,6 +218,11 @@ export async function GET(request: NextRequest) {
         end: endLocal.getTime() - tzOffsetMs,
       }
     })
+    // Surface the raw working-hours windows for the calendar UI.
+    scheduleWindows = scheduleRanges.map(r => ({
+      start: new Date(r.start).toISOString(),
+      end: new Date(r.end).toISOString(),
+    }))
 
     // Full 24h grid in the practitioner's local time. Slots inside any
     // schedule range are normal availability (rendered as teal pills); the
@@ -305,7 +315,7 @@ export async function GET(request: NextRequest) {
 
   // If no base slots, return early
   if (slots.length === 0) {
-    return NextResponse.json({ slots: [], practitionerTimezone: timezone, v: 2 });
+    return NextResponse.json({ slots: [], scheduleWindows, practitionerTimezone: timezone, v: 2 });
   }
 
   // 2. Get Google Calendar busy times (graceful fallback)
@@ -313,7 +323,7 @@ export async function GET(request: NextRequest) {
 
   if (!googleAuth) {
     console.warn('[available-slots] No Google auth — returning base slots WITHOUT calendar filtering. Practitioner:', practitionerId);
-    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: false, v: 2 });
+    return NextResponse.json({ slots, scheduleWindows, practitionerTimezone: timezone, calendarFiltered: false, v: 2 });
   }
 
   console.log('[available-slots] Google auth OK, calendarId:', googleAuth.calendarId);
@@ -343,7 +353,7 @@ export async function GET(request: NextRequest) {
   // If no busy times, return base slots as-is
   if (busyTimes.length === 0) {
     console.log('[available-slots] No busy times found — returning all base slots');
-    return NextResponse.json({ slots, practitionerTimezone: timezone, calendarFiltered: true, busyCount: 0 });
+    return NextResponse.json({ slots, scheduleWindows, practitionerTimezone: timezone, calendarFiltered: true, busyCount: 0 });
   }
 
   // 3. Filter out slots that overlap with busy intervals (including buffers)
@@ -362,5 +372,5 @@ export async function GET(request: NextRequest) {
   });
 
   console.log('[available-slots] Filtered:', slots.length, '→', filteredSlots.length, 'slots (removed', slots.length - filteredSlots.length, 'busy)');
-  return NextResponse.json({ slots: filteredSlots, practitionerTimezone: timezone, calendarFiltered: true });
+  return NextResponse.json({ slots: filteredSlots, scheduleWindows, practitionerTimezone: timezone, calendarFiltered: true });
 }

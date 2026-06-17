@@ -1740,6 +1740,7 @@ export default function BookingsPage() {
                       weekStart={calWeekStart}
                       onWeekStartChange={setCalWeekStart}
                       fillViewport
+                      defaultShowAvailability
                       onApprove={handleApprove}
                       onReject={handleReject}
                       onDelete={handleDeleteBooking}

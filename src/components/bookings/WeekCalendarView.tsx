@@ -87,6 +87,11 @@ interface WeekCalendarViewProps {
   // Availability. Used by the dashboard embed where the legend is
   // noise but the practitioner still needs to navigate weeks.
   hideLegend?: boolean
+  // Show availability (per-day format icons, shading, hover-to-book) by
+  // default on mount. ON for the full Bookings calendar; left OFF for the
+  // dashboard mini-calendar so it doesn't fire the heavy per-day
+  // available-slots requests on every dashboard load.
+  defaultShowAvailability?: boolean
   // Override for the internal grid's max-height (default 560). The
   // dashboard embed sets a smaller value to keep the widget at the
   // same height as a populated "Up next" list.
@@ -122,7 +127,7 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   // Session-prep drawer (opens from the event popover for upcoming sessions).
   const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
@@ -183,10 +188,15 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   }, [selectedEvent, anchorRect])
   const [practitionerTz, setPractitionerTz] = useState<string | null>(null)
   const [dayFormats, setDayFormats] = useState<Record<number, string[]>>({})
-  const [showAvailability, setShowAvailability] = useState(false)
+  // Availability (per-day format icons, shading, hover-to-book) shows by
+  // default on the full Bookings calendar; the dashboard mini-calendar leaves
+  // it off to avoid firing the heavy per-day available-slots requests.
+  const [showAvailability, setShowAvailability] = useState(defaultShowAvailability)
   const [legendOpen, setLegendOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [availSlots, setAvailSlots] = useState<Record<string, Array<{ start: string; end: string; outside: boolean }>>>({})
+  // The day's working-hours windows from the API — used to colour/shade working
+  // hours independently of which slots are free, past, or booked.
+  const [availWindows, setAvailWindows] = useState<Record<string, Array<{ start: string; end: string }>>>({})
   const [availLoading, setAvailLoading] = useState(false)
   const [hoveredDay, setHoveredDay] = useState<string | null>(null)
   // The hour (in the practitioner's grid) the cursor is over → drives the
@@ -238,6 +248,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
     const h = parseInt(d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }))
     const m = parseInt(d.toLocaleString('en-US', { timeZone: tz, minute: '2-digit' }))
     return (h === 24 ? 0 : h) + m / 60
+  }
+
+  // True when hour `h` falls inside any of the day's working-hours windows.
+  // Derived from the schedule (not free slots), so booked/past hours still
+  // count as working hours.
+  const isWorkingHour = (day: Date, h: number): boolean => {
+    const wins = availWindows[format(day, 'yyyy-MM-dd')] || []
+    return wins.some(w => {
+      const ws = getHoursInTz(w.start)
+      const we = getHoursInTz(w.end)
+      return h >= ws && h < we
+    })
   }
 
   const formatTimeInTz = (isoStr: string): string => {
@@ -319,25 +341,21 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
 
   // Fetch available slots for visible week
   useEffect(() => {
-    if (!showAvailability || !userId) { setAvailSlots({}); return }
+    if (!showAvailability || !userId) { setAvailWindows({}); return }
     const fetchSlots = async () => {
       setAvailLoading(true)
-      const result: Record<string, Array<{ start: string; end: string; outside: boolean }>> = {}
+      const windows: Record<string, Array<{ start: string; end: string }>> = {}
       await Promise.all(days.map(async (day) => {
         const dateStr = format(day, 'yyyy-MM-dd')
         try {
           const res = await fetch(`/api/bookings/available-slots?practitionerId=${userId}&date=${dateStr}&duration=60&skipNotice=true`)
           if (res.ok) {
             const data = await res.json()
-            result[dateStr] = (data.slots || []).map((s: any) => ({
-              start: s.slot_start,
-              end: s.slot_end,
-              outside: !!s.outside_availability,
-            }))
+            windows[dateStr] = (data.scheduleWindows || []).map((w: any) => ({ start: w.start, end: w.end }))
           }
         } catch { /* silent */ }
       }))
-      setAvailSlots(result)
+      setAvailWindows(windows)
       setAvailLoading(false)
     }
     fetchSlots()
@@ -544,18 +562,9 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
               ({practitionerTz.replace(/_/g, ' ').split('/').pop()})
             </span>
           )}
-          <button
-            onClick={() => setShowAvailability(prev => !prev)}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ml-2 ${
-              showAvailability
-                ? 'bg-teal-50 text-teal-700 border-teal-300 shadow-sm'
-                : 'text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <div className={`w-2 h-2 rounded-full ${showAvailability ? 'bg-teal-500' : 'bg-gray-300'}`} />
-            {locale === 'fr' ? 'Disponibilités' : 'Availability'}
-            {availLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-          </button>
+          {availLoading && (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-300 ml-1" />
+          )}
         </div>
       </div>
       )}
@@ -637,16 +646,39 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                 const h = Math.min(END_HOUR - 1, Math.max(START_HOUR, START_HOUR + Math.floor((e.clientY - rect.top) / HOUR_HEIGHT)))
                 // Don't book over an existing event.
                 if (dayEvents.some(ev => { const s = getHoursInTz(ev.start); const en = getHoursInTz(ev.end); return s < h + 1 && en > h })) return
-                const inHrsSlots = (availSlots[format(day, 'yyyy-MM-dd')] || []).filter(s => !s.outside)
-                const wStart = inHrsSlots.length ? Math.min(...inHrsSlots.map(s => getHoursInTz(s.start))) : null
-                const wEnd = inHrsSlots.length ? Math.max(...inHrsSlots.map(s => getHoursInTz(s.end))) : 0
-                const inHrs = wStart != null && h >= wStart && h < wEnd
+                const inHrs = isWorkingHour(day, h)
                 onSlotClick(day, `${String(h).padStart(2, '0')}:00`, inHrs ? undefined : { outsideHours: true })
               }}
             >
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                 <div key={i} className="border-b border-gray-50" style={{ height: HOUR_HEIGHT }} />
               ))}
+
+              {/* Off-hours shading — working hours stay clean (so events keep
+                  their colours), the rest is dimmed grey to mark "unavailable".
+                  Computed as the complement of the day's working windows. */}
+              {showAvailability && (() => {
+                const dayStart = START_HOUR
+                const dayEnd = START_HOUR + TOTAL_HOURS
+                const wins = (availWindows[format(day, 'yyyy-MM-dd')] || [])
+                  .map(w => ({ s: Math.max(getHoursInTz(w.start), dayStart), e: Math.min(getHoursInTz(w.end), dayEnd) }))
+                  .filter(w => w.e > w.s)
+                  .sort((a, b) => a.s - b.s)
+                const off: Array<{ s: number; e: number }> = []
+                let cursor = dayStart
+                for (const w of wins) {
+                  if (w.s > cursor) off.push({ s: cursor, e: w.s })
+                  cursor = Math.max(cursor, w.e)
+                }
+                if (cursor < dayEnd) off.push({ s: cursor, e: dayEnd })
+                return off.map((seg, i) => (
+                  <div
+                    key={`off-${i}`}
+                    className="absolute inset-x-0 bg-gray-400/[0.07] pointer-events-none z-0"
+                    style={{ top: (seg.s - dayStart) * HOUR_HEIGHT, height: (seg.e - seg.s) * HOUR_HEIGHT }}
+                  />
+                ))
+              })()}
 
               {/* Current-time line (today only) — the Google-style red marker. */}
               {today && nowHours >= START_HOUR && nowHours <= START_HOUR + TOTAL_HOURS && (
@@ -681,10 +713,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
               {showAvailability && hoveredDay === day.toISOString() && hoverHour != null && (() => {
                 const h = hoverHour
                 if (dayEvents.some(ev => { const s = getHoursInTz(ev.start); const en = getHoursInTz(ev.end); return s < h + 1 && en > h })) return null
-                const inHrsSlots = (availSlots[format(day, 'yyyy-MM-dd')] || []).filter(s => !s.outside)
-                const wStart = inHrsSlots.length ? Math.min(...inHrsSlots.map(s => getHoursInTz(s.start))) : null
-                const wEnd = inHrsSlots.length ? Math.max(...inHrsSlots.map(s => getHoursInTz(s.end))) : 0
-                const inHrs = wStart != null && h >= wStart && h < wEnd
+                const inHrs = isWorkingHour(day, h)
                 const endLabel = (h + 1) === 24 ? '00' : String(h + 1).padStart(2, '0')
                 return (
                   <div
