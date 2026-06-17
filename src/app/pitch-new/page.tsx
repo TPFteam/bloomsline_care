@@ -13,7 +13,6 @@ import {
   Heart,
   MessageSquare,
   Zap,
-  Info,
   Hammer,
   Lightbulb,
   Check,
@@ -173,20 +172,20 @@ const translations = {
       closing: 'The person, the practitioner, and the space in between — one connected place.',
     },
     boundary: {
-      label: 'THE FRAME',
-      hero1: 'Therapy works because of its frame.',
-      hero2: 'We protect it.',
+      label: 'THE BOUNDARY',
+      hero1: 'Therapy works because of its principles.',
+      hero2: 'We protect them.',
       intro: 'Therapy runs on a few hard principles — and here\'s how we keep every one of them safe.',
       defHint: 'Tap any principle to see what it means.',
       frameLabel: 'The therapeutic frame',
       frameNote: 'We build inside the frame — never over it.',
       principles: [
-        { name: 'The frame', respect: 'We work around the session, never inside it — nothing changes about how therapy happens.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
-        { name: 'The alliance', respect: 'We strengthen the patient–practitioner bond, never replace it. No bot stands in for the therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
-        { name: 'Non-dependence', respect: 'Reflecting is always the patient\'s choice — never homework, never required. They set the pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
-        { name: 'Non-intrusion', respect: 'No streaks, scores, or nudges. Nothing built to hook. Therapy isn\'t a game.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
-        { name: 'Scope of practice', respect: 'We give context — never advice, a diagnosis, or crisis handling. The clinician decides.', definition: 'Clinicians act only within their trained competence. Diagnosing, treating, and handling crises is the clinician\'s role — a tool must stay in its lane.' },
-        { name: 'Confidentiality', respect: 'Encrypted, EU-hosted, and the practitioner controls what they see. What\'s shared stays protected.', definition: 'What a patient shares is protected. Foundational to trust in therapy — and, for digital tools, a legal duty (GDPR / health-data rules).' },
+        { name: 'The frame', respect: 'We support therapists around their sessions without interfering with the frame, which remains under their control.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
+        { name: 'The alliance', respect: 'We strengthen the therapeutic bond without ever imposing ourselves. The therapeutic relationship remains between the patient and their therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
+        { name: 'Non-intrusion', respect: 'Nothing is imposed. Available resources are there to help when needed, but patients remain free to use them and move at their own pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
+        { name: 'Non-dependence', respect: 'The entire system is designed to support patients, never to make them dependent on it. The goal is always the same: to foster greater autonomy.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
+        { name: 'Scope of practice', respect: 'Bloomsline supports patient reflection without providing diagnoses, clinical advice, or crisis management. These responsibilities belong to the therapist.', definition: 'Clinicians act only within their trained competence. Diagnosing, treating, and handling crises is the clinician\'s role — a tool must stay in its lane.' },
+        { name: 'Confidentiality', respect: 'What is shared remains protected and under the control of the patient and their therapist. (Encrypted data, secure EU hosting, and GDPR compliance.)', definition: 'What a patient shares is protected. Foundational to trust in therapy — and, for digital tools, a legal duty (GDPR / health-data rules).' },
       ],
       closing: 'These aren\'t our rules. They\'re therapy\'s — applied to software.',
     },
@@ -567,12 +566,12 @@ const translations = {
       frameLabel: 'Le cadre thérapeutique',
       frameNote: 'On construit à l\'intérieur du cadre — jamais par-dessus.',
       principles: [
-        { name: 'Le cadre', respect: 'On agit autour de la séance, jamais dedans — rien ne change à la façon dont la thérapie se déroule.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
-        { name: 'L\'alliance', respect: 'On renforce le lien patient–praticien, jamais on ne le remplace. Aucun bot ne se substitue au thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
-        { name: 'La non-dépendance', respect: 'Réfléchir est toujours le choix du patient — jamais un devoir, jamais imposé. Il avance à son rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
-        { name: 'La non-intrusion', respect: 'Ni séries, ni scores, ni notifications. Rien conçu pour accrocher. La thérapie n\'est pas un jeu.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
-        { name: 'Champ de compétence', respect: 'On apporte du contexte — jamais de conseil, de diagnostic ou de gestion de crise. Le clinicien décide.', definition: 'Le clinicien n\'agit que dans son domaine de compétence. Diagnostiquer, traiter et gérer les crises relève du clinicien — l\'outil reste à sa place.' },
-        { name: 'Confidentialité', respect: 'Chiffré, hébergé en UE, et le praticien contrôle ce qu\'il voit. Ce qui est partagé reste protégé.', definition: 'Ce que le patient partage est protégé. Fondamental pour la confiance en thérapie — et, pour un outil numérique, une obligation légale (RGPD / données de santé).' },
+        { name: 'Le cadre', respect: 'On agit uniquement autour des séances sans intervenir dans le rythme de la thérapie, qui reste sous la responsabilité du thérapeute.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
+        { name: 'L\'alliance', respect: 'Nous renforçons le lien thérapeutique, sans jamais nous imposer. Le lien thérapeutique reste entre le patient et son thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
+        { name: 'La non-intrusion', respect: 'Rien n\'est imposé. Les ressources disponibles sont là pour aider si besoin, mais chacun reste libre de les utiliser et avance à son propre rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
+        { name: 'La non-dépendance', respect: 'Tout le système est conçu pour soutenir le patient, jamais pour le rendre dépendant. L\'objectif reste toujours le même : favoriser son autonomie.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
+        { name: 'Champ de compétence', respect: 'Bloomsline soutient la réflexion du patient sans fournir de diagnostic, de conseil clinique ni de gestion de crise. Ces responsabilités reviennent au thérapeute.', definition: 'Le clinicien n\'agit que dans son domaine de compétence. Diagnostiquer, traiter et gérer les crises relève du clinicien — l\'outil reste à sa place.' },
+        { name: 'Confidentialité', respect: 'Ce qui est partagé reste protégé et sous le contrôle du patient et de son thérapeute. (Données chiffrées, hébergement sécurisé en Europe et conformité RGPD.)', definition: 'Ce que le patient partage est protégé. Fondamental pour la confiance en thérapie — et, pour un outil numérique, une obligation légale (RGPD / données de santé).' },
       ],
       closing: 'Ce ne sont pas nos règles. Ce sont celles de la thérapie — appliquées au logiciel.',
     },
@@ -1441,13 +1440,6 @@ function ProductSlide({ t }: { t: typeof translations.en.product }) {
 // =============================================================================
 
 function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
-  const [openDefs, setOpenDefs] = useState<Set<number>>(new Set())
-  const toggleDef = (i: number) => setOpenDefs(prev => {
-    const next = new Set(prev)
-    if (next.has(i)) next.delete(i)
-    else next.add(i)
-    return next
-  })
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
       <div className="max-w-6xl w-full py-12">
@@ -1479,15 +1471,6 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           {t.hero2}
         </motion.h2>
 
-        {/* Intro framing */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-base text-neutral-600 font-light max-w-3xl mb-5"
-        >
-          {t.intro}
-        </motion.p>
         {/* The therapeutic frame — the 6 principles live inside it */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -1495,35 +1478,13 @@ function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
           transition={{ duration: 0.6, delay: 0.75 }}
           className="relative border border-teal-200 rounded-2xl px-6 md:px-10 pt-7 pb-6 mb-3"
         >
-          <span className="absolute -top-2.5 left-6 px-3 bg-[#FAF8F5] text-[10px] tracking-[0.3em] uppercase font-mono text-teal-700">
-            {(t as any).frameLabel}
-          </span>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-            {(t.principles as Array<{ name: string; respect: string; definition: string }>).map((p, i) => {
-              const open = openDefs.has(i)
-              return (
-                <div key={i}>
-                  <button onClick={() => toggleDef(i)} className="flex items-center gap-1.5 mb-1 group">
-                    <span className="text-sm font-semibold text-teal-700">{p.name}</span>
-                    <Info className={`w-3.5 h-3.5 transition-colors ${open ? 'text-teal-700' : 'text-neutral-300 group-hover:text-teal-600'}`} />
-                  </button>
-                  <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
-                  <AnimatePresence initial={false}>
-                    {open && (
-                      <motion.p
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: 'easeInOut' }}
-                        className="overflow-hidden text-xs text-neutral-500 font-light leading-relaxed mt-2 pl-3 border-l-2 border-teal-100"
-                      >
-                        {p.definition}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )
-            })}
+            {(t.principles as Array<{ name: string; respect: string }>).map((p, i) => (
+              <div key={i}>
+                <span className="block text-sm font-semibold text-teal-700 mb-1">{p.name}</span>
+                <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
 
