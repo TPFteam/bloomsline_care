@@ -38,7 +38,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { getCancelReasonGroups } from '@/lib/sessions/close-reasons'
 import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
-import { emitBookingsChanged } from '@/lib/bookings-events'
+import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
 import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
@@ -316,6 +316,13 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
   }, [weekStart])
 
   useEffect(() => { fetchGoogleEvents() }, [fetchGoogleEvents])
+
+  // Refetch Google events whenever a booking changes (delete / reschedule /
+  // cancel). Without this, a deleted booking's still-cached Google event
+  // resurfaces as an unclaimed "Add to Bloomsline" phantom until a page
+  // refresh. The server-side delete already removed it from Google, so the
+  // refetch simply drops it from the calendar.
+  useBookingsChanged(() => { fetchGoogleEvents() })
 
   // Sync check: cancel bookings that were removed from Google Calendar
   useEffect(() => {

@@ -41,7 +41,7 @@ import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
-import { useBookingsChanged } from '@/lib/bookings-events'
+import { useBookingsChanged, emitBookingsChanged } from '@/lib/bookings-events'
 import { CloseSessionPopup, type CloseSessionBooking } from '@/components/bookings/CloseSessionPopup'
 import { AwaitingPaymentButton } from '@/components/payments/awaiting-payment-button'
 import {
@@ -190,6 +190,11 @@ function DashboardInner() {
   // empty time slot in the full-calendar modal opens the schedule
   // modal with that date/time already set.
   const [calendarSlotBooking, setCalendarSlotBooking] = useState<{ date: Date; time: string; outsideHours?: boolean } | null>(null)
+  // Reschedule + delete-confirm for the calendar event popup — mirrors the
+  // bookings page so the home widget popup behaves identically.
+  const [rescheduleBookingDash, setRescheduleBookingDash] = useState<any | null>(null)
+  const [deleteConfirmDash, setDeleteConfirmDash] = useState<DashBooking | null>(null)
+  const [deletingDash, setDeletingDash] = useState(false)
   const [sessionTypeMap, setSessionTypeMap] = useState<Record<string, { name: string; name_fr?: string }>>({})
 
   // Member list — feeds the picker for the Share-resource flow.
@@ -295,6 +300,21 @@ function DashboardInner() {
   const handleDeleteBookingDash = async (bookingId: string) => {
     try {
       const b = (bookings as any[]).find(x => x.id === bookingId)
+      // First remove the linked Google Calendar event (and notify the patient)
+      // via the cancel endpoint — otherwise the event is orphaned in Google and
+      // reappears here as an unclaimed "Add to Bloomsline" entry. Mirrors the
+      // bookings-page delete. Skip when already cancelled or never synced.
+      if (b && b.status !== 'cancelled' && b.google_event_id) {
+        try {
+          await fetch(`/api/bookings/${bookingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
+          })
+        } catch (cancelErr) {
+          console.warn('Booking cancel-before-delete failed (continuing):', cancelErr)
+        }
+      }
       if (b?.member_id) {
         const { data: sess } = await supabase.from('sessions').select('id')
           .eq('practitioner_id', b.practitioner_id).eq('member_id', b.member_id).eq('scheduled_at', b.start_time).maybeSingle()
@@ -305,6 +325,9 @@ function DashboardInner() {
       const { error } = await supabase.from('bookings').delete().eq('id', bookingId)
       if (error) throw error
       setBookings(prev => prev.filter(x => x.id !== bookingId))
+      // Tell the calendar to refetch Google events so the now-deleted event
+      // disappears immediately instead of lingering until a page refresh.
+      emitBookingsChanged()
       toast.success(t('Event deleted', 'Événement supprimé', 'Evento eliminado'))
     } catch (e) {
       console.error('Delete booking failed:', e)
@@ -1388,6 +1411,18 @@ function DashboardInner() {
                       }}
                       hideLegend
                       gridMaxHeight={280}
+                      onTakeNotes={(bookingId) => {
+                        const b = (bookings as any[]).find((x) => x.id === bookingId)
+                        if (b) handleTakeNotes(b)
+                      }}
+                      onReschedule={(bookingId) => {
+                        const b = (bookings as any[]).find((x) => x.id === bookingId)
+                        if (b) setRescheduleBookingDash(b)
+                      }}
+                      onDeleteRequest={(bookingId) => {
+                        const b = (bookings as any[]).find((x) => x.id === bookingId)
+                        if (b) setDeleteConfirmDash(b)
+                      }}
                       onCloseSession={(bookingId, outcome) => {
                         const b = (bookings as any[]).find((x) => x.id === bookingId)
                         if (b) { setClosingOutcome(outcome); setClosingBooking({
@@ -1676,6 +1711,95 @@ function DashboardInner() {
         preselectedTime={calendarSlotBooking?.time}
         preselectedOutsideHours={calendarSlotBooking?.outsideHours}
       />
+
+      {/* Reschedule flow — opened from the calendar event popup ⋮ menu.
+          Reuses the schedule modal in reschedule mode (mirrors the bookings
+          page) so the home widget popup behaves identically. */}
+      <ScheduleSessionModal
+        isOpen={!!rescheduleBookingDash}
+        onClose={() => setRescheduleBookingDash(null)}
+        rescheduleBooking={rescheduleBookingDash}
+        onSuccess={() => {
+          setRescheduleBookingDash(null)
+          ;(async () => {
+            const { data: { user: u } } = await supabase.auth.getUser()
+            if (!u) return
+            const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+            const horizonEnd = addDays(weekStart, 21).toISOString()
+            const { data: bk } = await supabase.from('bookings').select('*')
+              .eq('practitioner_id', u.id)
+              .gte('start_time', weekStart.toISOString())
+              .lt('start_time', horizonEnd)
+              .order('start_time', { ascending: true })
+            if (bk) setBookings(bk as DashBooking[])
+          })()
+        }}
+      />
+
+      {/* Delete-confirm for the calendar popup ⋮ menu Delete. Routes through
+          handleDeleteBookingDash, which now also removes the Google event. */}
+      <AnimatePresence>
+        {deleteConfirmDash && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4"
+            onClick={() => { if (!deletingDash) setDeleteConfirmDash(null) }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900">
+                {deletingDash
+                  ? t('Deleting your event…', 'Suppression de l’événement…', 'Eliminando el evento…')
+                  : t('Delete this event?', 'Supprimer cet événement ?', '¿Eliminar este evento?')}
+              </h3>
+              <p className="mt-1.5 text-sm text-gray-500">
+                {deletingDash
+                  ? t(
+                      'Removing it from Bloomsline and Google Calendar — this takes a moment.',
+                      'Suppression de Bloomsline et de Google Agenda — cela prend un instant.',
+                      'Eliminándolo de Bloomsline y Google Calendar — esto tarda un momento.',
+                    )
+                  : t(
+                      'This removes the booking and its Google Calendar event. This cannot be undone.',
+                      'Cela supprime le rendez-vous et son événement Google Agenda. Action irréversible.',
+                      'Esto elimina la reserva y su evento de Google Calendar. No se puede deshacer.',
+                    )}
+              </p>
+              <div className="mt-5 flex gap-2">
+                <button
+                  onClick={() => setDeleteConfirmDash(null)}
+                  disabled={deletingDash}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {t('Keep', 'Garder', 'Mantener')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!deleteConfirmDash) return
+                    const id = deleteConfirmDash.id
+                    setDeletingDash(true)
+                    await handleDeleteBookingDash(id)
+                    setDeletingDash(false)
+                    setDeleteConfirmDash(null)
+                  }}
+                  disabled={deletingDash}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors disabled:opacity-70"
+                >
+                  {deletingDash && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {deletingDash ? t('Deleting…', 'Suppression…', 'Eliminando…') : t('Delete', 'Supprimer', 'Eliminar')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add Member Modal */}
       <AnimatePresence>
@@ -2397,6 +2521,18 @@ function DashboardInner() {
                 onSlotClick={(day, time, options) => {
                   setShowCalendar(false)
                   setCalendarSlotBooking({ date: day, time, outsideHours: options?.outsideHours })
+                }}
+                onTakeNotes={(bookingId) => {
+                  const b = (bookings as any[]).find((x) => x.id === bookingId)
+                  if (b) { setShowCalendar(false); handleTakeNotes(b) }
+                }}
+                onReschedule={(bookingId) => {
+                  const b = (bookings as any[]).find((x) => x.id === bookingId)
+                  if (b) { setShowCalendar(false); setRescheduleBookingDash(b) }
+                }}
+                onDeleteRequest={(bookingId) => {
+                  const b = (bookings as any[]).find((x) => x.id === bookingId)
+                  if (b) setDeleteConfirmDash(b)
                 }}
                 onCloseSession={(bookingId, outcome) => {
                   const b = (bookings as any[]).find((x) => x.id === bookingId)
