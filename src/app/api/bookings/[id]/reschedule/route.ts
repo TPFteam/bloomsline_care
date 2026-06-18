@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
-import { notifyBookingSms } from '@/lib/notifications/sms';
-import { waitUntil } from '@vercel/functions';
 
 /**
  * POST /api/bookings/[id]/reschedule
@@ -202,15 +200,6 @@ export async function POST(
     if (updateError) {
       console.error('Failed to update booking for reschedule:', updateError);
       return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 });
-    }
-
-    // SMS the client about the new time (self-gated on the toggle; no-throw).
-    if (new Date(newSlotStart).getTime() >= Date.now()) {
-      waitUntil(notifyBookingSms(adminSupabase, {
-        practitionerId: booking.practitioner_id,
-        booking: { ...booking, start_time: newSlotStart },
-        kind: 'rescheduled',
-      }));
     }
 
     // PATCH the Google event so the patient sees the new time. One

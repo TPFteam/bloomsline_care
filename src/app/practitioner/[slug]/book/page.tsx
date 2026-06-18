@@ -8,6 +8,7 @@ import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import { PhoneInput } from '@/components/ui/phone-input'
+import type { IntakeQuestion, IntakeForm } from '@/types/calendar'
 import type { BookingSettings, SessionType, TimeSlot } from '@/types/calendar'
 
 interface PractitionerInfo {
@@ -109,6 +110,8 @@ export default function BookingPage() {
   const [clientEmail, setClientEmail] = useState('')
   const [clientPhone, setClientPhone] = useState('')
   const [notes, setNotes] = useState('')
+  // Answers to the practitioner's custom intake questions, keyed by question id.
+  const [intakeAnswers, setIntakeAnswers] = useState<Record<string, string | string[]>>({})
   // Required consent — the patient must accept the terms + teleconsultation
   // before a booking can be confirmed (shown on every practitioner's page).
   const [consentGiven, setConsentGiven] = useState(false)
@@ -492,6 +495,9 @@ export default function BookingPage() {
           notes: notes || undefined,
           session_format: selectedFormat === 'in_person' ? 'in_person' : 'video',
           consent: consentGiven,
+          intake_responses: activeIntakeQuestions()
+            .map((q) => ({ id: q.id, label: q.label, type: q.type, value: intakeAnswers[q.id] ?? (q.type === 'multi' ? [] : '') }))
+            .filter((r) => Array.isArray(r.value) ? r.value.length > 0 : String(r.value).trim() !== ''),
         }),
       })
 
@@ -510,6 +516,15 @@ export default function BookingPage() {
     }
   }
 
+  // The intake questions for the currently-selected session type — its linked
+  // form's questions (empty when the session type has no form).
+  const activeIntakeQuestions = (): IntakeQuestion[] => {
+    const formId = (selectedService as { intake_form_id?: string | null } | null)?.intake_form_id
+    if (!formId || !practitioner) return []
+    const forms = (practitioner.settings as { intake_forms?: IntakeForm[] }).intake_forms || []
+    return forms.find((f) => f.id === formId)?.questions || []
+  }
+
   // Validation
   const canProceed = () => {
     switch (currentStep) {
@@ -522,6 +537,14 @@ export default function BookingPage() {
         const baseValid = clientName.trim() !== '' && emailValid
         if (selectedService?.notesRequired && !notes.trim()) return false
         if (!consentGiven) return false
+        // Required intake questions must be answered.
+        const questions = activeIntakeQuestions()
+        for (const q of questions) {
+          if (!q.required) continue
+          const v = intakeAnswers[q.id]
+          if (q.type === 'multi') { if (!Array.isArray(v) || v.length === 0) return false }
+          else if (!v || (typeof v === 'string' && !v.trim())) return false
+        }
         return baseValid
       }
       default:
@@ -1400,6 +1423,62 @@ export default function BookingPage() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none bg-white placeholder-gray-400"
                   />
                 </div>
+
+                {/* Intake questions for the selected session type's form */}
+                {activeIntakeQuestions().map((q) => (
+                  <div key={q.id}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {q.label}
+                      {q.required && <span className="text-red-500 font-normal"> *</span>}
+                    </label>
+                    {q.type === 'text' && (
+                      <textarea
+                        value={(intakeAnswers[q.id] as string) || ''}
+                        onChange={(e) => setIntakeAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                        rows={2}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none bg-white placeholder-gray-400"
+                      />
+                    )}
+                    {q.type === 'single' && (
+                      <div className="space-y-1.5">
+                        {(q.options || []).map((opt) => (
+                          <label key={opt} className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={q.id}
+                              checked={intakeAnswers[q.id] === opt}
+                              onChange={() => setIntakeAnswers((a) => ({ ...a, [q.id]: opt }))}
+                              className="w-4 h-4 text-teal-600 border-gray-300 focus:ring-teal-500"
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {q.type === 'multi' && (
+                      <div className="space-y-1.5">
+                        {(q.options || []).map((opt) => {
+                          const arr = (intakeAnswers[q.id] as string[]) || []
+                          const checked = arr.includes(opt)
+                          return (
+                            <label key={opt} className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setIntakeAnswers((a) => {
+                                  const cur = (a[q.id] as string[]) || []
+                                  return { ...a, [q.id]: checked ? cur.filter((x) => x !== opt) : [...cur, opt] }
+                                })}
+                                className="w-4 h-4 rounded text-teal-600 border-gray-300 focus:ring-teal-500"
+                              />
+                              {opt}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

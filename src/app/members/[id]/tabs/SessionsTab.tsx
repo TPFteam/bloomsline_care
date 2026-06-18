@@ -32,6 +32,7 @@ import {
   StickyNote,
   PenLine,
   Building2,
+  MessageCircle,
 } from 'lucide-react'
 import { format, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isBefore, isAfter, isToday, isTomorrow, isPast, parseISO } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
@@ -53,6 +54,7 @@ import { PaymentReminderButton } from '@/components/ui/payment-reminder-button'
 import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
 import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
+import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
 import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
 
@@ -214,6 +216,26 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [showAddSession, setShowAddSession] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(searchParams.get('book') === 'true' || openBookModal === true)
   const [rescheduleSession, setRescheduleSession] = useState<any | null>(null)
+
+  // WhatsApp click-to-send: master toggle (booking_settings.whatsapp_on_booking)
+  // + the practitioner's name for the pre-filled message. Mirrors the Bookings
+  // surface — the "Notify on WhatsApp" row action only shows when this is on.
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false)
+  const [whatsappPractitionerName, setWhatsappPractitionerName] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: settings } = await supabase.from('booking_settings').select('whatsapp_on_booking').eq('user_id', user.id).maybeSingle()
+      const { data: profile } = await supabase.from('users').select('full_name').eq('id', user.id).maybeSingle()
+      if (cancelled) return
+      setWhatsappEnabled(!!(settings as any)?.whatsapp_on_booking)
+      setWhatsappPractitionerName((profile as any)?.full_name || undefined)
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // ── Close session popup state ──────────────────────────────────────
   // Single popup that starts by asking Show vs No-show, then expands
@@ -1777,6 +1799,15 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
               onClick: () => handleStartEdit(session),
             },
             ...(isClosed ? [] : [
+              ...(whatsappEnabled && member.phone ? [{
+                label: locale === 'fr' ? 'Notifier sur WhatsApp' : 'Notify on WhatsApp',
+                icon: MessageCircle,
+                onClick: () => {
+                  const url = buildBookingWaUrl({ phone: member.phone, locale, clientName: `${member.first_name} ${member.last_name}`, practitionerName: whatsappPractitionerName, startIso: session.scheduled_at, kind: 'confirmed' })
+                  if (url) openWhatsApp(url)
+                },
+                tone: 'success' as const,
+              }] : []),
               {
                 label: locale === 'fr' ? 'Clôturer la séance' : 'Close session',
                 icon: CheckCircle,

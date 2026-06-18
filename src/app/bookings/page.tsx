@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
+  ClipboardList,
+  ChevronDown,
   Settings,
   Plus,
   Trash2,
@@ -33,6 +35,7 @@ import {
   ArrowUpRight,
   CheckCircle,
   Pencil,
+  MessageCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -51,10 +54,13 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
+import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
 import { format, parseISO, isToday, isTomorrow, isPast, startOfWeek } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
+import { IntakeFormsManager } from '@/components/bookings/IntakeFormsManager'
+import type { IntakeForm } from '@/types/calendar'
 import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { MiniMonthCalendar } from '@/components/bookings/MiniMonthCalendar'
@@ -294,6 +300,9 @@ export default function BookingsPage() {
     }
   }, [highlightId, bookings])
   const [sessionTypes, setSessionTypes] = useState<SessionType[]>([])
+  // Which session types are expanded into the full editor. Collapsed by default
+  // so the list reads as clean one-line summaries.
+  const [editingSession, setEditingSession] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('upcoming')
   const [bookingView, setBookingView] = useState<'list' | 'calendar'>('calendar')
@@ -328,7 +337,7 @@ export default function BookingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'preferences' | 'embed'>('availability')
+  const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'customization' | 'preferences' | 'embed'>('availability')
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -1398,7 +1407,8 @@ export default function BookingsPage() {
       booking_page_language: bookingSettings?.booking_page_language ?? null,
       calendar_event_title_template: (bookingSettings as any)?.calendar_event_title_template?.trim() || null,
       calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? false,
-      sms_on_booking: (bookingSettings as any)?.sms_on_booking ?? false,
+      whatsapp_on_booking: (bookingSettings as any)?.whatsapp_on_booking ?? false,
+      intake_forms: (bookingSettings as any)?.intake_forms ?? null,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -1767,6 +1777,8 @@ export default function BookingsPage() {
                         if (b) { setDeleteSeriesScope('this'); setDeleteConfirmBooking(b) }
                       }}
                       onAddToBloomsline={(ev) => setClaimGoogleEvent(ev)}
+                      whatsappEnabled={(bookingSettings as any)?.whatsapp_on_booking ?? false}
+                      practitionerName={user?.full_name || undefined}
                     />
                   ) : (
                   <>
@@ -1995,6 +2007,18 @@ export default function BookingsPage() {
                               </p>
                             )}
 
+                            {/* Patient's intake answers */}
+                            {Array.isArray((booking as { intake_responses?: Array<{ label: string; value: string | string[] }> }).intake_responses) && (booking as { intake_responses?: Array<{ label: string; value: string | string[] }> }).intake_responses!.length > 0 && (
+                              <div className="mt-2 space-y-0.5">
+                                {(booking as { intake_responses?: Array<{ label: string; value: string | string[] }> }).intake_responses!.map((r, i) => (
+                                  <p key={i} className="text-xs text-gray-500">
+                                    <span className="font-medium text-gray-600">{r.label}:</span>{' '}
+                                    {Array.isArray(r.value) ? r.value.join(', ') : r.value}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
                             {/* Session-level actions — Close session
                                 (awaiting outcome), Join (meet link), Take
                                 notes, payment. Action row also fires for
@@ -2136,6 +2160,12 @@ export default function BookingsPage() {
                               const isCancelledB = booking.status === 'cancelled'
                               return (
                                 <RowMenu items={[
+                                  ...(!isClosedB && booking.client_phone && (bookingSettings as any)?.whatsapp_on_booking ? [
+                                    { label: locale === 'fr' ? 'Notifier sur WhatsApp' : 'Notify on WhatsApp', icon: MessageCircle, onClick: () => {
+                                      const url = buildBookingWaUrl({ phone: booking.client_phone, locale, clientName: booking.client_name, practitionerName: user?.full_name, startIso: booking.start_time, timezone: booking.timezone, kind: 'confirmed' })
+                                      if (url) openWhatsApp(url)
+                                    }, tone: 'success' as const },
+                                  ] : []),
                                   ...(isClosedB ? [
                                     { label: locale === 'fr' ? 'Modifier la clôture' : 'Edit close', icon: PenLine, onClick: () => openClosePopupBooking(booking) },
                                   ] : [
@@ -2291,6 +2321,7 @@ export default function BookingsPage() {
                 {([
                   { key: 'availability' as const, label: locale === 'fr' ? 'Disponibilités' : 'Availability', icon: Calendar },
                   { key: 'sessions' as const, label: locale === 'fr' ? 'Séances' : 'Sessions', icon: Clock },
+                  { key: 'customization' as const, label: locale === 'fr' ? 'Personnalisation' : 'Customization', icon: ClipboardList },
                   { key: 'preferences' as const, label: locale === 'fr' ? 'Préférences' : 'Preferences', icon: SlidersHorizontal },
                   { key: 'embed' as const, label: locale === 'fr' ? 'Intégrer' : 'Embed', icon: Code2 },
                 ]).map(({ key, label, icon: Icon }) => (
@@ -2388,11 +2419,38 @@ export default function BookingsPage() {
                   {(sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).map((type, index) => {
                     const isLocked = type.id === 'initial' || type.id === 'follow_up'
                     const lockedNameFr: Record<string, string> = { initial: 'Consultation initiale', follow_up: 'Séance de suivi' }
+                    const editing = editingSession.has(type.id)
+                    const fmtLabel = type.sessionFormat === 'in_person' ? (locale === 'fr' ? 'En personne' : 'In person') : type.sessionFormat === 'video' ? (locale === 'fr' ? 'Vidéo' : 'Video') : (locale === 'fr' ? 'Les deux' : 'Both')
+                    const formName = (((bookingSettings as { intake_forms?: IntakeForm[] } | null)?.intake_forms) || []).find(f => f.id === type.intake_form_id)?.name
+                    const deletable = !isLocked && (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).length > 1
+                    const displayName = isLocked && locale === 'fr' ? lockedNameFr[type.id] : (type.name || (locale === 'fr' ? 'Sans titre' : 'Untitled'))
+                    const priceLabel = type.price != null ? `${bookingSettings?.currency === 'USD' ? '$' : '€'}${type.price}` : (locale === 'fr' ? 'Gratuit' : 'Free')
                     return (
                     <div
                       key={type.id}
-                      className="p-3 rounded-xl border border-gray-200 bg-gray-50/50"
+                      className="rounded-xl border border-gray-200 bg-white"
                     >
+                      {!editing ? (
+                        <div className="flex items-center justify-between gap-3 p-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                            <p className="text-xs text-gray-500 truncate mt-0.5">
+                              {type.duration} min · {priceLabel} · {fmtLabel}{formName ? ` · ${formName}` : ''}{type.notesRequired ? ` · ${locale === 'fr' ? 'Notes obligatoires' : 'Notes required'}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button type="button" onClick={() => setEditingSession(prev => { const n = new Set(prev); n.add(type.id); return n })} className="px-2.5 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-50 rounded-lg transition-colors">
+                              {locale === 'fr' ? 'Modifier' : 'Edit'}
+                            </button>
+                            {deletable && (
+                              <button type="button" onClick={() => { const updated = (sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES).filter((_, i) => i !== index); setSessionTypes(updated); setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev) }} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                      <div className="p-4 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="flex-1 grid grid-cols-3 gap-3">
                           <div>
@@ -2460,11 +2518,10 @@ export default function BookingsPage() {
                           </button>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-3 flex-wrap mt-2 pt-2 border-t border-gray-100">
-                        {/* Format — combined with each day's availability format
-                            to decide what patients can pick. */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">{locale === 'fr' ? 'Format' : 'Format'}</span>
+                        <div className="grid grid-cols-3 gap-3">
+                        {/* Format — combined with each day's availability format. */}
+                        <div>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Format' : 'Format'}</label>
                           <select
                             value={type.sessionFormat || 'both'}
                             onChange={(e) => {
@@ -2473,32 +2530,59 @@ export default function BookingsPage() {
                               setSessionTypes(updated)
                               setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
                             }}
-                            className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 bg-white"
+                            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400"
                           >
                             <option value="both">{locale === 'fr' ? 'Les deux' : 'Both'}</option>
                             <option value="in_person">{locale === 'fr' ? 'En personne' : 'In person'}</option>
                             <option value="video">{locale === 'fr' ? 'Vidéo' : 'Video'}</option>
                           </select>
                         </div>
-                        {/* Require notes toggle */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
-                            updated[index] = { ...updated[index], notesRequired: !type.notesRequired }
-                            setSessionTypes(updated)
-                            setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
-                          }}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <div className={`relative w-8 h-[18px] rounded-full transition-colors ${type.notesRequired ? 'bg-teal-500' : 'bg-gray-200'}`}>
-                            <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${type.notesRequired ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                        {/* Intake form — shows on the booking page for this session type */}
+                        <div>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Formulaire' : 'Intake form'}</label>
+                          <select
+                            value={type.intake_form_id || ''}
+                            onChange={(e) => {
+                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                              updated[index] = { ...updated[index], intake_form_id: e.target.value || null }
+                              setSessionTypes(updated)
+                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                            }}
+                            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400"
+                          >
+                            <option value="">{locale === 'fr' ? 'Aucun' : 'None'}</option>
+                            {(((bookingSettings as { intake_forms?: IntakeForm[] } | null)?.intake_forms) || []).map((f) => (
+                              <option key={f.id} value={f.id}>{f.name || (locale === 'fr' ? 'Sans titre' : 'Untitled')}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* Require notes — toggle */}
+                        <div>
+                          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Notes obligatoires' : 'Require notes'}</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                              updated[index] = { ...updated[index], notesRequired: !type.notesRequired }
+                              setSessionTypes(updated)
+                              setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                            }}
+                            className="mt-1 flex items-center gap-2 h-[38px]"
+                          >
+                            <div className={`relative w-8 h-[18px] rounded-full transition-colors shrink-0 ${type.notesRequired ? 'bg-teal-500' : 'bg-gray-200'}`}>
+                              <div className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-transform ${type.notesRequired ? 'translate-x-[16px]' : 'translate-x-[2px]'}`} />
+                            </div>
+                            <span className="text-xs text-gray-500">{type.notesRequired ? (locale === 'fr' ? 'Oui' : 'On') : (locale === 'fr' ? 'Non' : 'Off')}</span>
+                          </button>
+                        </div>
+                        </div>
+                          <div>
+                            <button type="button" onClick={() => setEditingSession(prev => { const n = new Set(prev); n.delete(type.id); return n })} className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
+                              {locale === 'fr' ? 'OK' : 'Done'}
+                            </button>
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {locale === 'fr' ? 'Notes obligatoires lors de la réservation' : 'Require notes when booking'}
-                          </span>
-                        </button>
                       </div>
+                      )}
                     </div>
                   )})}
 
@@ -2515,6 +2599,7 @@ export default function BookingsPage() {
                       const updated = [...current, newType]
                       setSessionTypes(updated)
                       setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                      setEditingSession(prev => { const n = new Set(prev); n.add(newType.id); return n })
                     }}
                     className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
                   >
@@ -2842,8 +2927,8 @@ export default function BookingsPage() {
 
               </>)}
 
-              {/* ─── Preferences tab ─── */}
-              {settingsTab === 'preferences' && (<>
+              {/* ─── Customization tab — patient-facing booking page content ─── */}
+              {settingsTab === 'customization' && (<>
               {/* Booking page welcome message — free text shown at the top of
                   the public booking page (accepting new patients, how it
                   works, etc.). Saved with the other preferences below. */}
@@ -2876,116 +2961,43 @@ export default function BookingsPage() {
                 </CardContent>
               </Card>
 
-              {/* SMS confirmation toggle — when on, the client gets a text on
-                  booking confirm / reschedule / cancel (if a mobile is on file). */}
+              {/* Intake forms — build reusable forms, then link them to session
+                  types (in the Sessions tab) so they show on the booking page. */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Phone className="w-5 h-5 text-gray-600" />
-                    {locale === 'fr' ? 'SMS de confirmation' : 'SMS confirmations'}
+                    <ClipboardList className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Formulaires de pré-consultation' : 'Intake forms'}
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr'
-                      ? 'Envoyez un SMS au patient à la confirmation, au report ou à l’annulation d’une séance (si un numéro de mobile est renseigné).'
-                      : 'Text the patient when a session is confirmed, rescheduled or cancelled (when a mobile number is on file).'}
+                      ? 'Créez des formulaires (motif, première séance, etc.) puis liez-les à un type de séance dans l’onglet Séances. Le formulaire s’affiche automatiquement quand le patient réserve ce type de séance.'
+                      : 'Build forms (reason for visit, first session, etc.), then link each to a session type in the Sessions tab. The form shows automatically when a patient books that session type.'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {(() => {
-                    const enabled = (bookingSettings as any)?.sms_on_booking ?? false
-                    return (
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 pr-4">
-                          <p className="font-medium">
-                            {locale === 'fr' ? 'Envoyer un SMS de confirmation' : 'Send an SMS confirmation'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {locale === 'fr'
-                              ? 'Assurez-vous d’avoir le consentement du patient pour recevoir des SMS.'
-                              : 'Make sure you have the patient’s consent to receive SMS.'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), sms_on_booking: !enabled } as any))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
-                          aria-pressed={enabled}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
-                          />
-                        </button>
-                      </div>
-                    )
-                  })()}
+                <CardContent className="space-y-4">
+                  <IntakeFormsManager
+                    value={((bookingSettings as { intake_forms?: IntakeForm[] } | null)?.intake_forms) || []}
+                    onChange={(next) => setBookingSettings((prev) => prev ? ({ ...prev, intake_forms: next } as typeof prev) : prev)}
+                  />
+                  <Button type="button" onClick={() => handleSaveBookingSettings()} disabled={isSavingSettings}>
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </Button>
                 </CardContent>
               </Card>
+              </>)}
 
-              {/* Calendar email reminder toggle — controls whether Google
-                  Calendar fires its own 24h-before email reminder for
-                  events we create. Independent of Bloomsline's bell +
-                  email notifications. */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-gray-600" />
-                    {locale === 'fr' ? 'Rappel Google Agenda' : 'Google Calendar reminder'}
-                  </CardTitle>
-                  <CardDescription>
-                    {locale === 'fr'
-                      ? "Google peut vous envoyer un e-mail 24h avant chaque rendez-vous, indépendamment des notifications Bloomsline."
-                      : 'Google can send you an email 24h before each appointment, independently of Bloomsline notifications.'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {(() => {
-                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? false
-                    return (
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 pr-4">
-                          <p className="font-medium">
-                            {locale === 'fr' ? 'Envoyer un e-mail de rappel 24h avant' : 'Send an email reminder 24h before'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {locale === 'fr'
-                              ? "Le rappel popup 30 minutes avant est toujours actif. Ce changement s'applique uniquement aux nouveaux rendez-vous."
-                              : 'The 30-min popup reminder is always on. This change applies only to new appointments.'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: !enabled } as any))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
-                          aria-pressed={enabled}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
-                          />
-                        </button>
-                      </div>
-                    )
-                  })()}
-                  <div>
-                    <Button
-                      onClick={handleSaveBookingSettings}
-                      disabled={isSavingSettings}
-                      className="bg-gray-900 hover:bg-gray-800 text-white"
-                    >
-                      {isSavingSettings ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : null}
-                      {locale === 'fr' ? 'Enregistrer' : 'Save'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
+              {/* ─── Preferences tab ─── */}
+              {settingsTab === 'preferences' && (<>
               {/* Booking setup: enable/disable, external, approval */}
               <Card>
                 <CardHeader>
                   <CardTitle>{locale === 'fr' ? 'Configuration de la réservation' : 'Booking Setup'}</CardTitle>
                   <CardDescription>
-                    {locale === 'fr' ? 'Activez ou désactivez la prise de rendez-vous en ligne' : 'Enable or disable online appointment booking'}
+                    {locale === 'fr'
+                      ? 'Choisissez comment les patients réservent avec vous — via votre page Bloomsline ou votre propre outil externe.'
+                      : 'Choose how patients book with you — through your Bloomsline page, or your own external tool.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -2993,7 +3005,7 @@ export default function BookingsPage() {
                     <div>
                       <p className="font-medium">{locale === 'fr' ? 'Activer la page de réservation' : 'Enable Booking Page'}</p>
                       <p className="text-sm text-gray-500">
-                        {locale === 'fr' ? 'Permettre aux clients de prendre rendez-vous via votre profil public' : 'Allow clients to book appointments through your public profile'}
+                        {locale === 'fr' ? 'Vous donne un lien public où les patients choisissent un créneau et réservent eux-mêmes — sans échanges d’e-mails.' : 'Gives you a public link where patients pick a time and book themselves — no back-and-forth emails.'}
                       </p>
                     </div>
                     <button
@@ -3018,7 +3030,7 @@ export default function BookingsPage() {
                       <div>
                         <p className="font-medium">{locale === 'fr' ? 'Utiliser un système de réservation externe' : 'Use external booking system'}</p>
                         <p className="text-sm text-gray-500">
-                          {locale === 'fr' ? 'Rediriger les clients vers Calendly, Doctolib ou un autre outil' : 'Redirect clients to Calendly, Doctolib, or another booking tool'}
+                          {locale === 'fr' ? 'Vous utilisez déjà Calendly, Doctolib ou autre ? Envoyez-y les patients. Votre page Bloomsline se désactive.' : 'Already use Calendly, Doctolib, or similar? Send patients there instead — your Bloomsline booking page turns off.'}
                         </p>
                       </div>
                       <button
@@ -3056,7 +3068,7 @@ export default function BookingsPage() {
                       <div>
                         <p className="font-medium">{locale === 'fr' ? 'Approbation requise' : 'Require Approval'}</p>
                         <p className="text-sm text-gray-500">
-                          {locale === 'fr' ? 'Approuver manuellement les demandes de rendez-vous avant confirmation' : 'Manually approve booking requests before they are confirmed'}
+                          {locale === 'fr' ? 'Les demandes attendent votre validation avant d’être confirmées — pratique si vous préférez filtrer les nouveaux patients.' : 'Booking requests wait for your OK before they’re confirmed — handy if you like to screen new patients first.'}
                         </p>
                       </div>
                       <button
@@ -3072,6 +3084,83 @@ export default function BookingsPage() {
                     {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     {locale === 'fr' ? 'Enregistrer' : 'Save'}
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* Reminders & notifications — email reminder before each appointment. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Rappels et notifications' : 'Reminders & notifications'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr'
+                      ? 'Recevez un e-mail de rappel avant chaque rendez-vous, et notifiez vos patients sur WhatsApp.'
+                      : 'Get an email reminder before each appointment, and notify your patients on WhatsApp.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* WhatsApp notification toggle — master switch for the free
+                      click-to-send flow. When on, after each booking we pop up
+                      "Notify on WhatsApp?" (only if a mobile is on file). */}
+                  {(() => {
+                    const enabled = (bookingSettings as any)?.whatsapp_on_booking ?? false
+                    return (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-4">
+                          <p className="font-medium">
+                            {locale === 'fr' ? 'Notifier le patient sur WhatsApp' : 'Notify the patient on WhatsApp'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {locale === 'fr'
+                              ? 'Après chaque réservation, on vous propose d’ouvrir WhatsApp avec un message de confirmation déjà prêt — vous n’avez plus qu’à envoyer. Gratuit, envoyé depuis votre propre WhatsApp (si un mobile est renseigné).'
+                              : 'After each booking, we offer to open WhatsApp with a ready-to-send confirmation — you just hit Send. Free, sent from your own WhatsApp (when a mobile is on file).'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), whatsapp_on_booking: !enabled } as any))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+                          aria-pressed={enabled}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+                    )
+                  })()}
+                  {/* Email reminder toggle */}
+                  {(() => {
+                    const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? false
+                    return (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 pr-4">
+                          <p className="font-medium">
+                            {locale === 'fr' ? 'E-mail de rappel pour vous, 24h avant' : 'Email reminder for you, 24h before'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {locale === 'fr'
+                              ? 'Envoyé par Google Agenda. Le rappel popup 30 min avant reste toujours actif.'
+                              : 'Sent via Google Calendar. The 30-min popup reminder is always on.'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), calendar_email_reminder_enabled: !enabled } as any))}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+                          aria-pressed={enabled}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+                    )
+                  })()}
+                  <div>
+                    <Button onClick={handleSaveBookingSettings} disabled={isSavingSettings} className="bg-gray-900 hover:bg-gray-800 text-white">
+                      {isSavingSettings ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -3147,7 +3236,9 @@ export default function BookingsPage() {
                 <CardHeader>
                   <CardTitle>{locale === 'fr' ? 'Règles de planification' : 'Scheduling Rules'}</CardTitle>
                   <CardDescription>
-                    {locale === 'fr' ? 'Délais, tampons et intervalles pour vos créneaux' : 'Timing, buffers, and intervals for your time slots'}
+                    {locale === 'fr'
+                      ? 'Quelques règles simples qui protègent votre agenda : des pauses entre les séances, et à quel point les patients peuvent réserver tôt ou loin à l’avance.'
+                      : 'A few simple rules that protect your calendar — breathing room between sessions, and how soon and how far ahead patients can book.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -3156,9 +3247,12 @@ export default function BookingsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         {locale === 'fr' ? 'Délai avant' : 'Buffer before'}
                       </label>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {locale === 'fr' ? 'Un temps de préparation avant chaque séance — les patients ne peuvent pas réserver dessus.' : 'Prep time before each session — patients can’t book into it.'}
+                      </p>
                       <select
                         value={bookingSettings?.buffer_before || 0}
                         onChange={(e) =>
@@ -3178,9 +3272,12 @@ export default function BookingsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         {locale === 'fr' ? 'Délai après' : 'Buffer after'}
                       </label>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {locale === 'fr' ? 'Un temps après chaque séance pour vos notes ou souffler avant le patient suivant.' : 'Time after each session to write notes or breathe before the next patient.'}
+                      </p>
                       <select
                         value={bookingSettings?.buffer_after || 0}
                         onChange={(e) =>
@@ -3203,9 +3300,12 @@ export default function BookingsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         {locale === 'fr' ? 'Préavis minimum (heures)' : 'Minimum notice (hours)'}
                       </label>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {locale === 'fr' ? 'Le temps de prévenance dont vous avez besoin. Ex. 24 = pas de réservation à moins de 24 h.' : 'How much heads-up you need. E.g. 24 = no bookings less than 24 h away.'}
+                      </p>
                       <input
                         type="number"
                         min="1"
@@ -3221,9 +3321,12 @@ export default function BookingsPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         {locale === 'fr' ? 'Réservation max à l\'avance (jours)' : 'Max advance booking (days)'}
                       </label>
+                      <p className="text-xs text-gray-400 mb-2">
+                        {locale === 'fr' ? 'Jusqu’où les patients peuvent réserver. Ex. 60 = jusqu’à 2 mois à l’avance.' : 'How far ahead patients can book. E.g. 60 = up to 2 months out.'}
+                      </p>
                       <input
                         type="number"
                         min="1"
@@ -3273,97 +3376,71 @@ export default function BookingsPage() {
                     </>
                   )}
 
-                  {/* Patient modification settings */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                      {locale === 'fr' ? 'Modifications par le patient' : 'Patient modifications'}
-                    </h4>
-                    <p className="text-xs text-gray-500 mb-4">
-                      {locale === 'fr' ? 'Autorisez vos patients à gérer leurs rendez-vous eux-mêmes' : 'Let your patients manage their own appointments'}
-                    </p>
-                    <div className="space-y-4">
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <div
-                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_book !== false ? 'bg-teal-600' : 'bg-gray-300'}`}
-                          onClick={() =>
-                            setBookingSettings((prev: any) => ({
-                              ...prev!,
-                              allow_patient_book: prev?.allow_patient_book === false ? true : false,
-                            }))
-                          }
-                        >
-                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_book !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                        </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleSaveBookingSettings()}
+                    disabled={isSavingSettings}
+                  >
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Patient modifications — its own section. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{locale === 'fr' ? 'Modifications par le patient' : 'Patient modifications'}</CardTitle>
+                  <CardDescription>
+                    {locale === 'fr' ? 'Autorisez vos patients à gérer leurs rendez-vous eux-mêmes — réserver, annuler ou reprogrammer, selon ce que vous activez.' : 'Let your patients manage their own appointments — book, cancel, or reschedule, depending on what you allow.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Allow patient to book */}
+                    <div className="rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <span className="text-sm text-gray-700">
-                            {locale === 'fr' ? 'Autoriser le patient à réserver' : 'Allow patient to book'}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {locale === 'fr' ? 'Le patient peut réserver une séance depuis son application' : 'Patient can book a session from their app'}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? 'Autoriser le patient à réserver' : 'Allow patient to book'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{locale === 'fr' ? 'Vos patients existants peuvent réserver de nouvelles séances depuis l’application Bloomsline.' : 'Existing patients can book new sessions themselves from the Bloomsline app.'}</p>
                         </div>
-                      </label>
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <div
-                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}
-                          onClick={() =>
-                            setBookingSettings((prev: any) => ({
-                              ...prev!,
-                              allow_patient_cancel: !prev?.allow_patient_cancel,
-                            }))
-                          }
-                        >
-                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_cancel ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                        </div>
+                        <button type="button" aria-pressed={(bookingSettings as any)?.allow_patient_book !== false} onClick={() => setBookingSettings((prev: any) => ({ ...prev!, allow_patient_book: prev?.allow_patient_book === false ? true : false }))} className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${(bookingSettings as any)?.allow_patient_book !== false ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_book !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Allow patient to cancel (+ late-cancellation policy) */}
+                    <div className="rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <span className="text-sm text-gray-700">
-                            {locale === 'fr' ? 'Autoriser le patient à annuler' : 'Allow patient to cancel'}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {locale === 'fr' ? 'Le patient peut annuler depuis son espace' : 'Patient can cancel from their booking page'}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? 'Autoriser le patient à annuler' : 'Allow patient to cancel'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{locale === 'fr' ? 'Le patient annule lui-même depuis l’e-mail de confirmation — moins de messages pour vous.' : 'Patients cancel themselves from the confirmation email — fewer messages back to you.'}</p>
                         </div>
-                      </label>
-                      {/* Late-cancellation policy — only shown when patient
-                          cancellation is allowed. 0 = no policy (today's
-                          behavior); >0 hours = patient sees a warning in
-                          the cancel popup and the booking is flagged as
-                          still owed. */}
+                        <button type="button" aria-pressed={!!(bookingSettings as any)?.allow_patient_cancel} onClick={() => setBookingSettings((prev: any) => ({ ...prev!, allow_patient_cancel: !prev?.allow_patient_cancel }))} className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${(bookingSettings as any)?.allow_patient_cancel ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_cancel ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
                       {(bookingSettings as any)?.allow_patient_cancel && (
-                        <div className="pl-13">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {locale === 'fr' ? 'Facturer une annulation tardive si annulée dans les' : 'Charge for late cancellation if cancelled within'}
-                          </label>
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{locale === 'fr' ? 'Facturer une annulation tardive si annulée dans les' : 'Charge for late cancellation if cancelled within'}</label>
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
                               min={0}
                               max={168}
                               step={1}
-                              // Stored value 0 renders as empty so the practitioner can
-                              // backspace and type a new number; on blur we re-normalize
-                              // anything blank/invalid back to 0.
                               value={(bookingSettings as any)?.late_cancellation_hours ?? ''}
                               onChange={(e) => {
                                 const v = e.target.value
-                                if (v === '') {
-                                  setBookingSettings((prev: any) => ({ ...prev!, late_cancellation_hours: null }))
-                                  return
-                                }
+                                if (v === '') { setBookingSettings((prev: any) => ({ ...prev!, late_cancellation_hours: null })); return }
                                 const raw = parseInt(v, 10)
-                                if (Number.isFinite(raw)) {
-                                  setBookingSettings((prev: any) => ({
-                                    ...prev!,
-                                    late_cancellation_hours: Math.max(0, Math.min(168, raw)),
-                                  }))
-                                }
+                                if (Number.isFinite(raw)) { setBookingSettings((prev: any) => ({ ...prev!, late_cancellation_hours: Math.max(0, Math.min(168, raw)) })) }
                               }}
                               onBlur={() => {
                                 setBookingSettings((prev: any) => {
                                   const v = prev?.late_cancellation_hours
-                                  if (v == null || !Number.isFinite(v)) {
-                                    return { ...prev!, late_cancellation_hours: 0 }
-                                  }
+                                  if (v == null || !Number.isFinite(v)) { return { ...prev!, late_cancellation_hours: 0 } }
                                   return prev
                                 })
                               }}
@@ -3371,87 +3448,53 @@ export default function BookingsPage() {
                             />
                             <span className="text-sm text-gray-600">{locale === 'fr' ? 'heures avant la séance' : 'hours before the session'}</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {locale === 'fr'
-                              ? '0 = pas de politique. Sinon, le patient verra un avertissement et la séance restera marquée impayée.'
-                              : '0 = no policy. Otherwise the patient sees a warning and the session is marked unpaid for follow-up.'}
-                          </p>
+                          <p className="text-xs text-gray-500 mt-1">{locale === 'fr' ? '0 = pas de politique. Sinon, le patient verra un avertissement et la séance restera marquée impayée.' : '0 = no policy. Otherwise the patient sees a warning and the session is marked unpaid for follow-up.'}</p>
                         </div>
                       )}
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <div
-                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}
-                          onClick={() =>
-                            setBookingSettings((prev: any) => ({
-                              ...prev!,
-                              allow_patient_reschedule: !prev?.allow_patient_reschedule,
-                            }))
-                          }
-                        >
-                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_reschedule ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                        </div>
+                    </div>
+
+                    {/* Allow patient to reschedule */}
+                    <div className="rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <span className="text-sm text-gray-700">
-                            {locale === 'fr' ? 'Autoriser le patient à reprogrammer' : 'Allow patient to reschedule'}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {locale === 'fr' ? 'Le patient peut choisir un nouveau créneau' : 'Patient can pick a new time slot'}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? 'Autoriser le patient à reprogrammer' : 'Allow patient to reschedule'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{locale === 'fr' ? 'Le patient déplace lui-même son rendez-vous, sans vous écrire.' : 'Patients move their own appointment to a new time, without messaging you.'}</p>
                         </div>
-                      </label>
-                      {((bookingSettings as any)?.allow_patient_cancel || (bookingSettings as any)?.allow_patient_reschedule) && (
-                        <div className="pl-13">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {locale === 'fr' ? 'Délai minimum pour modifications' : 'Minimum notice for changes'}
-                          </label>
-                          <select
-                            value={(bookingSettings as any)?.modification_notice_hours ?? 48}
-                            onChange={(e) =>
-                              setBookingSettings((prev: any) => ({
-                                ...prev!,
-                                modification_notice_hours: parseInt(e.target.value),
-                              }))
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          >
-                            <option value={12}>12 {locale === 'fr' ? 'heures' : 'hours'}</option>
-                            <option value={24}>24 {locale === 'fr' ? 'heures' : 'hours'}</option>
-                            <option value={48}>48 {locale === 'fr' ? 'heures' : 'hours'}</option>
-                            <option value={72}>72 {locale === 'fr' ? 'heures' : 'hours'}</option>
-                          </select>
-                        </div>
-                      )}
-                      {/* Patient app visibility — payment status badge.
-                          Default true (today's behavior). When off, the
-                          mobile session card hides the Paid / Unpaid
-                          tag entirely. */}
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <div
-                          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 mt-0.5 ${
-                            ((bookingSettings as any)?.show_payment_to_patient ?? false) ? 'bg-teal-600' : 'bg-gray-300'
-                          }`}
-                          onClick={() =>
-                            setBookingSettings((prev: any) => ({
-                              ...prev!,
-                              show_payment_to_patient: !((prev as any)?.show_payment_to_patient ?? true),
-                            }))
-                          }
+                        <button type="button" aria-pressed={!!(bookingSettings as any)?.allow_patient_reschedule} onClick={() => setBookingSettings((prev: any) => ({ ...prev!, allow_patient_reschedule: !prev?.allow_patient_reschedule }))} className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${(bookingSettings as any)?.allow_patient_reschedule ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${(bookingSettings as any)?.allow_patient_reschedule ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Minimum notice for changes — applies to cancel + reschedule */}
+                    {((bookingSettings as any)?.allow_patient_cancel || (bookingSettings as any)?.allow_patient_reschedule) && (
+                      <div className="rounded-xl border border-gray-200 p-4">
+                        <p className="text-sm font-medium text-gray-900 mb-1">{locale === 'fr' ? 'Délai minimum pour modifications' : 'Minimum notice for changes'}</p>
+                        <p className="text-xs text-gray-500 mb-2">{locale === 'fr' ? 'À quel point un patient peut encore annuler ou reprogrammer avant la séance.' : 'How close to the session a patient can still cancel or reschedule.'}</p>
+                        <select
+                          value={(bookingSettings as any)?.modification_notice_hours ?? 48}
+                          onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, modification_notice_hours: parseInt(e.target.value) }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                         >
-                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                            ((bookingSettings as any)?.show_payment_to_patient ?? false) ? 'translate-x-5' : 'translate-x-0.5'
-                          }`} />
-                        </div>
+                          <option value={12}>12 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                          <option value={24}>24 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                          <option value={48}>48 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                          <option value={72}>72 {locale === 'fr' ? 'heures' : 'hours'}</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Show payment status to patient */}
+                    <div className="rounded-xl border border-gray-200 p-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div>
-                          <span className="text-sm text-gray-700">
-                            {locale === 'fr' ? 'Afficher le statut de paiement au patient' : 'Show payment status to patient'}
-                          </span>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {locale === 'fr'
-                              ? "Quand activé, le patient voit le statut de paiement (Payé / En attente) sur chaque séance dans son application."
-                              : "When on, the patient sees the payment status (Paid / Awaiting payment) on each session in their mobile app."}
-                          </p>
+                          <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? 'Afficher le statut de paiement au patient' : 'Show payment status to patient'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{locale === 'fr' ? "Quand activé, le patient voit le statut de paiement (Payé / En attente) sur chaque séance dans son application." : "When on, the patient sees the payment status (Paid / Awaiting payment) on each session in their mobile app."}</p>
                         </div>
-                      </label>
+                        <button type="button" aria-pressed={((bookingSettings as any)?.show_payment_to_patient ?? false)} onClick={() => setBookingSettings((prev: any) => ({ ...prev!, show_payment_to_patient: !((prev as any)?.show_payment_to_patient ?? true) }))} className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${((bookingSettings as any)?.show_payment_to_patient ?? false) ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${((bookingSettings as any)?.show_payment_to_patient ?? false) ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 

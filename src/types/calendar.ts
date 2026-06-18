@@ -50,6 +50,9 @@ export interface SessionType {
   // Which formats this session type can be booked in. Combined with each day's
   // availability format to decide what patients see. Defaults to 'both'.
   sessionFormat?: 'in_person' | 'video' | 'both';
+  // Which intake form (from booking_settings.intake_forms) is shown when a
+  // patient books this session type. Null / missing = no intake form.
+  intake_form_id?: string | null;
 }
 
 // The set of optional fields the Add-member popup can render. Order
@@ -103,15 +106,40 @@ export interface BookingSettings {
   // Calendar fires from its side. When false we skip attaching the
   // email reminder to events; the 30-min popup stays. Defaults true.
   calendar_email_reminder_enabled?: boolean;
-  // When true, text the client on booking confirm/reschedule/cancel (if a
-  // mobile is on file). Gated on the practitioner toggle only. Defaults false.
-  sms_on_booking?: boolean;
+  // Master switch for the free WhatsApp click-to-send flow. When ON, after a
+  // booking we pop up "Notify the patient on WhatsApp?" (and surface a manual
+  // "Notify on WhatsApp" action on each booking) — but only when a mobile is on
+  // file. When OFF, WhatsApp is hidden everywhere. Defaults false.
+  whatsapp_on_booking?: boolean;
   // Per-practitioner configuration for the "Add a new person" popup.
   // Keys → 'optional' | 'required'. Missing key = field hidden. See
   // migration 20260522_member_form_fields_config.sql.
   member_form_fields?: MemberFormFieldsConfig | null;
+  // Reusable intake forms the practitioner builds. Each session type links to
+  // one (via SessionType.intake_form_id); the linked form's questions show on
+  // the booking page. Stored as a JSON array. See
+  // scripts/intake-questions-migration.sql.
+  intake_forms?: IntakeForm[] | null;
   created_at: string;
   updated_at: string;
+}
+
+// A practitioner-defined intake question on the booking form.
+export type IntakeFieldType = 'text' | 'single' | 'multi';
+export interface IntakeQuestion {
+  id: string;
+  label: string;
+  type: IntakeFieldType;
+  // Choices for 'single' (one selectable) and 'multi' (many). Ignored for 'text'.
+  options?: string[];
+  required?: boolean;
+}
+
+// A named, reusable set of intake questions, linkable to session types.
+export interface IntakeForm {
+  id: string;
+  name: string;
+  questions: IntakeQuestion[];
 }
 
 export interface Booking {

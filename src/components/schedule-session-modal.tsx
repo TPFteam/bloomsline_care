@@ -4,13 +4,14 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2, AlertCircle } from 'lucide-react'
+import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2, AlertCircle, MessageCircle } from 'lucide-react'
 import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
 import { notifySessionScheduled } from '@/lib/notifications'
+import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
 import { format, startOfDay } from 'date-fns'
 import { fr as frLocale, es as esLocale } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/context'
@@ -102,6 +103,10 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [availSessionFormats, setAvailSessionFormats] = useState<string[]>(['in_person', 'video'])
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
+  // After a booking, if the practitioner enabled WhatsApp notifications and a
+  // mobile is on file, we hold the ready wa.me link here and ask "Notify on
+  // WhatsApp?" in a Yes/No pop-up before the modal closes.
+  const [whatsappPrompt, setWhatsappPrompt] = useState<{ url: string; name: string } | null>(null)
   const [showSlotCalendar, setShowSlotCalendar] = useState(false)
   const keepTimeRef = useRef(false)
   // One-time prefill of the rescheduled booking's current time, so it shows
@@ -813,15 +818,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
               .eq('series_id', seriesId)
           }
 
-          // One confirmation SMS for the series (the anchor session). Self-gated.
-          if (anchorBooking?.id) {
-            fetch(`/api/bookings/${anchorBooking.id}/notify-sms`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ kind: 'confirmed' }),
-            }).catch(() => {})
-          }
-
           // Base session rows for every occurrence in the series are
           // created by the bookings→sessions trigger. Backfill the
           // session-only extras (series fields, custom_session_type,
@@ -916,17 +912,6 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
 
           console.log('Booking created:', data)
 
-          // Fire the booking-confirmation SMS (server-side; self-gated on the
-          // practitioner's toggle + a usable mobile + Bird config). Bookings
-          // created here bypass /api/bookings, so we trigger it explicitly.
-          if (data?.id) {
-            fetch(`/api/bookings/${data.id}/notify-sms`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ kind: 'confirmed' }),
-            }).catch(() => {})
-          }
-
           // 2. The base session row is created automatically by the
           // bookings→sessions DB trigger. Backfill the session-only
           // extras (custom_session_type, notes, price) that the trigger
@@ -976,7 +961,36 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       }
 
       onSuccess?.()
-      onClose()
+
+      // Offer a free WhatsApp confirmation the practitioner sends from their own
+      // number (replaces the removed automated SMS) — but only when they turned
+      // it on in Settings AND a mobile is on file. When so, hold the modal open
+      // and ask Yes/No; otherwise close right away.
+      let waUrl: string | null = null
+      if (selectedMember.phone) {
+        const { data: bs } = await supabase
+          .from('booking_settings')
+          .select('whatsapp_on_booking')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if ((bs as { whatsapp_on_booking?: boolean } | null)?.whatsapp_on_booking) {
+          const { data: prof } = await supabase.from('users').select('full_name').eq('id', userId).maybeSingle()
+          waUrl = buildBookingWaUrl({
+            phone: selectedMember.phone,
+            locale,
+            clientName: `${selectedMember.first_name} ${selectedMember.last_name}`,
+            practitionerName: (prof as { full_name?: string } | null)?.full_name || undefined,
+            startIso: startTime.toISOString(),
+            kind: 'confirmed',
+          })
+        }
+      }
+
+      if (waUrl) {
+        setWhatsappPrompt({ url: waUrl, name: `${selectedMember.first_name} ${selectedMember.last_name}` })
+      } else {
+        onClose()
+      }
     } catch (error) {
       console.error('Error booking session:', error)
       const message = error instanceof Error ? error.message : 'Unknown error'
@@ -1054,6 +1068,60 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }
 
   if (!isOpen) return null
+
+  // Post-booking WhatsApp prompt — shown only when the practitioner enabled it
+  // in Settings and the patient has a mobile. Yes opens WhatsApp with the
+  // confirmation pre-filled (they just hit Send); No (or X) just dismisses.
+  if (whatsappPrompt) {
+    const closePrompt = () => { setWhatsappPrompt(null); onClose() }
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={closePrompt}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: 'spring', duration: 0.3 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center mb-4">
+              <MessageCircle className="w-6 h-6 text-[#25D366]" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {locale === 'fr' ? 'Notifier sur WhatsApp ?' : 'Notify on WhatsApp?'}
+            </h3>
+            <p className="mt-1.5 text-sm text-gray-500">
+              {locale === 'fr'
+                ? `Ouvrir WhatsApp avec un message de confirmation déjà prêt pour ${whatsappPrompt.name} — vous n’aurez plus qu’à envoyer.`
+                : `Open WhatsApp with a ready-to-send confirmation for ${whatsappPrompt.name} — you just hit Send.`}
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={closePrompt}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                {locale === 'fr' ? 'Non, merci' : 'No, thanks'}
+              </button>
+              <button
+                onClick={() => { openWhatsApp(whatsappPrompt.url); closePrompt() }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-white bg-[#25D366] hover:bg-[#1ebe5a] rounded-xl transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {locale === 'fr' ? 'Oui, ouvrir' : 'Yes, open'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    )
+  }
 
   return (
     <AnimatePresence>

@@ -1500,6 +1500,7 @@ export default function MembersPage() {
   }, [filter, searchQuery, filterInvited, filterAppStatus, filterSessions, filterPending])
 
   const prospectMembers = members.filter(m => m.status === 'prospect')
+  const newCount = prospectMembers.length + prospects.length
   const filterOptions: { value: MemberFilter; label: string; count: number; accent?: boolean }[] = [
     { value: 'all', label: t.members.filters.all, count: stats.total_members },
     { value: 'active', label: t.members.filters.active, count: stats.active_members },
@@ -1574,6 +1575,22 @@ export default function MembersPage() {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
                 </div>
+
+                {/* New-patients shortcut — surfaced next to the filters so the
+                    practitioner sees new people without opening the dropdown. */}
+                {newCount > 0 && !showGroupsView && filter !== 'new' && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowGroupsView(false); setFilter('new') }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {locale === 'fr'
+                      ? `Nouveau${newCount > 1 ? 'x' : ''} patient${newCount > 1 ? 's' : ''} disponible${newCount > 1 ? 's' : ''}`
+                      : `New patient${newCount > 1 ? 's' : ''} available`}
+                    <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold leading-none">{newCount}</span>
+                  </button>
+                )}
 
                 {/* Search — icon that expands */}
                 <div className="flex items-center">

@@ -4,7 +4,6 @@ import type { CreateBookingInput, GoogleCalendarEvent } from '@/types/calendar';
 import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
-import { notifyBookingSms } from '@/lib/notifications/sms';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
@@ -153,6 +152,17 @@ export async function POST(request: NextRequest) {
       if (consentErr) console.warn('Consent not recorded (column missing?):', consentErr.message);
     }
 
+    // Store the patient's intake answers (best-effort — no-op until the
+    // intake_responses column exists).
+    const intakeResponses = (body as { intake_responses?: unknown[] }).intake_responses;
+    if (Array.isArray(intakeResponses) && intakeResponses.length > 0) {
+      const { error: intakeErr } = await supabase
+        .from('bookings')
+        .update({ intake_responses: intakeResponses })
+        .eq('id', booking.id);
+      if (intakeErr) console.warn('Intake responses not recorded (column missing?):', intakeErr.message);
+    }
+
     // Backdated booking: skip notifications and confirmation emails — already happened
     const isBackdated = new Date(body.start_time).getTime() < Date.now();
 
@@ -164,13 +174,6 @@ export async function POST(request: NextRequest) {
       .single();
     const practitionerLocale = (practitionerProfile?.preferred_language as 'en' | 'fr' | 'es') || 'en';
     const practitionerName = await getPractitionerName(body.practitioner_id, supabase);
-
-    // SMS the client when the booking is auto-confirmed (no approval needed) and
-    // the practitioner enabled SMS. notifyBookingSms self-gates on the toggle +
-    // a usable mobile and never throws.
-    if (!isBackdated && bookingStatus === 'confirmed') {
-      waitUntil(notifyBookingSms(supabase, { practitionerId: body.practitioner_id, booking, kind: 'confirmed' }));
-    }
 
     // Send notification + email to practitioner about new booking request
     if (!isBackdated) try {
