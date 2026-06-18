@@ -136,6 +136,8 @@ interface WorksheetBlock {
   id: string
   type: BlockType
   content: string
+  // Per-screen colour override for interactive resources (undefined = auto).
+  color?: string
   // For checklist
   items?: string[]
   // For scale
@@ -1182,6 +1184,7 @@ function CreateWorksheetContent() {
             const loadedBlocks = resource.blocks.map((block: any) => ({
               id: block.id || Math.random().toString(36).substr(2, 9),
               type: block.type,
+              color: block.color,
               content: typeof block.content === 'string' ? block.content : (block.content as Record<string, string>)?.[locale] || '',
               items: block.items?.map((item: any) =>
                 typeof item === 'string' ? item : (typeof item.text === 'string' ? item.text : (item.text as Record<string, string>)?.[locale] || '')
@@ -1773,6 +1776,9 @@ function CreateWorksheetContent() {
           id: block.id,
           type: block.type,
           content: block.content,
+          // Per-screen colour override (interactive resources). Undefined =
+          // auto rotation. Travels to the patient app's step renderer.
+          ...(block.color ? { color: block.color } : {}),
         }
 
         if (block.type === 'prompt') {
@@ -2126,6 +2132,9 @@ function CreateWorksheetContent() {
           id: block.id,
           type: block.type,
           content: block.content,
+          // Per-screen colour override (interactive resources). Undefined =
+          // auto rotation. Travels to the patient app's step renderer.
+          ...(block.color ? { color: block.color } : {}),
         }
 
         if (block.type === 'prompt') {
@@ -6548,7 +6557,7 @@ function CreateWorksheetContent() {
                       </motion.div>
                     </div>
                   </div>
-                  <ResourcePreview blocks={blocks} title={title} />
+                  <ResourcePreview blocks={blocks} title={title} onBlocksChange={setBlocks} activeBlockId={expandedBlock} />
                 </div>
               </div>
               </>}

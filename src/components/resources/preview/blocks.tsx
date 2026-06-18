@@ -40,63 +40,77 @@ interface RenderBlockProps {
 
 /** ─── Context blocks (lead-in content) ─────────────────────────── */
 
-export function RenderContextBlock({ block }: { block: any }) {
+// Turn the screen's foreground colour into an rgba tint at a given opacity, so
+// context blocks stay legible on both dark and light screen backgrounds.
+function tint(foreground: string, alpha: number): string {
+  const h = foreground.replace('#', '')
+  if (h.length < 6) return `rgba(255,255,255,${alpha})`
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+export function RenderContextBlock({ block, foreground = '#FFFFFF', onLight = false }: { block: any; foreground?: string; onLight?: boolean }) {
   const c = block.content || ''
+  // Translucent surface (tip / quote / affirmation / link cards) — a faint
+  // wash of the foreground so it reads on either background.
+  const surfaceBg = onLight ? 'rgba(31,41,55,0.05)' : 'rgba(255,255,255,0.15)'
+  const surfaceBorder = onLight ? 'rgba(31,41,55,0.12)' : 'rgba(255,255,255,0.2)'
 
   switch (block.type) {
     case 'heading': {
       const lvl = block.headingLevel === 'h1' ? 'h1' : block.headingLevel === 'h3' ? 'h3' : 'h2'
       const cls = lvl === 'h1'
-        ? 'text-xl font-bold text-white'
-        : lvl === 'h3' ? 'text-sm font-semibold text-white'
-        : 'text-lg font-bold text-white'
-      if (lvl === 'h1') return <h1 className={cls}>{c}</h1>
-      if (lvl === 'h3') return <h3 className={cls}>{c}</h3>
-      return <h2 className={cls}>{c}</h2>
+        ? 'text-xl font-bold'
+        : lvl === 'h3' ? 'text-sm font-semibold' : 'text-lg font-bold'
+      if (lvl === 'h1') return <h1 className={cls} style={{ color: foreground }}>{c}</h1>
+      if (lvl === 'h3') return <h3 className={cls} style={{ color: foreground }}>{c}</h3>
+      return <h2 className={cls} style={{ color: foreground }}>{c}</h2>
     }
     case 'spacer': {
       const h = block.spacerSize === 'sm' ? 8 : block.spacerSize === 'lg' ? 28 : 16
       return <div style={{ height: h }} aria-hidden />
     }
     case 'paragraph':
-      return <p className="text-[13px] text-white/90 leading-relaxed">{c}</p>
+      return <p className="text-[13px] leading-relaxed" style={{ color: tint(foreground, 0.9) }}>{c}</p>
     case 'tip':
       return (
-        <div className="flex gap-2 p-3 rounded-xl bg-white/15 border border-white/20">
-          <Lightbulb className="w-4 h-4 text-white/90 flex-shrink-0 mt-0.5" />
-          <p className="text-[12px] text-white/95 leading-relaxed">{c}</p>
+        <div className="flex gap-2 p-3 rounded-xl border" style={{ backgroundColor: surfaceBg, borderColor: surfaceBorder }}>
+          <Lightbulb className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: tint(foreground, 0.9) }} />
+          <p className="text-[12px] leading-relaxed" style={{ color: tint(foreground, 0.95) }}>{c}</p>
         </div>
       )
     case 'quote':
       return (
-        <div className="border-l-2 border-white/40 pl-3">
-          <QuoteIcon className="w-3 h-3 text-white/70 mb-1" />
-          <p className="text-[13px] italic text-white/90">{c}</p>
+        <div className="border-l-2 pl-3" style={{ borderColor: tint(foreground, 0.4) }}>
+          <QuoteIcon className="w-3 h-3 mb-1" style={{ color: tint(foreground, 0.7) }} />
+          <p className="text-[13px] italic" style={{ color: tint(foreground, 0.9) }}>{c}</p>
           {block.quoteAuthor && (
-            <p className="text-[11px] text-white/70 mt-1">— {block.quoteAuthor}</p>
+            <p className="text-[11px] mt-1" style={{ color: tint(foreground, 0.7) }}>— {block.quoteAuthor}</p>
           )}
         </div>
       )
     case 'callout':
     case 'affirmation':
       return (
-        <div className="p-3 rounded-xl bg-white/15 border border-white/20">
-          <p className="text-[13px] text-white text-center font-medium">{c}</p>
+        <div className="p-3 rounded-xl border" style={{ backgroundColor: surfaceBg, borderColor: surfaceBorder }}>
+          <p className="text-[13px] text-center font-medium" style={{ color: foreground }}>{c}</p>
         </div>
       )
     case 'key_points':
       return (
         <ul className="space-y-1.5">
           {(block.points || []).map((p: string, i: number) => (
-            <li key={i} className="flex items-start gap-2 text-[12px] text-white/90">
-              <span className="w-1 h-1 rounded-full bg-white/60 mt-1.5 flex-shrink-0" />
+            <li key={i} className="flex items-start gap-2 text-[12px]" style={{ color: tint(foreground, 0.9) }}>
+              <span className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: tint(foreground, 0.6) }} />
               <span>{p}</span>
             </li>
           ))}
         </ul>
       )
     case 'divider':
-      return <div className="h-px bg-white/20 my-1" />
+      return <div className="h-px my-1" style={{ backgroundColor: tint(foreground, 0.2) }} />
     case 'image':
       return (block as any).mediaFile?.url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -104,9 +118,9 @@ export function RenderContextBlock({ block }: { block: any }) {
       ) : null
     case 'link':
       return block.linkUrl ? (
-        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/15 border border-white/20">
-          <ExternalLink className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
-          <span className="text-[12px] text-white/95 truncate">{c || block.linkUrl}</span>
+        <div className="flex items-center gap-2 p-2.5 rounded-xl border" style={{ backgroundColor: surfaceBg, borderColor: surfaceBorder }}>
+          <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" style={{ color: tint(foreground, 0.8) }} />
+          <span className="text-[12px] truncate" style={{ color: tint(foreground, 0.95) }}>{c || block.linkUrl}</span>
         </div>
       ) : null
     default:

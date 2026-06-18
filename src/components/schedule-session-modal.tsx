@@ -1067,7 +1067,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     return true
   }
 
-  if (!isOpen) return null
+  // Keep rendering while a WhatsApp prompt is pending even if the parent has
+  // already flipped isOpen to false in its onSuccess handler (the dashboard /
+  // slot-click flows do exactly that) — otherwise the prompt would never get
+  // a chance to mount.
+  if (!isOpen && !whatsappPrompt) return null
 
   // Post-booking WhatsApp prompt — shown only when the practitioner enabled it
   // in Settings and the patient has a mobile. Yes opens WhatsApp with the

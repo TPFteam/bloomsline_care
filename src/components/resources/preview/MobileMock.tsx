@@ -15,21 +15,29 @@
 import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react'
 import { CONTENT_TYPES, RenderContextBlock, RenderQuestionBlock } from './blocks'
-
-const STEP_COLORS = [
-  '#4A9A86', '#3B82F6', '#8B5CF6', '#F97316',
-  '#F43F5E', '#10B981', '#2D5F8A', '#F59E0B',
-]
+import { STEP_COLORS, screenForeground } from './palette'
 
 interface Step {
   contextBlocks: any[]
   questionBlock: any | null
   color: string
+  /** Block whose `color` field drives this screen — the one we write a
+   *  practitioner's colour override onto. The question block when present,
+   *  otherwise the last context block of a context-only screen. */
+  anchorId: string | null
 }
 
-function groupBlocksIntoSteps(blocks: any[]): Step[] {
+/**
+ * Group a flat block list into screens. Each screen's colour is the override
+ * stored on its anchor block (`block.color`), falling back to the auto
+ * rotation by position. Exported so the preview pane can map a screen index
+ * to the anchor block it should colour.
+ */
+export function groupBlocksIntoSteps(blocks: any[]): Step[] {
   const steps: Step[] = []
   let pendingContext: any[] = []
+  const colorFor = (anchor: any | null, idx: number) =>
+    (anchor?.color as string | undefined) || STEP_COLORS[idx % STEP_COLORS.length]
   for (const block of blocks) {
     if (CONTENT_TYPES.has(block.type)) {
       pendingContext.push(block)
@@ -37,16 +45,19 @@ function groupBlocksIntoSteps(blocks: any[]): Step[] {
       steps.push({
         contextBlocks: pendingContext,
         questionBlock: block,
-        color: STEP_COLORS[steps.length % STEP_COLORS.length],
+        anchorId: block.id ?? null,
+        color: colorFor(block, steps.length),
       })
       pendingContext = []
     }
   }
   if (pendingContext.length > 0) {
+    const anchor = pendingContext[pendingContext.length - 1]
     steps.push({
       contextBlocks: pendingContext,
       questionBlock: null,
-      color: STEP_COLORS[steps.length % STEP_COLORS.length],
+      anchorId: anchor?.id ?? null,
+      color: colorFor(anchor, steps.length),
     })
   }
   return steps
@@ -57,18 +68,24 @@ interface MobileMockProps {
   title: string
   /** "interactive" → step-by-step nav. "reading" → continuous scroll. */
   mode: 'interactive' | 'reading'
+  /** Controlled current step (so the preview's colour picker knows which
+   *  screen is showing). Falls back to internal state when omitted. */
+  stepIdx?: number
+  onStepChange?: (idx: number) => void
 }
 
-export function MobileMock({ blocks, title, mode }: MobileMockProps) {
+export function MobileMock({ blocks, title, mode, stepIdx, onStepChange }: MobileMockProps) {
   if (mode === 'reading') return <MobileReadingMock blocks={blocks} title={title} />
-  return <MobileInteractiveMock blocks={blocks} title={title} />
+  return <MobileInteractiveMock blocks={blocks} title={title} stepIdx={stepIdx} onStepChange={onStepChange} />
 }
 
 /** ─── Interactive mode ─────────────────────────────────────────── */
 
-function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string }) {
+function MobileInteractiveMock({ blocks, title, stepIdx: controlledStepIdx, onStepChange }: { blocks: any[]; title: string; stepIdx?: number; onStepChange?: (idx: number) => void }) {
   const steps = useMemo(() => groupBlocksIntoSteps(blocks), [blocks])
-  const [stepIdx, setStepIdx] = useState(0)
+  const [internalStepIdx, setInternalStepIdx] = useState(0)
+  const stepIdx = controlledStepIdx ?? internalStepIdx
+  const setStepIdx = (idx: number) => { if (onStepChange) onStepChange(idx); else setInternalStepIdx(idx) }
   // Local responses so the practitioner can click through their own
   // worksheet as if they were the patient.
   const [responses, setResponses] = useState<Record<string, any>>({})
@@ -107,20 +124,23 @@ function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string
   const setBlockValue = (id: string, v: any) =>
     setResponses(prev => ({ ...prev, [id]: v }))
 
+  // Adapt text / chrome so light screen colours stay readable.
+  const fg = screenForeground(step.color)
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: step.color }}>
       {/* Top progress bar */}
       <div className="px-3 pt-2 pb-1 flex items-center gap-2">
-        <button type="button" className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center">
-          <X className="w-3.5 h-3.5 text-white" />
+        <button type="button" className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: fg.chipBg }}>
+          <X className="w-3.5 h-3.5" style={{ color: fg.text }} />
         </button>
-        <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ backgroundColor: fg.track }}>
           <div
-            className="h-full bg-white transition-all"
-            style={{ width: `${((safeStepIdx + 1) / steps.length) * 100}%` }}
+            className="h-full transition-all"
+            style={{ width: `${((safeStepIdx + 1) / steps.length) * 100}%`, backgroundColor: fg.fill }}
           />
         </div>
-        <span className="text-[10px] font-medium text-white/90 tabular-nums">
+        <span className="text-[10px] font-medium tabular-nums" style={{ color: fg.textSoft }}>
           {safeStepIdx + 1}/{steps.length}
         </span>
       </div>
@@ -133,7 +153,7 @@ function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string
       >
         {/* Context blocks (lead-in) */}
         {step.contextBlocks.map((b, i) => (
-          <RenderContextBlock key={b.id || i} block={b} />
+          <RenderContextBlock key={b.id || i} block={b} foreground={fg.text} onLight={fg.light} />
         ))}
 
         {/* Question card */}
@@ -150,7 +170,7 @@ function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string
 
         {/* Worksheet title shown only on the first step, like a hero */}
         {safeStepIdx === 0 && title && (
-          <div className="absolute bottom-14 left-3 right-3 pointer-events-none opacity-30 text-[10px] text-white/70 truncate">
+          <div className="absolute bottom-14 left-3 right-3 pointer-events-none truncate text-[10px]" style={{ color: fg.textSoft, opacity: 0.5 }}>
             {title}
           </div>
         )}
@@ -162,7 +182,8 @@ function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string
           type="button"
           onClick={() => setStepIdx(Math.max(0, safeStepIdx - 1))}
           disabled={isFirst}
-          className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full bg-black/15 text-white text-[11px] font-medium disabled:opacity-40"
+          className="flex-1 flex items-center justify-center gap-1 py-2 rounded-full text-[11px] font-medium disabled:opacity-40"
+          style={{ backgroundColor: fg.backBg, color: fg.text }}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
           {isFirst ? 'Close' : 'Back'}
@@ -173,8 +194,8 @@ function MobileInteractiveMock({ blocks, title }: { blocks: any[]; title: string
             if (isLast) setSubmitted(true)
             else setStepIdx(safeStepIdx + 1)
           }}
-          className="flex-[1.5] flex items-center justify-center gap-1 py-2 rounded-full bg-white text-[11px] font-semibold"
-          style={{ color: step.color }}
+          className="flex-[1.5] flex items-center justify-center gap-1 py-2 rounded-full text-[11px] font-semibold"
+          style={{ backgroundColor: fg.primaryBg, color: fg.primaryText }}
         >
           {isLast ? 'Submit' : 'Next'}
           {isLast ? <Check className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}

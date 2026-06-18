@@ -70,38 +70,38 @@ export function buildBookingWaMessage(opts: {
   const pract = (opts.practitionerName || '').trim()
 
   if (locale === 'fr') {
-    const greet = first ? `Bonjour ${first},` : 'Bonjour,'
-    const who = pract ? ` c'est ${pract}.` : ''
+    const greet = first ? `Bonjour ${first} !` : 'Bonjour !'
+    const who = pract ? ` C'est ${pract}.` : ''
     const line =
       kind === 'rescheduled'
-        ? `votre séance a été déplacée au ${when}.`
+        ? `Notre séance a été déplacée au ${when}. Au plaisir de vous retrouver à ce nouveau créneau !`
         : kind === 'reminder'
-          ? `petit rappel pour votre séance le ${when}.`
-          : `je vous confirme votre séance le ${when}.`
+          ? `Petit rappel pour notre séance le ${when}. J'ai hâte de vous retrouver !`
+          : `J'ai hâte de vous retrouver pour notre séance le ${when}.`
     return `${greet}${who} ${line} À très bientôt !`
   }
 
   if (locale === 'es') {
-    const greet = first ? `Hola ${first},` : 'Hola,'
-    const who = pract ? ` soy ${pract}.` : ''
+    const greet = first ? `¡Hola ${first}!` : '¡Hola!'
+    const who = pract ? ` Soy ${pract}.` : ''
     const line =
       kind === 'rescheduled'
-        ? `tu sesión se ha cambiado al ${when}.`
+        ? `Nuestra sesión se ha cambiado al ${when}. ¡Espero verte en el nuevo horario!`
         : kind === 'reminder'
-          ? `un recordatorio de tu sesión el ${when}.`
-          : `te confirmo tu sesión el ${when}.`
-    return `${greet}${who} ${line} ¡Nos vemos!`
+          ? `Un recordatorio de nuestra sesión el ${when}. ¡Tengo muchas ganas de verte!`
+          : `Tengo muchas ganas de nuestra sesión el ${when}.`
+    return `${greet}${who} ${line} ¡Nos vemos pronto!`
   }
 
-  const greet = first ? `Hi ${first},` : 'Hi there,'
-  const who = pract ? ` this is ${pract}.` : ''
+  const greet = first ? `Hi ${first}!` : 'Hi!'
+  const who = pract ? ` It's ${pract}.` : ''
   const line =
     kind === 'rescheduled'
-      ? `your session has been moved to ${when}.`
+      ? `Our session has been moved to ${when}. Looking forward to seeing you at the new time!`
       : kind === 'reminder'
-        ? `a quick reminder about your session on ${when}.`
-        : `just confirming your session on ${when}.`
-  return `${greet}${who} ${line} See you then!`
+        ? `A little reminder about our session on ${when}. Looking forward to seeing you!`
+        : `I'm really looking forward to our session on ${when}.`
+  return `${greet}${who} ${line} See you soon!`
 }
 
 // One-shot builder: stored phone + booking details → ready-to-open wa.me URL.
