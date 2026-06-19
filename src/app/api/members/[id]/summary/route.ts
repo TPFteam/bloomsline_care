@@ -343,7 +343,9 @@ export async function POST(
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      // The structured v2 summary (legacy fields + v2 object + per-item
+      // sources) runs ~3.5k tokens; 2000 truncated it mid-JSON → parse failure.
+      max_tokens: 6000,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })
