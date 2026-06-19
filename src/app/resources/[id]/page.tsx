@@ -2707,7 +2707,7 @@ export default function ResourceDetailPage() {
                       <Edit className="w-5 h-5 mr-2" />
                       {locale === 'fr' ? 'Éditer' : 'Edit'}
                     </Button>
-                    {resource.visibility !== 'onboarding' && (
+                    {resource.visibility !== 'onboarding' && !(resource as any).for_you && (
                       <Button variant="outline" className="h-11 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all px-3" onClick={() => setShowShareModal(true)}>
                         <Send className="w-4 h-4" />
                       </Button>
@@ -2977,11 +2977,19 @@ export default function ResourceDetailPage() {
                       <Send className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-gray-500">
-                      {resource.visibility === 'onboarding'
-                        ? (locale === 'fr' ? 'Ressource d\'onboarding' : 'Onboarding resource')
-                        : (locale === 'fr' ? 'Pas encore partagé' : 'Not shared yet')}
+                      {(resource as any).for_you
+                        ? (locale === 'fr' ? 'Activité autoguidée' : 'Self-guided activity')
+                        : resource.visibility === 'onboarding'
+                          ? (locale === 'fr' ? 'Ressource d\'onboarding' : 'Onboarding resource')
+                          : (locale === 'fr' ? 'Pas encore partagé' : 'Not shared yet')}
                     </p>
-                    {resource.visibility !== 'onboarding' && (
+                    {(resource as any).for_you ? (
+                      <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+                        {locale === 'fr'
+                          ? 'Disponible dans « Pour vous » de tous vos patients. Ils la font en autonomie et leurs réponses restent privées — elle ne se partage pas individuellement.'
+                          : 'Available in every patient’s For You. They do it on their own and their answers stay private — it isn’t shared individually.'}
+                      </p>
+                    ) : resource.visibility !== 'onboarding' && (
                       <>
                         <p className="text-sm text-gray-400 mt-1">
                           {locale === 'fr'

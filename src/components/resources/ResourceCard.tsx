@@ -324,7 +324,7 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
-              {!isOnboarding && (variant === 'owned' || variant === 'saved') && onShare && (
+              {!isOnboarding && !(resource as Resource).for_you && (variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}
@@ -440,7 +440,7 @@ export function ResourceCard({
                   {locale === 'fr' ? 'Dupliquer' : locale === 'es' ? 'Duplicar' : 'Duplicate'}
                 </DropdownMenuItem>
               )}
-              {!isOnboarding && (variant === 'owned' || variant === 'saved') && onShare && (
+              {!isOnboarding && !(resource as Resource).for_you && (variant === 'owned' || variant === 'saved') && onShare && (
                 <DropdownMenuItem onClick={onShare} className="text-purple-600">
                   <Users className="w-4 h-4 mr-2" />
                   {locale === 'fr' ? 'Envoyer' : locale === 'es' ? 'Enviar' : 'Send'}

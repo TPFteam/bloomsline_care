@@ -592,7 +592,14 @@ export default function MyResourcesPage() {
     return sortResources(filtered)
   }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter, forYouOnly, sortBy])
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all' || forYouOnly
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || forYouOnly || languageFilter !== 'all'
+
+  // Languages present across the practitioner's own resources — drives the
+  // language filter options (only show languages that actually exist).
+  const availableLanguages = useMemo(
+    () => Array.from(new Set(dbResources.map(r => r.language).filter(Boolean))).sort(),
+    [dbResources],
+  )
 
   if (loading) {
     return (
@@ -755,21 +762,40 @@ export default function MyResourcesPage() {
                         ))}
                       </div>
                     </div>
+                    {availableLanguages.length > 1 && (
+                      <div className="mb-4">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Langue' : 'Language'}</label>
+                        <div className="space-y-1">
+                          {[{ value: 'all', label: locale === 'fr' ? 'Toutes' : 'All' }, ...availableLanguages.map(l => ({ value: l, label: l.toUpperCase() }))].map((item) => (
+                            <button
+                              key={item.value}
+                              onClick={() => setLanguageFilter(item.value)}
+                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                                languageFilter === item.value ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className="flex-1 text-left">{item.label}</span>
+                              {languageFilter === item.value && <Check className="w-4 h-4" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="mb-4">
-                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Pour vous' : 'For You'}</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Autoguidé' : 'Self-guided'}</label>
                       <button
                         onClick={() => setForYouOnly(v => !v)}
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
                           forYouOnly ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        <span className="flex-1 text-left">{locale === 'fr' ? 'Activités « Pour vous » uniquement' : 'For You activities only'}</span>
+                        <span className="flex-1 text-left">{locale === 'fr' ? 'Activités autoguidées uniquement' : 'Self-guided only'}</span>
                         {forYouOnly && <Check className="w-4 h-4" />}
                       </button>
                     </div>
                     {hasActiveFilters && (
                       <button
-                        onClick={() => { setStatusFilter('all'); setForYouOnly(false) }}
+                        onClick={() => { setStatusFilter('all'); setForYouOnly(false); setLanguageFilter('all') }}
                         className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
                       >
                         {locale === 'fr' ? 'Effacer' : 'Clear'}
