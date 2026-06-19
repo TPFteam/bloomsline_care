@@ -291,15 +291,15 @@ const translations = {
     },
     gtm: {
       label: 'GO-TO-MARKET',
-      headline: 'Trust first.',
-      headline2: 'Growth follows.',
+      headline: 'Listen. Support.',
+      headline2: 'Trust. Grow.',
       intro: 'Therapists trust other therapists, not ads. We talked to 100 before writing any code — and we\'ll win the next 1,000 the same way.',
       columns: [
         {
           tag: 'Past',
-          title: 'We started with trust.',
+          title: 'Clinical understanding came first.',
           num: '01',
-          action: 'Talked to 100+ therapists and built our network — before any code.',
+          action: 'Talked to therapists and patients to deeply understand their needs.',
           goal: '100+ conversations · 0 ads',
         },
         {
@@ -326,7 +326,7 @@ const translations = {
       ],
       dontLabel: 'What we don\'t do',
       dontItems: ['Paid ads', 'Cold outbound', 'B2C patient acquisition', 'Vanity metrics'],
-      closing: 'We win trust slowly, then it spreads on its own.',
+      closing: 'We earn trust through clinical understanding, reinforce it with personalized support, and let growth spread naturally.',
     },
     market: {
       label: 'THE MARKET',
@@ -1732,22 +1732,6 @@ function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
             <div className="h-0.5 rounded-full bg-gradient-to-r from-neutral-200 via-teal-300 to-teal-500" />
           </div>
         </div>
-
-        {/* What we don't do */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
-          className="pt-6 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2"
-        >
-          <span className="text-xs tracking-[0.2em] uppercase text-neutral-500 font-medium">{t.dontLabel}</span>
-          {t.dontItems.map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-2 text-sm text-neutral-400 font-light">
-              <span className="text-rose-300">✕</span>
-              {item}
-            </span>
-          ))}
-        </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}
