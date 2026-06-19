@@ -250,24 +250,31 @@ export function ResourceCard({
             {resource.language?.toUpperCase()}
           </span>
 
-          <span className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${resource.visibility === 'onboarding' ? 'text-teal-600 bg-teal-50' : 'text-gray-500 bg-white'}`}>
-            {resource.visibility === 'onboarding' ? (
-              <>
-                <BookMarked className="w-3 h-3" />
-                {locale === 'fr' ? 'Onboarding' : locale === 'es' ? 'Onboarding' : 'Onboarding'}
-              </>
-            ) : resource.visibility === 'public' ? (
-              <>
-                <Globe className="w-3 h-3" />
-                {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
-              </>
-            ) : (
-              <>
-                <Lock className="w-3 h-3" />
-                {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
-              </>
-            )}
-          </span>
+          {(resource as Resource).for_you ? (
+            <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg text-teal-700 bg-teal-50">
+              <HandHeart className="w-3 h-3" />
+              {locale === 'fr' ? 'Autoguidé' : locale === 'es' ? 'Autoguiado' : 'Self-guided'}
+            </span>
+          ) : (
+            <span className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${resource.visibility === 'onboarding' ? 'text-teal-600 bg-teal-50' : 'text-gray-500 bg-white'}`}>
+              {resource.visibility === 'onboarding' ? (
+                <>
+                  <BookMarked className="w-3 h-3" />
+                  {locale === 'fr' ? 'Onboarding' : locale === 'es' ? 'Onboarding' : 'Onboarding'}
+                </>
+              ) : resource.visibility === 'public' ? (
+                <>
+                  <Globe className="w-3 h-3" />
+                  {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3 h-3" />
+                  {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
+                </>
+              )}
+            </span>
+          )}
 
           {variant === 'owned' && (
             <span className={`text-xs font-medium px-2 py-1 rounded-lg ${
@@ -278,13 +285,6 @@ export function ResourceCard({
                   : 'bg-gray-100 text-gray-500'
             }`}>
               {statusLabel[locale]}
-            </span>
-          )}
-
-          {(resource as Resource).for_you && (
-            <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg text-teal-700 bg-teal-50">
-              <HandHeart className="w-3 h-3" />
-              {locale === 'fr' ? 'Pour vous' : locale === 'es' ? 'Para ti' : 'For You'}
             </span>
           )}
 
@@ -490,20 +490,27 @@ export function ResourceCard({
           {resource.language?.toUpperCase()}
         </span>
 
-        {/* Visibility */}
-        <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
-          {resource.visibility === 'public' ? (
-            <>
-              <Globe className="w-3 h-3" />
-              {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
-            </>
-          ) : (
-            <>
-              <Lock className="w-3 h-3" />
-              {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
-            </>
-          )}
-        </span>
+        {/* Visibility — self-guided resources show that instead of private/public */}
+        {(resource as Resource).for_you ? (
+          <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 px-2 py-1 rounded-lg">
+            <HandHeart className="w-3 h-3" />
+            {locale === 'fr' ? 'Autoguidé' : locale === 'es' ? 'Autoguiado' : 'Self-guided'}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-lg">
+            {resource.visibility === 'public' ? (
+              <>
+                <Globe className="w-3 h-3" />
+                {locale === 'fr' ? 'Public' : locale === 'es' ? 'Público' : 'Public'}
+              </>
+            ) : (
+              <>
+                <Lock className="w-3 h-3" />
+                {locale === 'fr' ? 'Privé' : locale === 'es' ? 'Privado' : 'Private'}
+              </>
+            )}
+          </span>
+        )}
 
         {/* Status */}
         {variant === 'owned' && (
