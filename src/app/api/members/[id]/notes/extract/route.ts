@@ -91,7 +91,7 @@ export async function POST(
         : 'Extract all text from this image faithfully. If the image does not contain meaningful text, respond with exactly: NOT_A_NOTE'
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       system: 'You are a document text extractor. Examine the image. If it contains handwritten notes, typed text, a screenshot of text, or any document — extract all text faithfully, preserving line breaks and structure. If the image does NOT contain meaningful text (e.g. a photo, artwork, diagram without text), respond with exactly: NOT_A_NOTE',
       messages: [
