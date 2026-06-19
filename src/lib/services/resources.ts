@@ -169,6 +169,7 @@ export async function createResource(resource: CreateResourceDTO): Promise<Resou
       settings: resource.settings || {},
       status: resource.status || 'draft',
       visibility: resource.visibility || 'private',
+      for_you: resource.for_you ?? false,
       language: resource.language || 'en',
       published_to_library_at: resource.visibility === 'public' && resource.status === 'published'
         ? new Date().toISOString()

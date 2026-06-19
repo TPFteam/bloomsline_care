@@ -20,6 +20,7 @@ import {
   Send,
   Copy,
   BookMarked,
+  HandHeart,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -148,6 +149,9 @@ interface ResourceCardProps {
   isOwner?: boolean
   showCuratedBadge?: boolean
   isBookmarked?: boolean
+  /** Toggle the resource's "For You" (self-guided) flag. When provided and the
+   *  viewer owns the resource, a menu item + badge appear. */
+  onToggleForYou?: () => void
 }
 
 export function ResourceCard({
@@ -173,6 +177,7 @@ export function ResourceCard({
   isOwner = true,
   showCuratedBadge = false,
   isBookmarked = false,
+  onToggleForYou,
 }: ResourceCardProps) {
   const router = useRouter()
   const [showShareModal, setShowShareModal] = useState(false)
@@ -276,6 +281,13 @@ export function ResourceCard({
             </span>
           )}
 
+          {(resource as Resource).for_you && (
+            <span className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg text-teal-700 bg-teal-50">
+              <HandHeart className="w-3 h-3" />
+              {locale === 'fr' ? 'Pour vous' : locale === 'es' ? 'Para ti' : 'For You'}
+            </span>
+          )}
+
           <span className="text-xs text-gray-400">
             {resource.blocks?.length || 0} {locale === 'fr' ? 'blocs' : locale === 'es' ? 'bloques' : 'blocks'}
           </span>
@@ -296,6 +308,14 @@ export function ResourceCard({
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
+                </DropdownMenuItem>
+              )}
+              {variant === 'owned' && isOwner && onToggleForYou && (
+                <DropdownMenuItem onClick={onToggleForYou} className="text-teal-700">
+                  <HandHeart className="w-4 h-4 mr-2" />
+                  {(resource as Resource).for_you
+                    ? (locale === 'fr' ? 'Retirer de « Pour vous »' : locale === 'es' ? 'Quitar de «Para ti»' : 'Remove from For You')
+                    : (locale === 'fr' ? 'Ajouter à « Pour vous »' : locale === 'es' ? 'Añadir a «Para ti»' : 'Add to For You')}
                 </DropdownMenuItem>
               )}
               {onDuplicate && !(isOnboarding && !isOwner) && (
@@ -404,6 +424,14 @@ export function ResourceCard({
                 <DropdownMenuItem onClick={onEdit}>
                   <Pencil className="w-4 h-4 mr-2 text-gray-400" />
                   {locale === 'fr' ? 'Modifier' : locale === 'es' ? 'Editar' : 'Edit'}
+                </DropdownMenuItem>
+              )}
+              {variant === 'owned' && isOwner && onToggleForYou && (
+                <DropdownMenuItem onClick={onToggleForYou} className="text-teal-700">
+                  <HandHeart className="w-4 h-4 mr-2" />
+                  {(resource as Resource).for_you
+                    ? (locale === 'fr' ? 'Retirer de « Pour vous »' : locale === 'es' ? 'Quitar de «Para ti»' : 'Remove from For You')
+                    : (locale === 'fr' ? 'Ajouter à « Pour vous »' : locale === 'es' ? 'Añadir a «Para ti»' : 'Add to For You')}
                 </DropdownMenuItem>
               )}
               {onDuplicate && !(isOnboarding && !isOwner) && (
@@ -539,6 +567,7 @@ export function ResourceCardList({
   isOwner = true,
   showCuratedBadge = false,
   isBookmarked = false,
+  onToggleForYou,
 }: ResourceCardProps) {
   const router = useRouter()
 

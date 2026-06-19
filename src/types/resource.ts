@@ -464,6 +464,9 @@ export interface Resource {
   settings: ResourceSettings
   status: ResourceStatus
   visibility: ResourceVisibility
+  /** Self-guided "For You" resource — shown in every patient's For You tab
+   *  with private answers. See for-you-resources-migration.sql. */
+  for_you?: boolean
   language: ResourceLanguage
   published_to_library_at?: string
   times_assigned: number
@@ -548,6 +551,9 @@ export interface CreateResourceDTO {
   settings?: ResourceSettings
   status?: ResourceStatus
   visibility?: ResourceVisibility
+  /** Self-guided "For You" resource — appears in every patient's For You tab;
+   *  answers are kept private to the patient. */
+  for_you?: boolean
   language?: ResourceLanguage
   is_recurring?: boolean
 }
@@ -564,6 +570,9 @@ export interface UpdateResourceDTO {
   settings?: ResourceSettings
   status?: ResourceStatus
   visibility?: ResourceVisibility
+  /** Self-guided "For You" resource — appears in every patient's For You tab;
+   *  answers are kept private to the patient. */
+  for_you?: boolean
   language?: ResourceLanguage
   is_recurring?: boolean
 }

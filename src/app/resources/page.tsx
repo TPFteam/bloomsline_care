@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useLanguage } from '@/lib/i18n/context'
 import { AppHeader, AppSidebar } from '@/components/layout'
-import { getResources, deleteResource, createResource } from '@/lib/services/resources'
+import { getResources, deleteResource, createResource, updateResource } from '@/lib/services/resources'
 import { getCollections, createCollection, removeResourceFromAllCollections, getSavedResources, addResourceToCollection } from '@/lib/services/collections'
 import type { Resource } from '@/types/resource'
 import type { Collection, CollectionColor, CollectionIcon, collectionColorConfig } from '@/types/collection'
@@ -91,6 +91,7 @@ export default function MyResourcesPage() {
   const [languageFilter, setLanguageFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
+  const [forYouOnly, setForYouOnly] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState<SortOption>('recent_edited')
@@ -250,6 +251,24 @@ export default function MyResourcesPage() {
   }
 
   // Handle delete resource
+  // Flag/unflag a resource as a self-guided "For You" activity. Optimistic.
+  const handleToggleForYou = async (resource: Resource) => {
+    const next = !resource.for_you
+    setDbResources(prev => prev.map(r => (r.id === resource.id ? { ...r, for_you: next } : r)))
+    try {
+      await updateResource(resource.id, { for_you: next })
+      toast.success(
+        next
+          ? (locale === 'fr' ? 'Ajouté à « Pour vous »' : 'Added to For You')
+          : (locale === 'fr' ? 'Retiré de « Pour vous »' : 'Removed from For You'),
+      )
+    } catch (error) {
+      console.error('Error toggling For You:', error)
+      setDbResources(prev => prev.map(r => (r.id === resource.id ? { ...r, for_you: resource.for_you } : r)))
+      toast.error(locale === 'fr' ? 'Erreur' : 'Error')
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm(locale === 'fr' ? 'Supprimer cette ressource?' : 'Delete this resource?')) return
     setIsDeleting(id)
@@ -565,14 +584,15 @@ export default function MyResourcesPage() {
     if (languageFilter !== 'all') filtered = filtered.filter(r => r.language === languageFilter)
     if (typeFilter !== 'all') filtered = filtered.filter(r => r.type === typeFilter)
     if (statusFilter !== 'all') filtered = filtered.filter(r => r.status === statusFilter)
+    if (forYouOnly) filtered = filtered.filter(r => r.for_you)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(r => r.title.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query))
     }
     return sortResources(filtered)
-  }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter, sortBy])
+  }, [dbResources, searchQuery, languageFilter, typeFilter, statusFilter, forYouOnly, sortBy])
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all'
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || forYouOnly
 
   if (loading) {
     return (
@@ -735,9 +755,21 @@ export default function MyResourcesPage() {
                         ))}
                       </div>
                     </div>
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">{locale === 'fr' ? 'Pour vous' : 'For You'}</label>
+                      <button
+                        onClick={() => setForYouOnly(v => !v)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                          forYouOnly ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="flex-1 text-left">{locale === 'fr' ? 'Activités « Pour vous » uniquement' : 'For You activities only'}</span>
+                        {forYouOnly && <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
                     {hasActiveFilters && (
                       <button
-                        onClick={() => { setStatusFilter('all') }}
+                        onClick={() => { setStatusFilter('all'); setForYouOnly(false) }}
                         className="w-full px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
                       >
                         {locale === 'fr' ? 'Effacer' : 'Clear'}
@@ -794,6 +826,7 @@ export default function MyResourcesPage() {
                         onDelete={() => handleDelete(resource.id)}
                         onDuplicate={() => handleDuplicate(resource)}
                         onShare={() => handleOpenShareModal(resource)}
+                        onToggleForYou={() => handleToggleForYou(resource)}
                         isDeleting={isDeleting === resource.id}
                         isDuplicating={isDuplicating === resource.id}
                         isOwner={currentUserId === resource.practitioner_id}

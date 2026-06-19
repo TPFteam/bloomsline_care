@@ -548,6 +548,9 @@ function CreateWorksheetContent() {
   const [tags, setTags] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [visibility, setVisibility] = useState<'private' | 'link_only' | 'public' | 'onboarding'>('private')
+  // Self-guided "For You" resource: appears in every patient's For You tab,
+  // done on their own, with answers kept private to them.
+  const [forYou, setForYou] = useState(false)
   const [resourceLanguage, setResourceLanguage] = useState<string>('en')
   const [saveAs, setSaveAs] = useState<'draft' | 'published'>('draft')
   const [isRecurring, setIsRecurring] = useState(false)
@@ -1169,6 +1172,7 @@ function CreateWorksheetContent() {
           setDescription(resource.description ? (typeof resource.description === 'string' ? resource.description : (resource.description as unknown as Record<string, string>)?.[locale] || '') : '')
           setSelectedCategory(resource.category as ResourceCategory)
           setVisibility(resource.visibility || 'private')
+          setForYou((resource as any).for_you ?? false)
           setResourceLanguage(resource.language || 'en')
           setSaveAs(resource.status === 'published' ? 'published' : 'draft')
           setIsRecurring(!!(resource as any).is_recurring)
@@ -2076,6 +2080,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
+          for_you: forYou,
           language: resourceLanguage as any,
           is_recurring: isRecurring,
         })
@@ -2092,6 +2097,7 @@ function CreateWorksheetContent() {
           settings,
           status: saveAs,
           visibility,
+          for_you: forYou,
           language: resourceLanguage as any,
           is_recurring: isRecurring,
         })
@@ -2294,6 +2300,7 @@ function CreateWorksheetContent() {
           settings,
           status: 'draft',
           visibility: 'private',
+          for_you: forYou,
           language: resourceLanguage as any,
         })
         // Store the new draft ID for future auto-saves
@@ -6656,6 +6663,32 @@ function CreateWorksheetContent() {
                         {t.library.categories[category]}
                       </motion.button>
                     ))}
+                  </div>
+
+                  {/* For You (self-guided) toggle */}
+                  <div className="mt-6 p-4 rounded-2xl border border-gray-200 bg-gray-50/60">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">
+                          {locale === 'fr' ? 'Disponible dans « Pour vous »' : locale === 'es' ? 'Disponible en «Para ti»' : 'Available in “For You”'}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {locale === 'fr'
+                            ? 'Activité en libre accès : elle apparaît en permanence dans l’onglet « Pour vous » de tous vos patients. Ils la font quand ils veulent, autant de fois qu’ils le souhaitent, et leurs réponses restent privées — vous ne les voyez pas.'
+                            : locale === 'es'
+                              ? 'Actividad autoguiada: aparece siempre en la pestaña «Para ti» de todos tus pacientes. La hacen cuando quieran, tantas veces como quieran, y sus respuestas son privadas — tú no las ves.'
+                              : 'Self-guided activity: it lives permanently in every patient’s “For You” tab. They do it whenever they want, as often as they like, and their answers stay private — you won’t see them.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForYou(v => !v)}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${forYou ? 'bg-teal-600' : 'bg-gray-200'}`}
+                        aria-pressed={forYou}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${forYou ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Language Section */}
