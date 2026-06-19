@@ -235,7 +235,12 @@ export function MemberSummaryModal({ isOpen, onClose, memberId, memberName, onNa
       } else if (data.code === 'INSUFFICIENT_DATA') {
         setError(locale === 'fr' ? 'Pas assez de données pour générer un résumé. Ajoutez d\'abord des séances ou des notes.' : locale === 'es' ? 'No hay suficientes datos para generar un resumen. Primero añada sesiones o notas.' : 'Not enough data to generate a summary. Add sessions or notes first.')
       } else {
-        setError(data.error || (locale === 'fr' ? 'Impossible de générer le résumé' : 'Failed to generate summary'))
+        // Use a localized message rather than the API's (English) error string.
+        setError(locale === 'fr'
+          ? 'Impossible de générer le résumé. Veuillez réessayer.'
+          : locale === 'es'
+            ? 'No se pudo generar el resumen. Inténtalo de nuevo.'
+            : 'Failed to generate the summary. Please try again.')
       }
     } catch (err) {
       console.error('Error generating summary:', err)
