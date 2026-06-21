@@ -8,7 +8,7 @@ import { LogIn, Clock } from 'lucide-react'
 // Pages that don't require auth
 const PUBLIC_PATHS = [
   '/', '/sign-in', '/sign-up', '/auth', '/privacy', '/terms', '/security',
-  '/data-protection', '/practitioner', '/shared', '/p/', '/notification-flows',
+  '/data-protection', '/practitioner', '/shared', '/p/',
 ]
 
 const TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_SESSION_TIMEOUT_MS || '3600000') // 1 hour

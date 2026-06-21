@@ -5,613 +5,772 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown,
   ChevronUp,
-  Brain,
-  Heart,
-  Users,
-  TrendingUp,
-  Sparkles,
-  Target,
-  Rocket,
+  ArrowRight,
+  Globe,
   Mail,
   Calendar,
-  ArrowRight,
-  Check,
-  Globe,
-  Building2,
+  Clock,
+  Heart,
+  MessageSquare,
   Zap,
-  Stethoscope,
-  Code,
-  Megaphone,
-  Handshake,
-  Palette,
+  Hammer,
+  Lightbulb,
+  Check,
+  Download,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
 
-const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
+const DEMO_BOOKING_URL = 'https://calendar.notion.so/meet/bloomsline/hibloomsline'
 
 // ─────────────────────────────────────────────────────
-// TRANSLATIONS (EN only for now — FR can be added later)
+// TRANSLATIONS
 // ─────────────────────────────────────────────────────
 
 const translations = {
   en: {
     slides: {
-      hero: 'Hero',
-      problem: 'Problem',
-      solution: 'Solution',
-      whyNow: 'Why Now',
-      differentiation: 'Differentiation',
+      hero: 'Open',
+      silence: 'The Silence',
+      whyItMatters: 'Why It Matters',
+      origin: 'Origin',
       product: 'Product',
-      traction: 'Traction',
-      execution: 'Execution',
-      business: 'Business',
+      boundary: 'Boundary',
+      whyNow: 'Why Now',
+      security: 'Security',
+      real: "What's Real",
+      gtm: 'Go-to-Market',
+      market: 'Market',
+      model: 'Model',
       team: 'Team',
       vision: 'Vision',
       ask: 'The Ask',
-      contact: 'Contact',
+      close: 'Close',
     },
     hero: {
-      title1: 'The between-session',
-      title2: 'care platform',
-      subtitle: 'Less admin, more presence.',
-      subtitle2: '',
-      cta: 'View Pitch',
-      seed: 'Pre-Seed · Pre-Revenue · 2026',
+      tag: 'Bloomsline',
+      title1: 'There\'s a part of therapy no one sees.',
+      title2: 'It\'s where the work actually happens.',
+      changeTooltip: 'Mood shifts. Pattern breaks. Small wins. Hard days.',
+      subtitle: 'This part is unstructured, unmeasured, and unusable.',
+      stage: 'The continuity layer for clinical practice.',
+      cta: 'See what\'s missing',
     },
-    problem: {
+    silence: {
       label: 'THE PROBLEM',
-      headline: 'Therapy is 1 hour a week.',
-      subheadline: 'Life is the other 167.',
-      punchline: "That's where people need support — and where progress gets lost.",
-      consequences: [
-        { icon: 'clock', text: 'Half of every session is spent just catching up' },
-        { icon: 'blind', text: 'Practitioners can\'t see what happens between visits' },
-        { icon: 'alone', text: 'People feel alone between sessions — and disengage' },
+      headline: 'The continuity gap is where therapy fails.',
+      headline2: 'Quietly, and at scale.',
+      patientLabel: 'For patients',
+      patientItems: [
+        'They drop out and stay in pain',
+        'No control over their own recovery',
+        'They relapse once support stops',
       ],
+      practitionerLabel: 'For practitioners',
+      practitionerItems: [
+        'Deciding on partial, outdated information',
+        'Time lost to admin, not care',
+        'Hard to see when a patient is collapsing',
+      ],
+      quote: '"My client shared something painful on Tuesday. By our next session, I\'d lost the thread. I spent 15 minutes catching up instead of doing the work."',
+      quoteAttribution: 'Practitioner, Paris',
       stats: [
-        { value: '~50%', label: 'of session time: catching up', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
-        { value: '86%', label: 'get no mental health treatment', source: 'WHO 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '49%', label: 'with issues already use AI', source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+        {
+          value: '~35%',
+          label: 'of patients drop out of therapy',
+          source: 'PMC meta-analysis, 146 studies, 2022',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+        },
+        {
+          value: '~50%',
+          label: 'relapse — most within 6 months',
+          source: 'Depression relapse meta-analyses',
+          url: 'https://bjgp.org/content/70/691/54',
+        },
+        {
+          value: '9%',
+          label: 'receive adequate care for depression',
+          source: 'WHO 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
     },
-    solution: {
-      label: 'THE SOLUTION',
-      title: 'Bloomsline fills the 167.',
-      subtitle: 'A companion app for members. A visibility tool for practitioners.',
-      pillars: [
+    whyItMatters: {
+      label: 'WHY IT MATTERS',
+      headline1: 'This isn\'t just inefficient.',
+      headline2: 'It changes the depth of care.',
+      item1Label: 'TIME',
+      item1Body: 'A quarter of every session lost to rebuilding context.',
+      item2Label: 'SIGNALS',
+      item2Body: 'Patterns, improvements, relapses are hard to catch in time.',
+      item3Label: 'FEELING',
+      item3Body: '"I\'m coming to therapy, but nothing\'s changing."',
+      item4Label: 'BUSINESS',
+      item4Body: 'Disengagement. Lower retention. Reputation at risk.',
+      closing: '',
+      stats: [
         {
-          title: 'For Members',
-          tagline: 'Companion App',
-          features: [
-            'Capture moments in 10 seconds — photo, voice, or text',
-            'AI-discovered patterns in mood and behavior',
-            'Bloom — an always-available AI companion',
-            'Daily rituals that adapt to your energy',
-          ],
-          outcome: 'They stay engaged between sessions.'
+          value: '35%',
+          label: 'of clinician time goes to documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
         },
         {
-          title: 'For Practitioners',
-          tagline: 'Visibility Dashboard',
-          features: [
-            'See their week through what they share',
-            'Create & share worksheets in one click',
-            'Start sessions already informed',
-            'Track client engagement over time',
-          ],
-          outcome: 'Sessions go deeper, faster.'
+          value: '42%',
+          label: 'of Gen Z in therapy — up 22% since 2022',
+          source: 'Grow Therapy, 2025',
+          url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
       ],
-      bridge: 'One platform. Two sides of care. Connected.',
+    },
+    origin: {
+      label: 'HOW WE GOT HERE',
+      headline: 'We didn\'t start here.',
+      para1: 'In 2024 we built Doctalink — find a therapist by values, not just degrees. Practitioners loved it. But it never became a business.',
+      para2: 'So we asked why. 100+ conversations with therapists and patients — and the same thing kept surfacing: it was never about finding a therapist.',
+      para3: 'It was everything that happens between sessions — the silence where progress quietly slips away.',
+      para4: 'That became Bloomsline.',
+      quote: 'We\'re not guessing. It\'s what a failed product and 100+ conversations taught us.',
+      timeline: [
+        { period: '2024', label: 'Doctalink', body: 'Find a therapist by values, not just degrees. Practitioners liked it, but matching was only part of the problem.' },
+        { period: '2025', label: 'Discovery', body: '100+ conversations revealed the deeper problem: the unsupported space between sessions.' },
+        { period: '2026', label: 'Bloomsline — live', body: 'So we built Bloomsline to fill the gap between sessions and create a continuity layer for clinical practice.', accent: true },
+      ],
+    },
+    product: {
+      label: 'WHAT WE BUILT',
+      hero1: 'A new layer of care.',
+      hero2: '',
+      supportingText: 'Bloomsline is the all-in-one platform for therapists to run their practice and support their patients\' progress between sessions.',
+      cards: [
+        {
+          icon: 'clock',
+          title: 'Before a session',
+          oldWay: 'Notes pile up, context gets lost.',
+          newWay: 'Everything you need, already there. No digging.',
+        },
+        {
+          icon: 'heart',
+          title: 'During a session',
+          oldWay: 'Admin steals time from what matters.',
+          newWay: 'Stay present. Notes flow. Nothing gets lost.',
+        },
+        {
+          icon: 'message',
+          title: 'Between sessions',
+          oldWay: 'The connection fades.',
+          newWay: 'Patients reflect. Practitioners see what changed.',
+        },
+        {
+          icon: 'zap',
+          title: 'Over time',
+          oldWay: 'Progress lives in your head, not on screen.',
+          newWay: 'See real progress, not just snapshots.',
+        },
+      ],
+      closing: 'The person, the practitioner, and the space in between — one connected place.',
+    },
+    boundary: {
+      label: 'THE BOUNDARY',
+      hero1: 'Therapy works because of its principles.',
+      hero2: 'We protect them.',
+      intro: 'Therapy runs on a few hard principles — and here\'s how we keep every one of them safe.',
+      defHint: 'Tap any principle to see what it means.',
+      frameLabel: 'The therapeutic frame',
+      frameNote: 'We build inside the frame — never over it.',
+      principles: [
+        { name: 'The frame', respect: 'We support therapists around their sessions without interfering with the frame, which remains under their control.', definition: 'The stable boundaries that make therapy safe — consistent time, place, role, and confidentiality. The "container" the work happens in (Winnicott\'s holding environment). Disrupt it and you harm the therapy.' },
+        { name: 'The alliance', respect: 'We strengthen the therapeutic bond without ever imposing ourselves. The therapeutic relationship remains between the patient and their therapist.', definition: 'The trusting relationship between patient and therapist — the single biggest predictor of whether therapy works, more than the method used.' },
+        { name: 'Non-intrusion', respect: 'Nothing is imposed. Available resources are there to help when needed, but patients remain free to use them and move at their own pace.', definition: 'The patient is the agent of their own change. They choose, they consent, and they move at their own pace. Coercion undermines the work.' },
+        { name: 'Non-dependence', respect: 'The entire system is designed to support patients, never to make them dependent on it. The goal is always the same: to foster greater autonomy.', definition: '"First, do no harm" (non-maleficence). The duty to avoid creating harm — dependency, pressure, false reassurance. Engagement-maximizing design is anti-therapeutic.' },
+        { name: 'Scope of practice', respect: 'Bloomsline supports patient reflection without providing diagnoses, clinical advice, or crisis management. These responsibilities belong to the therapist.', definition: 'Clinicians act only within their trained competence. Diagnosing, treating, and handling crises is the clinician\'s role — a tool must stay in its lane.' },
+        { name: 'Confidentiality', respect: 'What is shared remains protected and under the control of the patient and their therapist. (Encrypted data, secure EU hosting, and GDPR compliance.)', definition: 'What a patient shares is protected. Foundational to trust in therapy — and, for digital tools, a legal duty (GDPR / health-data rules).' },
+      ],
+      closing: 'These aren\'t our rules. They\'re therapy\'s — applied to software.',
     },
     whyNow: {
       label: 'WHY NOW',
-      title: 'Three tailwinds converging',
-      reasons: [
-        'Post-2020: mental health is destigmatized — demand up 40%',
-        'AI companions are socially accepted (49% of people with MH issues already use AI)',
-        'France launched Mon Soutien Psychologique (govt reimbursement) — practitioners need tools',
-        'No dominant between-session platform exists in EU — market is open',
+      headline: 'Three things just became true.',
+      item1Title: 'Market',
+      item1Body: 'A multi-billion, double-digit-growth market — and the consumer-app space is already mature (BetterHelp, Woebot). The clinical layer underneath, between patient and therapist, is still unbuilt. That\'s the opening.',
+      item1Sources: [
+        { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
+        { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
       ],
-      tam: { label: 'TAM', value: '€12B', desc: 'EU Digital Mental Health by 2030' },
-      sam: { label: 'SAM', value: '€2B', desc: 'Practice tools + between-session segment' },
-      som: { label: 'SOM', value: '€50M', desc: 'France + UK practitioners (Year 1-3 focus)' },
-      wedge: 'Each practitioner brings 20-50 members at zero acquisition cost. Built-in distribution that B2C competitors can\'t match.',
-      marketGrowth: '25% CAGR',
+      item2Title: 'Adoption',
+      item2Body: '49% of people with mental-health needs already use AI tools. Acceptance is settled — the opening is AI that supports the clinician, not one that replaces them.',
+      item2Sources: [
+        { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+      ],
+      item3Title: 'Regulation',
+      item3Body: 'The EU AI Act mandates clinical-AI compliance by August 2026. Compliant from day one is a 12–24 month lead over US-first competitors.',
+      item3Sources: [
+        { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
+        { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
+      ],
+      closing: 'Zero AI-native clinical SaaS in EU. The wedge is open.',
     },
-    differentiation: {
-      label: 'WHERE WE FIT',
-      title: 'Nobody owns this space',
-      buckets: [
-        {
-          label: 'Practice tools',
-          examples: 'SimplePractice, Jane, TherapyNotes',
-          does: 'Run the business',
-          detail: 'Billing, scheduling, clinical notes',
-          emoji: '📋',
-        },
-        {
-          label: 'Wellness apps',
-          examples: 'Headspace, Calm, BetterHelp',
-          does: 'Help individuals cope',
-          detail: 'Meditations, self-help, generic content',
-          emoji: '🧘',
-        },
+    security: {
+      label: 'DATA SECURITY',
+      headline: 'Three things decide a health company.',
+      headline2: 'We\'re building each into a strength.',
+      intro: '',
+      pillars: [
+        { name: 'Protected', claim: 'Patient data is encrypted and access is tightly controlled.', edge: 'In health, trust is everything. We protect it accordingly.' },
+        { name: 'Compliant', claim: 'Built for GDPR from day one.', edge: 'HDS certification, the gate to French healthcare, is our next step. Hard to earn, which is why it protects us.' },
+        { name: 'Responsible AI', claim: 'Our AI assists therapists. It never diagnoses or decides.', edge: 'That keeps us out of medical-device regulation, and free to move fast.' },
       ],
-      gap: "Who connects the practitioner and the client between sessions?",
-      answer: 'Bloomsline.',
-      answerDetail: 'The between-session care platform — where both sides stay connected.',
+      closing: 'Security isn\'t a slide. It\'s the precondition.',
     },
-    product: {
-      label: 'THE PRODUCT',
-      title: 'The missing layer between sessions',
-      practitioners: {
-        title: 'For Practitioners',
-        tagline: 'See. Understand. Extend.',
-        features: [
-          { name: 'Between-Session Visibility', desc: 'See what\'s happening in your client\'s life between visits. Patterns, shifts, and what they chose to share. A living picture, not a 5-day-old memory.' },
-          { name: 'AI-Powered Preparation', desc: 'Before each session: what happened, what shifted, what to explore. Start at the insight, not the recap. 25 min of catching up — gone.' },
-          { name: 'Therapeutic Resources', desc: 'Worksheets, exercises, and psychoeducation you create once, delivered to their phone. They do the work between sessions, you see the engagement.' },
-        ],
-      },
-      members: {
-        title: 'For Members',
-        tagline: 'Stay connected to your care, not just an app',
-        features: [
-          { name: 'Moments', desc: 'A 10-second reflection that builds self-awareness over time. What you capture between sessions becomes part of your therapeutic journey.' },
-          { name: 'Bloom AI', desc: 'Not a replacement therapist. A companion that holds the thread between sessions — and knows your context.' },
-          { name: 'My Practitioner', desc: 'Stay connected to your practitioner between visits. See their resources, share what matters, and walk into your next session already on the same page.' },
-        ],
-      },
-      loop: [
-        'Members share',
-        'AI connects the dots',
-        'Practitioners arrive informed',
-        'Every session starts deeper',
+    model: {
+      label: 'THE MODEL',
+      headline: 'Practitioners are our distribution.',
+      flow1Label: '1 practitioner',
+      flow1Value: '€29 / month',
+      flow2Label: 'invites',
+      flow2Value: 'their own patients',
+      flow3Label: 'and refers',
+      flow3Value: 'peers in their network',
+      revenueTitle: 'Revenue',
+      revenueItems: [
+        '€29 / practitioner — our landing price',
+        'Patients free — brought in at zero CAC',
+        'High-margin SaaS',
+        'Expansion: clinics, premium AI, B2C',
       ],
+      compoundTitle: 'Why it compounds',
+      compoundItems: [
+        'Practitioners bring their own patients from day one',
+        'Engagement is driven by the practitioner relationship',
+        'Growth happens through practitioner networks',
+      ],
+      footnote: '15 sessions/week × €60 × ~4 weeks ≈ €3,600/month. We charge €29 — less than one session. Too small to ever cancel, with huge room to charge more.',
+      footnoteSource: 'Avg revenue ~€51,671/yr · UNASA 2024',
+      footnoteUrl: 'https://propulsebyca.fr/idees-business/psychologue',
     },
-    traction: {
-      label: 'WHERE WE ARE — HONESTLY',
-      title: "Pre-revenue, post-learning",
-      subtitle: "0 paying customers. A live product. And 18 months of research that shaped what we built.",
-      research: [
-        { value: '15', desc: 'Beta testers (not paying)' },
-        { value: '119', desc: 'Discovery interviews across 7 countries' },
+    real: {
+      label: "WHAT'S REAL",
+      headline: "We're pre-revenue. The product isn't.",
+      builtLabel: 'BUILT',
+      builtItems: [
+        'Practitioner platform live',
+        'Patient app in use',
+        'Real users interacting with the product',
+        'End-to-end system built in-house',
       ],
-      pivotInsight: 'We started with practitioner profiles (Doctalink). Market was crowded. But through 119 interviews we found the real gap: practitioners have zero visibility into what happens between sessions. That insight became Bloomsline.',
-      timeline: [
-        { date: 'Q1 2025', title: 'Doctalink Pivot', status: 'pivot' },
-        { date: 'Q3 2025', title: 'Bloomsline Started', status: 'done' },
-        { date: 'Dec 2025', title: 'MVP Complete', status: 'done' },
-        { date: 'Q1 2026', title: 'Finding PMF', status: 'current' },
-        { date: 'Q2 2026', title: 'First Paying Users', status: 'upcoming' },
-        { date: 'Q3 2026', title: 'Scale If PMF', status: 'upcoming' },
+      learnedLabel: 'LEARNED',
+      learnedItems: [
+        '100+ interviews before a line of code',
+        'The gap is between sessions — named in every conversation',
+        'In real use, it fits how practitioners already work',
+        'Continuity drives engagement — not features',
       ],
-      quote: '"Pre-revenue is a risk. But we\'ve de-risked the product — 119 interviews shaped every feature. The question is distribution, not product."',
+      honestLabel: 'HONEST',
+      honestItems: [
+        'Pre-PMF. But early usage is consistent.',
+        'Practitioners recognize the problem instantly',
+        'Pricing shaped by real conversations',
+        'Two founders, fast iteration loop',
+      ],
+      quote: 'This isn\'t a concept. It\'s a working platform you can use today.',
     },
-    execution: {
-      label: 'HOW WE WIN',
-      title: 'Product. Distribution. Retention.',
-      subtitle: 'Three things that matter at our stage — and where we are on each.',
-      why: 'Build → Get found → Convert → Retain',
-      areas: [
+    gtm: {
+      label: 'GO-TO-MARKET',
+      headline: 'Listen. Support.',
+      headline2: 'Trust. Grow.',
+      intro: 'Therapists trust other therapists, not ads. We talked to 100 before writing any code — and we\'ll win the next 1,000 the same way.',
+      columns: [
         {
-          title: 'Product',
-          items: [
-            'Full MVP live — web dashboard for practitioners + mobile app for members',
-            'AI context engine that learns from logged moments, spots emotional patterns, and gives practitioners a pre-session brief. Not a chatbot — a tool that makes sessions more productive.',
-          ],
-          status: 'MVP live',
-          why: 'What we sell',
-          highlight: '',
+          tag: 'Past',
+          title: 'Clinical understanding came first.',
+          num: '01',
+          action: 'Talked to therapists and patients to deeply understand their needs.',
+          goal: '100+ conversations · 0 ads',
         },
         {
-          title: 'Distribution',
-          items: [
-            'Each practitioner publishes their profile on Bloomsline → SEO brings inbound practitioners organically, zero ad spend needed at this stage',
-            'LinkedIn outreach + peer referrals are our primary channels — low cost, high intent',
-          ],
-          status: 'Plan ready, not yet proven',
-          why: 'How we get practitioners',
-          highlight: '',
+          tag: 'Now',
+          title: 'We win them one by one.',
+          num: '02',
+          action: 'Personal outreach and hands-on onboarding, one practitioner at a time.',
+          goal: 'First 10 active users',
         },
         {
-          title: 'Network Effect',
-          items: [
-            'Every practitioner invites 20-50 members (their clients). Members see the product, tell other practitioners. One sale seeds the next. This is our CAC advantage — if it works.',
-            'Hypothesis: organic referrals compound. Risk: practitioners may not invite members actively.',
-          ],
-          status: 'Unproven — key assumption',
-          why: 'How we scale without $$',
-          highlight: '',
+          tag: 'Next',
+          title: 'Growth that builds itself.',
+          num: '03',
+          action: 'Therapists invite therapists; we partner with psychology schools.',
+          goal: '150 therapists by early 2027',
         },
         {
-          title: 'Retention',
-          items: [
-            'Mental health apps have ~90% drop-off in month 1. We designed around this: no streaks, no guilt, progress shown as story not score.',
-            'This is a bet on design philosophy. We believe it drives retention but have no data yet.',
-          ],
-          status: 'Designed, not measured',
-          why: 'Why they stay',
-          highlight: '',
+          tag: 'Later',
+          title: 'Go bigger.',
+          num: '04',
+          action: 'Clinics and group practices, expanding across Europe.',
+          goal: '1,500+ therapists · €1M+ revenue',
         },
       ],
+      dontLabel: 'What we don\'t do',
+      dontItems: ['Paid ads', 'Cold outbound', 'B2C patient acquisition', 'Vanity metrics'],
+      closing: 'We earn trust through clinical understanding, reinforce it with personalized support, and let growth spread naturally.',
     },
-    business: {
-      label: 'BUSINESS MODEL',
-      title: 'B2B SaaS — practitioners pay, members free',
-      revenuePoints: [
-        { title: '3 tiers: €19 / €29 / €49', desc: 'Essentiel → Pro → Cabinet, per practitioner/month' },
-        { title: 'Members use it free', desc: 'Invited by their practitioner — zero acquisition cost' },
-        { title: 'B2C premium upside (future)', desc: '€3/mo member premium — not in current model' },
+    market: {
+      label: 'THE MARKET',
+      headline: 'Start in France.',
+      headline2: 'The path is bigger.',
+      franceTitle: 'In France today',
+      funnel: [
+        { value: '69M', label: 'people live in France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
+        { value: '~8M', label: 'adults have depression each year (about 1 in 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'licensed psychologists — all officially registered', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'work for themselves — these are who we sell to', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1,000', label: 'our goal by Year 3, about €350K a year', source: 'our target · 3.5% of them', url: '' },
       ],
-      gtmPoints: [
-        { title: 'Start: France', desc: 'Our home market, where we have network' },
-        { title: 'Then: EU (UK, Germany)', desc: 'Same language support, similar regulations' },
-        { title: 'Later: N. America', desc: 'Only after proving EU product-market fit' },
-      ],
-      metrics: [
-        { value: '€19-49', desc: 'per practitioner/month' },
-        { value: '~83%', desc: 'modeled gross margin (unproven)' },
-      ],
+      europeLabel: 'Europe',
+      europeValue: '17× bigger',
+      europeBody: '450M people. The rules we already follow in France work across Europe too.',
+      worldLabel: 'World',
+      worldValue: '1B+',
+      worldBody: 'people live with mental health problems. Someday — not today.',
+      worldSource: 'WHO 2025',
+      worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+      closing: 'We don\'t need the world. We need 1,000 French psychologists.',
     },
     team: {
       label: 'THE TEAM',
-      title: '2 founders, full-stack execution',
-      members: [
-        {
-          name: 'Sarah',
-          role: 'Co-founder · Sales & Operations',
-          background: 'Building the GTM engine from scratch',
-          bio: 'Responsible for practitioner acquisition, partnerships, and operations. First sales conversations happening now — results pending.',
-        },
-        {
-          name: 'Aditya',
-          role: 'Co-founder · Product & Technology',
-          background: 'Solo-built the entire platform (web + mobile + AI)',
-          bio: 'Engineer who built Bloomsline end-to-end: Next.js dashboard, React Native mobile app, Supabase backend, Claude AI integration. Personal experience with therapy drove the product insight.',
-        },
-      ],
-      whyUsPoints: [
-        'Entire product built by founders — no outsourcing, no burn before launch',
-        '119 discovery interviews shaped every feature decision',
-        'Risk: 2-person team. Plan: first 2 hires are engineer + sales (included in use of funds)',
-      ],
+      headline: 'Two people. Built in-house. Near-zero burn.',
+      sarahName: 'Sarah Lagzouli',
+      sarahRole: 'Sales & Operations',
+      sarahBio: 'The person practitioners trust. She listens before she sells — and that\'s why they stay.',
+      adityaName: 'Aditya Channe',
+      adityaRole: 'Product & Technology',
+      adityaBio: 'Built every screen you see. Leads the product — and makes sure it stays close to the problem.',
+      quote: 'Two people. Everything in-house. Because this had to be built by people who feel the problem.',
+      footnote: 'Actively looking for a clinical advisor. The clinical voice is in the product — not yet on the cap table.',
     },
     vision: {
       label: 'THE LONG GAME',
-      title1: 'When this works, the data becomes',
-      title2: 'the real asset.',
-      description: "Every moment logged, every pattern observed, every therapeutic outcome tracked — with consent, this dataset becomes uniquely valuable for mental health research. But first we need to prove the platform works.",
-      phases: [
-        { title: 'Phase 1', desc: 'Between-session care platform. Prove product-market fit.' },
-        { title: 'Phase 2', desc: 'Behavioral pattern dataset. Valuable for research partnerships.' },
-        { title: 'Phase 3', desc: 'Mental health research infrastructure. Only if Phase 1-2 succeed.' },
-      ],
-      footer: "This vision is ambitious and far-off. Our focus is Phase 1: get 100+ practitioners paying, and prove the model works.",
+      headline: 'Software today.',
+      headline2: 'Infrastructure tomorrow.',
+      viewMore: 'View more',
+      showLess: 'Show less',
+      whatWeDoLabel: 'What we do',
+      whyItMattersLabel: 'Why it matters',
+      todayTag: 'Today',
+      todayTitle: 'Software therapists pay for.',
+      todaySub: 'A real business today — recurring revenue, inside the practice.',
+      todayBody: 'This is real today. Therapists walk into every session prepared instead of playing catch-up — and patients feel held between sessions, not alone.',
+      todayWhatWeDo: 'For €29/month, a therapist gets a tool that makes every session sharper, and their patients stay connected to the work between sessions. Both sides feel it.',
+      todayWhyItMatters: 'Practitioners pay and keep paying. Patients come back. When both sides choose to stay, you know it works — in practice, not in theory.',
+      nextTag: 'Next',
+      nextTitle: 'We make therapy measurable.',
+      nextSub: 'The data no one else has — proof of what actually works between sessions.',
+      nextBody: 'For the first time, progress becomes visible. Every session — and every moment between — adds up to a real picture: "anxiety down 40% in three months." The patient sees they\'re getting better; the therapist sees their work land. No one has ever had this.',
+      nextWhatWeDo: 'Therapists get real outcome reports; patients watch their own progress over time. And we hold the one thing no one else does — a continuous record of what happens between sessions.',
+      nextWhyItMatters: 'Proof changes everything. It\'s why a practitioner upgrades, why a clinic signs on — why this stops being a nice tool and becomes essential.',
+      laterTag: 'Eventually',
+      laterTitle: 'The infrastructure for mental health.',
+      laterSub: 'The trusted layer the whole field is built on — practitioners, clinics, researchers and health systems.',
+      laterBody: 'Mental health has never had a shared way to measure what works. We become it — from one therapist\'s room to clinics, researchers, and health systems across Europe, and even consumer apps that plug into the same model, all building on the same foundation.',
+      laterWhatWeDo: 'From measuring outcomes to seeing them coming — patterns that flag the hard days before they arrive, so a practitioner can reach out first. And we open the layer: clinics, researchers and consumer apps plug into the same standard. We become how care is measured.',
+      laterWhyItMatters: 'When a whole field measures the same way, it builds on the same layer — ours. That\'s not a bigger product. That\'s infrastructure.',
+      footnote: 'Vision earns the right to exist through execution. Right now, we\'re heads-down on Today.',
     },
     ask: {
       label: 'THE ASK',
-      title: 'Raising €400K-€500K',
-      subtitle: 'Pre-seed · 18 months to prove product-market fit',
-      useOfFunds: [
-        { label: 'Product (AI + mobile)', percent: 40 },
-        { label: 'Team (eng + sales)', percent: 25 },
-        { label: 'Go-to-Market', percent: 25 },
-        { label: 'Ops & Legal', percent: 10 },
+      headline: 'Raising €800k pre-seed.',
+      subhead: '18 months to turn EU compliance into a moat.',
+      fundsLabel: 'Use of funds',
+      fundsHint: 'Tap a line for why',
+      fundsItems: [
+        { label: 'Team', value: '36%', why: 'Grow from the two of us to the team we need to ship faster and sign our first paying therapists.' },
+        { label: 'Security, Compliance & Legal', value: '33%', why: 'Nearly as much, because handling health data in the EU is the hard, expensive part, and it is what lets us sell at all.' },
+        { label: 'Product & Growth', value: '21%', why: 'Keep improving the app and get it in front of more therapists.' },
+        { label: 'Reserve', value: '10%', why: 'Cover unexpected costs and delays.' },
       ],
-      milestones: [
-        { title: 'M6: First 30-50 paying practitioners', desc: 'Proof someone will swipe their card' },
-        { title: 'M12: 100+ practitioners, 80%+ retention', desc: 'Product-market fit signal' },
-        { title: 'M18: €100K+ ARR, Series A ready', desc: 'Data to raise next round at 3-5x' },
-        { title: 'If we miss: concrete pivot triggers', desc: 'See financial model for M3/M6/M9/M12 thresholds' },
-      ],
-      vision: {
-        title1: 'When this works, the data becomes',
-        title2: 'the real asset.',
-        phases: [
-          'Between-session care platform',
-          'Behavioral pattern dataset',
-          'Mental health research infrastructure',
-        ],
-      },
+      closing: 'Enough to reach product-market fit, build the compliance moat, and keep patient data safe.',
     },
-    contact: {
-      title: "Let's talk",
-      subtitle: 'We\'re raising now. Happy to walk through the financial model live.',
-      bookMeeting: 'Book a 20-min Call',
-      emailUs: 'Email Us',
+    close: {
+      line1: 'Therapy happens in sessions.',
+      line2: 'Life happens every day.',
+      line3: 'And today, nothing connects the two.',
+      line4: "That's the layer we're building.",
+      cta: "Let's talk.",
+      bookCall: 'Book a 30-min call',
+      emailUs: 'hi@bloomsline.com',
+      copyright: '© 2026 Bloomsline',
     },
   },
   fr: {
     slides: {
-      hero: 'Accueil',
-      problem: 'Problème',
-      solution: 'Solution',
-      whyNow: 'Pourquoi',
-      differentiation: 'Différenciation',
+      hero: 'Ouverture',
+      silence: 'Le Silence',
+      whyItMatters: 'Pourquoi Ça Compte',
+      origin: 'Origine',
       product: 'Produit',
-      traction: 'Traction',
-      execution: 'Exécution',
-      business: 'Modèle',
+      boundary: 'Limite',
+      whyNow: 'Pourquoi Maintenant',
+      security: 'Sécurité',
+      real: 'Ce Qui Est Réel',
+      gtm: 'Go-to-Market',
+      market: 'Marché',
+      model: 'Modèle',
       team: 'Équipe',
       vision: 'Vision',
-      ask: 'Demande',
-      contact: 'Contact',
+      ask: 'La Demande',
+      close: 'Conclusion',
     },
     hero: {
-      title1: 'La plateforme de soin',
-      title2: 'entre les séances',
-      subtitle: 'Moins d\'admin, plus de présence.',
-      subtitle2: '',
-      cta: 'Voir le Pitch',
-      seed: 'Pré-Seed · Pré-Revenu · 2026',
+      tag: 'Bloomsline',
+      title1: 'Il y a une partie de la thérapie que personne ne voit.',
+      title2: 'C\'est là que le vrai travail se fait.',
+      changeTooltip: 'Humeurs. Ruptures de schémas. Petites victoires. Jours difficiles.',
+      subtitle: 'Cette partie est désorganisée, non mesurée et inutilisable.',
+      stage: 'La couche de continuité pour la pratique clinique.',
+      cta: 'Voyez ce qui manque',
     },
-    problem: {
+    silence: {
       label: 'LE PROBLÈME',
-      headline: "La thérapie, c'est 1 heure par semaine.",
-      subheadline: 'La vie, ce sont les 167 autres.',
-      punchline: "C'est là que les gens ont besoin de soutien — et où le progrès se perd.",
-      consequences: [
-        { icon: 'clock', text: 'La moitié de chaque séance est passée à rattraper le retard' },
-        { icon: 'blind', text: 'Les praticiens ne voient pas ce qui se passe entre les visites' },
-        { icon: 'alone', text: 'Les gens se sentent seuls entre les séances — et décrochent' },
+      headline: 'La rupture de continuité, c\'est là que la thérapie échoue.',
+      headline2: 'En silence, et à grande échelle.',
+      patientLabel: 'Pour les patients',
+      patientItems: [
+        'Ils abandonnent et restent dans la souffrance',
+        'Aucun contrôle sur leur propre rétablissement',
+        'Rechutent dès que l\'accompagnement s\'arrête',
       ],
+      practitionerLabel: 'Pour les praticiens',
+      practitionerItems: [
+        'Décider sur des informations partielles et dépassées',
+        'Du temps perdu en administratif, pas en soin',
+        'Difficile de voir quand un patient s\'effondre',
+      ],
+      quote: '"Mon patient m\'a partagé quelque chose de douloureux mardi. À notre prochaine séance, j\'avais perdu le fil. J\'ai passé 15 minutes à rattraper au lieu de faire le travail."',
+      quoteAttribution: 'Praticienne, Paris',
       stats: [
-        { value: '~50%', label: 'du temps de séance : rattrapage', source: 'APA Practice', url: 'https://www.apa.org/monitor/2024/01/trends-pathways-access-mental-health-care' },
-        { value: '86%', label: 'sans traitement en santé mentale', source: 'OMS 2025', url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up' },
-        { value: '49%', label: "avec des problèmes utilisent déjà l'IA", source: 'Sentio 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+        {
+          value: '~35%',
+          label: 'des patients abandonnent la thérapie',
+          source: 'PMC méta-analyse, 146 études, 2022',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+        },
+        {
+          value: '~50%',
+          label: 'rechutent — la plupart sous 6 mois',
+          source: 'Méta-analyses, rechute dépressive',
+          url: 'https://bjgp.org/content/70/691/54',
+        },
+        {
+          value: '9%',
+          label: 'reçoivent des soins adéquats pour la dépression',
+          source: 'OMS 2025',
+          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+        },
       ],
     },
-    solution: {
-      label: 'LA SOLUTION',
-      title: 'Bloomsline remplit les 167.',
-      subtitle: 'Une app compagnon pour les membres. Un outil de visibilité pour les praticiens.',
-      pillars: [
+    whyItMatters: {
+      label: 'POURQUOI ÇA COMPTE',
+      headline1: 'Ce n\'est pas juste inefficace.',
+      headline2: 'Ça change la profondeur des soins.',
+      item1Label: 'TEMPS',
+      item1Body: 'Un quart de chaque séance perdu à reconstruire le contexte.',
+      item2Label: 'SIGNAUX',
+      item2Body: 'Patterns, progrès, rechutes difficiles à repérer à temps.',
+      item3Label: 'RESSENTI',
+      item3Body: '« Je viens en thérapie, mais rien ne change. »',
+      item4Label: 'BUSINESS',
+      item4Body: 'Désengagement. Rétention en baisse. Réputation en jeu.',
+      closing: '',
+      stats: [
         {
-          title: 'Pour les Membres',
-          tagline: 'App Compagnon',
-          features: [
-            'Capturer des moments en 10 sec — photo, voix ou texte',
-            "Patterns découverts par l'IA dans l'humeur et le comportement",
-            'Bloom — un compagnon IA toujours disponible',
-            "Rituels quotidiens qui s'adaptent à votre énergie",
-          ],
-          outcome: 'Ils restent engagés entre les séances.'
+          value: '35%',
+          label: 'du temps clinicien consacré à la documentation',
+          source: 'AHRQ Technical Brief, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
         },
         {
-          title: 'Pour les Praticiens',
-          tagline: 'Tableau de Bord Visibilité',
-          features: [
-            "Comprendre leur semaine à travers ce qu'ils partagent",
-            'Créer et partager fiches et ressources en un clic',
-            'Commencer les séances déjà informé',
-            "Suivre l'engagement client dans le temps",
-          ],
-          outcome: 'Les séances vont plus loin, plus vite.'
+          value: '42%',
+          label: 'de la Gen Z en thérapie — +22% depuis 2022',
+          source: 'Grow Therapy, 2025',
+          url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
       ],
-      bridge: 'Une plateforme. Deux côtés du soin. Connectés.',
+    },
+    origin: {
+      label: 'COMMENT NOUS SOMMES ARRIVÉS ICI',
+      headline: 'Nous avons d\'abord construit la mauvaise chose.',
+      para1: 'En 2024, nous avons créé Doctalink — trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les praticiens ont adoré. Mais ça n\'a jamais été un business.',
+      para2: 'Alors on a cherché pourquoi. 100+ conversations avec des thérapeutes et des patients — et la même chose revenait : ce n\'était jamais une question de trouver un thérapeute.',
+      para3: 'C\'était tout ce qui se passe entre les séances — ce silence où les progrès s\'effacent peu à peu.',
+      para4: 'C\'est devenu Bloomsline.',
+      quote: 'On ne devine pas. C\'est ce qu\'un produit raté et 100+ conversations nous ont appris.',
+      timeline: [
+        { period: '2024', label: 'Doctalink', body: 'Trouver un thérapeute par ses valeurs, pas seulement ses diplômes. Les praticiens appréciaient, mais la mise en relation n\'était qu\'une partie du problème.' },
+        { period: '2025', label: 'Découverte', body: '100+ conversations ont révélé le problème plus profond : l\'espace sans accompagnement entre les séances.' },
+        { period: '2026', label: 'Bloomsline — en production', body: 'Alors on a construit Bloomsline pour combler le vide entre les séances et créer une couche de continuité pour la pratique clinique.', accent: true },
+      ],
+    },
+    product: {
+      label: 'CE QUE NOUS AVONS CONSTRUIT',
+      hero1: 'Une nouvelle couche de soin.',
+      hero2: '',
+      supportingText: 'Tout au même endroit. Notes, séances, et ce qui se passe vraiment entre les deux.',
+      cards: [
+        {
+          icon: 'clock',
+          title: 'Avant une séance',
+          oldWay: 'Les notes s\'accumulent, le contexte se perd.',
+          newWay: 'Tout est là, prêt. Sans chercher.',
+        },
+        {
+          icon: 'heart',
+          title: 'Pendant une séance',
+          oldWay: 'L\'admin vole du temps à l\'essentiel.',
+          newWay: 'Restez présent. Les notes suivent. Rien ne se perd.',
+        },
+        {
+          icon: 'message',
+          title: 'Entre les séances',
+          oldWay: 'La connexion s\'estompe.',
+          newWay: 'Les patients réfléchissent. Les praticiens voient ce qui a changé.',
+        },
+        {
+          icon: 'zap',
+          title: 'Au fil du temps',
+          oldWay: 'La progression reste dans votre tête, pas à l\'écran.',
+          newWay: 'Voir la vraie progression, pas juste des instantanés.',
+        },
+      ],
+      closing: 'La personne, le praticien, et l\'espace entre les deux — un seul lieu connecté.',
+    },
+    boundary: {
+      label: 'LA LIMITE',
+      hero1: 'Il y a une limite en thérapie.',
+      hero2: 'Nous la respectons.',
+      intro: 'La thérapie repose sur quelques principes essentiels — et voici comment nous protégeons chacun d\'eux.',
+      defHint: 'Touchez un principe pour voir ce qu\'il signifie.',
+      frameLabel: 'Le cadre thérapeutique',
+      frameNote: 'On construit à l\'intérieur du cadre — jamais par-dessus.',
+      principles: [
+        { name: 'Le cadre', respect: 'On agit uniquement autour des séances sans intervenir dans le rythme de la thérapie, qui reste sous la responsabilité du thérapeute.', definition: 'Les limites stables qui rendent la thérapie sûre — mêmes heure, lieu, rôle, et confidentialité. Le « contenant » où se fait le travail (le holding de Winnicott). Le perturber nuit à la thérapie.' },
+        { name: 'L\'alliance', respect: 'Nous renforçons le lien thérapeutique, sans jamais nous imposer. Le lien thérapeutique reste entre le patient et son thérapeute.', definition: 'La relation de confiance entre patient et thérapeute — le premier prédicteur de l\'efficacité de la thérapie, plus que la méthode employée.' },
+        { name: 'La non-intrusion', respect: 'Rien n\'est imposé. Les ressources disponibles sont là pour aider si besoin, mais chacun reste libre de les utiliser et avance à son propre rythme.', definition: 'Le patient est l\'acteur de son propre changement. Il choisit, il consent, il avance à son rythme. La contrainte nuit au travail.' },
+        { name: 'La non-dépendance', respect: 'Tout le système est conçu pour soutenir le patient, jamais pour le rendre dépendant. L\'objectif reste toujours le même : favoriser son autonomie.', definition: '« D\'abord, ne pas nuire » (non-malfaisance). Le devoir d\'éviter tout préjudice — dépendance, pression, fausse réassurance. Un design qui maximise l\'engagement est anti-thérapeutique.' },
+        { name: 'Champ de compétence', respect: 'Bloomsline soutient la réflexion du patient sans fournir de diagnostic, de conseil clinique ni de gestion de crise. Ces responsabilités reviennent au thérapeute.', definition: 'Le clinicien n\'agit que dans son domaine de compétence. Diagnostiquer, traiter et gérer les crises relève du clinicien — l\'outil reste à sa place.' },
+        { name: 'Confidentialité', respect: 'Ce qui est partagé reste protégé et sous le contrôle du patient et de son thérapeute. (Données chiffrées, hébergement sécurisé en Europe et conformité RGPD.)', definition: 'Ce que le patient partage est protégé. Fondamental pour la confiance en thérapie — et, pour un outil numérique, une obligation légale (RGPD / données de santé).' },
+      ],
+      closing: 'Ce ne sont pas nos règles. Ce sont celles de la thérapie — appliquées au logiciel.',
     },
     whyNow: {
       label: 'POURQUOI MAINTENANT',
-      title: 'Trois vents favorables convergent',
-      reasons: [
-        'Post-2020 : santé mentale déstigmatisée — demande en hausse de 40%',
-        'Les compagnons IA sont socialement acceptés (49% des personnes avec des troubles MH utilisent déjà l\'IA)',
-        'La France a lancé Mon Soutien Psychologique (remboursement) — les praticiens ont besoin d\'outils',
-        'Aucune plateforme entre-séances dominante en UE — le marché est ouvert',
+      headline: 'Trois choses viennent de devenir vraies.',
+      item1Title: 'Marché',
+      item1Body: 'Un marché de plusieurs milliards en croissance à deux chiffres — et l\'espace des apps grand public est déjà mature (BetterHelp, Woebot). La couche clinique en dessous, entre patient et thérapeute, reste à construire. C\'est là l\'ouverture.',
+      item1Sources: [
+        { label: 'Healthcare Dive, 2024', url: 'https://www.healthcaredive.com/news/teladoc-1-billion-net-loss-2024-betterhelp-challenges/741134/' },
+        { label: 'STAT News, 2025', url: 'https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/' },
       ],
-      tam: { label: 'TAM', value: '12 Mrd€', desc: 'Santé mentale numérique UE d\'ici 2030' },
-      sam: { label: 'SAM', value: '2 Mrd€', desc: 'Outils de cabinet + segment entre-séances' },
-      som: { label: 'SOM', value: '50 M€', desc: 'Praticiens France + UK (focus années 1-3)' },
-      wedge: 'Chaque praticien amène 20-50 membres à coût d\'acquisition zéro. Distribution intégrée que les concurrents B2C ne peuvent pas égaler.',
-      marketGrowth: '25% TCAC',
+      item2Title: 'Adoption',
+      item2Body: '49% des personnes concernées par la santé mentale utilisent déjà l\'IA. L\'acceptation est acquise — l\'opportunité, c\'est une IA qui soutient le clinicien, pas qui le remplace.',
+      item2Sources: [
+        { label: 'Sentio Research, 2025', url: 'https://sentio.org/ai-research/ai-survey' },
+      ],
+      item3Title: 'Réglementation',
+      item3Body: 'L\'AI Act européen impose la conformité de l\'IA clinique d\'ici août 2026. Conforme dès le premier jour, c\'est 12–24 mois d\'avance sur les concurrents américains.',
+      item3Sources: [
+        { label: 'EU Digital Strategy', url: 'https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai' },
+        { label: 'DataGuard Timeline', url: 'https://www.dataguard.com/eu-ai-act/timeline' },
+      ],
+      closing: 'Zéro SaaS clinique AI-native en Europe. La fenêtre est ouverte.',
     },
-    differentiation: {
-      label: 'OÙ NOUS NOUS SITUONS',
-      title: 'Personne ne couvre cet espace',
-      buckets: [
-        {
-          label: 'Outils de cabinet',
-          examples: 'SimplePractice, Jane, TherapyNotes',
-          does: 'Gérer le business',
-          detail: 'Facturation, planning, notes cliniques',
-          emoji: '📋',
-        },
-        {
-          label: 'Apps bien-être',
-          examples: 'Headspace, Calm, BetterHelp',
-          does: 'Aider à se sentir mieux',
-          detail: 'Méditations, auto-aide, contenu générique',
-          emoji: '🧘',
-        },
+    security: {
+      label: 'SÉCURITÉ DES DONNÉES',
+      headline: 'Trois choses décident d\'une entreprise de santé.',
+      headline2: 'Nous faisons de chacune une force.',
+      intro: '',
+      pillars: [
+        { name: 'Protégées', claim: 'Les données patients sont chiffrées et l\'accès strictement contrôlé.', edge: 'En santé, la confiance est primordiale. Nous la protégeons en conséquence.' },
+        { name: 'Conformes', claim: 'Conçu pour le RGPD dès le départ.', edge: 'La certification HDS, la porte du marché de la santé en France, est notre prochaine étape. Difficile à obtenir, donc elle nous protège.' },
+        { name: 'IA responsable', claim: 'Notre IA assiste les thérapeutes. Elle ne diagnostique ni ne décide jamais.', edge: 'Cela nous tient hors de la réglementation des dispositifs médicaux, et libres d\'avancer vite.' },
       ],
-      gap: 'Qui connecte le praticien et le client entre les séances ?',
-      answer: 'Bloomsline.',
-      answerDetail: 'La plateforme de soin entre les séances — où les deux côtés restent connectés.',
+      closing: 'La sécurité n\'est pas un slide. C\'est la condition préalable.',
     },
-    product: {
-      label: 'LE PRODUIT',
-      title: 'La couche manquante entre les séances',
-      practitioners: {
-        title: 'Pour les Praticiens',
-        tagline: 'Voir. Comprendre. Étendre.',
-        features: [
-          { name: 'Visibilité Entre-Séances', desc: 'Voir ce qui se passe dans la vie de votre client entre les visites. Patterns, évolutions, et ce qu\'il choisit de partager. Une image vivante, pas un souvenir de 5 jours.' },
-          { name: 'Préparation par l\'IA', desc: 'Avant chaque séance : ce qui s\'est passé, ce qui a changé, ce qu\'il faut explorer. Commencez par l\'insight, pas par le rattrapage. 25 min de mise à jour — disparues.' },
-          { name: 'Ressources Thérapeutiques', desc: 'Fiches, exercices et psychoéducation créés une fois, livrés sur leur téléphone. Ils travaillent entre les séances, vous voyez l\'engagement.' },
-        ],
-      },
-      members: {
-        title: 'Pour les Membres',
-        tagline: 'Restez connecté à votre soin, pas juste à une app',
-        features: [
-          { name: 'Moments', desc: 'Une réflexion de 10 secondes qui construit la conscience de soi au fil du temps. Ce que vous capturez entre les séances fait partie de votre parcours thérapeutique.' },
-          { name: 'Bloom IA', desc: 'Pas un thérapeute de remplacement. Un compagnon qui tient le fil entre les séances — et connaît votre contexte.' },
-          { name: 'Mon Praticien', desc: 'Restez connecté à votre praticien entre les visites. Consultez ses ressources, partagez ce qui compte, et arrivez à votre prochaine séance déjà sur la même longueur d\'onde.' },
-        ],
-      },
-      loop: [
-        'Les membres partagent',
-        'L\'IA connecte les points',
-        'Les praticiens arrivent informés',
-        'Chaque séance commence plus profond',
+    model: {
+      label: 'LE MODÈLE',
+      headline: 'Les praticiens sont notre distribution.',
+      flow1Label: '1 praticien',
+      flow1Value: '€29 / mois',
+      flow2Label: 'invite',
+      flow2Value: 'ses propres patients',
+      flow3Label: 'et recommande',
+      flow3Value: 'ses pairs dans son réseau',
+      revenueTitle: 'Revenus',
+      revenueItems: [
+        '€29 / praticien — notre prix d\'entrée',
+        'Patients gratuits — acquis à coût nul',
+        'SaaS à forte marge',
+        'Expansion : cliniques, IA premium, B2C',
       ],
+      compoundTitle: 'Pourquoi ça compose',
+      compoundItems: [
+        'Les praticiens amènent leurs propres patients dès le premier jour',
+        'L\'engagement est porté par la relation praticien',
+        'La croissance passe par les réseaux de praticiens',
+      ],
+      footnote: '15 séances/semaine × 60€ × ~4 semaines ≈ 3 600€/mois. On facture 29€ — moins d\'une séance. Trop petit pour résilier un jour, avec une marge énorme pour augmenter nos prix.',
+      footnoteSource: 'CA moyen ~51 671€/an · UNASA 2024',
+      footnoteUrl: 'https://propulsebyca.fr/idees-business/psychologue',
     },
-    traction: {
-      label: 'OÙ NOUS EN SOMMES — HONNÊTEMENT',
-      title: "Pré-revenu, post-apprentissage",
-      subtitle: "0 client payant. Un produit live. Et 18 mois de recherche qui ont façonné ce que nous avons construit.",
-      research: [
-        { value: '15', desc: 'Testeurs bêta (non payants)' },
-        { value: '119', desc: 'Entretiens découverte dans 7 pays' },
+    real: {
+      label: 'CE QUI EST RÉEL',
+      headline: 'Nous sommes pré-revenu. Le produit, non.',
+      builtLabel: 'CONSTRUIT',
+      builtItems: [
+        'Plateforme praticien en ligne',
+        'App patient en utilisation',
+        'De vrais utilisateurs interagissent avec le produit',
+        'Système complet construit en interne',
       ],
-      pivotInsight: "Nous avons commencé avec des profils praticiens (Doctalink). Marché saturé. Mais à travers 119 entretiens, nous avons trouvé le vrai fossé : les praticiens n'ont aucune visibilité sur ce qui se passe entre les séances. Cet insight est devenu Bloomsline.",
-      timeline: [
-        { date: 'T1 2025', title: 'Pivot Doctalink', status: 'pivot' },
-        { date: 'T3 2025', title: 'Début Bloomsline', status: 'done' },
-        { date: 'Déc 2025', title: 'MVP Terminé', status: 'done' },
-        { date: 'T1 2026', title: 'Recherche PMF', status: 'current' },
-        { date: 'T2 2026', title: 'Premiers clients payants', status: 'upcoming' },
-        { date: "T3 2026", title: "Scale si PMF", status: 'upcoming' },
+      learnedLabel: 'APPRIS',
+      learnedItems: [
+        '100+ entretiens avant la moindre ligne de code',
+        'Le vide est entre les séances — nommé à chaque conversation',
+        'À l\'usage, il s\'intègre à la façon dont les praticiens travaillent déjà',
+        'La continuité génère l\'engagement — pas les fonctionnalités',
       ],
-      quote: '"Pré-revenu est un risque. Mais nous avons dé-risqué le produit — 119 entretiens ont façonné chaque fonctionnalité. La question est la distribution, pas le produit."',
+      honestLabel: 'HONNÊTE',
+      honestItems: [
+        'Pré-PMF. Mais l\'usage précoce est constant.',
+        'Les praticiens reconnaissent le problème instantanément',
+        'Prix façonné par de vraies conversations',
+        'Deux fondateurs, itération rapide',
+      ],
+      quote: 'Ce n\'est pas un concept. C\'est une plateforme fonctionnelle que vous pouvez utiliser aujourd\'hui.',
     },
-    execution: {
-      label: 'COMMENT ON GAGNE',
-      title: 'Produit. Distribution. Rétention.',
-      subtitle: 'Trois choses qui comptent à notre stade — et où nous en sommes sur chacune.',
-      why: 'Construire → Se faire trouver → Convertir → Retenir',
-      areas: [
+    gtm: {
+      label: 'GO-TO-MARKET',
+      headline: 'La confiance d\'abord.',
+      headline2: 'La croissance suit.',
+      intro: 'Les thérapeutes font confiance aux thérapeutes, pas aux pubs. On a parlé à 100 avant d\'écrire une ligne de code — et on gagnera les 1 000 suivants de la même façon.',
+      columns: [
         {
-          title: 'Produit',
-          items: [
-            'MVP complet — dashboard web pour praticiens + app mobile pour membres',
-            'Moteur IA contextuel qui apprend des moments capturés, détecte les patterns émotionnels, et donne aux praticiens un brief pré-séance. Pas un chatbot — un outil qui rend les séances plus productives.',
-          ],
-          status: 'MVP prêt',
-          why: 'Ce qu\'on vend',
-          highlight: '',
+          tag: 'Passé',
+          title: 'On a commencé par la confiance.',
+          num: '01',
+          action: 'Parlé à 100+ thérapeutes et construit notre réseau — avant le code.',
+          goal: '100+ échanges · 0 pub',
         },
         {
-          title: 'Distribution',
-          items: [
-            'Chaque praticien publie son profil sur Bloomsline → le SEO amène des praticiens organiquement, zéro budget pub à ce stade',
-            'LinkedIn outreach + parrainages pairs sont nos canaux principaux — faible coût, haute intention',
-          ],
-          status: 'Plan prêt, pas encore prouvé',
-          why: 'Comment on trouve les praticiens',
-          highlight: '',
+          tag: 'Aujourd\'hui',
+          title: 'On les convainc un par un.',
+          num: '02',
+          action: 'Contact personnel et onboarding accompagné, un praticien à la fois.',
+          goal: '10 premiers utilisateurs actifs',
         },
         {
-          title: 'Effet réseau',
-          items: [
-            'Chaque praticien invite 20-50 membres (ses clients). Les membres voient le produit, en parlent à d\'autres praticiens. Une vente génère la suivante. C\'est notre avantage CAC — si ça marche.',
-            'Hypothèse : les parrainages organiques se composent. Risque : les praticiens n\'invitent peut-être pas activement leurs membres.',
-          ],
-          status: 'Non prouvé — hypothèse clé',
-          why: 'Comment on scale sans $$',
-          highlight: '',
+          tag: 'Ensuite',
+          title: 'Une croissance qui se nourrit elle-même.',
+          num: '03',
+          action: 'Les thérapeutes en invitent d\'autres ; partenariats avec les écoles.',
+          goal: '150 thérapeutes début 2027',
         },
         {
-          title: 'Rétention',
-          items: [
-            'Les apps santé mentale ont ~90% d\'abandon au mois 1. Nous avons conçu autrement : pas de séries, pas de culpabilité, progrès en récit pas en score.',
-            'C\'est un pari sur la philosophie de design. On pense que ça drive la rétention mais on n\'a pas encore de données.',
-          ],
-          status: 'Conçu, pas mesuré',
-          why: 'Pourquoi ils restent',
-          highlight: '',
+          tag: 'Plus tard',
+          title: 'Voir plus grand.',
+          num: '04',
+          action: 'Cliniques et cabinets de groupe, expansion en Europe.',
+          goal: '1 500+ thérapeutes · 1M€+ de revenus',
         },
       ],
+      dontLabel: 'Ce qu\'on ne fait pas',
+      dontItems: ['Publicité payante', 'Démarchage à froid', 'Acquisition patients B2C', 'Métriques de vanité'],
+      closing: 'On gagne la confiance lentement, puis elle se propage seule.',
     },
-    business: {
-      label: 'MODÈLE ÉCONOMIQUE',
-      title: 'B2B SaaS — les praticiens paient, les membres gratuit',
-      revenuePoints: [
-        { title: '3 paliers : 19€ / 29€ / 49€', desc: 'Essentiel → Pro → Cabinet, par praticien/mois' },
-        { title: 'Les membres utilisent gratuitement', desc: 'Invités par leur praticien — coût d\'acquisition zéro' },
-        { title: 'Premium B2C (futur)', desc: '3€/mois premium membre — pas dans le modèle actuel' },
+    market: {
+      label: 'LE MARCHÉ',
+      headline: 'On démarre en France.',
+      headline2: 'Le chemin est plus grand.',
+      franceTitle: 'En France aujourd\'hui',
+      funnel: [
+        { value: '69M', label: 'personnes vivent en France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
+        { value: '~8M', label: 'adultes ont une dépression chaque année (environ 1 sur 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
+        { value: '77K', label: 'psychologues — chacun doit s\'enregistrer par la loi', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'travaillent à leur compte — c\'est à eux qu\'on vend', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1 000', label: 'notre objectif en année 3, environ 350K€ par an', source: 'notre cible · 3,5% d\'entre eux', url: '' },
       ],
-      gtmPoints: [
-        { title: 'Départ : France', desc: 'Notre marché domestique, où nous avons le réseau' },
-        { title: 'Puis : UE (UK, Allemagne)', desc: 'Même support linguistique, réglementations similaires' },
-        { title: 'Ensuite : Amérique du N.', desc: 'Uniquement après avoir prouvé le PMF en UE' },
-      ],
-      metrics: [
-        { value: '19-49€', desc: 'par praticien/mois' },
-        { value: '~83%', desc: 'marge brute modélisée (non prouvée)' },
-      ],
+      europeLabel: 'Europe',
+      europeValue: '17× plus grand',
+      europeBody: '450M de personnes. Les règles qu\'on suit déjà en France marchent aussi en Europe.',
+      worldLabel: 'Monde',
+      worldValue: '1Md+',
+      worldBody: 'de personnes vivent avec un trouble mental. Un jour — pas aujourd\'hui.',
+      worldSource: 'OMS 2025',
+      worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+      closing: 'On n\'a pas besoin du monde. On a besoin de 1 000 psychologues français.',
     },
     team: {
-      label: "L'ÉQUIPE",
-      title: '2 fondateurs, exécution full-stack',
-      members: [
-        {
-          name: 'Sarah',
-          role: 'Co-fondatrice · Ventes & Opérations',
-          background: 'Construit le moteur GTM de zéro',
-          bio: 'Responsable de l\'acquisition praticiens, partenariats et opérations. Premières conversations commerciales en cours — résultats en attente.',
-        },
-        {
-          name: 'Aditya',
-          role: 'Co-fondateur · Produit & Technologie',
-          background: 'A construit seul toute la plateforme (web + mobile + IA)',
-          bio: 'Ingénieur qui a construit Bloomsline de A à Z : dashboard Next.js, app mobile React Native, backend Supabase, intégration IA Claude. Expérience personnelle avec la thérapie a guidé l\'insight produit.',
-        },
-      ],
-      whyUsPoints: [
-        'Produit entier construit par les fondateurs — pas d\'externalisation, pas de burn avant le lancement',
-        '119 entretiens découverte ont façonné chaque décision produit',
-        'Risque : équipe de 2. Plan : les 2 premiers recrutements sont ingénieur + commercial (inclus dans l\'utilisation des fonds)',
-      ],
+      label: 'L\'ÉQUIPE',
+      headline: 'Deux personnes. Tout fait en interne. Burn quasi nul.',
+      sarahName: 'Sarah Lagzouli',
+      sarahRole: 'Ventes & Opérations',
+      sarahBio: 'La personne en qui les praticiens ont confiance. Elle écoute avant de vendre — c\'est pour ça qu\'ils restent.',
+      adityaName: 'Aditya Channe',
+      adityaRole: 'Produit & Technologie',
+      adityaBio: 'A construit chaque écran que vous voyez. Dirige le produit — et s\'assure qu\'il reste proche du problème.',
+      quote: 'Ce problème est trop proche pour être délégué. Alors on l\'a construit nous-mêmes — deux personnes, en interne, burn quasi nul.',
+      footnote: 'Nous cherchons activement un conseiller clinique. La voix clinique est dans le produit — pas encore au cap table.',
     },
     vision: {
       label: 'LE LONG TERME',
-      title1: 'Quand ça marche, les données deviennent',
-      title2: 'le vrai actif.',
-      description: "Chaque moment capturé, chaque pattern observé, chaque résultat thérapeutique suivi — avec consentement, ce dataset devient uniquement précieux pour la recherche en santé mentale. Mais d'abord, nous devons prouver que la plateforme fonctionne.",
-      phases: [
-        { title: 'Phase 1', desc: 'Plateforme de soin entre-séances. Prouver le product-market fit.' },
-        { title: 'Phase 2', desc: 'Dataset de patterns comportementaux. Valeur pour les partenariats recherche.' },
-        { title: 'Phase 3', desc: 'Infrastructure de recherche en santé mentale. Uniquement si phases 1-2 réussissent.' },
-      ],
-      footer: "Cette vision est ambitieuse et lointaine. Notre focus est la Phase 1 : avoir 100+ praticiens payants, et prouver que le modèle fonctionne.",
+      headline: 'Logiciel aujourd\'hui.',
+      headline2: 'Infrastructure demain.',
+      viewMore: 'Voir plus',
+      showLess: 'Voir moins',
+      whatWeDoLabel: 'Ce qu\'on fait',
+      whyItMattersLabel: 'Pourquoi c\'est important',
+      todayTag: 'Aujourd\'hui',
+      todayTitle: 'Un logiciel que les thérapeutes paient.',
+      todaySub: 'Déjà un vrai business — des revenus récurrents, au cœur du cabinet.',
+      todayBody: 'C\'est déjà réel. Les thérapeutes arrivent préparés à chaque séance au lieu de rattraper le retard — et les patients se sentent accompagnés entre les séances, plus seuls.',
+      todayWhatWeDo: 'Pour 29 €/mois, le thérapeute a un outil qui rend chaque séance plus juste, et ses patients restent reliés au travail entre les séances. Les deux côtés le ressentent.',
+      todayWhyItMatters: 'Les praticiens paient et continuent de payer. Les patients reviennent. Quand les deux côtés choisissent de rester, on sait que ça marche — en pratique, pas en théorie.',
+      nextTag: 'Ensuite',
+      nextTitle: 'On rend la thérapie mesurable.',
+      nextSub: 'La donnée que personne d\'autre n\'a — la preuve de ce qui marche vraiment entre les séances.',
+      nextBody: 'Pour la première fois, les progrès deviennent visibles. Chaque séance — et chaque moment entre — compose une vraie image : « anxiété en baisse de 40 % en trois mois ». Le patient voit qu\'il va mieux ; le thérapeute voit son travail porter. Personne n\'a jamais eu ça.',
+      nextWhatWeDo: 'Les thérapeutes reçoivent de vrais rapports de résultats ; les patients suivent leur propre progression. Et nous détenons la seule chose que personne d\'autre n\'a — un registre continu de ce qui se passe entre les séances.',
+      nextWhyItMatters: 'La preuve change tout. C\'est ce qui pousse un praticien à passer en premium, une clinique à nous rejoindre — ce qui fait passer d\'un outil sympa à un outil essentiel.',
+      laterTag: 'À terme',
+      laterTitle: 'L\'infrastructure de la santé mentale.',
+      laterSub: 'La couche de confiance sur laquelle tout le secteur se construit — praticiens, cliniques, chercheurs et systèmes de santé.',
+      laterBody: 'La santé mentale n\'a jamais eu de façon commune de mesurer ce qui marche. Nous le devenons — du cabinet d\'un thérapeute aux cliniques, chercheurs et systèmes de santé partout en Europe, et même aux applications grand public qui se branchent sur le même modèle, tous construisant sur la même fondation.',
+      laterWhatWeDo: 'De mesurer les résultats à les anticiper — des signaux qui repèrent les jours difficiles avant qu\'ils n\'arrivent, pour qu\'un praticien prenne les devants. Et nous ouvrons la couche : cliniques, chercheurs et applications grand public se branchent sur le même standard. Nous devenons la façon dont le soin se mesure.',
+      laterWhyItMatters: 'Quand tout un secteur mesure de la même façon, il se construit sur la même couche — la nôtre. Ce n\'est pas un produit plus gros. C\'est une infrastructure.',
+      footnote: 'La vision gagne le droit d\'exister par l\'exécution. Là, on est concentrés sur Aujourd\'hui.',
     },
     ask: {
       label: 'LA DEMANDE',
-      title: 'Levée de 400K€-500K€',
-      subtitle: 'Pré-seed · 18 mois pour prouver le product-market fit',
-      useOfFunds: [
-        { label: 'Produit (IA + mobile)', percent: 40 },
-        { label: 'Équipe (dev + commercial)', percent: 25 },
-        { label: 'Go-to-Market', percent: 25 },
-        { label: 'Ops & Juridique', percent: 10 },
+      headline: 'Levée de 800 k€ en pre-seed.',
+      subhead: '18 mois pour faire de la conformité européenne un avantage durable.',
+      fundsLabel: 'Utilisation des fonds',
+      fundsHint: 'Touchez une ligne pour le détail',
+      fundsItems: [
+        { label: 'Équipe', value: '36%', why: 'Passer de nous deux à l\'équipe qu\'il faut pour avancer plus vite et signer nos premiers thérapeutes payants.' },
+        { label: 'Sécurité, Conformité & Juridique', value: '33%', why: 'Presque autant, car gérer les données de santé en Europe est la partie difficile et coûteuse, et c\'est ce qui nous permet de vendre.' },
+        { label: 'Produit & Croissance', value: '21%', why: 'Continuer à améliorer l\'app et la faire connaître à plus de thérapeutes.' },
+        { label: 'Réserve', value: '10%', why: 'Couvrir les coûts et retards imprévus.' },
       ],
-      milestones: [
-        { title: 'M6 : 30-50 premiers praticiens payants', desc: 'Preuve que quelqu\'un sort sa carte' },
-        { title: 'M12 : 100+ praticiens, 80%+ rétention', desc: 'Signal de product-market fit' },
-        { title: 'M18 : 100K€+ ARR, prêt Série A', desc: 'Données pour lever le tour suivant à 3-5x' },
-        { title: 'Si on rate : déclencheurs pivot concrets', desc: 'Voir le modèle financier pour les seuils M3/M6/M9/M12' },
-      ],
-      vision: {
-        title1: 'Quand ça marche, les données deviennent',
-        title2: 'le vrai actif.',
-        phases: [
-          'Plateforme de soin entre-séances',
-          'Dataset de patterns comportementaux',
-          'Infrastructure de recherche en santé mentale',
-        ],
-      },
+      closing: 'Assez pour atteindre le product-market fit, bâtir le rempart réglementaire, et protéger les données des patients.',
     },
-    contact: {
-      title: "Parlons-en",
-      subtitle: 'Nous levons maintenant. Nous pouvons présenter le modèle financier en direct.',
-      bookMeeting: 'Réserver un appel de 20 min',
-      emailUs: 'Nous Écrire',
+    close: {
+      line1: 'La thérapie a lieu en séance.',
+      line2: 'La vie a lieu chaque jour.',
+      line3: 'Et aujourd\'hui, rien ne relie les deux.',
+      line4: 'C\'est la couche que nous construisons.',
+      cta: 'Discutons.',
+      bookCall: 'Réserver un appel de 30 min',
+      emailUs: 'hi@bloomsline.com',
+      copyright: '© 2026 Bloomsline',
     },
   },
 }
@@ -626,18 +785,21 @@ export default function PitchNewPage() {
 
   const slides = [
     { id: 'hero', title: t.slides.hero },
-    { id: 'problem', title: t.slides.problem },
-    { id: 'solution', title: t.slides.solution },
-    { id: 'whyNow', title: t.slides.whyNow },
-    { id: 'differentiation', title: t.slides.differentiation },
+    { id: 'silence', title: t.slides.silence },
+    { id: 'whyItMatters', title: t.slides.whyItMatters },
+    { id: 'origin', title: t.slides.origin },
     { id: 'product', title: t.slides.product },
-    { id: 'traction', title: t.slides.traction },
-    { id: 'execution', title: t.slides.execution },
-    { id: 'business', title: t.slides.business },
+    { id: 'boundary', title: t.slides.boundary },
+    { id: 'whyNow', title: t.slides.whyNow },
+    { id: 'security', title: t.slides.security },
+    { id: 'real', title: t.slides.real },
+    { id: 'market', title: t.slides.market },
+    { id: 'gtm', title: t.slides.gtm },
+    { id: 'model', title: t.slides.model },
     { id: 'team', title: t.slides.team },
     { id: 'vision', title: t.slides.vision },
     { id: 'ask', title: t.slides.ask },
-    { id: 'contact', title: t.slides.contact },
+    { id: 'close', title: t.slides.close },
   ]
 
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -668,18 +830,62 @@ export default function PitchNewPage() {
   }, [nextSlide, prevSlide])
 
   const slideVariants = {
-    enter: { opacity: 0, y: 50 },
+    enter: { opacity: 0, y: 30 },
     center: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -50 },
+    exit: { opacity: 0, y: -30 },
+  }
+
+  // Dark slide gets dark nav styling
+  const isDark = currentSlide === 6 // whyNow
+
+  // One place to render a slide by index — used by the on-screen view and the
+  // print stack (PDF export).
+  const renderSlide = (i: number) => {
+    switch (i) {
+      case 0: return <HeroSlide onNext={nextSlide} t={t.hero} />
+      case 1: return <SilenceSlide t={t.silence} />
+      case 2: return <WhyItMattersSlide t={t.whyItMatters} />
+      case 3: return <OriginSlide t={t.origin} />
+      case 4: return <ProductSlide t={t.product} />
+      case 5: return <BoundarySlide t={t.boundary} />
+      case 6: return <WhyNowSlide t={t.whyNow} />
+      case 7: return <SecuritySlide t={t.security} />
+      case 8: return <RealSlide t={t.real} />
+      case 9: return <MarketSlide t={t.market} />
+      case 10: return <GTMSlide t={t.gtm} />
+      case 11: return <ModelSlide t={t.model} />
+      case 12: return <TeamSlide t={t.team} />
+      case 13: return <VisionSlide t={t.vision} />
+      case 14: return <AskSlide t={t.ask} />
+      case 15: return <CloseSlide t={t.close} />
+      default: return null
+    }
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-white">
-      {/* Language Toggle */}
+    <>
+    <div className="pdf-screen h-screen w-screen overflow-hidden" style={{ backgroundColor: isDark ? '#0a0a0a' : '#FAF8F5' }}>
+      {/* Language Toggle + Download PDF */}
       <div className="fixed top-6 right-6 z-50 flex items-center gap-2">
         <button
+          onClick={() => window.print()}
+          title="Download as PDF"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm border transition-all text-sm font-medium ${
+            isDark
+              ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+              : 'bg-white/80 border-neutral-200 hover:bg-white hover:border-neutral-300 text-neutral-700'
+          }`}
+        >
+          <Download className="w-4 h-4" />
+          PDF
+        </button>
+        <button
           onClick={() => setLocale(locale === 'en' ? 'fr' : 'en', false)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-sm border border-neutral-200 hover:bg-white hover:border-neutral-300 transition-all text-sm font-medium text-neutral-700"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-sm border transition-all text-sm font-medium ${
+            isDark
+              ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white'
+              : 'bg-white/80 border-neutral-200 hover:bg-white hover:border-neutral-300 text-neutral-700'
+          }`}
         >
           <Globe className="w-4 h-4" />
           {locale === 'en' ? 'FR' : 'EN'}
@@ -687,7 +893,7 @@ export default function PitchNewPage() {
       </div>
 
       {/* Navigation dots */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
+      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3">
         {slides.map((slide, index) => (
           <button
             key={slide.id}
@@ -696,12 +902,16 @@ export default function PitchNewPage() {
             aria-label={slide.title}
           >
             <span className={`text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
-              currentSlide === index ? 'text-teal-600' : 'text-neutral-400'
+              isDark
+                ? (currentSlide === index ? 'text-teal-400' : 'text-neutral-500')
+                : (currentSlide === index ? 'text-teal-600' : 'text-neutral-400')
             }`}>
               {slide.title}
             </span>
-            <span className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              currentSlide === index ? 'bg-teal-500 scale-125' : 'bg-neutral-300 hover:bg-neutral-400'
+            <span className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              isDark
+                ? (currentSlide === index ? 'bg-teal-400 scale-150' : 'bg-white/30 hover:bg-white/50')
+                : (currentSlide === index ? 'bg-teal-600 scale-150' : 'bg-neutral-300 hover:bg-neutral-400')
             }`} />
           </button>
         ))}
@@ -712,22 +922,26 @@ export default function PitchNewPage() {
         <button
           onClick={prevSlide}
           disabled={currentSlide === 0}
-          className={`p-2 rounded-full bg-white/80 backdrop-blur-sm border border-neutral-200 hover:bg-white hover:border-neutral-300 transition-all ${
-            currentSlide === 0 ? 'opacity-30 cursor-not-allowed' : ''
-          }`}
+          className={`p-2 rounded-full backdrop-blur-sm border transition-all ${
+            isDark
+              ? 'bg-white/10 border-white/20 hover:bg-white/20'
+              : 'bg-white/80 border-neutral-200 hover:bg-white hover:border-neutral-300'
+          } ${currentSlide === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
           aria-label="Previous slide"
         >
-          <ChevronUp className="w-5 h-5 text-neutral-600" />
+          <ChevronUp className={`w-5 h-5 ${isDark ? 'text-white' : 'text-neutral-600'}`} />
         </button>
         <button
           onClick={nextSlide}
           disabled={currentSlide === slides.length - 1}
-          className={`p-2 rounded-full bg-white/80 backdrop-blur-sm border border-neutral-200 hover:bg-white hover:border-neutral-300 transition-all ${
-            currentSlide === slides.length - 1 ? 'opacity-30 cursor-not-allowed' : 'animate-bounce'
-          }`}
+          className={`p-2 rounded-full backdrop-blur-sm border transition-all ${
+            isDark
+              ? 'bg-white/10 border-white/20 hover:bg-white/20'
+              : 'bg-white/80 border-neutral-200 hover:bg-white hover:border-neutral-300'
+          } ${currentSlide === slides.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
           aria-label="Next slide"
         >
-          <ChevronDown className="w-5 h-5 text-neutral-600" />
+          <ChevronDown className={`w-5 h-5 ${isDark ? 'text-white' : 'text-neutral-600'}`} />
         </button>
       </div>
 
@@ -749,124 +963,146 @@ export default function PitchNewPage() {
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="h-full w-full"
         >
-          {currentSlide === 0 && <HeroSlide onNext={nextSlide} t={t.hero} />}
-          {currentSlide === 1 && <ProblemSlide t={t.problem} />}
-          {currentSlide === 2 && <SolutionSlide t={t.solution} />}
-          {currentSlide === 3 && <WhyNowSlide t={t.whyNow} />}
-          {currentSlide === 4 && <DifferentiationSlide t={t.differentiation} />}
-          {currentSlide === 5 && <ProductSlide t={t.product} />}
-          {currentSlide === 6 && <TractionSlide t={t.traction} />}
-          {currentSlide === 7 && <ExecutionSlide t={t.execution} />}
-          {currentSlide === 8 && <BusinessSlide t={t.business} />}
-          {currentSlide === 9 && <TeamSlide t={t.team} />}
-          {currentSlide === 10 && <VisionSlide t={t.vision} />}
-          {currentSlide === 11 && <AskSlide t={t.ask} />}
-          {currentSlide === 12 && <ContactSlide t={t.contact} />}
+          {renderSlide(currentSlide)}
         </motion.div>
       </AnimatePresence>
 
       {/* Slide counter */}
-      <div className="fixed bottom-6 right-6 z-50 text-sm text-neutral-400 font-medium">
+      <div className={`fixed bottom-6 right-6 z-50 text-sm font-medium ${isDark ? 'text-white/40' : 'text-neutral-400'}`}>
         {currentSlide + 1} / {slides.length}
       </div>
     </div>
+
+    {/* Print-only stack — every slide, one per page, for the PDF export.
+        Hidden on screen; revealed by the print stylesheet below. */}
+    <div className="pdf-print" aria-hidden>
+      {slides.map((_, i) => (
+        <div key={i} className="pdf-page" style={{ backgroundColor: i === 6 ? '#0a0a0a' : '#FAF8F5' }}>
+          {renderSlide(i)}
+        </div>
+      ))}
+    </div>
+
+    <style>{`
+      .pdf-print { display: none; }
+      @media print {
+        @page { size: 1280px 720px; margin: 0; }
+        html, body { margin: 0; }
+        .pdf-screen { display: none !important; }
+        .pdf-print { display: block !important; }
+        .pdf-page {
+          width: 1280px; height: 720px; overflow: hidden; position: relative;
+          break-after: page; page-break-after: always;
+        }
+        .pdf-page:last-child { break-after: auto; page-break-after: auto; }
+        /* Kill the slide scrollbars (overflow-y-auto) that print as a grey bar. */
+        .pdf-print [class*="overflow-y-auto"],
+        .pdf-print [class*="overflow-auto"] { overflow: hidden !important; }
+        .pdf-print *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .pdf-print * { scrollbar-width: none !important; }
+        /* Neutralize framer-motion mount state so content is visible in the PDF */
+        .pdf-page [style*="opacity"] { opacity: 1 !important; }
+        /* The print viewport doesn't trigger md:/lg: breakpoints, so the deck
+           would render in its (taller) mobile layout and clip. Force the
+           desktop layout for the handful of responsive utilities the slides use. */
+        .pdf-print .sm\\:grid-cols-2,
+        .pdf-print .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        .pdf-print .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+        .pdf-print .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+        .pdf-print .md\\:flex-row { flex-direction: row !important; }
+        .pdf-print .md\\:items-end { align-items: flex-end !important; }
+        /* Preserve backgrounds/colors in the PDF */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      }
+    `}</style>
+    </>
   )
 }
 
-
 // =============================================================================
-// SLIDE 1: HERO
+// SLIDE 1: HERO — "One hour a week. 167 hours of silence."
 // =============================================================================
 
 function HeroSlide({ onNext, t }: { onNext: () => void; t: typeof translations.en.hero }) {
   return (
-    <div className="h-full w-full flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-50/50 via-white to-lavender-50/30" />
-      <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-teal-200/40 to-teal-300/40 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-br from-lavender-200/40 to-lavender-300/40 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+    <div className="h-full w-full flex items-center justify-center relative overflow-hidden px-8">
+      {/* Subtle blob */}
+      <div className="absolute top-20 right-20 w-[500px] h-[500px] bg-gradient-to-br from-teal-100/40 to-transparent rounded-full mix-blend-multiply filter blur-3xl" />
+      <div className="absolute bottom-20 left-20 w-[400px] h-[400px] bg-gradient-to-br from-amber-100/30 to-transparent rounded-full mix-blend-multiply filter blur-3xl" />
 
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8"
+      <div className="relative z-10 max-w-5xl w-full">
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+          className="text-3xl sm:text-4xl lg:text-[3.5rem] font-light text-neutral-900 leading-[1.1] tracking-tight mb-4"
         >
-          <Logo size="lg" showText={false} />
-        </motion.div>
+          {t.title1}
+        </motion.h1>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="text-5xl sm:text-6xl lg:text-7xl font-light text-neutral-900 mb-6 leading-[1.1]"
+          transition={{ duration: 0.7, delay: 0.5 }}
+          className="text-3xl sm:text-4xl lg:text-[3.5rem] font-light leading-[1.1] tracking-tight mb-16"
         >
-          {t.title1}<br />
-          <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
-            {t.title2}
-          </span>
+          <span className="text-teal-700">{t.title2}</span>
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-xl text-neutral-600 mb-10 max-w-2xl mx-auto leading-relaxed"
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="text-2xl sm:text-3xl font-light text-neutral-700 mb-4 max-w-2xl leading-snug"
         >
-          {t.subtitle}<br />{t.subtitle2}
+          {t.subtitle}
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <Button
-            onClick={onNext}
-            className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-full shadow-lg shadow-teal-500/30 hover:shadow-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 text-lg"
-          >
-            {t.cta}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-        </motion.div>
-
-        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-sm text-neutral-400 mt-8"
+          transition={{ duration: 0.6, delay: 1 }}
+          className="flex items-center gap-4 mt-10"
         >
-          {t.seed}
-        </motion.p>
+          <p className="text-base text-neutral-500">
+            <span className="text-neutral-700 font-medium">Bloomsline</span> — {t.stage}
+          </p>
+          <button
+            onClick={onNext}
+            aria-label={t.cta}
+            title={t.cta}
+            className="shrink-0 w-10 h-10 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 flex items-center justify-center transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </motion.div>
       </div>
     </div>
   )
 }
 
-
 // =============================================================================
-// SLIDE 2: PROBLEM — simple, visceral
+// SLIDE 2: THE SILENCE
 // =============================================================================
 
-function ProblemSlide({ t }: { t: typeof translations.en.problem }) {
+function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
   return (
-    <div className="h-full w-full flex items-center justify-center px-8 lg:px-16">
-      <div className="w-full max-w-4xl mx-auto text-center">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
           {t.label}
         </motion.p>
 
-        {/* Big statement */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 mb-2 leading-[1.1]"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
         >
           {t.headline}
         </motion.h2>
@@ -874,70 +1110,53 @@ function ProblemSlide({ t }: { t: typeof translations.en.problem }) {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-red-500 mb-8 leading-[1.1]"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-400 leading-[1.1] tracking-tight mb-16"
         >
-          {t.subheadline}
+          {t.headline2}
         </motion.h2>
 
-        {/* Visual ratio bar */}
+        {/* Two column contrast — what breaks on each side */}
         <motion.div
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          style={{ transformOrigin: 'left' }}
-          className="max-w-2xl mx-auto mb-4"
-        >
-          <div className="flex h-4 rounded-full overflow-hidden">
-            <div className="bg-teal-500 rounded-l-full" style={{ width: `${(1 / 168) * 100}%`, minWidth: '6px' }} />
-            <div className="bg-neutral-200 flex-1 rounded-r-full" />
-          </div>
-          <div className="flex justify-between text-xs text-neutral-400 mt-2 px-1">
-            <span className="text-teal-600 font-semibold">1h therapy</span>
-            <span>167h on their own</span>
-          </div>
-        </motion.div>
-
-        {/* Punchline */}
-        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-lg text-neutral-500 max-w-xl mx-auto mb-12"
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16 max-w-4xl"
         >
-          {t.punchline}
-        </motion.p>
-
-        {/* 3 consequences — what this means */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-10"
-        >
-          {t.consequences.map((c, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-red-50 border border-red-100">
-              <p className="text-sm text-neutral-700">{c.text}</p>
-            </div>
-          ))}
+          <div>
+            <p className="text-xs tracking-[0.2em] text-teal-700 uppercase mb-4">{t.practitionerLabel}</p>
+            <ul className="space-y-2">
+              {t.practitionerItems.map((item, i) => (
+                <li key={i} className="text-lg text-neutral-900 font-light">{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="md:border-l border-neutral-200 md:pl-12">
+            <p className="text-xs tracking-[0.2em] text-teal-700 uppercase mb-4">{t.patientLabel}</p>
+            <ul className="space-y-2">
+              {t.patientItems.map((item, i) => (
+                <li key={i} className="text-lg text-neutral-700 font-light">{item}</li>
+              ))}
+            </ul>
+          </div>
         </motion.div>
 
-        {/* Stats — proof */}
+        {/* Stats footer */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.9 }}
-          className="flex justify-center gap-10"
+          className="flex flex-wrap gap-8 pt-8 border-t border-neutral-200"
         >
-          {t.stats.map((stat, index) => (
-            <div key={index} className="text-center">
-              <p className="text-2xl sm:text-3xl font-bold text-red-500 mb-1">{stat.value}</p>
-              <p className="text-xs text-neutral-600 mb-1">{stat.label}</p>
+          {t.stats.map((stat, i) => (
+            <div key={i} className="flex items-baseline gap-2">
+              <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
+              <span className="text-xs text-neutral-900">{stat.label}</span>
               <a
                 href={stat.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] text-neutral-400 hover:text-teal-600 underline underline-offset-2 transition-colors"
+                className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
               >
                 {stat.source} ↗
               </a>
@@ -949,205 +1168,26 @@ function ProblemSlide({ t }: { t: typeof translations.en.problem }) {
   )
 }
 
-
 // =============================================================================
-// SLIDE 3: SOLUTION — merged Solution + Product features
-// =============================================================================
-
-function SolutionSlide({ t }: { t: typeof translations.en.solution }) {
-  const icons = [Sparkles, Stethoscope]
-  const bgColors = ['bg-teal-50', 'bg-[#D4856A]/10']
-  const borderColors = ['border-teal-200', 'border-[#D4856A]/30']
-  const textColors = ['text-teal-600', 'text-[#D4856A]']
-  const iconBgColors = ['bg-teal-100', 'bg-[#D4856A]/20']
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-4 leading-[1.1]"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-xl sm:text-2xl text-neutral-500 mb-10 max-w-3xl mx-auto"
-        >
-          {t.subtitle}
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
-        >
-          {t.pillars.map((pillar, index) => {
-            const Icon = icons[index]
-            return (
-              <div key={index} className={`p-6 rounded-2xl ${bgColors[index]} border ${borderColors[index]} text-left`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-xl ${iconBgColors[index]} flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${textColors[index]}`} />
-                  </div>
-                  <div>
-                    <p className={`text-xs font-medium ${textColors[index]} uppercase tracking-wide`}>{pillar.tagline}</p>
-                    <h3 className="font-semibold text-neutral-900 text-lg">{pillar.title}</h3>
-                  </div>
-                </div>
-                <ul className="space-y-2 mb-4">
-                  {pillar.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
-                      <Check className={`w-4 h-4 ${textColors[index]} mt-0.5 flex-shrink-0`} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className={`text-sm font-medium ${textColors[index]} pt-3 border-t ${borderColors[index]}`}>
-                  → {pillar.outcome}
-                </p>
-              </div>
-            )
-          })}
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-lg font-medium text-neutral-700"
-        >
-          {t.bridge}
-        </motion.p>
-      </div>
-    </div>
-  )
-}
-
-
-// =============================================================================
-// SLIDE 4: WHY NOW — merged Market + Why Now + TAM/SAM/SOM
+// SLIDE 3: WHY IT MATTERS — consequences of the problem
 // =============================================================================
 
-function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left: Why Now reasons */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-neutral-50 border border-neutral-200"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-5 text-lg">Tailwinds</h3>
-            <div className="space-y-4">
-              {t.reasons.map((reason, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-neutral-600">{reason}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 pt-4 border-t border-neutral-200 text-center">
-              <p className="text-3xl font-bold text-teal-600">{t.marketGrowth}</p>
-              <p className="text-sm text-neutral-500">Annual market growth</p>
-            </div>
-          </motion.div>
-
-          {/* Right: TAM/SAM/SOM stacked */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col gap-4"
-          >
-            {[
-              { data: t.tam, color: 'border-red-300 bg-red-50', valueColor: 'text-red-600', labelColor: 'text-red-500' },
-              { data: t.sam, color: 'border-blue-300 bg-blue-50', valueColor: 'text-blue-600', labelColor: 'text-blue-500' },
-              { data: t.som, color: 'border-teal-300 bg-teal-50', valueColor: 'text-teal-600', labelColor: 'text-teal-500' },
-            ].map(({ data, color, valueColor, labelColor }, index) => (
-              <motion.div
-                key={data.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.35 + index * 0.1 }}
-                className={`p-5 rounded-2xl border ${color} flex items-center gap-4`}
-              >
-                <div className={`text-sm font-bold ${labelColor} w-10`}>{data.label}</div>
-                <div className={`text-3xl font-bold ${valueColor}`}>{data.value}</div>
-                <div className="text-sm text-neutral-600 flex-1">{data.desc}</div>
-              </motion.div>
-            ))}
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
-              className="text-sm text-neutral-500 italic mt-2 px-2"
-            >
-              {t.wedge}
-            </motion.p>
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-// =============================================================================
-// SLIDE 5: DIFFERENTIATION — visual gap
-// =============================================================================
-
-function DifferentiationSlide({ t }: { t: typeof translations.en.differentiation }) {
-  const bucketColors = [
-    { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-600' },
-    { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-600' },
+function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
+  const items = [
+    { label: t.item1Label, body: t.item1Body },
+    { label: t.item2Label, body: t.item2Body },
+    { label: t.item3Label, body: t.item3Body },
+    { label: t.item4Label, body: t.item4Body },
   ]
 
   return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-4xl mx-auto text-center">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
           {t.label}
         </motion.p>
@@ -1155,284 +1195,92 @@ function DifferentiationSlide({ t }: { t: typeof translations.en.differentiation
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
         >
-          {t.title}
+          {t.headline1}
         </motion.h2>
 
-        {/* Two existing buckets */}
-        <div className="grid sm:grid-cols-2 gap-6 mb-8">
-          {t.buckets.map((bucket, index) => (
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-16"
+        >
+          {t.headline2}
+        </motion.h2>
+
+        {/* Four consequence quadrants */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-14 max-w-4xl">
+          {items.map((item, i) => (
             <motion.div
-              key={bucket.label}
+              key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className={`p-6 rounded-2xl ${bucketColors[index].bg} border ${bucketColors[index].border}`}
+              transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+              className="flex flex-col gap-2"
             >
-              <p className="text-3xl mb-3">{bucket.emoji}</p>
-              <h3 className="text-lg font-semibold text-neutral-900 mb-1">{bucket.label}</h3>
-              <p className="text-sm text-neutral-400 mb-3">{bucket.examples}</p>
-              <p className="text-base font-medium text-neutral-700 mb-1">{bucket.does}</p>
-              <p className="text-sm text-neutral-500">{bucket.detail}</p>
+              <p className="text-xs tracking-[0.25em] uppercase font-mono text-teal-700">
+                {item.label}
+              </p>
+              <p className="text-lg text-neutral-800 font-light leading-snug">
+                {item.body}
+              </p>
             </motion.div>
           ))}
         </div>
 
-        {/* The gap */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mb-6"
-        >
-          <div className="inline-block px-8 py-4 rounded-2xl bg-red-50 border border-red-200">
-            <p className="text-lg sm:text-xl font-medium text-red-600">{t.gap}</p>
-          </div>
-        </motion.div>
-
-        {/* Bloomsline — the answer */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          className="p-8 rounded-3xl bg-gradient-to-br from-teal-50 to-teal-100/50 border-2 border-teal-300"
-        >
-          <p className="text-3xl sm:text-4xl font-bold text-teal-600 mb-2">{t.answer}</p>
-          <p className="text-lg text-neutral-600">{t.answerDetail}</p>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-
-// =============================================================================
-// SLIDE 6: PRODUCT — what we built
-// =============================================================================
-
-function ProductSlide({ t }: { t: typeof translations.en.product }) {
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto text-center">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 leading-[1.1]"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8"
-        >
-          {/* Practitioners column */}
-          <div className="p-6 rounded-2xl bg-[#D4856A]/10 border border-[#D4856A]/30 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-[#D4856A]/20 flex items-center justify-center">
-                <Stethoscope className="w-5 h-5 text-[#D4856A]" />
-              </div>
-              <h3 className="font-semibold text-neutral-900 text-lg">{t.practitioners.title}</h3>
-            </div>
-            <p className="text-sm font-medium text-[#D4856A] mb-5 ml-[52px]">{t.practitioners.tagline}</p>
-            <div className="space-y-4">
-              {t.practitioners.features.map((feature, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-[#D4856A]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-[#D4856A] text-xs font-bold">{i + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
-                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Members column */}
-          <div className="p-6 rounded-2xl bg-teal-50 border border-teal-200 text-left">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-teal-600" />
-              </div>
-              <h3 className="font-semibold text-neutral-900 text-lg">{t.members.title}</h3>
-            </div>
-            <p className="text-sm font-medium text-teal-600 mb-5 ml-[52px]">{t.members.tagline}</p>
-            <div className="space-y-4">
-              {t.members.features.map((feature, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-teal-600 text-xs font-bold">{i + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-neutral-900 text-sm">{feature.name}</p>
-                    <p className="text-[13px] text-neutral-500 leading-snug">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* The loop — the real USP */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-neutral-900 text-sm"
-        >
-          {t.loop.map((step, i) => (
-            <span key={i} className="flex items-center gap-2">
-              <span className="text-white font-medium">{step}</span>
-              {i < t.loop.length - 1 && <ArrowRight className="w-3.5 h-3.5 text-teal-400" />}
-            </span>
-          ))}
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-
-// =============================================================================
-// SLIDE 7: TRACTION — merged Traction + Progress timeline
-// =============================================================================
-
-function TractionSlide({ t }: { t: typeof translations.en.traction }) {
-  const statusColors = {
-    pivot: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' },
-    done: { bg: 'bg-teal-100', border: 'border-teal-300', text: 'text-teal-700' },
-    current: { bg: 'bg-gradient-to-r from-teal-500 to-teal-600', border: 'border-teal-500', text: 'text-white' },
-    upcoming: { bg: 'bg-neutral-50', border: 'border-neutral-200', text: 'text-neutral-500' },
-  }
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-3 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-neutral-500 text-center mb-8"
-        >
-          {t.subtitle}
-        </motion.p>
-
-        {/* Top row: research stats + pivot insight */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid sm:grid-cols-3 gap-4 mb-8"
-        >
-          {t.research.map((item, index) => (
-            <div key={index} className="p-5 rounded-2xl bg-teal-50 border border-teal-100 text-center">
-              <p className="text-3xl font-bold text-teal-600">{item.value}</p>
-              <p className="text-sm text-neutral-600 mt-1">{item.desc}</p>
-            </div>
-          ))}
-          <div className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm">
-            <p className="text-sm text-neutral-600 leading-relaxed">{t.pivotInsight}</p>
-          </div>
-        </motion.div>
-
-        {/* Timeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <div className="relative">
-            <div className="absolute top-6 left-0 right-0 h-0.5 bg-neutral-200 hidden lg:block" />
-            <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
-              {t.timeline.map((item, index) => {
-                const colors = statusColors[item.status as keyof typeof statusColors]
-                const isCurrent = item.status === 'current'
-                return (
-                  <div key={index} className="relative">
-                    <div className="hidden lg:flex justify-center mb-3">
-                      <div className={`w-3 h-3 rounded-full ${isCurrent ? 'bg-teal-500' : item.status === 'done' ? 'bg-teal-400' : item.status === 'pivot' ? 'bg-amber-400' : 'bg-neutral-300'} z-10`}>
-                        {isCurrent && <div className="absolute -inset-1 rounded-full bg-teal-500/30 animate-ping" />}
-                      </div>
-                    </div>
-                    <div className={`p-3 rounded-xl ${colors.bg} ${colors.border} border ${isCurrent ? 'shadow-lg shadow-teal-500/20' : ''}`}>
-                      <p className={`text-xs font-medium mb-0.5 ${isCurrent ? 'text-teal-100' : 'text-neutral-500'}`}>{item.date}</p>
-                      <h4 className={`font-semibold text-sm ${colors.text}`}>{item.title}</h4>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </motion.div>
-
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="text-center text-neutral-500 mt-6 italic text-sm"
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-neutral-500 italic font-light pt-6 border-t border-neutral-200 max-w-3xl mb-6"
         >
-          {t.quote}
+          {t.closing}
         </motion.p>
+
+        {/* Stats */}
+        {(t as any).stats && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 1.2 }}
+            className="flex flex-wrap gap-8"
+          >
+            {((t as any).stats as Array<{ value: string; label: string; source: string; url: string }>).map((stat, i) => (
+              <div key={i} className="flex items-baseline gap-2">
+                <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
+                <span className="text-xs text-neutral-900">{stat.label}</span>
+                <a
+                  href={stat.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
+                >
+                  {stat.source} ↗
+                </a>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   )
 }
 
-
 // =============================================================================
-// SLIDE 7: EXECUTION — Building the Foundation
+// SLIDE 4: ORIGIN — "We built the wrong thing first"
 // =============================================================================
 
-function ExecutionSlide({ t }: { t: typeof translations.en.execution }) {
-  const areaConfig = [
-    { icon: Code, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200', statusBg: 'bg-teal-100', statusText: 'text-teal-700' },
-    { icon: Megaphone, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', statusBg: 'bg-violet-100', statusText: 'text-violet-700' },
-    { icon: Handshake, color: 'text-[#D4856A]', bg: 'bg-[#D4856A]/10', border: 'border-[#D4856A]/30', statusBg: 'bg-[#D4856A]/20', statusText: 'text-[#D4856A]' },
-    { icon: Heart, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', statusBg: 'bg-blue-100', statusText: 'text-blue-700' },
-  ]
-
+function OriginSlide({ t }: { t: typeof translations.en.origin }) {
   return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-20">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
           {t.label}
         </motion.p>
@@ -1440,66 +1288,49 @@ function ExecutionSlide({ t }: { t: typeof translations.en.execution }) {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-3 text-center"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-16"
         >
-          {t.title}
+          {t.headline}
         </motion.h2>
 
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
+        {/* Takeaway quote */}
+        <motion.blockquote
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-neutral-500 text-center mb-4"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="border-l-2 border-teal-600 pl-6 py-1 mb-14"
         >
-          {t.subtitle}
-        </motion.p>
+          <p className="text-xl lg:text-2xl font-light italic text-neutral-900 leading-snug whitespace-nowrap">
+            &ldquo;{t.quote}&rdquo;
+          </p>
+        </motion.blockquote>
 
-        {/* Connecting logic */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-center text-sm font-medium text-neutral-400 mb-8"
-        >
-          {t.why}
-        </motion.p>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {t.areas.map((area, index) => {
-            const config = areaConfig[index]
-            const Icon = config.icon
+        {/* Horizontal timeline — the journey */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+          {(t.timeline as Array<{ period: string; label: string; body: string; accent?: boolean }>).map((item, i, arr) => {
+            const isLast = i === arr.length - 1
             return (
               <motion.div
-                key={area.title}
+                key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.25 + index * 0.1 }}
-                className={`p-5 rounded-2xl ${config.bg} border ${config.border} flex flex-col`}
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.15 }}
+                className="relative"
               >
-                <div className="flex items-center gap-3 mb-1">
-                  <div className={`w-9 h-9 rounded-xl ${config.statusBg} flex items-center justify-center`}>
-                    <Icon className={`w-4.5 h-4.5 ${config.color}`} />
-                  </div>
-                  <h3 className="font-semibold text-neutral-900">{area.title}</h3>
+                {!isLast && (
+                  <div className="hidden md:block absolute top-[7px] left-5 right-[-1.5rem] h-px bg-neutral-300" />
+                )}
+                <div
+                  className={`w-4 h-4 rounded-full border-2 mb-5 relative z-10 ${
+                    item.accent ? 'bg-teal-600 border-teal-600 ring-4 ring-teal-100' : 'bg-neutral-800 border-neutral-800'
+                  }`}
+                />
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className={`text-lg font-medium ${item.accent ? 'text-teal-700' : 'text-neutral-900'}`}>{item.period}</span>
+                  <span className={`text-[10px] tracking-[0.2em] uppercase font-mono ${item.accent ? 'text-teal-600' : 'text-neutral-400'}`}>{item.label}</span>
                 </div>
-
-                <p className={`text-xs font-medium ${config.color} mb-4 ml-12`}>{area.why}</p>
-
-                <ul className="space-y-2 flex-1">
-                  {area.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700">
-                      <Check className={`w-3.5 h-3.5 ${config.color} mt-0.5 flex-shrink-0`} />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className={`mt-4 pt-3 border-t ${config.border}`}>
-                  <span className={`text-xs font-semibold ${config.statusText} ${config.statusBg} px-2.5 py-1 rounded-full`}>
-                    {area.status}
-                  </span>
-                </div>
+                <p className="text-sm text-neutral-600 font-light leading-relaxed">{item.body}</p>
               </motion.div>
             )
           })}
@@ -1509,20 +1340,144 @@ function ExecutionSlide({ t }: { t: typeof translations.en.execution }) {
   )
 }
 
-
 // =============================================================================
-// SLIDE 8: BUSINESS MODEL
+// SLIDE 4: PRODUCT — "What we built"
 // =============================================================================
 
-function BusinessSlide({ t }: { t: typeof translations.en.business }) {
+function ProductSlide({ t }: { t: typeof translations.en.product }) {
   return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-8"
+        >
+          {t.label}
+        </motion.p>
+
+        {/* Headline */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-6"
+        >
+          {t.hero1}
+        </motion.h2>
+
+        {/* Supporting text */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-lg text-neutral-500 font-light leading-relaxed max-w-2xl mb-12"
+        >
+          {(t as any).supportingText}
+        </motion.p>
+
+        {/* 2x2 temporal cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
+          {((t as any).cards as { icon: string; title: string; oldWay: string; newWay: string }[]).map((card, i) => {
+            const IconComponent = { clock: Clock, heart: Heart, message: MessageSquare, zap: Zap }[card.icon] || Clock;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+                className="rounded-xl border border-neutral-200 bg-white p-5"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
+                    <IconComponent className="w-4.5 h-4.5 text-teal-600" />
+                  </div>
+                  <h3 className="text-base font-medium text-neutral-900">{card.title}</h3>
+                </div>
+                <p className="text-sm text-neutral-400 line-through mb-1">{card.oldWay}</p>
+                <p className="text-sm text-neutral-700">{card.newWay}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 5: BOUNDARY — objection handling
+// =============================================================================
+
+function BoundarySlide({ t }: { t: typeof translations.en.boundary }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        {/* Two hero lines */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-2"
+        >
+          {t.hero1}
+        </motion.h2>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-7"
+        >
+          {t.hero2}
+        </motion.h2>
+
+        {/* The therapeutic frame — the 6 principles live inside it */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.75 }}
+          className="relative border border-teal-200 rounded-2xl px-6 md:px-10 pt-7 pb-6 mb-3"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+            {(t.principles as Array<{ name: string; respect: string }>).map((p, i) => (
+              <div key={i}>
+                <span className="block text-sm font-semibold text-teal-700 mb-1">{p.name}</span>
+                <p className="text-sm text-neutral-600 font-light leading-relaxed">{p.respect}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 6: WHY NOW — dark slide
+// =============================================================================
+
+function WhyNowSlide({ t }: { t: typeof translations.en.whyNow }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-400 uppercase mb-4"
         >
           {t.label}
         </motion.p>
@@ -1530,105 +1485,540 @@ function BusinessSlide({ t }: { t: typeof translations.en.business }) {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-12 text-center"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-white leading-[1.1] tracking-tight mb-12"
         >
-          {t.title}
+          {t.headline}
         </motion.h2>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-10">
-          {/* Revenue */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-              <Target className="w-5 h-5 text-teal-500" />
-              Revenue Model
-            </h3>
-            <ul className="space-y-4">
-              {t.revenuePoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-teal-600 text-sm font-medium">{index + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-neutral-900">{point.title}</p>
-                    <p className="text-sm text-neutral-500">{point.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* GTM */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-          >
-            <h3 className="font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-              <Globe className="w-5 h-5 text-lavender-500" />
-              Go-to-Market
-            </h3>
-            <ul className="space-y-4">
-              {t.gtmPoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-lavender-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-lavender-600 text-sm font-medium">{index + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-neutral-900">{point.title}</p>
-                    <p className="text-sm text-neutral-500">{point.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
+        <div className="space-y-6 mb-10 max-w-4xl">
+          {[
+            { title: t.item1Title, body: t.item1Body, sources: t.item1Sources as Array<{ label: string; url: string }>, num: '01' },
+            { title: t.item2Title, body: t.item2Body, sources: t.item2Sources as Array<{ label: string; url: string }>, num: '02' },
+            { title: t.item3Title, body: t.item3Body, sources: t.item3Sources as Array<{ label: string; url: string }>, num: '03' },
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 + i * 0.15 }}
+              className="flex gap-8 items-start"
+            >
+              <span className="text-2xl font-light text-teal-400/50 mt-1">{item.num}</span>
+              <div className="flex-1">
+                <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 mb-2">
+                  <h3 className="text-2xl font-medium text-white">{item.title}</h3>
+                  {item.sources && item.sources.map((src, j) => (
+                    <a
+                      key={j}
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-neutral-600 hover:text-teal-400 underline decoration-dotted underline-offset-2 transition-colors"
+                    >
+                      {src.label} ↗
+                    </a>
+                  ))}
+                </div>
+                <p className="text-lg text-neutral-400 font-light leading-relaxed">{item.body}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Metrics */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-xl text-teal-300 italic font-light pt-8 border-t border-white/10 max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: SECURITY — three horizons
+// =============================================================================
+
+function SecuritySlide({ t }: { t: typeof translations.en.security }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-16">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight mb-3"
+        >
+          {t.headline}
+        </motion.h2>
+
+        <motion.h3
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight mb-8"
+        >
+          {t.headline2}
+        </motion.h3>
+
+        {t.intro && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-base text-neutral-500 font-light mb-10 max-w-3xl"
+          >
+            {t.intro}
+          </motion.p>
+        )}
+
+        {/* Three pillars: a plain claim + the investor edge it creates */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-14 mb-12 mt-2">
+          {t.pillars.map((pillar, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 + i * 0.15 }}
+            >
+              <h3 className="text-lg font-semibold text-teal-700 pb-3 mb-4 border-b border-neutral-200">{pillar.name}</h3>
+              <p className="text-[15px] text-neutral-500 font-light leading-relaxed mb-3 md:min-h-[3rem]">{pillar.claim}</p>
+              <p className="text-[15px] text-neutral-900 font-normal leading-relaxed">{pillar.edge}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-teal-700 italic font-light max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: GO-TO-MARKET — four horizons + what-we-don't-do strip
+// =============================================================================
+
+function GTMSlide({ t }: { t: typeof translations.en.gtm }) {
+  const accents = ['teal', 'teal', 'amber', 'neutral'] as const
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <div className="mb-10">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.15] tracking-tight"
+          >
+            {t.headline}
+          </motion.h2>
+          <motion.h3
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.15] tracking-tight"
+          >
+            {t.headline2}
+          </motion.h3>
+        </div>
+
+        {/* Widening spread — trust radiates outward, then spreads on its own */}
+        <div className="mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+            {t.columns.map((col, i) => {
+              const dotCounts = [1, 4, 9, 16]
+              const dots = dotCounts[i]
+              const accent = accents[i]
+              const dotColor = accent === 'teal' ? 'bg-teal-500' : accent === 'amber' ? 'bg-amber-400' : 'bg-neutral-400'
+              const tagColor = accent === 'teal' ? 'text-teal-700' : accent === 'amber' ? 'text-amber-700' : 'text-neutral-500'
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 + i * 0.12 }}
+                  className="flex flex-col"
+                >
+                  {/* growing cluster of people = the spread */}
+                  <div className="h-14 flex items-end mb-4">
+                    <div className="flex flex-wrap content-end gap-1 w-16">
+                      {Array.from({ length: dots }).map((_, k) => (
+                        <span
+                          key={k}
+                          className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
+                          style={{ opacity: 0.45 + (0.55 * (k + 1)) / dots }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] tracking-[0.25em] uppercase font-mono mb-1 ${tagColor}`}>{col.tag}</span>
+                  <h4 className="text-base font-medium text-neutral-900 mb-2 leading-snug">{col.title}</h4>
+                  <p className="text-xs text-neutral-500 font-light leading-relaxed mb-3">{col.action}</p>
+                  <span className={`inline-block self-start text-[11px] font-medium px-2.5 py-1 rounded-full ${
+                    accent === 'teal' ? 'text-teal-700 bg-teal-50' : accent === 'amber' ? 'text-amber-700 bg-amber-50' : 'text-neutral-600 bg-neutral-100'
+                  }`}>{col.goal}</span>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* baseline — it spreads on its own */}
+          <div className="mt-12">
+            <div className="h-0.5 rounded-full bg-gradient-to-r from-neutral-200 via-teal-300 to-teal-500" />
+          </div>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-teal-700 italic font-light max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE: MARKET — top-down funnel + Europe/World multiplier
+// =============================================================================
+
+function MarketSlide({ t }: { t: typeof translations.en.market }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.15] tracking-tight mb-10"
+        >
+          <span className="text-neutral-900">{t.headline}</span>{' '}
+          <span className="text-teal-700">{t.headline2}</span>
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-xs tracking-[0.25em] uppercase text-neutral-500 font-medium mb-6"
+        >
+          {t.franceTitle}
+        </motion.p>
+
+        {/* Funnel — narrowing rows (tightened to save vertical space) */}
+        <div className="space-y-2 mb-8">
+          {t.funnel.map((row, i) => {
+            const isLast = i === t.funnel.length - 1
+            const isPenultimate = i === t.funnel.length - 2
+            const isHighlight = isLast || isPenultimate
+            const widthClasses = ['w-full', 'w-[92%]', 'w-[80%]', 'w-[66%]', 'w-[50%]', 'w-[36%]']
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 + i * 0.1 }}
+                className={`${widthClasses[i] || 'w-full'} border-l-2 ${isHighlight ? 'border-teal-500' : 'border-neutral-200'} pl-5 py-1.5 flex items-baseline gap-4`}
+              >
+                <span className={`text-2xl sm:text-3xl font-light tabular-nums ${isHighlight ? 'text-teal-700' : 'text-neutral-900'} min-w-[5rem]`}>
+                  {row.value}
+                </span>
+                <div className="flex-1 flex items-baseline gap-3 flex-wrap">
+                  <span className={`text-sm sm:text-base font-light ${isHighlight ? 'text-neutral-800' : 'text-neutral-600'}`}>
+                    {row.label}
+                  </span>
+                  {row.url ? (
+                    <a
+                      href={row.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors whitespace-nowrap"
+                    >
+                      {row.source} ↗
+                    </a>
+                  ) : (
+                    <span className="text-[10px] text-neutral-400 italic whitespace-nowrap">
+                      {row.source}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* Europe + World strip */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex justify-center gap-8 text-center"
+          transition={{ duration: 0.6, delay: 1.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-neutral-200 pt-6 mb-6"
         >
-          {t.metrics.map((metric, index) => (
-            <div key={index}>
-              <p className="text-3xl font-bold text-neutral-900">{metric.value}</p>
-              <p className="text-sm text-neutral-500">{metric.desc}</p>
+          <div className="flex items-baseline gap-4">
+            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-500 font-medium min-w-[3.5rem]">
+              {t.europeLabel}
+            </span>
+            <div>
+              <span className="text-xl font-light text-neutral-900 mr-2">{t.europeValue}</span>
+              <span className="text-sm text-neutral-500 font-light">{t.europeBody}</span>
             </div>
-          ))}
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-500 font-medium min-w-[3.5rem]">
+              {t.worldLabel}
+            </span>
+            <div>
+              <span className="text-xl font-light text-neutral-900 mr-2">{t.worldValue}</span>
+              <span className="text-sm text-neutral-500 font-light">{t.worldBody}</span>{' '}
+              {t.worldUrl && (
+                <a
+                  href={t.worldUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors whitespace-nowrap"
+                >
+                  {t.worldSource} ↗
+                </a>
+              )}
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>
   )
 }
 
+// =============================================================================
+// SLIDE 6: MODEL — B2B2C
+// =============================================================================
+
+function ModelSlide({ t }: { t: typeof translations.en.model }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-20">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-10"
+        >
+          {t.headline}
+        </motion.h2>
+
+        {/* Flow — horizontal progression: practitioner → patients → network */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-wrap items-end gap-x-5 gap-y-4 mb-12"
+        >
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow1Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-neutral-900">{t.flow1Value}</p>
+          </div>
+          <ArrowRight className="w-6 h-6 text-neutral-300 shrink-0 mb-1.5" />
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow2Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-teal-700">{t.flow2Value}</p>
+          </div>
+          <ArrowRight className="w-6 h-6 text-neutral-300 shrink-0 mb-1.5" />
+          <div>
+            <p className="text-[11px] tracking-[0.15em] uppercase text-neutral-400 mb-1">{t.flow3Label}</p>
+            <p className="text-xl lg:text-2xl font-light text-neutral-900">{t.flow3Value}</p>
+          </div>
+        </motion.div>
+
+        {/* Two columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 mb-4">{t.revenueTitle}</p>
+            <ul className="space-y-2">
+              {t.revenueItems.map((item, i) => (
+                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
+              ))}
+            </ul>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.75 }}
+            className="md:border-l border-neutral-200 md:pl-12"
+          >
+            <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 mb-4">{t.compoundTitle}</p>
+            <ul className="space-y-2">
+              {t.compoundItems.map((item, i) => (
+                <li key={i} className="text-base text-neutral-700 font-light">{item}</li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 1 }}
+          className="text-sm text-neutral-500 italic pt-8 border-t border-neutral-200"
+        >
+          {t.footnote}{' '}
+          <a
+            href={t.footnoteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="not-italic text-neutral-400 hover:text-teal-700 underline underline-offset-2 decoration-neutral-300"
+          >
+            {t.footnoteSource}
+          </a>
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 7: WHAT'S REAL — traction
+// =============================================================================
+
+function RealSlide({ t }: { t: typeof translations.en.real }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-20">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-16"
+        >
+          {t.headline}
+        </motion.h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+          {[
+            { label: t.builtLabel, items: t.builtItems, Icon: Hammer, accent: 'teal' as const, check: true },
+            { label: t.learnedLabel, items: t.learnedItems, Icon: Lightbulb, accent: 'teal' as const, check: true },
+            { label: t.honestLabel, items: t.honestItems, Icon: Heart, accent: 'neutral' as const, check: false },
+          ].map((col, i) => {
+            const isTeal = col.accent === 'teal'
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 + i * 0.15 }}
+                className={`rounded-2xl border p-6 ${isTeal ? 'bg-white border-neutral-200' : 'bg-neutral-50 border-neutral-200'}`}
+              >
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTeal ? 'bg-teal-50' : 'bg-neutral-100'}`}>
+                    <col.Icon className={`w-4 h-4 ${isTeal ? 'text-teal-700' : 'text-neutral-500'}`} strokeWidth={2} />
+                  </div>
+                  <p className={`text-xs tracking-[0.25em] uppercase font-mono ${isTeal ? 'text-teal-700' : 'text-neutral-500'}`}>{col.label}</p>
+                </div>
+                <ul className="space-y-3">
+                  {col.items.map((item, j) => (
+                    <li key={j} className="text-sm text-neutral-700 font-light leading-snug flex gap-2.5">
+                      {col.check
+                        ? <Check className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" strokeWidth={2.5} />
+                        : <span className="text-neutral-300 shrink-0 mt-0.5 leading-none">•</span>}
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        <motion.blockquote
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="border-l-2 border-teal-600 pl-6 py-2 max-w-3xl"
+        >
+          <p className="text-xl text-neutral-900 italic font-light leading-relaxed">
+            &ldquo;{t.quote}&rdquo;
+          </p>
+        </motion.blockquote>
+      </div>
+    </div>
+  )
+}
 
 // =============================================================================
 // SLIDE 8: TEAM
 // =============================================================================
 
 function TeamSlide({ t }: { t: typeof translations.en.team }) {
-  const colors = [
-    'bg-gradient-to-br from-[#D4856A] to-[#E8A87C]',
-    'bg-gradient-to-br from-teal-400 to-teal-600',
-  ]
-  const roleColors = ['text-[#D4856A]', 'text-teal-600']
-
   return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-20">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
           {t.label}
         </motion.p>
@@ -1636,182 +2026,116 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-10 text-center"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-16"
         >
-          {t.title}
+          {t.headline}
         </motion.h2>
 
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {t.members.map((member, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-lg"
-            >
-              <div className="flex items-start gap-5">
-                <div className={`w-16 h-16 rounded-full ${colors[index]} flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-xl font-bold text-white">{member.name[0]}</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-neutral-900">{member.name}</h3>
-                  <p className={`${roleColors[index]} font-medium text-sm mb-1`}>{member.role}</p>
-                  <p className="text-xs text-neutral-400 mb-2">{member.background}</p>
-                  <p className="text-neutral-600 text-sm">{member.bio}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Why Us */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="p-6 rounded-2xl bg-teal-50 border border-teal-100"
-        >
-          <ul className="space-y-2">
-            {t.whyUsPoints.map((point, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-neutral-700">
-                <Check className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
-                {point}
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-
-// =============================================================================
-// SLIDE 9: THE ASK — with vision teaser at bottom
-// =============================================================================
-
-function AskSlide({ t }: { t: typeof translations.en.ask }) {
-  const fundColors = ['bg-teal-500', 'bg-lavender-500', 'bg-[#D4856A]', 'bg-neutral-400']
-  const milestoneIcons = [Rocket, Users, Globe, Brain]
-  const milestoneColors = [
-    { bg: 'bg-teal-100', text: 'text-teal-600' },
-    { bg: 'bg-lavender-100', text: 'text-lavender-600' },
-    { bg: 'bg-[#D4856A]/20', text: 'text-[#D4856A]' },
-    { bg: 'bg-neutral-100', text: 'text-neutral-600' },
-  ]
-
-  return (
-    <div className="h-full w-full flex items-center justify-center px-6">
-      <div className="max-w-5xl mx-auto">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-600 font-medium mb-4 text-center"
-        >
-          {t.label}
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-4 text-center"
-        >
-          {t.title}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="text-neutral-500 text-center mb-10"
-        >
-          {t.subtitle}
-        </motion.p>
-
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          {/* Use of Funds */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex gap-5 items-start"
           >
-            <h3 className="font-semibold text-neutral-900 mb-6">Use of Funds</h3>
-            <div className="space-y-4">
-              {t.useOfFunds.map((item, index) => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-neutral-600">{item.label}</span>
-                    <span className="font-medium text-neutral-900">{item.percent}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.percent}%` }}
-                      transition={{ duration: 0.8, delay: 0.3 + index * 0.1 }}
-                      className={`h-full rounded-full ${fundColors[index]}`}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium" style={{ background: 'linear-gradient(135deg, #D4856A, #E8A87C)' }}>
+              SL
+            </div>
+            <div>
+              <h3 className="text-xl font-medium text-neutral-900">{t.sarahName}</h3>
+              <p className="text-sm text-neutral-500 mb-2">{t.sarahRole}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed">{t.sarahBio}</p>
             </div>
           </motion.div>
 
-          {/* Milestones */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="p-8 rounded-3xl bg-white border border-neutral-200 shadow-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="flex gap-5 items-start"
           >
-            <h3 className="font-semibold text-neutral-900 mb-6">Milestones</h3>
-            <ul className="space-y-4">
-              {t.milestones.map((milestone, index) => {
-                const Icon = milestoneIcons[index]
-                const mColors = milestoneColors[index]
-                return (
-                  <li key={index} className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full ${mColors.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                      <Icon className={`w-3.5 h-3.5 ${mColors.text}`} />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neutral-900">{milestone.title}</p>
-                      <p className="text-sm text-neutral-500">{milestone.desc}</p>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium bg-gradient-to-br from-teal-500 to-teal-600">
+              AC
+            </div>
+            <div>
+              <h3 className="text-xl font-medium text-neutral-900">{t.adityaName}</h3>
+              <p className="text-sm text-neutral-500 mb-2">{t.adityaRole}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed">{t.adityaBio}</p>
+            </div>
           </motion.div>
         </div>
 
+        <motion.blockquote
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="border-l-2 border-teal-600 pl-6 py-2 max-w-4xl mb-8"
+        >
+          <p className="text-xl text-neutral-900 italic font-light leading-relaxed">
+            &ldquo;{t.quote}&rdquo;
+          </p>
+        </motion.blockquote>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 1 }}
+          className="text-sm text-neutral-500 italic"
+        >
+          {t.footnote}
+        </motion.p>
       </div>
     </div>
   )
 }
 
-
 // =============================================================================
-// SLIDE 11: VISION — The Long Game
+// SLIDE 9: VISION — The long game
 // =============================================================================
 
 function VisionSlide({ t }: { t: typeof translations.en.vision }) {
-  const phaseIcons = [Zap, Brain, Building2]
-  const phaseColors = ['bg-teal-500/20', 'bg-lavender-500/20', 'bg-[#D4856A]/20']
-  const phaseTextColors = ['text-teal-400', 'text-lavender-400', 'text-[#E8A87C]']
+  // One open at a time (accordion): opening a card closes the others.
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const toggle = (i: number) => setOpenIndex(prev => (prev === i ? null : i))
+
+  const subLabels = [(t as any).whatWeDoLabel, (t as any).whyItMattersLabel]
+
+  const phases = [
+    {
+      tag: t.todayTag,
+      title: t.todayTitle,
+      sub: (t as any).todaySub,
+      body: t.todayBody,
+      items: [(t as any).todayWhatWeDo, (t as any).todayWhyItMatters],
+      accent: true,
+    },
+    {
+      tag: t.nextTag,
+      title: t.nextTitle,
+      sub: (t as any).nextSub,
+      body: t.nextBody,
+      items: [(t as any).nextWhatWeDo, (t as any).nextWhyItMatters],
+      accent: false,
+    },
+    {
+      tag: t.laterTag,
+      title: t.laterTitle,
+      sub: (t as any).laterSub,
+      body: t.laterBody,
+      items: [(t as any).laterWhatWeDo, (t as any).laterWhyItMatters],
+      accent: false,
+    },
+  ]
 
   return (
-    <div className="h-full w-full flex items-center justify-center px-6 bg-neutral-900">
-      <div className="max-w-5xl mx-auto text-center">
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-teal-400 font-medium mb-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-4"
         >
           {t.label}
         </motion.p>
@@ -1819,108 +2143,258 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-white mb-8 leading-[1.1]"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight"
         >
-          {t.title1}
-          <br />
-          <span className="text-teal-400">{t.title2}</span>
+          {t.headline}
         </motion.h2>
 
-        <motion.p
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-xl text-neutral-400 mb-12 max-w-3xl mx-auto"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.1] tracking-tight mb-12"
         >
-          {t.description}
-        </motion.p>
+          {t.headline2}
+        </motion.h2>
 
-        <div className="grid sm:grid-cols-3 gap-6">
-          {t.phases.map((phase, index) => {
-            const Icon = phaseIcons[index]
+        {/* The climb — three ascending steps: tool → proof → the standard */}
+        <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-5 mb-8">
+          {phases.map((phase, i) => {
+            const heights = ['md:min-h-[150px]', 'md:min-h-[210px]', 'md:min-h-[280px]']
+            const isLast = i === phases.length - 1
             return (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
+                key={i}
+                initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                className="p-6 rounded-2xl bg-white/5 border border-white/10"
+                transition={{ duration: 0.6, delay: 0.5 + i * 0.2 }}
+                className={`flex-1 rounded-2xl border p-6 flex flex-col justify-end ${heights[i]} ${isLast ? 'bg-teal-700 border-teal-700' : 'bg-white border-neutral-200'}`}
               >
-                <div className={`w-12 h-12 rounded-xl ${phaseColors[index]} flex items-center justify-center mx-auto mb-4`}>
-                  <Icon className={`w-6 h-6 ${phaseTextColors[index]}`} />
-                </div>
-                <h3 className="font-semibold text-white mb-2">{phase.title}</h3>
-                <p className="text-sm text-neutral-400">{phase.desc}</p>
+                <p className={`text-xs tracking-[0.25em] uppercase font-mono mb-2 ${isLast ? 'text-teal-100' : 'text-teal-700'}`}>
+                  {phase.tag}
+                </p>
+                <p className={`font-light leading-snug tracking-tight ${isLast ? 'text-2xl lg:text-3xl text-white' : 'text-xl lg:text-2xl text-neutral-900'}`}>
+                  {phase.title}
+                </p>
+                <p className={`text-sm font-light leading-relaxed mt-2 ${isLast ? 'text-teal-50' : 'text-neutral-500'}`}>
+                  {phase.sub}
+                </p>
+                <button
+                  onClick={() => toggle(i)}
+                  className={`mt-4 self-start inline-flex items-center gap-1.5 text-[11px] tracking-wide font-medium transition-colors ${
+                    isLast ? 'text-teal-100 hover:text-white' : 'text-neutral-400 hover:text-teal-700'
+                  }`}
+                >
+                  <span>{openIndex === i ? t.showLess : t.viewMore}</span>
+                  {openIndex === i
+                    ? <ChevronUp className="w-3 h-3" />
+                    : <ChevronDown className="w-3 h-3" />}
+                </button>
               </motion.div>
             )
           })}
         </div>
 
+        {/* Detail — expands below the climb when a card's "View more" is clicked */}
+        <div className="mb-8">
+          {phases.map((phase, i) => (
+            <AnimatePresence initial={false} key={i}>
+              {openIndex === i && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-2 pb-4">
+                    <span className="text-[10px] tracking-[0.25em] uppercase font-mono text-teal-700">{phase.tag}</span>
+                    <p className="text-base text-neutral-600 font-light leading-relaxed mt-2 max-w-3xl">{phase.body}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mt-4 pt-4 border-t border-neutral-200 max-w-3xl">
+                      {phase.items.map((item, j) => (
+                        <div key={j} className="flex flex-col gap-1">
+                          <span className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono">
+                            {subLabels[j]}
+                          </span>
+                          <span className="text-sm text-neutral-700 font-light leading-relaxed">
+                            {item}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          ))}
+        </div>
+
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="text-neutral-500 mt-10 text-sm"
+          transition={{ duration: 0.6, delay: 1.1 }}
+          className="text-sm text-neutral-500 italic pt-8 border-t border-neutral-200 max-w-3xl"
         >
-          {t.footer}
+          {t.footnote}
         </motion.p>
       </div>
     </div>
   )
 }
 
-
 // =============================================================================
-// SLIDE 12: CONTACT
+// SLIDE 10: ASK
 // =============================================================================
 
-function ContactSlide({ t }: { t: typeof translations.en.contact }) {
+function AskSlide({ t }: { t: typeof translations.en.ask }) {
+  const [active, setActive] = useState<number | null>(null)
   return (
-    <div className="h-full w-full flex items-center justify-center px-6 bg-gradient-to-br from-teal-50 via-white to-lavender-50">
-      <div className="max-w-3xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-20">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
         >
-          <Logo size="lg" showText={false} />
-        </motion.div>
+          {t.label}
+        </motion.p>
 
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-4xl sm:text-5xl font-light text-neutral-900 mb-6"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-3"
         >
-          {t.title}
+          {t.headline}
         </motion.h2>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-xl text-neutral-600 mb-10"
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-xl text-neutral-500 font-light mb-16"
         >
-          {t.subtitle}
+          {t.subhead}
         </motion.p>
 
+        {/* Use of funds */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="pt-8 border-t border-neutral-200 mb-10"
+        >
+          <p className="text-xs tracking-[0.2em] uppercase text-neutral-400 mb-4">
+            {t.fundsLabel}
+            <span className="ml-3 tracking-normal normal-case text-neutral-300">{(t as any).fundsHint}</span>
+          </p>
+          <div className="flex flex-wrap gap-x-8 gap-y-2">
+            {t.fundsItems.map((item, i) => {
+              const isOpen = active === i
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActive(isOpen ? null : i)}
+                  className="flex items-baseline gap-2 group text-left"
+                >
+                  <span className={`text-2xl font-light transition-colors ${isOpen ? 'text-teal-700' : 'text-neutral-900'}`}>{item.value}</span>
+                  <span className={`text-sm border-b border-dashed transition-colors ${isOpen ? 'text-teal-700 border-teal-300' : 'text-neutral-500 border-neutral-300 group-hover:text-neutral-900'}`}>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <AnimatePresence initial={false} mode="wait">
+            {active !== null && (
+              <motion.p
+                key={active}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="mt-5 text-sm text-neutral-600 font-light leading-relaxed max-w-3xl"
+              >
+                {(t.fundsItems[active] as any).why}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-lg text-neutral-600 italic font-light max-w-3xl"
+        >
+          {t.closing}
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// SLIDE 11: CLOSE
+// =============================================================================
+
+function CloseSlide({ t }: { t: typeof translations.en.close }) {
+  return (
+    <div className="h-full w-full flex items-center justify-center relative overflow-hidden px-8">
+      {/* Subtle blob echoing hero */}
+      <div className="absolute top-20 left-20 w-[500px] h-[500px] bg-gradient-to-br from-teal-100/40 to-transparent rounded-full mix-blend-multiply filter blur-3xl" />
+      <div className="absolute bottom-20 right-20 w-[400px] h-[400px] bg-gradient-to-br from-amber-100/30 to-transparent rounded-full mix-blend-multiply filter blur-3xl" />
+
+      <div className="relative z-10 max-w-5xl w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="space-y-3 mb-16"
         >
-          <a href={DEMO_BOOKING_URL} target="_blank" rel="noopener noreferrer">
-            <Button className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-full shadow-lg shadow-teal-500/30 hover:shadow-xl hover:from-teal-600 hover:to-teal-700 transition-all duration-300 text-lg">
-              <Calendar className="w-5 h-5 mr-2" />
-              {t.bookMeeting}
+          <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.15] tracking-tight">
+            {t.line1}
+          </p>
+          <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.15] tracking-tight">
+            {t.line2}
+          </p>
+          <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-400 leading-[1.15] tracking-tight">
+            {t.line3}
+          </p>
+          <p className="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-700 leading-[1.15] tracking-tight pt-2">
+            {t.line4}
+          </p>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="text-2xl text-neutral-700 font-light mb-6"
+        >
+          {t.cta}
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.1 }}
+          className="flex flex-wrap gap-4 mb-16"
+        >
+          <a
+            href={DEMO_BOOKING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button className="px-10 py-5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full text-base font-medium">
+              <Calendar className="w-4 h-4 mr-2" />
+              {t.bookCall}
             </Button>
           </a>
-          <a href="mailto:hi@bloomsline.com">
-            <Button variant="outline" className="px-8 py-4 rounded-full border-2 border-neutral-300 text-neutral-700 font-medium hover:border-neutral-400 hover:bg-white transition-all text-lg">
-              <Mail className="w-5 h-5 mr-2" />
+          <a href={`mailto:${t.emailUs}`}>
+            <Button variant="outline" className="px-10 py-5 border-neutral-300 text-neutral-900 hover:bg-neutral-50 rounded-full text-base font-medium">
+              <Mail className="w-4 h-4 mr-2" />
               {t.emailUs}
             </Button>
           </a>
@@ -1929,10 +2403,10 @@ function ContactSlide({ t }: { t: typeof translations.en.contact }) {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-12 text-neutral-400 text-sm"
+          transition={{ duration: 0.6, delay: 1.3 }}
+          className="text-xs text-neutral-400 tracking-wide"
         >
-          hi@bloomsline.com
+          {t.copyright}
         </motion.p>
       </div>
     </div>
