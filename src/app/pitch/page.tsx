@@ -948,7 +948,7 @@ export default function PitchNewPage() {
       {/* Logo */}
       <div className="fixed top-6 left-6 z-50">
         <a href="/" className="flex items-center gap-2">
-          <Logo size="md" showText />
+          <Logo size="lg" showText />
         </a>
       </div>
 

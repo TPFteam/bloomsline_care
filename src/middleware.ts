@@ -110,6 +110,23 @@ export async function middleware(request: NextRequest) {
     if (token && token === expected) {
       return NextResponse.next()
     }
+    // Magic link: ?k=<passphrase> auto-unlocks, sets the cookie, and redirects
+    // to the clean URL so the deck opens directly (shareable with investors).
+    const key = request.nextUrl.searchParams.get('k')
+    const norm = (s: string) => s.trim().toLowerCase()
+    if (key && process.env.PITCH_PASSWORD && norm(key) === norm(process.env.PITCH_PASSWORD)) {
+      const clean = request.nextUrl.clone()
+      clean.searchParams.delete('k')
+      const res = NextResponse.redirect(clean)
+      res.cookies.set(GATE_COOKIE, expected, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+      return res
+    }
     const gateUrl = request.nextUrl.clone()
     gateUrl.pathname = '/gate'
     gateUrl.search = ''
