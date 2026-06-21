@@ -43,8 +43,9 @@ function GateForm() {
           </div>
         </div>
         <h1 className="text-2xl font-light text-neutral-900 mb-2">Welcome.</h1>
-        <p className="text-sm text-neutral-500 mb-8">
-          Thank you for being here. We can&apos;t wait to show you what we&apos;ve built.
+        <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
+          Thank you for being here.<br />
+          We can&apos;t wait to show you what we&apos;ve built.
         </p>
 
         <form onSubmit={submit}>
