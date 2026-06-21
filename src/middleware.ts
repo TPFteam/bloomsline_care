@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import type { Session } from '@supabase/supabase-js'
+import { GATE_COOKIE, isGatedRoute, gateToken } from '@/lib/gate'
 
 /** Build mobile app URL with session tokens for seamless auth handoff */
 function mobileAppUrl(session: Session | null): string {
@@ -33,7 +34,7 @@ function isMemberRoute(pathname: string): boolean {
 const AUTH_ROUTES = ['/sign-in', '/sign-up']
 
 // Public routes (no auth check needed)
-const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone', '/p/', '/shared/', '/embed/']
+const PUBLIC_ROUTES = ['/', '/early-access', '/onboarding', '/practitioner/', '/stories', '/for-everyone', '/p/', '/shared/', '/embed/', '/gate']
 
 const ADMIN_USER_IDS = [
   '3548c40c-22d6-43e9-8835-0ef9db6abe76',
@@ -97,6 +98,23 @@ export async function middleware(request: NextRequest) {
     pathname.includes('.')
   ) {
     return NextResponse.next()
+  }
+
+  // Password gate for investor pages (/pitch, /vision). Checked before any
+  // Supabase logic — these pages are not tied to a user account, just the
+  // shared passphrase. Without a valid gate cookie, rewrite to /gate so the
+  // page content is never served.
+  if (isGatedRoute(pathname)) {
+    const token = request.cookies.get(GATE_COOKIE)?.value
+    const expected = await gateToken()
+    if (token && token === expected) {
+      return NextResponse.next()
+    }
+    const gateUrl = request.nextUrl.clone()
+    gateUrl.pathname = '/gate'
+    gateUrl.search = ''
+    gateUrl.searchParams.set('next', pathname)
+    return NextResponse.rewrite(gateUrl)
   }
 
   let response = NextResponse.next({
