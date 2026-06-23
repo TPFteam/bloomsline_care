@@ -338,15 +338,28 @@ const translations = {
     },
     team: {
       label: 'THE TEAM',
-      headline: 'Two people. Built in-house. Near-zero burn.',
+      headline: 'Two people. Built in-house. Capital efficient.',
       sarahName: 'Sarah Lagzouli',
       sarahRole: 'Sales & Operations',
-      sarahBio: 'The person practitioners trust. She listens before she sells — and that\'s why they stay.',
+      sarahYears: '10+ years in sales, recruitment and psychology consulting · Digital Marketing & AI',
+      sarahBio: 'The person practitioners trust. She listens before she sells, and that\'s why they stay.',
+      sarahEducation: 'Devinci Education MBA · Le Wagon',
+      sarahWorkedWith: ['Explain AI', 'Arrow ECS', 'KLB Group'],
       adityaName: 'Aditya Channe',
       adityaRole: 'Product & Technology',
-      adityaBio: 'Built every screen you see. Leads the product — and makes sure it stays close to the problem.',
-      quote: 'Two people. Everything in-house. Because this had to be built by people who feel the problem.',
-      footnote: 'Actively looking for a clinical advisor. The clinical voice is in the product — not yet on the cap table.',
+      adityaYears: '8+ years at SaaS startups and scale-ups · Digital transformation',
+      adityaBio: 'Built every screen you see. Leads the product, and makes sure it stays close to the problem.',
+      adityaEducation: 'Montpellier Business School',
+      adityaWorkedWith: ['Bloq.it', 'Greenny', 'Didomi', 'Amazon Alexa', 'Revfin'],
+      workedWithLabel: 'Worked with',
+      educationLabel: 'Education',
+      whyUsLabel: 'Why us',
+      whyUs: [
+        { t: 'We didn\'t just research this', d: 'We spent three years in it, with practitioners and patients. One thing kept coming up: the time between sessions.' },
+        { t: 'We\'ve built together before', d: 'So we already know how we work when it gets hard. For us, that part isn\'t a question.' },
+        { t: 'Between us, it\'s covered', d: 'One of us builds, one of us sells. And what you\'re seeing is already real, in practitioners\' hands.' },
+      ],
+      footnote: '* Actively looking for clinical advisor(s) to join the team.',
     },
     vision: {
       label: 'THE LONG GAME',
@@ -710,15 +723,28 @@ const translations = {
     },
     team: {
       label: 'L\'ÉQUIPE',
-      headline: 'Deux personnes. Tout fait en interne. Burn quasi nul.',
+      headline: 'Deux personnes. Tout fait en interne. Efficaces en capital.',
       sarahName: 'Sarah Lagzouli',
       sarahRole: 'Ventes & Opérations',
-      sarahBio: 'La personne en qui les praticiens ont confiance. Elle écoute avant de vendre — c\'est pour ça qu\'ils restent.',
+      sarahYears: '10+ ans en vente, recrutement et conseil en psychologie · Marketing Digital & IA',
+      sarahBio: 'La personne en qui les praticiens ont confiance. Elle écoute avant de vendre, c\'est pour ça qu\'ils restent.',
+      sarahEducation: 'MBA Devinci Education · Le Wagon',
+      sarahWorkedWith: ['Explain AI', 'Arrow ECS', 'KLB Group'],
       adityaName: 'Aditya Channe',
       adityaRole: 'Produit & Technologie',
-      adityaBio: 'A construit chaque écran que vous voyez. Dirige le produit — et s\'assure qu\'il reste proche du problème.',
-      quote: 'Ce problème est trop proche pour être délégué. Alors on l\'a construit nous-mêmes — deux personnes, en interne, burn quasi nul.',
-      footnote: 'Nous cherchons activement un conseiller clinique. La voix clinique est dans le produit — pas encore au cap table.',
+      adityaYears: '8+ ans en startups et scale-ups SaaS · Transformation digitale',
+      adityaBio: 'A construit chaque écran que vous voyez. Dirige le produit, et s\'assure qu\'il reste proche du problème.',
+      adityaEducation: 'Montpellier Business School',
+      adityaWorkedWith: ['Bloq.it', 'Greenny', 'Didomi', 'Amazon Alexa', 'Revfin'],
+      workedWithLabel: 'Expériences',
+      educationLabel: 'Formation',
+      whyUsLabel: 'Pourquoi nous',
+      whyUs: [
+        { t: 'On n\'a pas juste étudié le sujet', d: 'On a passé trois ans dedans, avec praticiens et patients. Une chose revenait toujours : le temps entre les séances.' },
+        { t: 'On a déjà construit ensemble', d: 'Alors on sait déjà comment on avance quand ça devient dur. Pour nous, ça n\'est plus une question.' },
+        { t: 'À deux, c\'est couvert', d: 'L\'un construit, l\'autre vend. Et ce que vous voyez est déjà réel, entre les mains des praticiens.' },
+      ],
+      footnote: '* Nous cherchons activement un(des) conseiller(s) clinique(s) pour rejoindre l\'équipe.',
     },
     vision: {
       label: 'LE LONG TERME',
@@ -2013,7 +2039,7 @@ function RealSlide({ t }: { t: typeof translations.en.real }) {
 function TeamSlide({ t }: { t: typeof translations.en.team }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-6xl w-full py-20">
+      <div className="max-w-6xl w-full py-12">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -2027,25 +2053,34 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-16"
+          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-10"
         >
           {t.headline}
         </motion.h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex gap-5 items-start"
+            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-6"
           >
-            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium" style={{ background: 'linear-gradient(135deg, #D4856A, #E8A87C)' }}>
-              SL
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/team-sarah.jpg" alt={t.sarahName} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
             <div>
-              <h3 className="text-xl font-medium text-neutral-900">{t.sarahName}</h3>
-              <p className="text-sm text-neutral-500 mb-2">{t.sarahRole}</p>
-              <p className="text-base text-neutral-700 font-light leading-relaxed">{t.sarahBio}</p>
+              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.sarahName}<span aria-hidden className="text-lg leading-none">🇫🇷</span></h3>
+              <p className="text-sm text-neutral-500">{t.sarahRole}</p>
+              <p className="text-xs text-neutral-400 mb-2">{t.sarahYears}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed mb-3">{t.sarahBio}</p>
+              {t.sarahEducation && (
+                <p className="text-xs text-neutral-500 mb-4"><span className="text-neutral-400">{t.educationLabel}: </span>{t.sarahEducation}</p>
+              )}
+              <p className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 mb-2">{t.workedWithLabel}</p>
+              <div className="flex flex-wrap gap-2">
+                {t.sarahWorkedWith.map((c) => (
+                  <span key={c} className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 text-xs font-medium text-neutral-700">{c}</span>
+                ))}
+              </div>
             </div>
           </motion.div>
 
@@ -2053,29 +2088,45 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55 }}
-            className="flex gap-5 items-start"
+            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-6"
           >
-            <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 text-white font-medium bg-gradient-to-br from-teal-500 to-teal-600">
-              AC
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/team-aditya.png" alt={t.adityaName} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
             <div>
-              <h3 className="text-xl font-medium text-neutral-900">{t.adityaName}</h3>
-              <p className="text-sm text-neutral-500 mb-2">{t.adityaRole}</p>
-              <p className="text-base text-neutral-700 font-light leading-relaxed">{t.adityaBio}</p>
+              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.adityaName}<span aria-hidden className="text-lg leading-none">🇮🇳</span></h3>
+              <p className="text-sm text-neutral-500">{t.adityaRole}</p>
+              <p className="text-xs text-neutral-400 mb-2">{t.adityaYears}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed mb-3">{t.adityaBio}</p>
+              {t.adityaEducation && (
+                <p className="text-xs text-neutral-500 mb-4"><span className="text-neutral-400">{t.educationLabel}: </span>{t.adityaEducation}</p>
+              )}
+              <p className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 mb-2">{t.workedWithLabel}</p>
+              <div className="flex flex-wrap gap-2">
+                {t.adityaWorkedWith.map((c) => (
+                  <span key={c} className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 text-xs font-medium text-neutral-700">{c}</span>
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
 
-        <motion.blockquote
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="border-l-2 border-teal-600 pl-6 py-2 max-w-4xl mb-8"
+        {/* Why us — the rational case beneath the founder cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="mb-8"
         >
-          <p className="text-xl text-neutral-900 italic font-light leading-relaxed">
-            &ldquo;{t.quote}&rdquo;
-          </p>
-        </motion.blockquote>
+          <p className="text-[10px] tracking-[0.3em] uppercase text-teal-700 mb-4">{t.whyUsLabel}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {t.whyUs.map((w) => (
+              <div key={w.t} className="rounded-2xl border border-neutral-200 bg-white/50 px-5 py-5">
+                <div className="text-sm font-semibold text-neutral-900 mb-1.5">{w.t}</div>
+                <p className="text-sm font-light text-neutral-600 leading-relaxed">{w.d}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
         <motion.p
           initial={{ opacity: 0 }}
