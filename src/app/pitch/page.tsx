@@ -355,9 +355,9 @@ const translations = {
       educationLabel: 'Education',
       whyUsLabel: 'Why us',
       whyUs: [
-        { t: 'We didn\'t just research this', d: 'We spent three years in it, with practitioners and patients. One thing kept coming up: the time between sessions.' },
+        { t: 'We didn\'t study it, we lived it', d: '3+ years in the field with practitioners and patients. One thing stood out: it all happens between sessions.' },
         { t: 'We\'ve built together before', d: 'So we already know how we work when it gets hard. For us, that part isn\'t a question.' },
-        { t: 'Between us, it\'s covered', d: 'One of us builds, one of us sells. And what you\'re seeing is already real, in practitioners\' hands.' },
+        { t: 'Between us, it\'s covered', d: 'One of us builds, one of us sells. And what you\'re seeing is already real, in practitioners\' and their patients\' hands.' },
       ],
       footnote: '* Actively looking for clinical advisor(s) to join the team.',
     },
@@ -740,9 +740,9 @@ const translations = {
       educationLabel: 'Formation',
       whyUsLabel: 'Pourquoi nous',
       whyUs: [
-        { t: 'On n\'a pas juste étudié le sujet', d: 'On a passé trois ans dedans, avec praticiens et patients. Une chose revenait toujours : le temps entre les séances.' },
+        { t: 'On ne l\'a pas étudié, on l\'a vécu', d: '3+ ans sur le terrain avec praticiens et patients. Une chose ressortait : tout se joue entre les séances.' },
         { t: 'On a déjà construit ensemble', d: 'Alors on sait déjà comment on avance quand ça devient dur. Pour nous, ça n\'est plus une question.' },
-        { t: 'À deux, c\'est couvert', d: 'L\'un construit, l\'autre vend. Et ce que vous voyez est déjà réel, entre les mains des praticiens.' },
+        { t: 'À deux, c\'est couvert', d: 'L\'un construit, l\'autre vend. Et ce que vous voyez est déjà réel, entre les mains des praticiens et de leurs patients.' },
       ],
       footnote: '* Nous cherchons activement un(des) conseiller(s) clinique(s) pour rejoindre l\'équipe.',
     },
