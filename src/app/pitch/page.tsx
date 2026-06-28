@@ -18,6 +18,16 @@ import {
   Check,
   Download,
 } from 'lucide-react'
+
+// LinkedIn brand glyph: solid rounded square with the "in" knocked out (transparent),
+// so on a light background it reads as the official blue box. Color via `fill`.
+function LinkedInIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
+    </svg>
+  )
+}
 import { Logo } from '@/components/ui/logo'
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/lib/i18n/context'
@@ -103,7 +113,7 @@ const translations = {
       item1Label: 'TIME',
       item1Body: 'A quarter of every session lost to rebuilding context.',
       item2Label: 'SIGNALS',
-      item2Body: 'Patterns, improvements, relapses are hard to catch in time.',
+      item2Body: 'Patterns and relapses are hard to catch in time.',
       item3Label: 'FEELING',
       item3Body: '"I\'m coming to therapy, but nothing\'s changing."',
       item4Label: 'BUSINESS',
@@ -341,7 +351,7 @@ const translations = {
       headline: 'Two people. Built in-house. Capital efficient.',
       sarahName: 'Sarah Lagzouli',
       sarahRole: 'Sales & Operations',
-      sarahYears: '10+ years in sales, recruitment and psychology consulting · Digital Marketing & AI',
+      sarahYears: '10+ years in sales, recruitment & psychology · Digital Marketing & AI',
       sarahBio: 'The person practitioners trust. She listens before she sells, and that\'s why they stay.',
       sarahEducation: 'Devinci Education MBA · Le Wagon',
       sarahWorkedWith: ['Explain AI', 'Arrow ECS', 'KLB Group'],
@@ -488,7 +498,7 @@ const translations = {
       item1Label: 'TEMPS',
       item1Body: 'Un quart de chaque séance perdu à reconstruire le contexte.',
       item2Label: 'SIGNAUX',
-      item2Body: 'Patterns, progrès, rechutes difficiles à repérer à temps.',
+      item2Body: 'Patterns et rechutes difficiles à repérer à temps.',
       item3Label: 'RESSENTI',
       item3Body: '« Je viens en thérapie, mais rien ne change. »',
       item4Label: 'BUSINESS',
@@ -726,7 +736,7 @@ const translations = {
       headline: 'Deux personnes. Tout fait en interne. Efficaces en capital.',
       sarahName: 'Sarah Lagzouli',
       sarahRole: 'Ventes & Opérations',
-      sarahYears: '10+ ans en vente, recrutement et conseil en psychologie · Marketing Digital & IA',
+      sarahYears: '10+ ans en vente, recrutement & psychologie · Marketing Digital & IA',
       sarahBio: 'La personne en qui les praticiens ont confiance. Elle écoute avant de vendre, c\'est pour ça qu\'ils restent.',
       sarahEducation: 'MBA Devinci Education · Le Wagon',
       sarahWorkedWith: ['Explain AI', 'Arrow ECS', 'KLB Group'],
@@ -1001,9 +1011,13 @@ export default function PitchNewPage() {
 
     {/* Print-only stack — every slide, one per page, for the PDF export.
         Hidden on screen; revealed by the print stylesheet below. */}
-    <div className="pdf-print" aria-hidden>
+    <div className="pdf-print">
       {slides.map((_, i) => (
         <div key={i} className="pdf-page" style={{ backgroundColor: i === 6 ? '#0a0a0a' : '#FAF8F5' }}>
+          {/* Bloomsline branding, top-left on every PDF page (mirrors the on-screen logo) */}
+          <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 50 }}>
+            <Logo size="lg" showText variant={i === 6 ? 'dark' : 'light'} />
+          </div>
           {renderSlide(i)}
         </div>
       ))}
@@ -1039,6 +1053,10 @@ export default function PitchNewPage() {
         .pdf-print .md\\:items-end { align-items: flex-end !important; }
         /* Preserve backgrounds/colors in the PDF */
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        /* Strip dead interactive affordances from the PDF: "View more" toggles can't
+           be clicked on paper, so hide them; and flatten clickable-looking underlines. */
+        .pdf-print .pdf-hide { display: none !important; }
+        .pdf-print .pdf-static-underline { border-bottom-width: 0 !important; }
       }
     `}</style>
     </>
@@ -1237,7 +1255,7 @@ function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
         </motion.h2>
 
         {/* Four consequence quadrants */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-14 max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-10 max-w-4xl">
           {items.map((item, i) => (
             <motion.div
               key={i}
@@ -1256,14 +1274,16 @@ function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
           ))}
         </div>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          className="text-lg text-neutral-500 italic font-light pt-6 border-t border-neutral-200 max-w-3xl mb-6"
-        >
-          {t.closing}
-        </motion.p>
+        {t.closing && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1 }}
+            className="text-lg text-neutral-500 italic font-light pt-6 border-t border-neutral-200 max-w-3xl mb-6"
+          >
+            {t.closing}
+          </motion.p>
+        )}
 
         {/* Stats */}
         {(t as any).stats && (
@@ -1271,7 +1291,7 @@ function WhyItMattersSlide({ t }: { t: typeof translations.en.whyItMatters }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 1.2 }}
-            className="flex flex-wrap gap-8"
+            className="flex flex-wrap gap-8 pt-8 border-t border-neutral-200"
           >
             {((t as any).stats as Array<{ value: string; label: string; source: string; url: string }>).map((stat, i) => (
               <div key={i} className="flex items-baseline gap-2">
@@ -2039,12 +2059,12 @@ function RealSlide({ t }: { t: typeof translations.en.real }) {
 function TeamSlide({ t }: { t: typeof translations.en.team }) {
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
-      <div className="max-w-6xl w-full py-12">
+      <div className="max-w-6xl w-full py-16">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6"
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-5"
         >
           {t.label}
         </motion.p>
@@ -2053,27 +2073,27 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-4xl sm:text-5xl lg:text-6xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-10"
+          className="text-xl sm:text-2xl lg:text-3xl font-light text-neutral-600 leading-snug tracking-tight mb-8"
         >
           {t.headline}
         </motion.h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-6"
+            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/team-sarah.jpg" alt={t.sarahName} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
             <div>
-              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.sarahName}<span aria-hidden className="text-lg leading-none">🇫🇷</span></h3>
+              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.sarahName}<span aria-hidden className="text-lg leading-none">🇫🇷</span><a href="https://www.linkedin.com/in/sarah-lagzouli/" target="_blank" rel="noopener noreferrer" aria-label={`${t.sarahName} on LinkedIn`} className="ml-1.5 text-[#0A66C2] hover:text-[#004182] transition-colors"><LinkedInIcon className="w-[18px] h-[18px]" /></a></h3>
               <p className="text-sm text-neutral-500">{t.sarahRole}</p>
-              <p className="text-xs text-neutral-400 mb-2">{t.sarahYears}</p>
-              <p className="text-base text-neutral-700 font-light leading-relaxed mb-3">{t.sarahBio}</p>
+              <p className="text-[11px] text-neutral-400 mb-2">{t.sarahYears}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed mb-2">{t.sarahBio}</p>
               {t.sarahEducation && (
-                <p className="text-xs text-neutral-500 mb-4"><span className="text-neutral-400">{t.educationLabel}: </span>{t.sarahEducation}</p>
+                <p className="text-xs text-neutral-500 mb-3"><span className="text-neutral-400">{t.educationLabel}: </span>{t.sarahEducation}</p>
               )}
               <p className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 mb-2">{t.workedWithLabel}</p>
               <div className="flex flex-wrap gap-2">
@@ -2088,17 +2108,17 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55 }}
-            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-6"
+            className="flex gap-5 items-start rounded-3xl border border-neutral-200 bg-white/50 p-5"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/team-aditya.png" alt={t.adityaName} className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
             <div>
-              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.adityaName}<span aria-hidden className="text-lg leading-none">🇮🇳</span></h3>
+              <h3 className="text-xl font-medium text-neutral-900 flex items-center gap-2">{t.adityaName}<span aria-hidden className="text-lg leading-none">🇮🇳</span><a href="https://www.linkedin.com/in/adi-channe/" target="_blank" rel="noopener noreferrer" aria-label={`${t.adityaName} on LinkedIn`} className="ml-1.5 text-[#0A66C2] hover:text-[#004182] transition-colors"><LinkedInIcon className="w-[18px] h-[18px]" /></a></h3>
               <p className="text-sm text-neutral-500">{t.adityaRole}</p>
-              <p className="text-xs text-neutral-400 mb-2">{t.adityaYears}</p>
-              <p className="text-base text-neutral-700 font-light leading-relaxed mb-3">{t.adityaBio}</p>
+              <p className="text-[11px] text-neutral-400 mb-2">{t.adityaYears}</p>
+              <p className="text-base text-neutral-700 font-light leading-relaxed mb-2">{t.adityaBio}</p>
               {t.adityaEducation && (
-                <p className="text-xs text-neutral-500 mb-4"><span className="text-neutral-400">{t.educationLabel}: </span>{t.adityaEducation}</p>
+                <p className="text-xs text-neutral-500 mb-3"><span className="text-neutral-400">{t.educationLabel}: </span>{t.adityaEducation}</p>
               )}
               <p className="text-[10px] tracking-[0.2em] uppercase text-neutral-400 mb-2">{t.workedWithLabel}</p>
               <div className="flex flex-wrap gap-2">
@@ -2115,12 +2135,12 @@ function TeamSlide({ t }: { t: typeof translations.en.team }) {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="mb-8"
+          className="mb-6"
         >
           <p className="text-[10px] tracking-[0.3em] uppercase text-teal-700 mb-4">{t.whyUsLabel}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {t.whyUs.map((w) => (
-              <div key={w.t} className="rounded-2xl border border-neutral-200 bg-white/50 px-5 py-5">
+              <div key={w.t} className="rounded-2xl border border-neutral-200 bg-white/50 px-5 py-4">
                 <div className="text-sm font-semibold text-neutral-900 mb-1.5">{w.t}</div>
                 <p className="text-sm font-light text-neutral-600 leading-relaxed">{w.d}</p>
               </div>
@@ -2233,7 +2253,7 @@ function VisionSlide({ t }: { t: typeof translations.en.vision }) {
                 </p>
                 <button
                   onClick={() => toggle(i)}
-                  className={`mt-4 self-start inline-flex items-center gap-1.5 text-[11px] tracking-wide font-medium transition-colors ${
+                  className={`pdf-hide mt-4 self-start inline-flex items-center gap-1.5 text-[11px] tracking-wide font-medium transition-colors ${
                     isLast ? 'text-teal-100 hover:text-white' : 'text-neutral-400 hover:text-teal-700'
                   }`}
                 >
@@ -2351,7 +2371,7 @@ function AskSlide({ t }: { t: typeof translations.en.ask }) {
                   className="flex items-baseline gap-2 group text-left"
                 >
                   <span className={`text-2xl font-light transition-colors ${isOpen ? 'text-teal-700' : 'text-neutral-900'}`}>{item.value}</span>
-                  <span className={`text-sm border-b border-dashed transition-colors ${isOpen ? 'text-teal-700 border-teal-300' : 'text-neutral-500 border-neutral-300 group-hover:text-neutral-900'}`}>{item.label}</span>
+                  <span className={`pdf-static-underline text-sm border-b border-dashed transition-colors ${isOpen ? 'text-teal-700 border-teal-300' : 'text-neutral-500 border-neutral-300 group-hover:text-neutral-900'}`}>{item.label}</span>
                 </button>
               )
             })}
