@@ -23,6 +23,8 @@ import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
 import type { PaymentStatus } from '@/types/member'
 import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
 import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
+import { notifyPaymentRequest, fetchHasPaymentLink } from '@/lib/payment-request'
+import { PaymentEmailToggle } from '@/components/bookings/PaymentEmailToggle'
 
 const TAG_LABELS: Record<string, { en: string; fr: string; es: string }> = {
   recurrence:          { en: 'Recurrence',          fr: 'Récurrence',          es: 'Recurrencia' },
@@ -66,17 +68,6 @@ interface Props {
   initialOutcome?: 'show' | 'no_show'
 }
 
-// Fire-and-forget: ask the server to email the client a thank-you + payment
-// link. The endpoint no-ops unless the practitioner configured a payment link,
-// so it's safe to call on every "Awaiting payment" close.
-function notifyPaymentRequest(bookingId: string, locale: string) {
-  fetch('/api/payment-request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bookingId, locale }),
-  }).catch(() => { /* best-effort; manual reminder remains available */ })
-}
-
 export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOutcome }: Props) {
   const [outcome, setOutcome] = useState<'show' | 'no_show' | null>(initialOutcome ?? null)
   const [saving, setSaving] = useState(false)
@@ -96,6 +87,11 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
   // True when editing an already-saved note (Edit on "Note already added").
   // Editing REPLACES the existing note instead of appending a new entry.
   const [noteEditing, setNoteEditing] = useState(false)
+  // "Awaiting payment" close emails the client a payment link. The practitioner
+  // can opt out per-close via a toggle — only shown when a payment link exists,
+  // since otherwise there's no email to send.
+  const [sendPaymentEmail, setSendPaymentEmail] = useState(true)
+  const [hasPaymentLink, setHasPaymentLink] = useState(false)
 
   // Reset state each time a new booking opens. "Note already added"
   // detection auto-satisfies the note requirement when the booking
@@ -114,7 +110,17 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
     setNoShowReason('')
     setNoShowComments('')
     setConfirmingDiscard(false)
+    setSendPaymentEmail(true)
   }, [booking, initialOutcome])
+
+  // Does this practitioner have a payment link configured? Gates whether the
+  // "send payment email" toggle appears on an "Awaiting payment" close.
+  useEffect(() => {
+    if (!booking?.practitioner_id) { setHasPaymentLink(false); return }
+    let cancelled = false
+    fetchHasPaymentLink(booking.practitioner_id).then(has => { if (!cancelled) setHasPaymentLink(has) })
+    return () => { cancelled = true }
+  }, [booking?.practitioner_id])
 
   // Build the practitioner's tag list (defaults + custom) so the inline
   // editor here gets the same tag-insert button as the main notes editor.
@@ -245,8 +251,9 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
         if (error) throw error
         await mirrorToSession('completed', showPayment)
         // Awaiting payment → email the client a thank-you + payment link
-        // (only fires server-side if a payment link is configured).
-        if (showPayment === 'unpaid') void notifyPaymentRequest(booking.id, locale)
+        // (only fires server-side if a payment link is configured, and only
+        // when the practitioner left the per-close toggle on).
+        if (showPayment === 'unpaid' && sendPaymentEmail) void notifyPaymentRequest(booking.id, locale)
         emitBookingsChanged()
         // Fire a background Pulse regeneration. Closing a session is
         // the most meaningful update event — practitioners reported
@@ -273,7 +280,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await mirrorToSession(closeStatus, noShowPayment, noShowReason)
-        if (noShowPayment === 'unpaid') void notifyPaymentRequest(booking.id, locale)
+        if (noShowPayment === 'unpaid' && sendPaymentEmail) void notifyPaymentRequest(booking.id, locale)
         emitBookingsChanged()
         if (booking.member_id) void triggerPulseRegen(sb, booking.member_id, locale)
         onSaved?.({ bookingId: booking.id, status: closeStatus, payment_status: noShowPayment })
@@ -387,6 +394,13 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                 ))}
               </div>
             </div>
+            {showPayment === 'unpaid' && hasPaymentLink && (
+              <PaymentEmailToggle
+                checked={sendPaymentEmail}
+                onChange={setSendPaymentEmail}
+                locale={locale}
+              />
+            )}
             <div className="mb-5">
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
                 {locale === 'fr' ? 'Note de séance' : 'Session note'}
@@ -531,6 +545,14 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
                 ))}
               </div>
             </div>
+            {noShowPayment === 'unpaid' && hasPaymentLink && (
+              <PaymentEmailToggle
+                checked={sendPaymentEmail}
+                onChange={setSendPaymentEmail}
+                locale={locale}
+                className="mb-6 -mt-2"
+              />
+            )}
           </>
         )}
 

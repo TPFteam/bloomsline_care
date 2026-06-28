@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
       .select('id, practitioner_id, member_id, payment_status, start_time, client_email, client_name, payment_reminder_sent_at')
       .eq('id', bookingId)
       .single()
-    if (bErr || !booking) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (booking.practitioner_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    if (booking.payment_status !== 'unpaid') return NextResponse.json({ error: 'not_awaiting_payment' }, { status: 409 })
+    if (bErr || !booking) { console.warn('[payment-request] booking not found', { bookingId, bErr: bErr?.message }); return NextResponse.json({ error: 'Not found' }, { status: 404 }) }
+    if (booking.practitioner_id !== user.id) { console.warn('[payment-request] forbidden', { bookingId }); return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+    if (booking.payment_status !== 'unpaid') { console.warn('[payment-request] not awaiting payment', { bookingId, payment_status: booking.payment_status }); return NextResponse.json({ error: 'not_awaiting_payment' }, { status: 409 }) }
 
     // The feature is enabled purely by having a payment link configured.
     const { data: settings } = await admin
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .maybeSingle()
     const paymentUrl = (settings?.payment_url || '').trim()
-    if (!paymentUrl) return NextResponse.json({ skipped: 'no_payment_link' })
+    if (!paymentUrl) { console.warn('[payment-request] skipped: no payment_url for practitioner', { practitionerId: user.id }); return NextResponse.json({ skipped: 'no_payment_link' }) }
 
     // Client email + first name — prefer the member record, fall back to guest.
     let patientEmail: string | null = null

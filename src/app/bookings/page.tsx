@@ -68,6 +68,8 @@ import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import type { PaymentStatus } from '@/types/member'
 import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
+import { notifyPaymentRequest, fetchHasPaymentLink } from '@/lib/payment-request'
+import { PaymentEmailToggle } from '@/components/bookings/PaymentEmailToggle'
 import {
   getCalendarConnection,
   disconnectCalendar,
@@ -548,16 +550,17 @@ export default function BookingsPage() {
         setPractitionerSlug(profile.slug)
       }
 
-      // Load booking settings to get session types
+      // Load booking settings to get session types + payment link presence
       const { data: settings } = await supabase
         .from('booking_settings')
-        .select('session_types')
+        .select('session_types, payment_url')
         .eq('user_id', authUser.id)
         .single()
 
       if (settings?.session_types) {
         setSessionTypes(settings.session_types as SessionType[])
       }
+      setHasPaymentLink(!!(settings?.payment_url && (settings.payment_url as string).trim()))
 
       // Load bookings
       const { data: bookingsData, error } = await supabase
@@ -799,6 +802,10 @@ export default function BookingsPage() {
   // it false so the recorded outcome stays switchable.
   const [closePopupPreset, setClosePopupPreset] = useState(false)
   const [closePopupSaving, setClosePopupSaving] = useState(false)
+  // "Awaiting payment" close emails the client a payment link. Per-close toggle
+  // (default on); shown only when the practitioner has a payment link.
+  const [sendBPaymentEmail, setSendBPaymentEmail] = useState(true)
+  const [hasPaymentLink, setHasPaymentLink] = useState(false)
 
   // Show-branch fields
   // Every required field starts null — practitioner must explicitly
@@ -928,6 +935,7 @@ export default function BookingsPage() {
     setNoShowBPayment(booking.payment_status === 'paid' ? 'paid' : (isClosedCancel ? booking.payment_status : null))
     setNoShowBReason(!presetOutcome && isClosedCancel ? (booking.cancellation_reason || '') : '')
     setNoShowBComments('')
+    setSendBPaymentEmail(true)
   }
   const closeClosePopupBooking = () => {
     setClosePopupBooking(null)
@@ -1019,6 +1027,9 @@ export default function BookingsPage() {
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await mirrorToSession('completed', showBPayment)
+        // Awaiting payment → email the client a thank-you + payment link
+        // (server no-ops without a link; gated by the per-close toggle).
+        if (showBPayment === 'unpaid' && sendBPaymentEmail) notifyPaymentRequest(booking.id, locale)
         await fetchBookings()
         emitBookingsChanged()
         closeClosePopupBooking()
@@ -1046,6 +1057,7 @@ export default function BookingsPage() {
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await mirrorToSession(closeStatus, noShowBPayment, noShowBReason)
+        if (noShowBPayment === 'unpaid' && sendBPaymentEmail) notifyPaymentRequest(booking.id, locale)
         await fetchBookings()
         emitBookingsChanged()
         closeClosePopupBooking()
@@ -4080,6 +4092,14 @@ export default function BookingsPage() {
                   </div>
                 </div>
 
+                {showBPayment === 'unpaid' && hasPaymentLink && (
+                  <PaymentEmailToggle
+                    checked={sendBPaymentEmail}
+                    onChange={setSendBPaymentEmail}
+                    locale={locale}
+                  />
+                )}
+
                 {/* Section 2 — Note. Uses RichTextEditor to match the
                     SessionsTab Close popup. memberId may be null for
                     guest bookings; pass empty string so the editor still
@@ -4228,6 +4248,14 @@ export default function BookingsPage() {
                     ))}
                   </div>
                 </div>
+                {noShowBPayment === 'unpaid' && hasPaymentLink && (
+                  <PaymentEmailToggle
+                    checked={sendBPaymentEmail}
+                    onChange={setSendBPaymentEmail}
+                    locale={locale}
+                    className="mb-6 -mt-2"
+                  />
+                )}
               </>
             )}
 

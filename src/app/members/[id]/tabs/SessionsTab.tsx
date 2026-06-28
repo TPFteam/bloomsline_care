@@ -52,6 +52,8 @@ import { MarkdownRenderer } from '@/components/notes/MarkdownRenderer'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { PaymentReminderButton } from '@/components/ui/payment-reminder-button'
 import { PAYMENT_OPTIONS, paymentLabel } from '@/lib/payments'
+import { notifyPaymentRequest, fetchHasPaymentLink } from '@/lib/payment-request'
+import { PaymentEmailToggle } from '@/components/bookings/PaymentEmailToggle'
 import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/SessionDotLegend'
 import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
 import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
@@ -268,6 +270,10 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const [confirmingDiscardSession, setConfirmingDiscardSession] = useState(false)
   // True when editing the already-saved note (Edit on "Note already added").
   const [showPopupNoteEditing, setShowPopupNoteEditing] = useState(false)
+  // "Awaiting payment" close emails the client a payment link. Per-close toggle
+  // (default on); shown only when the practitioner has a payment link.
+  const [sendSessionPaymentEmail, setSendSessionPaymentEmail] = useState(true)
+  const [hasPaymentLink, setHasPaymentLink] = useState(false)
 
   const openClosePopup = (session: Session, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupSession(session)
@@ -290,6 +296,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     setNoShowPopupPayment(session.payment_status === 'paid' ? 'paid' : (isClosedCancel ? session.payment_status : null))
     setNoShowPopupReason(!presetOutcome && isClosedCancel ? (session.cancellation_reason || '') : '')
     setNoShowPopupComments('')
+    setSendSessionPaymentEmail(true)
   }
 
   const closeClosePopup = () => {
@@ -319,6 +326,27 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
     closeClosePopup()
   }
 
+  // Resolve a session row to its paired booking id so the "Awaiting payment"
+  // email (booking-keyed endpoint) can fire. Synthetic `booking-` rows carry
+  // the id directly; real session rows are matched by member + start time.
+  const resolveBookingId = async (session: Session): Promise<string | null> => {
+    if (session.id.startsWith('booking-')) return session.id.replace('booking-', '')
+    if (!member?.id) return null
+    const { data } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('member_id', member.id)
+      .eq('start_time', session.scheduled_at)
+      .maybeSingle()
+    return data?.id ?? null
+  }
+
+  const maybeSendPaymentEmail = async (session: Session, payment: PaymentStatus | null) => {
+    if (payment !== 'unpaid' || !sendSessionPaymentEmail) return
+    const bookingId = await resolveBookingId(session)
+    if (bookingId) notifyPaymentRequest(bookingId, locale)
+  }
+
   const confirmClosePopup = async () => {
     if (!closePopupSession || !closePopupOutcome) return
     const session = closePopupSession
@@ -340,6 +368,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
           await handleSaveSessionSummary(session.id, showPopupNoteDraft)
         }
         await handleUpdateStatus(session.id, 'completed')
+        await maybeSendPaymentEmail(session, showPopupPayment)
         closeClosePopup()
         // Hand off to the small follow-up prompt — ask after the
         // session is closed, not while filling the form.
@@ -353,6 +382,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
         // The reason decides the outcome: no-contact → no_show; called-off
         // → cancelled. Both are local closes (no patient notification).
         await handleUpdateStatus(session.id, reasonToStatus(noShowPopupReason), noShowPopupReason, noShowPopupComments)
+        await maybeSendPaymentEmail(session, noShowPopupPayment)
         closeClosePopup()
       }
     } finally {
@@ -548,13 +578,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (!user || cancelled) return
       const { data: settings } = await supabase
         .from('booking_settings')
-        .select('session_types')
+        .select('session_types, payment_url')
         .eq('user_id', user.id)
         .maybeSingle()
       if (cancelled) return
       if (Array.isArray(settings?.session_types)) {
         setConfiguredSessionTypes(settings!.session_types as any)
       }
+      setHasPaymentLink(!!(settings?.payment_url && (settings.payment_url as string).trim()))
     })()
     return () => { cancelled = true }
   }, [supabase])
@@ -2622,6 +2653,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                   </div>
                 </div>
 
+                {showPopupPayment === 'unpaid' && hasPaymentLink && (
+                  <PaymentEmailToggle
+                    checked={sendSessionPaymentEmail}
+                    onChange={setSendSessionPaymentEmail}
+                    locale={locale}
+                  />
+                )}
+
                 {/* Section 2 — Note */}
                 <div className="mb-5">
                   <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
@@ -2776,6 +2815,14 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                     ))}
                   </div>
                 </div>
+                {noShowPopupPayment === 'unpaid' && hasPaymentLink && (
+                  <PaymentEmailToggle
+                    checked={sendSessionPaymentEmail}
+                    onChange={setSendSessionPaymentEmail}
+                    locale={locale}
+                    className="mb-6 -mt-2"
+                  />
+                )}
               </>
             )}
 
