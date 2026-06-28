@@ -979,12 +979,6 @@ function DashboardInner() {
                 action set. Tooltip on hover (title attr) describes each. */}
             <div className="flex items-center gap-2 shrink-0 mt-10">
               <QuickIcon
-                icon={Calendar}
-                color="amber"
-                label={t('Book session', 'Planifier', 'Reservar')}
-                onClick={() => setShowSchedule(true)}
-              />
-              <QuickIcon
                 icon={UserPlus}
                 color="teal"
                 label={t('Add patient', 'Nouveau patient', 'Nuevo paciente')}
