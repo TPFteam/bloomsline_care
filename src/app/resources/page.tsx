@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useSessionState } from '@/lib/hooks/useSessionState'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -86,15 +87,17 @@ export default function MyResourcesPage() {
   const [loading, setLoading] = useState(true)
 
   // Sub-tab state (within My Resources)
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('created')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [languageFilter, setLanguageFilter] = useState<string>('all')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
-  const [forYouOnly, setForYouOnly] = useState(false)
+  // Filters persist for the browser session (survive tab switches / navigating
+  // away and back). They clear when the tab closes — see useSessionState.
+  const [activeSubTab, setActiveSubTab] = useSessionState<SubTab>('resources:subtab', 'created')
+  const [searchQuery, setSearchQuery] = useSessionState('resources:search', '')
+  const [languageFilter, setLanguageFilter] = useSessionState<string>('resources:language', 'all')
+  const [typeFilter, setTypeFilter] = useSessionState<'all' | 'worksheet' | 'psychoeducation' | 'exercise' | 'table'>('resources:type', 'all')
+  const [statusFilter, setStatusFilter] = useSessionState<'all' | 'draft' | 'published'>('resources:status', 'all')
+  const [forYouOnly, setForYouOnly] = useSessionState('resources:forYou', false)
   const [showFilters, setShowFilters] = useState(false)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [sortBy, setSortBy] = useState<SortOption>('recent_edited')
+  const [viewMode, setViewMode] = useSessionState<'grid' | 'list'>('resources:view', 'grid')
+  const [sortBy, setSortBy] = useSessionState<SortOption>('resources:sort', 'recent_edited')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
   const sortRef = useRef<HTMLDivElement>(null)

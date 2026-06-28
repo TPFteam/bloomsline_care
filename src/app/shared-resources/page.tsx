@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useSessionState } from '@/lib/hooks/useSessionState'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -67,9 +68,10 @@ export default function SharedResourcesPage() {
   const [user, setUser] = useState<User | null>(null)
   const [records, setRecords] = useState<SharedRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [memberFilter, setMemberFilter] = useState<string[]>([])
+  // Filters persist for the browser session (survive navigating away and back).
+  const [search, setSearch] = useSessionState('shared:search', '')
+  const [statusFilter, setStatusFilter] = useSessionState<string>('shared:status', 'all')
+  const [memberFilter, setMemberFilter] = useSessionState<string[]>('shared:member', [])
 
   useEffect(() => {
     fetchData()
@@ -169,7 +171,7 @@ export default function SharedResourcesPage() {
   const [responseLoading, setResponseLoading] = useState(false)
   const [responseModal, setResponseModal] = useState<{ record: SharedRecord; response: any; blocks: any[] } | null>(null)
   const [submissionsList, setSubmissionsList] = useState<any[] | null>(null)
-  const [viewMode, setViewMode] = useState<'person' | 'resource' | 'group'>('person')
+  const [viewMode, setViewMode] = useSessionState<'person' | 'resource' | 'group'>('shared:viewBy', 'person')
   const [groups, setGroups] = useState<Array<{ id: string; name: string; member_ids: string[] }>>([])
 
   // Unique members for filter dropdown
