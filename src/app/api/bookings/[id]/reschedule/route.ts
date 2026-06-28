@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 
 /**
  * POST /api/bookings/[id]/reschedule
@@ -220,7 +220,9 @@ export async function POST(
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
           const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
+          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
           const rebuilt = buildCalendarEvent({
+            confirmationDetails,
             bookingId: booking.id,
             practitionerName: await getPractitionerName(user.id, adminSupabase),
             clientName: booking.client_name,

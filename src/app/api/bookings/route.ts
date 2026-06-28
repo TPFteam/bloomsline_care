@@ -7,7 +7,7 @@ import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 import { postGoogleEvent } from '@/lib/services/google-event-create';
 import { waitUntil } from '@vercel/functions';
 
@@ -257,6 +257,13 @@ export async function POST(request: NextRequest) {
     let calendarSynced = false;
     let calendarError: string | null = null;
 
+    // Per-practitioner confirmation details (consent / payment / cancellation) —
+    // returned to the client so the confirmation screen can show them, and
+    // passed into the calendar event below. Null when the feature is off.
+    const confirmationDetails = bookingStatus === 'confirmed' && !isBackdated
+      ? await getBookingConfirmationDetails(body.practitioner_id, supabase)
+      : null;
+
     if (bookingStatus === 'confirmed' && !isBackdated) {
       const googleAuth = await getValidGoogleToken(body.practitioner_id, supabase);
 
@@ -282,6 +289,7 @@ export async function POST(request: NextRequest) {
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
           const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
           const calendarEvent = buildCalendarEvent({
+            confirmationDetails,
             bookingId: booking.id,
             practitionerName,
             clientName: body.client_name,
@@ -342,6 +350,7 @@ export async function POST(request: NextRequest) {
         : 'Booking confirmed!',
       calendarSynced,
       calendarError,
+      confirmationDetails,
     });
   } catch (err) {
     console.error('Booking error:', err);

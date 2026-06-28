@@ -66,6 +66,17 @@ interface Props {
   initialOutcome?: 'show' | 'no_show'
 }
 
+// Fire-and-forget: ask the server to email the client a thank-you + payment
+// link. The endpoint no-ops unless the practitioner configured a payment link,
+// so it's safe to call on every "Awaiting payment" close.
+function notifyPaymentRequest(bookingId: string, locale: string) {
+  fetch('/api/payment-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bookingId, locale }),
+  }).catch(() => { /* best-effort; manual reminder remains available */ })
+}
+
 export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOutcome }: Props) {
   const [outcome, setOutcome] = useState<'show' | 'no_show' | null>(initialOutcome ?? null)
   const [saving, setSaving] = useState(false)
@@ -233,6 +244,9 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await mirrorToSession('completed', showPayment)
+        // Awaiting payment → email the client a thank-you + payment link
+        // (only fires server-side if a payment link is configured).
+        if (showPayment === 'unpaid') void notifyPaymentRequest(booking.id, locale)
         emitBookingsChanged()
         // Fire a background Pulse regeneration. Closing a session is
         // the most meaningful update event — practitioners reported
@@ -259,6 +273,7 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
         const { error } = await sb.from('bookings').update(updates).eq('id', booking.id)
         if (error) throw error
         await mirrorToSession(closeStatus, noShowPayment, noShowReason)
+        if (noShowPayment === 'unpaid') void notifyPaymentRequest(booking.id, locale)
         emitBookingsChanged()
         if (booking.member_id) void triggerPulseRegen(sb, booking.member_id, locale)
         onSaved?.({ bookingId: booking.id, status: closeStatus, payment_status: noShowPayment })

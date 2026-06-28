@@ -5,7 +5,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 /**
@@ -423,7 +423,9 @@ export async function POST(
             .eq('user_id', booking.practitioner_id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
+          const confirmationDetails = await getBookingConfirmationDetails(booking.practitioner_id, adminSupabase);
           const calendarEvent = buildCalendarEvent({
+            confirmationDetails,
             bookingId: newBooking.id,
             practitionerName: await getPractitionerName(booking.practitioner_id, adminSupabase),
             clientName: booking.client_name,

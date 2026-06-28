@@ -51,6 +51,34 @@ export async function getPractitionerAddress(
 }
 
 /**
+ * Per-practitioner booking-confirmation details (consent / payment / cancellation)
+ * for the calendar description + confirmation screens. Returns null when the
+ * feature is off or nothing is filled in, so callers can pass it through blindly.
+ */
+export async function getBookingConfirmationDetails(
+  userId: string,
+  supabase: SupabaseClient
+): Promise<NonNullable<CalendarEventParams['confirmationDetails']> | null> {
+  const { data } = await supabase
+    .from('booking_settings')
+    .select('booking_confirmation_enabled, consent_text, payment_text, payment_url, cancellation_text, practice_text, practice_url')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!data || !(data as { booking_confirmation_enabled?: boolean }).booking_confirmation_enabled) return null
+  const d = data as Record<string, string | null>
+  const cd = {
+    consentText: d.consent_text || null,
+    paymentText: d.payment_text || null,
+    paymentUrl: d.payment_url || null,
+    cancellationText: d.cancellation_text || null,
+    practiceText: d.practice_text || null,
+    practiceUrl: d.practice_url || null,
+  }
+  if (!cd.consentText && !cd.paymentText && !cd.paymentUrl && !cd.cancellationText && !cd.practiceText && !cd.practiceUrl) return null
+  return cd
+}
+
+/**
  * Build a standardized Google Calendar event object for Bloomsline bookings.
  * Used across all calendar sync points for consistency.
  */
@@ -88,6 +116,18 @@ export interface CalendarEventParams {
    *  reminder they didn't ask for. The 30-min popup reminder is always
    *  included. */
   calendarEmailReminder?: boolean
+  /** Per-practitioner booking-confirmation details shown to the patient inside
+   *  the Google invite (and on the confirmation screen). Only the provided
+   *  sections render. Pass only when the practitioner enabled the feature
+   *  (booking_settings.booking_confirmation_enabled) for a confirmed booking. */
+  confirmationDetails?: {
+    consentText?: string | null
+    paymentText?: string | null
+    paymentUrl?: string | null
+    cancellationText?: string | null
+    practiceText?: string | null
+    practiceUrl?: string | null
+  } | null
 }
 
 // Substitute placeholder tokens in a title template. Unknown tokens are
@@ -128,6 +168,7 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     recurrenceRule,
     titleTemplate,
     calendarEmailReminder = false,
+    confirmationDetails,
   } = params
 
   const isInPerson = sessionFormat === 'in_person'
@@ -183,21 +224,24 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     lines.push('')
   }
 
-  lines.push(isFr ? `Type: ${sessionTypeName}` : `Type: ${sessionTypeName}`)
-  lines.push(isFr ? `Format: ${isInPerson ? 'En personne' : 'Vidéo'}` : `Format: ${isInPerson ? 'In person' : 'Video'}`)
+  // Date + time up top, in bold. (Google also renders its own "When" block
+  // below the description — this is the at-a-glance copy the practitioner asked
+  // to keep.) Google Calendar descriptions support basic HTML like <b>.
+  lines.push(`📅 <b>${dateStr}</b>`)
+  lines.push(`🕐 <b>${timeStart} – ${timeEnd}</b>`)
   lines.push('')
-  lines.push(isFr ? `Client: ${clientName}` : `Client: ${clientName}`)
-  lines.push(`Email: ${clientEmail}`)
-  if (clientPhone) lines.push(isFr ? `Tél: ${clientPhone}` : `Phone: ${clientPhone}`)
+  lines.push(`<b>Type:</b> ${sessionTypeName}`)
+  lines.push(isFr ? `<b>Format:</b> ${isInPerson ? 'En personne' : 'Vidéo'}` : `<b>Format:</b> ${isInPerson ? 'In person' : 'Video'}`)
   lines.push('')
-  lines.push(isFr ? `Date: ${dateStr}` : `Date: ${dateStr}`)
-  lines.push(isFr ? `Heure: ${timeStart} – ${timeEnd}` : `Time: ${timeStart} – ${timeEnd}`)
+  lines.push(`<b>Client:</b> ${clientName}`)
+  lines.push(`<b>Email:</b> ${clientEmail}`)
+  if (clientPhone) lines.push(isFr ? `<b>Tél:</b> ${clientPhone}` : `<b>Phone:</b> ${clientPhone}`)
 
   if (isInPerson && practitionerAddress) {
     lines.push('')
-    lines.push(isFr ? `📍 Lieu: ${practitionerAddress}` : `📍 Location: ${practitionerAddress}`)
+    lines.push(isFr ? `📍 <b>Lieu:</b> ${practitionerAddress}` : `📍 <b>Location:</b> ${practitionerAddress}`)
     if (practitionerGoogleMapsUrl) {
-      lines.push(isFr ? `Google Maps: ${practitionerGoogleMapsUrl}` : `Google Maps: ${practitionerGoogleMapsUrl}`)
+      lines.push(`<b>Google Maps:</b> ${practitionerGoogleMapsUrl}`)
     }
   }
 
@@ -206,14 +250,44 @@ export function buildCalendarEvent(params: CalendarEventParams) {
     lines.push(isFr ? `Notes: ${notes}` : `Notes: ${notes}`)
   }
 
+  // Practitioner-configured confirmation details (consent / payment / cancellation).
+  // Patient-facing; only the sections the practitioner filled in are shown.
+  const cd = confirmationDetails
+  const has = (s?: string | null) => !!(s && s.trim())
+  if (cd && (has(cd.consentText) || has(cd.paymentText) || has(cd.paymentUrl) || has(cd.cancellationText) || has(cd.practiceText) || has(cd.practiceUrl))) {
+    lines.push('')
+    lines.push('─────────────────')
+    if (has(cd.consentText)) {
+      lines.push(isFr ? '<b>— CONSENTEMENT —</b>' : '<b>— CONSENT —</b>')
+      lines.push(cd.consentText!.trim())
+      lines.push('')
+    }
+    if (has(cd.paymentText) || has(cd.paymentUrl)) {
+      lines.push(isFr ? '<b>— PAIEMENT —</b>' : '<b>— PAYMENT —</b>')
+      if (has(cd.paymentText)) lines.push(cd.paymentText!.trim())
+      if (has(cd.paymentUrl)) lines.push(`👉 ${cd.paymentUrl!.trim()}`)
+      lines.push('')
+    }
+    if (has(cd.cancellationText)) {
+      lines.push(isFr ? "<b>— POLITIQUE D'ANNULATION —</b>" : '<b>— CANCELLATION POLICY —</b>')
+      lines.push(cd.cancellationText!.trim())
+      lines.push('')
+    }
+    if (has(cd.practiceText) || has(cd.practiceUrl)) {
+      lines.push(isFr ? '<b>— POLITIQUE DU CABINET —</b>' : '<b>— PRACTICE POLICY —</b>')
+      if (has(cd.practiceText)) lines.push(cd.practiceText!.trim())
+      if (has(cd.practiceUrl)) lines.push(`👉 ${cd.practiceUrl!.trim()}`)
+    }
+  }
+
   // Practitioner details
   lines.push('')
   lines.push('─────────────────')
-  lines.push(isFr ? `Votre praticien(ne)` : `Your practitioner`)
+  lines.push(isFr ? `<b>Votre praticien(ne)</b>` : `<b>Your practitioner</b>`)
   lines.push(practitionerName)
-  if (practitionerEmail) lines.push(`Email: ${practitionerEmail}`)
-  if (practitionerPhone) lines.push(isFr ? `Tél: ${practitionerPhone}` : `Phone: ${practitionerPhone}`)
-  if (practitionerAddress) lines.push(isFr ? `Adresse: ${practitionerAddress}` : `Address: ${practitionerAddress}`)
+  if (practitionerEmail) lines.push(`<b>Email:</b> ${practitionerEmail}`)
+  if (practitionerPhone) lines.push(isFr ? `<b>Tél:</b> ${practitionerPhone}` : `<b>Phone:</b> ${practitionerPhone}`)
+  if (practitionerAddress) lines.push(isFr ? `<b>Adresse:</b> ${practitionerAddress}` : `<b>Address:</b> ${practitionerAddress}`)
 
   lines.push('')
   lines.push('─────────────────')

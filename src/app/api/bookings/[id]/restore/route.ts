@@ -20,7 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
-import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 export async function POST(
@@ -144,8 +144,10 @@ export async function POST(
             const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
             const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
             const practAddr = await getPractitionerAddress(user.id, adminSupabase);
+            const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
 
             const calendarEvent = buildCalendarEvent({
+              confirmationDetails,
               bookingId: booking.id,
               practitionerName: await getPractitionerName(user.id, adminSupabase),
               clientName: booking.client_name,

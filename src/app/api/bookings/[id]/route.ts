@@ -7,7 +7,7 @@ import { getNotificationContent } from '@/lib/notifications/templates';
 import { generateEmailHtml, getEmailContent } from '@/lib/notifications/email';
 import { sendEmail } from '@/lib/email';
 import { generateCalendarAttachment } from '@/lib/email/calendar-invite';
-import { buildCalendarEvent, getPractitionerName, getPractitionerAddress } from '@/lib/services/calendar-event';
+import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 import { postGoogleEvent } from '@/lib/services/google-event-create';
 
 // PATCH /api/bookings/[id] - Update booking status (approve/reject)
@@ -231,7 +231,9 @@ export async function PATCH(
           const practName = await getPractitionerName(user.id, adminSupabase);
 
           const practAddr = await getPractitionerAddress(user.id, adminSupabase);
+          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
           const calendarEvent = buildCalendarEvent({
+            confirmationDetails,
             bookingId: booking.id,
             practitionerName: practName,
             clientName: booking.client_name,

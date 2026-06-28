@@ -1409,6 +1409,15 @@ export default function BookingsPage() {
       calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? false,
       whatsapp_on_booking: (bookingSettings as any)?.whatsapp_on_booking ?? false,
       intake_forms: (bookingSettings as any)?.intake_forms ?? null,
+      // Booking confirmation details (consent / payment / cancellation) shown on
+      // the confirmation screen + inside the Google invite description.
+      booking_confirmation_enabled: (bookingSettings as any)?.booking_confirmation_enabled ?? false,
+      consent_text: (bookingSettings as any)?.consent_text?.trim() || null,
+      payment_text: (bookingSettings as any)?.payment_text?.trim() || null,
+      payment_url: (bookingSettings as any)?.payment_url?.trim() || null,
+      cancellation_text: (bookingSettings as any)?.cancellation_text?.trim() || null,
+      practice_text: (bookingSettings as any)?.practice_text?.trim() || null,
+      practice_url: (bookingSettings as any)?.practice_url?.trim() || null,
     }
     console.log('[bookings/handleSave] Payload:', JSON.stringify(payload))
 
@@ -1566,6 +1575,41 @@ export default function BookingsPage() {
               </aside>
 
               <div className="flex-1 min-w-0 space-y-4">
+
+          {/* Compact controls for < lg, where the left sidebar (and its
+              New booking button + Calendar/List/Settings toggle) is hidden.
+              Without this, tablet users couldn't reach Settings at all. */}
+          <div className="lg:hidden flex items-center gap-2">
+            <button
+              onClick={() => { setScheduleNextMemberId(null); setShowScheduleModal(true) }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl shadow-sm transition-colors shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              {locale === 'fr' ? 'Nouveau' : 'New'}
+            </button>
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 ml-auto">
+              <button
+                onClick={() => { setMainTab('appointments'); setBookingView('calendar') }}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'appointments' && bookingView === 'calendar' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {locale === 'fr' ? 'Calendrier' : 'Calendar'}
+              </button>
+              <button
+                onClick={() => { setMainTab('appointments'); setBookingView('list') }}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'appointments' && bookingView === 'list' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {locale === 'fr' ? 'Liste' : 'List'}
+              </button>
+              <button
+                onClick={() => setMainTab('settings')}
+                title={locale === 'fr' ? 'Paramètres' : 'Settings'}
+                aria-label={locale === 'fr' ? 'Paramètres' : 'Settings'}
+                className={`flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mainTab === 'settings' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
 
           {/* Appointments Tab Content */}
           {mainTab === 'appointments' && (
@@ -2986,6 +3030,103 @@ export default function BookingsPage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Confirmation details — consent / payment / cancellation / practice.
+                  Shown on the confirmation screen + inside the Google invite. */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                    {locale === 'fr' ? 'Détails de confirmation' : 'Confirmation details'}
+                  </CardTitle>
+                  <CardDescription>
+                    {locale === 'fr' ? "Texte de consentement, de paiement (avec lien), d'annulation et politique du cabinet. Ils s'affichent à la confirmation et dans l'invitation calendrier envoyée au patient. Les champs vides sont ignorés." : 'Consent, payment (with link), cancellation and practice policy text. They appear on the confirmation screen and inside the calendar invite sent to the patient. Empty fields are skipped.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 p-3">
+                    <p className="text-sm font-medium text-gray-900">{locale === 'fr' ? 'Activer ces détails' : 'Enable these details'}</p>
+                    <button type="button" aria-pressed={((bookingSettings as any)?.booking_confirmation_enabled ?? false)} onClick={() => setBookingSettings((prev: any) => ({ ...prev!, booking_confirmation_enabled: !((prev as any)?.booking_confirmation_enabled ?? false) }))} className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors shrink-0 ${((bookingSettings as any)?.booking_confirmation_enabled ?? false) ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${((bookingSettings as any)?.booking_confirmation_enabled ?? false) ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+                  {((bookingSettings as any)?.booking_confirmation_enabled ?? false) && (
+                    <div className="space-y-3">
+                      {/* Consent */}
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+                        <p className="text-xs font-semibold text-gray-800 mb-2">{locale === 'fr' ? 'Consentement' : 'Consent'}</p>
+                        <textarea
+                          value={(bookingSettings as any)?.consent_text ?? ''}
+                          onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, consent_text: e.target.value }))}
+                          rows={3}
+                          placeholder={locale === 'fr' ? 'Ex : En réglant votre séance, vous acceptez qu\'elle se déroule en visioconférence…' : 'E.g. By booking, you agree the session takes place over video…'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                        />
+                      </div>
+
+                      {/* Payment — text + link grouped */}
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 space-y-2">
+                        <p className="text-xs font-semibold text-gray-800">{locale === 'fr' ? 'Paiement' : 'Payment'}</p>
+                        <textarea
+                          value={(bookingSettings as any)?.payment_text ?? ''}
+                          onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, payment_text: e.target.value }))}
+                          rows={2}
+                          placeholder={locale === 'fr' ? 'Ex : Le règlement s\'effectue en ligne avant la séance, via le lien ci-dessous.' : 'E.g. Payment is made online before the session, via the link below.'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                        />
+                        <div>
+                          <label className="block text-[11px] text-gray-500 mb-1">{locale === 'fr' ? 'Lien de paiement' : 'Payment link'}</label>
+                          <input
+                            type="url"
+                            value={(bookingSettings as any)?.payment_url ?? ''}
+                            onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, payment_url: e.target.value }))}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cancellation */}
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+                        <p className="text-xs font-semibold text-gray-800 mb-2">{locale === 'fr' ? "Politique d'annulation" : 'Cancellation policy'}</p>
+                        <textarea
+                          value={(bookingSettings as any)?.cancellation_text ?? ''}
+                          onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, cancellation_text: e.target.value }))}
+                          rows={3}
+                          placeholder={locale === 'fr' ? 'Ex : Toute annulation doit être effectuée au moins 24 heures à l\'avance…' : 'E.g. Any cancellation must be made at least 24 hours in advance…'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                        />
+                      </div>
+
+                      {/* Practice policy — text + link grouped */}
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 space-y-2">
+                        <p className="text-xs font-semibold text-gray-800">{locale === 'fr' ? 'Politique du cabinet' : 'Practice policy'}</p>
+                        <textarea
+                          value={(bookingSettings as any)?.practice_text ?? ''}
+                          onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, practice_text: e.target.value }))}
+                          rows={2}
+                          placeholder={locale === 'fr' ? 'Ex : Informations sur le cabinet, modalités d\'accès…' : 'E.g. Practice information, access details…'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                        />
+                        <div>
+                          <label className="block text-[11px] text-gray-500 mb-1">{locale === 'fr' ? 'Lien' : 'Link'}</label>
+                          <input
+                            type="url"
+                            value={(bookingSettings as any)?.practice_url ?? ''}
+                            onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, practice_url: e.target.value }))}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <Button type="button" onClick={() => handleSaveBookingSettings()} disabled={isSavingSettings}>
+                    {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {locale === 'fr' ? 'Enregistrer' : 'Save'}
+                  </Button>
+                </CardContent>
+              </Card>
               </>)}
 
               {/* ─── Preferences tab ─── */}
@@ -3496,6 +3637,7 @@ export default function BookingsPage() {
                         </button>
                       </div>
                     </div>
+
                   </div>
 
                   <Button

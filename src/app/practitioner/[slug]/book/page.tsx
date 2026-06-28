@@ -115,6 +115,9 @@ export default function BookingPage() {
   // Required consent — the patient must accept the terms + teleconsultation
   // before a booking can be confirmed (shown on every practitioner's page).
   const [consentGiven, setConsentGiven] = useState(false)
+  // Second, separate consent: the practitioner's own consent / cancellation /
+  // practice policies (only required when they've configured them).
+  const [policiesAgreed, setPoliciesAgreed] = useState(false)
   // Opens an in-page privacy/data-protection summary (no redirect off the page).
   const [consentInfoOpen, setConsentInfoOpen] = useState(false)
   // Expand/collapse the practitioner's welcome message when it's long.
@@ -125,6 +128,7 @@ export default function BookingPage() {
   const [bookingComplete, setBookingComplete] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [calendarSynced, setCalendarSynced] = useState(false)
+  const [confirmationDetails, setConfirmationDetails] = useState<{ consentText?: string | null; paymentText?: string | null; paymentUrl?: string | null; cancellationText?: string | null; practiceText?: string | null; practiceUrl?: string | null } | null>(null)
 
   // Date view mode
   const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
@@ -508,6 +512,7 @@ export default function BookingPage() {
       }
 
       setCalendarSynced(data.calendarSynced === true)
+      setConfirmationDetails(data.confirmationDetails || null)
       setBookingComplete(true)
     } catch (err) {
       setBookingError(err instanceof Error ? err.message : 'Failed to create booking')
@@ -525,6 +530,21 @@ export default function BookingPage() {
     return forms.find((f) => f.id === formId)?.questions || []
   }
 
+  // Practitioner-configured consent / payment / cancellation / practice details
+  // shown pre-booking. Returns null when the feature is off or nothing is filled.
+  const bookingPolicies = () => {
+    const s = practitioner?.settings as Record<string, string | boolean | null> | undefined
+    if (!s?.booking_confirmation_enabled) return null
+    const consent = String(s.consent_text || '').trim()
+    const paymentText = String(s.payment_text || '').trim()
+    const paymentUrl = String(s.payment_url || '').trim()
+    const cancellation = String(s.cancellation_text || '').trim()
+    const practiceText = String(s.practice_text || '').trim()
+    const practiceUrl = String(s.practice_url || '').trim()
+    if (!consent && !paymentText && !paymentUrl && !cancellation && !practiceText && !practiceUrl) return null
+    return { consent, paymentText, paymentUrl, cancellation, practiceText, practiceUrl }
+  }
+
   // Validation
   const canProceed = () => {
     switch (currentStep) {
@@ -537,6 +557,7 @@ export default function BookingPage() {
         const baseValid = clientName.trim() !== '' && emailValid
         if (selectedService?.notesRequired && !notes.trim()) return false
         if (!consentGiven) return false
+        if (bookingPolicies() && !policiesAgreed) return false
         // Required intake questions must be answered.
         const questions = activeIntakeQuestions()
         for (const q of questions) {
@@ -666,6 +687,49 @@ export default function BookingPage() {
                   </div>
                 </div>
               </div>
+
+              {confirmationDetails && (confirmationDetails.consentText || confirmationDetails.paymentText || confirmationDetails.paymentUrl || confirmationDetails.cancellationText || confirmationDetails.practiceText || confirmationDetails.practiceUrl) && (
+                <div className="mt-4 rounded-xl border border-gray-100 bg-white p-5 text-left space-y-4">
+                  {confirmationDetails.consentText?.trim() && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Consentement' : 'Consent'}</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-line">{confirmationDetails.consentText.trim()}</p>
+                    </div>
+                  )}
+                  {(confirmationDetails.paymentText?.trim() || confirmationDetails.paymentUrl?.trim()) && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Paiement' : 'Payment'}</p>
+                      {confirmationDetails.paymentText?.trim() && (
+                        <p className="text-sm text-gray-700 whitespace-pre-line mb-2">{confirmationDetails.paymentText.trim()}</p>
+                      )}
+                      {confirmationDetails.paymentUrl?.trim() && (
+                        <a href={confirmationDetails.paymentUrl.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5">
+                          {locale === 'fr' ? 'Payer la séance' : 'Pay for the session'}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {confirmationDetails.cancellationText?.trim() && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? "Politique d'annulation" : 'Cancellation policy'}</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-line">{confirmationDetails.cancellationText.trim()}</p>
+                    </div>
+                  )}
+                  {(confirmationDetails.practiceText?.trim() || confirmationDetails.practiceUrl?.trim()) && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Politique du cabinet' : 'Practice policy'}</p>
+                      {confirmationDetails.practiceText?.trim() && (
+                        <p className="text-sm text-gray-700 whitespace-pre-line mb-2">{confirmationDetails.practiceText.trim()}</p>
+                      )}
+                      {confirmationDetails.practiceUrl?.trim() && (
+                        <a href={confirmationDetails.practiceUrl.trim()} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-teal-600 hover:text-teal-700 underline">
+                          {locale === 'fr' ? 'En savoir plus' : 'Learn more'}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -1494,6 +1558,63 @@ export default function BookingPage() {
                 <p>{practitioner.settings.cancellation_policy}</p>
               </div>
             )}
+
+            {/* Practitioner policies (consent / cancellation / practice) + a
+                second, separate agreement checkbox. Payment is not shown here. */}
+            {currentStep === 'details' && (() => {
+              const p = bookingPolicies()
+              if (!p) return null
+              return (
+                <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50/70 p-4 space-y-4">
+                  {p.consent && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Consentement' : 'Consent'}</p>
+                      <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{p.consent}</p>
+                    </div>
+                  )}
+                  {(p.paymentText || p.paymentUrl) && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Paiement' : 'Payment'}</p>
+                      {p.paymentText && <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed mb-1">{p.paymentText}</p>}
+                      {p.paymentUrl && (
+                        <a href={p.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-teal-600 hover:text-teal-700 underline break-all">
+                          {locale === 'fr' ? 'Lien de paiement' : 'Payment link'}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {p.cancellation && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? "Politique d'annulation" : 'Cancellation policy'}</p>
+                      <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{p.cancellation}</p>
+                    </div>
+                  )}
+                  {(p.practiceText || p.practiceUrl) && (
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Politique du cabinet' : 'Practice policy'}</p>
+                      {p.practiceText && <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed mb-1">{p.practiceText}</p>}
+                      {p.practiceUrl && (
+                        <a href={p.practiceUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-teal-600 hover:text-teal-700 underline">
+                          {locale === 'fr' ? 'En savoir plus' : 'Learn more'}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      checked={policiesAgreed}
+                      onChange={(e) => setPoliciesAgreed(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0"
+                    />
+                    <span className="text-xs text-gray-600 leading-relaxed">
+                      {locale === 'fr' ? "J'ai lu et j'accepte les conditions ci-dessus." : 'I have read and agree to the above.'}
+                      {' '}<span className="text-red-500">*</span>
+                    </span>
+                  </label>
+                </div>
+              )
+            })()}
 
             {/* Consent — required before confirming a booking */}
             {currentStep === 'details' && (
