@@ -48,7 +48,8 @@ export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
       <div className="flex items-center justify-between w-full">
         {leftContent}
 
-        <div className="flex items-center gap-3">
+        {/* ml-auto keeps the controls right-aligned even when a page passes no leftContent. */}
+        <div className="flex items-center gap-3 ml-auto">
           {/* Ask Bloom — minimal "search-input" styled trigger.
               Solid teal-emerald dot on the left, placeholder-style
               text on the right. Reads as an input rather than a

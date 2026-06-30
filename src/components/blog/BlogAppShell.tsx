@@ -30,7 +30,7 @@ export function BlogAppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gray-50 flex">
       <AppSidebar activeItem="blogs" />
       <main className="flex-1 ml-14">
-        <AppHeader user={user} isAdmin={admin} />
+        <AppHeader user={user} isAdmin={admin} leftContent={<div className="text-sm font-medium text-gray-900">Blogs</div>} />
         {children}
       </main>
     </div>
