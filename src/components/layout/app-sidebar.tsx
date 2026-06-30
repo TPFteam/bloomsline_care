@@ -11,7 +11,7 @@ import {
 import { Logo } from '@/components/ui/logo'
 import { useLanguage } from '@/lib/i18n/context'
 
-type NavItem = 'home' | 'library' | 'bookings' | 'members' | 'analytics'
+type NavItem = 'home' | 'library' | 'bookings' | 'members' | 'analytics' | 'blogs'
 
 interface AppSidebarProps {
   activeItem?: NavItem

@@ -10,6 +10,7 @@ import {
   LogOut,
   Globe,
   HelpCircle,
+  PenLine,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { useLanguage } from '@/lib/i18n/context'
@@ -138,6 +139,14 @@ export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
                       >
                         <Settings className="w-4 h-4" />
                         <span>{locale === 'fr' ? 'Paramètres' : locale === 'es' ? 'Configuración' : 'Settings'}</span>
+                      </Link>
+                      <Link
+                        href="/blogs"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <PenLine className="w-4 h-4" />
+                        <span>Blogs</span>
                       </Link>
                       {resolvedIsAdmin && (
                         <Link

@@ -34,6 +34,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
   const navItems = [
     { label: t.nav.home, href: '/', active: !isMemberPage },
     { label: t.nav.forMembers, href: '/for-everyone', active: isMemberPage },
+    { label: 'Blog', href: '/blog', active: false },
   ]
 
   return (
