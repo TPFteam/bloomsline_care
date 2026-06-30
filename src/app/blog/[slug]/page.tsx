@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
@@ -18,20 +18,37 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
   const supabase = createClient()
   const [snap, setSnap] = useState<BlogSnapshot | null>(null)
   const [publishedAt, setPublishedAt] = useState<string | null>(null)
+  const [authorTitle, setAuthorTitle] = useState<string | null>(null)
+  const [authorSlug, setAuthorSlug] = useState<string | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'notfound'>('loading')
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('blog_posts')
-        .select('published_at, published_snapshot')
+        .select('published_at, published_snapshot, practitioner_id')
         .eq('slug', slug)
         .not('published_snapshot', 'is', null)
         .maybeSingle()
       if (!data?.published_snapshot) { setState('notfound'); return }
-      setSnap(data.published_snapshot as BlogSnapshot)
+      const s = data.published_snapshot as BlogSnapshot
+      setSnap(s)
       setPublishedAt(data.published_at)
       setState('ready')
+      // Pull the practitioner's live title + profile slug (always current, so
+      // the link works without re-approving older posts).
+      let title = s.author_title || null
+      let pslug = s.author_slug || null
+      if (data.practitioner_id) {
+        const { data: prof } = await supabase
+          .from('practitioner_profiles')
+          .select('headline, slug')
+          .eq('user_id', data.practitioner_id)
+          .maybeSingle()
+        if (prof) { title = (prof.headline as string) || title; pslug = (prof.slug as string) || pslug }
+      }
+      setAuthorTitle(title)
+      setAuthorSlug(pslug)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
@@ -65,12 +82,18 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
             <div className="flex items-center gap-3 mt-5 mb-9">
               {snap.author_avatar
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={snap.author_avatar} alt={snap.author_name || ''} className="w-9 h-9 rounded-full object-cover" />
-                : <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 text-sm font-medium">{(snap.author_name || '?').charAt(0)}</div>}
-              <div className="text-sm">
-                <p className="text-neutral-800 font-medium">{snap.author_name}</p>
-                <p className="text-neutral-400">{fmt(publishedAt)}</p>
+                ? <img src={snap.author_avatar} alt={snap.author_name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                : <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 text-sm font-medium shrink-0">{(snap.author_name || '?').charAt(0)}</div>}
+              <div className="text-sm min-w-0">
+                <p className="text-neutral-800 font-medium truncate">{snap.author_name}</p>
+                <p className="text-neutral-400 truncate">{authorTitle ? `${authorTitle} · ` : ''}{fmt(publishedAt)}</p>
               </div>
+              {authorSlug && (
+                <Link href={`/practitioner/${authorSlug}`} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:text-teal-800 group shrink-0">
+                  <span className="hidden sm:inline">{t('View profile', 'Voir le profil')}</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              )}
             </div>
 
             {snap.cover_image_url && (

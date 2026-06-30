@@ -6,7 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Bold, Heading2, Quote, List, Link2, ImagePlus, Loader2 } from 'lucide-react'
+import { Bold, Heading2, Quote, List, Minus, Link2, ImagePlus, Loader2 } from 'lucide-react'
 
 interface Props {
   value: string
@@ -56,6 +56,7 @@ export function RichBlogEditor({ value, onChange, placeholder, uploadImage, uplo
         <TBtn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} icon={<Heading2 className="w-4 h-4" />} label="Heading" />
         <TBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} icon={<List className="w-4 h-4" />} label="List" />
         <TBtn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={<Quote className="w-4 h-4" />} label="Quote" />
+        <TBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} icon={<Minus className="w-4 h-4" />} label="Divider" />
         <TBtn active={editor.isActive('link')} onClick={onLink} icon={<Link2 className="w-4 h-4" />} label="Link" />
         <TBtn accent onClick={() => fileRef.current?.click()} icon={uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />} label="Image" />
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onPickImage(e.target.files[0])} />

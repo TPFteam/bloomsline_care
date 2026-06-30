@@ -17,7 +17,8 @@ export interface BlogSnapshot {
   // Denormalized at approval time so the public site needs no users-table join.
   author_name?: string
   author_avatar?: string | null
-  author_slug?: string | null
+  author_title?: string | null   // practitioner headline
+  author_slug?: string | null    // public profile at /practitioner/[slug]
 }
 
 export interface BlogPost {
