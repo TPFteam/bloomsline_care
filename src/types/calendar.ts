@@ -53,6 +53,9 @@ export interface SessionType {
   // Which intake form (from booking_settings.intake_forms) is shown when a
   // patient books this session type. Null / missing = no intake form.
   intake_form_id?: string | null;
+  // Per-session-type payment link. Shown in the booking consent and sent in the
+  // "Awaiting payment" close email for bookings of this type. Blank = no link.
+  payment_url?: string | null;
 }
 
 // The set of optional fields the Add-member popup can render. Order

@@ -144,7 +144,7 @@ export async function POST(
             const titleTemplate = (settings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
             const calendarEmailReminder = (settings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
             const practAddr = await getPractitionerAddress(user.id, adminSupabase);
-            const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
+            const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase, booking.session_type);
 
             const calendarEvent = buildCalendarEvent({
               confirmationDetails,

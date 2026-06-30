@@ -113,7 +113,7 @@ export async function POST(
       const locale = practUser?.preferred_language || 'fr';
 
       const practAddr = await getPractitionerAddress(booking.practitioner_id, adminSupabase);
-      const confirmationDetails = await getBookingConfirmationDetails(booking.practitioner_id, adminSupabase);
+      const confirmationDetails = await getBookingConfirmationDetails(booking.practitioner_id, adminSupabase, booking.session_type);
       const calendarEvent = buildCalendarEvent({
         confirmationDetails,
         bookingId: id,

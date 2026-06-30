@@ -1426,6 +1426,7 @@ function DashboardInner() {
                           client_name: b.client_name,
                           start_time: b.start_time,
                       payment_status: (b as any).payment_status ?? null,
+                          session_type: (b as any).session_type ?? null,
                           practitioner_notes: (b as any).practitioner_notes ?? null,
                         }) }
                       }}

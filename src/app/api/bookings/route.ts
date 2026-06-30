@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
     // returned to the client so the confirmation screen can show them, and
     // passed into the calendar event below. Null when the feature is off.
     const confirmationDetails = bookingStatus === 'confirmed' && !isBackdated
-      ? await getBookingConfirmationDetails(body.practitioner_id, supabase)
+      ? await getBookingConfirmationDetails(body.practitioner_id, supabase, body.session_type)
       : null;
 
     if (bookingStatus === 'confirmed' && !isBackdated) {

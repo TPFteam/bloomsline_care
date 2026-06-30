@@ -278,6 +278,9 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
   const openClosePopup = (session: Session, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupSession(session)
     setClosePopupPreset(!!presetOutcome)
+    // Show the "send payment email" toggle only if THIS session's type has a link.
+    const stForClose = (configuredSessionTypes as Array<{ id: string; payment_url?: string | null }>).find(t => t.id === (session as { session_type?: string }).session_type)
+    setHasPaymentLink(!!(stForClose?.payment_url && stForClose.payment_url.trim()))
     // Editing an already-closed session: pre-fill outcome + payment (+ reason)
     // so the practitioner adjusts what they recorded. Completed → "show";
     // cancelled/no_show → "no_show". A presetOutcome (Show / No-show row
@@ -578,14 +581,16 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
       if (!user || cancelled) return
       const { data: settings } = await supabase
         .from('booking_settings')
-        .select('session_types, payment_url')
+        .select('session_types')
         .eq('user_id', user.id)
         .maybeSingle()
       if (cancelled) return
-      if (Array.isArray(settings?.session_types)) {
-        setConfiguredSessionTypes(settings!.session_types as any)
+      const stypes = Array.isArray(settings?.session_types) ? settings!.session_types as any[] : []
+      if (stypes.length) {
+        setConfiguredSessionTypes(stypes as any)
       }
-      setHasPaymentLink(!!(settings?.payment_url && (settings.payment_url as string).trim()))
+      // Toggle shows if any session type has a payment link (email picks the right one).
+      setHasPaymentLink(stypes.some((t: { payment_url?: string | null }) => !!(t.payment_url && t.payment_url.trim())))
     })()
     return () => { cancelled = true }
   }, [supabase])

@@ -220,7 +220,7 @@ export async function POST(
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
           const calendarEmailReminder = (titleSettings as { calendar_email_reminder_enabled?: boolean } | null)?.calendar_email_reminder_enabled ?? false;
-          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
+          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase, effectiveSessionType);
           const rebuilt = buildCalendarEvent({
             confirmationDetails,
             bookingId: booking.id,

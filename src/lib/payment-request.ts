@@ -12,18 +12,21 @@ export function notifyPaymentRequest(bookingId: string, locale: string) {
   }).catch(() => { /* best-effort */ })
 }
 
-// Does this practitioner have a payment link configured? Gates the "send
-// payment email" toggle on the close popups — no link means there is no email
-// to send, so we hide the toggle rather than promise an email that can't go.
-export async function fetchHasPaymentLink(practitionerId: string): Promise<boolean> {
+// Does the given session type have a payment link? (Or, with no sessionTypeId,
+// does ANY type?) Gates the "send payment email" toggle on the close popups so
+// it only appears when the booking's own session type can actually be paid.
+export async function fetchHasPaymentLink(practitionerId: string, sessionTypeId?: string | null): Promise<boolean> {
   try {
     const sb = createClient()
     const { data } = await sb
       .from('booking_settings')
-      .select('payment_url')
+      .select('session_types')
       .eq('user_id', practitionerId)
       .maybeSingle()
-    return !!(data?.payment_url && data.payment_url.trim())
+    const types = (data?.session_types as Array<{ id: string; payment_url?: string | null }>) || []
+    const hasLink = (t?: { payment_url?: string | null }) => !!(t?.payment_url && t.payment_url.trim())
+    if (sessionTypeId) return hasLink(types.find((t) => t.id === sessionTypeId))
+    return types.some(hasLink)
   } catch {
     return false
   }

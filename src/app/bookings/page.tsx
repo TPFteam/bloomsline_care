@@ -550,17 +550,19 @@ export default function BookingsPage() {
         setPractitionerSlug(profile.slug)
       }
 
-      // Load booking settings to get session types + payment link presence
+      // Load booking settings to get session types (each may carry a payment link)
       const { data: settings } = await supabase
         .from('booking_settings')
-        .select('session_types, payment_url')
+        .select('session_types')
         .eq('user_id', authUser.id)
         .single()
 
+      const loadedTypes = (settings?.session_types as SessionType[]) || []
       if (settings?.session_types) {
-        setSessionTypes(settings.session_types as SessionType[])
+        setSessionTypes(loadedTypes)
       }
-      setHasPaymentLink(!!(settings?.payment_url && (settings.payment_url as string).trim()))
+      // The close "send payment email" toggle shows if any session type has a link.
+      setHasPaymentLink(loadedTypes.some((t) => !!(t.payment_url && t.payment_url.trim())))
 
       // Load bookings
       const { data: bookingsData, error } = await supabase
@@ -919,6 +921,9 @@ export default function BookingsPage() {
   const openClosePopupBooking = (booking: Booking, presetOutcome?: 'show' | 'no_show') => {
     setClosePopupBooking(booking)
     setClosePopupPreset(!!presetOutcome)
+    // Show the "send payment email" toggle only if THIS booking's session type has a link.
+    const stForClose = (sessionTypes || []).find(t => t.id === booking.session_type)
+    setHasPaymentLink(!!(stForClose?.payment_url && stForClose.payment_url.trim()))
     // When editing an already-closed booking, pre-fill the outcome + payment
     // (+ reason) so the practitioner adjusts what they recorded rather than
     // starting over. Completed → "show"; cancelled/no_show → "no_show".
@@ -1426,7 +1431,6 @@ export default function BookingsPage() {
       booking_confirmation_enabled: (bookingSettings as any)?.booking_confirmation_enabled ?? false,
       consent_text: (bookingSettings as any)?.consent_text?.trim() || null,
       payment_text: (bookingSettings as any)?.payment_text?.trim() || null,
-      payment_url: (bookingSettings as any)?.payment_url?.trim() || null,
       cancellation_text: (bookingSettings as any)?.cancellation_text?.trim() || null,
       practice_text: (bookingSettings as any)?.practice_text?.trim() || null,
       practice_url: (bookingSettings as any)?.practice_url?.trim() || null,
@@ -2632,6 +2636,23 @@ export default function BookingsPage() {
                           </button>
                         </div>
                         </div>
+                          {/* Per-session-type payment link */}
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{locale === 'fr' ? 'Lien de paiement' : 'Payment link'}</label>
+                            <input
+                              type="url"
+                              value={type.payment_url ?? ''}
+                              onChange={(e) => {
+                                const updated = [...sessionTypes.length > 0 ? sessionTypes : DEFAULT_SESSION_TYPES]
+                                updated[index] = { ...updated[index], payment_url: e.target.value || null }
+                                setSessionTypes(updated)
+                                setBookingSettings((prev: BookingSettings | null) => prev ? { ...prev, session_types: updated } : prev)
+                              }}
+                              placeholder={locale === 'fr' ? 'https://… (lien Stripe, etc.)' : 'https://… (Stripe link, etc.)'}
+                              className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400"
+                            />
+                            <p className="text-[11px] text-gray-400 mt-1">{locale === 'fr' ? 'Affiché à la réservation et envoyé à la clôture si « En attente ». Vide = aucun lien.' : 'Shown at booking, and sent on close if "Awaiting payment". Blank = no link.'}</p>
+                          </div>
                           <div>
                             <button type="button" onClick={() => setEditingSession(prev => { const n = new Set(prev); n.delete(type.id); return n })} className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors">
                               {locale === 'fr' ? 'OK' : 'Done'}
@@ -3076,7 +3097,8 @@ export default function BookingsPage() {
                         />
                       </div>
 
-                      {/* Payment — text + link grouped */}
+                      {/* Payment — descriptive text only. The actual link is set
+                          per session type (Session types → Payment link). */}
                       <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 space-y-2">
                         <p className="text-xs font-semibold text-gray-800">{locale === 'fr' ? 'Paiement' : 'Payment'}</p>
                         <textarea
@@ -3086,16 +3108,7 @@ export default function BookingsPage() {
                           placeholder={locale === 'fr' ? 'Ex : Le règlement s\'effectue en ligne avant la séance, via le lien ci-dessous.' : 'E.g. Payment is made online before the session, via the link below.'}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
                         />
-                        <div>
-                          <label className="block text-[11px] text-gray-500 mb-1">{locale === 'fr' ? 'Lien de paiement' : 'Payment link'}</label>
-                          <input
-                            type="url"
-                            value={(bookingSettings as any)?.payment_url ?? ''}
-                            onChange={(e) => setBookingSettings((prev: any) => ({ ...prev!, payment_url: e.target.value }))}
-                            placeholder="https://..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                          />
-                        </div>
+                        <p className="text-[11px] text-gray-400">{locale === 'fr' ? 'Le lien de paiement se règle par type de séance (ci-dessus). Celui du type réservé s\'affiche ici.' : 'The payment link is set per session type (above). The booked type\'s link shows here.'}</p>
                       </div>
 
                       {/* Cancellation */}

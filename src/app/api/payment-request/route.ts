@@ -37,21 +37,24 @@ export async function POST(request: NextRequest) {
 
     const { data: booking, error: bErr } = await admin
       .from('bookings')
-      .select('id, practitioner_id, member_id, payment_status, start_time, client_email, client_name, payment_reminder_sent_at')
+      .select('id, practitioner_id, member_id, payment_status, start_time, client_email, client_name, payment_reminder_sent_at, session_type')
       .eq('id', bookingId)
       .single()
     if (bErr || !booking) { console.warn('[payment-request] booking not found', { bookingId, bErr: bErr?.message }); return NextResponse.json({ error: 'Not found' }, { status: 404 }) }
     if (booking.practitioner_id !== user.id) { console.warn('[payment-request] forbidden', { bookingId }); return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
     if (booking.payment_status !== 'unpaid') { console.warn('[payment-request] not awaiting payment', { bookingId, payment_status: booking.payment_status }); return NextResponse.json({ error: 'not_awaiting_payment' }, { status: 409 }) }
 
-    // The feature is enabled purely by having a payment link configured.
+    // The payment link now lives on the session type. Use the one for THIS
+    // booking's session type; skip silently if that type has no link.
     const { data: settings } = await admin
       .from('booking_settings')
-      .select('payment_url')
+      .select('session_types')
       .eq('user_id', user.id)
       .maybeSingle()
-    const paymentUrl = (settings?.payment_url || '').trim()
-    if (!paymentUrl) { console.warn('[payment-request] skipped: no payment_url for practitioner', { practitionerId: user.id }); return NextResponse.json({ skipped: 'no_payment_link' }) }
+    const sessionTypes = (settings?.session_types as Array<{ id: string; payment_url?: string | null }>) || []
+    const matchedType = sessionTypes.find((t) => t.id === booking.session_type)
+    const paymentUrl = (matchedType?.payment_url || '').trim()
+    if (!paymentUrl) { console.warn('[payment-request] skipped: no payment link for session type', { bookingId, sessionType: booking.session_type }); return NextResponse.json({ skipped: 'no_payment_link' }) }
 
     // Client email + first name — prefer the member record, fall back to guest.
     let patientEmail: string | null = null

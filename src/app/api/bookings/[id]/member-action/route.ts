@@ -423,7 +423,7 @@ export async function POST(
             .eq('user_id', booking.practitioner_id)
             .maybeSingle();
           const titleTemplate = (titleSettings as { calendar_event_title_template?: string | null } | null)?.calendar_event_title_template ?? null;
-          const confirmationDetails = await getBookingConfirmationDetails(booking.practitioner_id, adminSupabase);
+          const confirmationDetails = await getBookingConfirmationDetails(booking.practitioner_id, adminSupabase, booking.session_type);
           const calendarEvent = buildCalendarEvent({
             confirmationDetails,
             bookingId: newBooking.id,

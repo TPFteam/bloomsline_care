@@ -57,22 +57,27 @@ export async function getPractitionerAddress(
  */
 export async function getBookingConfirmationDetails(
   userId: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  sessionTypeId?: string | null
 ): Promise<NonNullable<CalendarEventParams['confirmationDetails']> | null> {
   const { data } = await supabase
     .from('booking_settings')
-    .select('booking_confirmation_enabled, consent_text, payment_text, payment_url, cancellation_text, practice_text, practice_url')
+    .select('booking_confirmation_enabled, consent_text, payment_text, cancellation_text, practice_text, practice_url, session_types')
     .eq('user_id', userId)
     .maybeSingle()
   if (!data || !(data as { booking_confirmation_enabled?: boolean }).booking_confirmation_enabled) return null
-  const d = data as Record<string, string | null>
+  const d = data as Record<string, unknown>
+  // Payment link is per session type — resolve it for this booking's type.
+  const types = (d.session_types as Array<{ id: string; payment_url?: string | null }>) || []
+  const paymentUrl = (types.find((t) => t.id === sessionTypeId)?.payment_url || null) as string | null
+  const str = (v: unknown) => (v ? String(v) : null)
   const cd = {
-    consentText: d.consent_text || null,
-    paymentText: d.payment_text || null,
-    paymentUrl: d.payment_url || null,
-    cancellationText: d.cancellation_text || null,
-    practiceText: d.practice_text || null,
-    practiceUrl: d.practice_url || null,
+    consentText: str(d.consent_text),
+    paymentText: str(d.payment_text),
+    paymentUrl,
+    cancellationText: str(d.cancellation_text),
+    practiceText: str(d.practice_text),
+    practiceUrl: str(d.practice_url),
   }
   if (!cd.consentText && !cd.paymentText && !cd.paymentUrl && !cd.cancellationText && !cd.practiceText && !cd.practiceUrl) return null
   return cd

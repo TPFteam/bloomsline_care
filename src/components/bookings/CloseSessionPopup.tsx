@@ -45,6 +45,8 @@ export interface CloseSessionBooking {
   practitioner_notes?: string | null
   /** Current payment so the close popup can pre-select it (Paid stays Paid). */
   payment_status?: PaymentStatus | null
+  /** Session type id — decides which payment link (if any) applies. */
+  session_type?: string | null
 }
 
 export interface CloseSessionResult {
@@ -118,9 +120,9 @@ export function CloseSessionPopup({ booking, onClose, onSaved, locale, initialOu
   useEffect(() => {
     if (!booking?.practitioner_id) { setHasPaymentLink(false); return }
     let cancelled = false
-    fetchHasPaymentLink(booking.practitioner_id).then(has => { if (!cancelled) setHasPaymentLink(has) })
+    fetchHasPaymentLink(booking.practitioner_id, booking.session_type).then(has => { if (!cancelled) setHasPaymentLink(has) })
     return () => { cancelled = true }
-  }, [booking?.practitioner_id])
+  }, [booking?.practitioner_id, booking?.session_type])
 
   // Build the practitioner's tag list (defaults + custom) so the inline
   // editor here gets the same tag-insert button as the main notes editor.

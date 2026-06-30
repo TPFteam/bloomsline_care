@@ -231,7 +231,7 @@ export async function PATCH(
           const practName = await getPractitionerName(user.id, adminSupabase);
 
           const practAddr = await getPractitionerAddress(user.id, adminSupabase);
-          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase);
+          const confirmationDetails = await getBookingConfirmationDetails(user.id, adminSupabase, booking.session_type);
           const calendarEvent = buildCalendarEvent({
             confirmationDetails,
             bookingId: booking.id,

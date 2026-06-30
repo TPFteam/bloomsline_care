@@ -537,7 +537,8 @@ export default function BookingPage() {
     if (!s?.booking_confirmation_enabled) return null
     const consent = String(s.consent_text || '').trim()
     const paymentText = String(s.payment_text || '').trim()
-    const paymentUrl = String(s.payment_url || '').trim()
+    // Payment link is per session type — use the one for the chosen service.
+    const paymentUrl = String(selectedService?.payment_url || '').trim()
     const cancellation = String(s.cancellation_text || '').trim()
     const practiceText = String(s.practice_text || '').trim()
     const practiceUrl = String(s.practice_url || '').trim()
