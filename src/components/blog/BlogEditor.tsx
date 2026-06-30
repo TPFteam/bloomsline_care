@@ -31,6 +31,8 @@ export function BlogEditor({ initialPost }: { initialPost: BlogPost | null }) {
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const coverInput = useRef<HTMLInputElement>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
 
@@ -96,16 +98,22 @@ export function BlogEditor({ initialPost }: { initialPost: BlogPost | null }) {
     setCoverUrl(res.url)
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!postId) { router.push('/blogs'); return }
-    if (!confirm(t('Delete this post? This cannot be undone.', 'Supprimer cet article ? Action irréversible.'))) return
+    setConfirmingDelete(true)
+  }
+
+  async function confirmDelete() {
+    if (!postId) return
+    setDeleting(true)
     const res = await deletePost(postId)
-    if (res.error) { toast.error(t('Could not delete', 'Échec de la suppression')); return }
+    if (res.error) { setDeleting(false); toast.error(t('Could not delete', 'Échec de la suppression')); return }
     toast.success(t('Post deleted', 'Article supprimé'))
     router.push('/blogs')
   }
 
   return (
+    <>
     <div className="max-w-3xl mx-auto px-6 py-10">
       {/* Top bar */}
       <div className="flex items-center justify-between mb-8">
@@ -218,6 +226,27 @@ export function BlogEditor({ initialPost }: { initialPost: BlogPost | null }) {
         </div>
       </div>
     </div>
+
+    {/* Delete confirmation — custom modal (no native browser alert) */}
+    {confirmingDelete && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }} onClick={() => !deleting && setConfirmingDelete(false)}>
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{t('Delete this post?', 'Supprimer cet article ?')}</h3>
+          <p className="text-sm text-gray-600 mb-5">
+            {t('This permanently deletes the post and removes it from bloomsline.com if it was live. This cannot be undone.', 'Cela supprime définitivement l\'article et le retire de bloomsline.com s\'il était en ligne. Action irréversible.')}
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={() => setConfirmingDelete(false)} disabled={deleting} className="px-4 py-2 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50">
+              {t('Cancel', 'Annuler')}
+            </button>
+            <button onClick={confirmDelete} disabled={deleting} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} {t('Delete', 'Supprimer')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
@@ -236,6 +265,7 @@ function StatusPill({ status, isLive, t }: { status: BlogStatus; isLive: boolean
     case 'published': return <Pill tone="green" icon={<Check className="w-3 h-3" />}>{t('Live', 'En ligne')}</Pill>
     case 'pending': return <Pill tone="amber" icon={<Clock className="w-3 h-3" />}>{t('In review', 'En validation')}</Pill>
     case 'changes_requested': return <Pill tone="red" icon={<AlertCircle className="w-3 h-3" />}>{t('Changes requested', 'Modifications demandées')}</Pill>
+    case 'unpublished': return <Pill tone="gray" icon={<AlertCircle className="w-3 h-3" />}>{t('Unpublished', 'Dépublié')}</Pill>
     default: return <Pill tone="gray" icon={<PenLine className="w-3 h-3" />}>{t('Draft', 'Brouillon')}</Pill>
   }
 }

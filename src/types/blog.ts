@@ -1,4 +1,4 @@
-export type BlogStatus = 'draft' | 'pending' | 'changes_requested' | 'published'
+export type BlogStatus = 'draft' | 'pending' | 'changes_requested' | 'published' | 'unpublished'
 
 /** An image inserted in the body, stored apart from the text as a {{token}}. */
 export interface BlogImage {

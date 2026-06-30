@@ -103,6 +103,7 @@ function ListPill({ status, isLive, t }: { status: BlogStatus; isLive: boolean; 
     live: { cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <Check className="w-3 h-3" />, label: isLive && status === 'draft' ? t('Live · editing', 'En ligne · édition') : t('Live', 'En ligne') },
     pending: { cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: <Clock className="w-3 h-3" />, label: t('In review', 'En validation') },
     changes_requested: { cls: 'bg-red-50 text-red-700 border-red-200', icon: <AlertCircle className="w-3 h-3" />, label: t('Changes requested', 'Modifications') },
+    unpublished: { cls: 'bg-gray-50 text-gray-500 border-gray-200', icon: <AlertCircle className="w-3 h-3" />, label: t('Unpublished', 'Dépublié') },
     draft: { cls: 'bg-gray-50 text-gray-500 border-gray-200', icon: <PenLine className="w-3 h-3" />, label: t('Draft', 'Brouillon') },
   }
   const key = status === 'published' || (isLive && status === 'draft') ? 'live' : status
