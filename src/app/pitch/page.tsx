@@ -52,11 +52,23 @@ const translations = {
       real: "What's Real",
       gtm: 'Go-to-Market',
       market: 'Market',
+      landscape: 'Landscape',
       model: 'Model',
       team: 'Team',
       vision: 'Vision',
       ask: 'The Ask',
       close: 'Close',
+    },
+    landscape: {
+      label: 'THE LANDSCAPE',
+      headline1: 'Everyone owns a slice.',
+      headline2: 'No one owns the 167 hours between.',
+      axisTop: 'Therapeutic continuity',
+      axisBottom: 'Admin only',
+      axisLeft: 'Patient',
+      axisRight: 'Practitioner',
+      quote: '"Nothing is intuitive, and it\'s expensive."',
+      quoteAttr: 'a therapist on today\'s tools',
     },
     hero: {
       tag: 'Bloomsline',
@@ -334,7 +346,7 @@ const translations = {
         { value: '~8M', label: 'adults have depression each year (about 1 in 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
         { value: '77K', label: 'licensed psychologists — all officially registered', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
         { value: '28K', label: 'work for themselves — these are who we sell to', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '1,000', label: 'our goal by Year 3, about €350K a year', source: 'our target · 3.5% of them', url: '' },
+        { value: '1,000', label: 'our Year-3 goal in France, about €350K a year', source: 'our target · 3.5% of French psychologists', url: '' },
       ],
       europeLabel: 'Europe',
       europeValue: '17× bigger',
@@ -344,7 +356,7 @@ const translations = {
       worldBody: 'people live with mental health problems. Someday — not today.',
       worldSource: 'WHO 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      closing: 'We don\'t need the world. We need 1,000 French psychologists.',
+      punch: '1,000 French psychologists is the proof. Europe is the path to €100M.',
     },
     team: {
       label: 'THE TEAM',
@@ -437,11 +449,23 @@ const translations = {
       real: 'Ce Qui Est Réel',
       gtm: 'Go-to-Market',
       market: 'Marché',
+      landscape: 'Paysage',
       model: 'Modèle',
       team: 'Équipe',
       vision: 'Vision',
       ask: 'La Demande',
       close: 'Conclusion',
+    },
+    landscape: {
+      label: 'LE PAYSAGE',
+      headline1: 'Chacun possède une part.',
+      headline2: 'Personne ne possède les 167 heures entre les séances.',
+      axisTop: 'Continuité thérapeutique',
+      axisBottom: 'Administratif seulement',
+      axisLeft: 'Patient',
+      axisRight: 'Praticien',
+      quote: '« Rien d\'intuitif, et c\'est cher. »',
+      quoteAttr: 'un thérapeute sur les outils actuels',
     },
     hero: {
       tag: 'Bloomsline',
@@ -719,7 +743,7 @@ const translations = {
         { value: '~8M', label: 'adultes ont une dépression chaque année (environ 1 sur 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
         { value: '77K', label: 'psychologues — chacun doit s\'enregistrer par la loi', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
         { value: '28K', label: 'travaillent à leur compte — c\'est à eux qu\'on vend', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '1 000', label: 'notre objectif en année 3, environ 350K€ par an', source: 'notre cible · 3,5% d\'entre eux', url: '' },
+        { value: '1 000', label: 'notre objectif en année 3 en France, environ 350K€ par an', source: 'notre cible · 3,5% des psychologues français', url: '' },
       ],
       europeLabel: 'Europe',
       europeValue: '17× plus grand',
@@ -729,7 +753,7 @@ const translations = {
       worldBody: 'de personnes vivent avec un trouble mental. Un jour — pas aujourd\'hui.',
       worldSource: 'OMS 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      closing: 'On n\'a pas besoin du monde. On a besoin de 1 000 psychologues français.',
+      punch: '1 000 psychologues français, c\'est la preuve. L\'Europe, c\'est le chemin vers 100M€.',
     },
     team: {
       label: 'L\'ÉQUIPE',
@@ -830,6 +854,7 @@ export default function PitchNewPage() {
     { id: 'security', title: t.slides.security },
     { id: 'real', title: t.slides.real },
     { id: 'market', title: t.slides.market },
+    { id: 'landscape', title: t.slides.landscape },
     { id: 'gtm', title: t.slides.gtm },
     { id: 'model', title: t.slides.model },
     { id: 'team', title: t.slides.team },
@@ -888,12 +913,13 @@ export default function PitchNewPage() {
       case 7: return <SecuritySlide t={t.security} />
       case 8: return <RealSlide t={t.real} />
       case 9: return <MarketSlide t={t.market} />
-      case 10: return <GTMSlide t={t.gtm} />
-      case 11: return <ModelSlide t={t.model} />
-      case 12: return <TeamSlide t={t.team} />
-      case 13: return <VisionSlide t={t.vision} />
-      case 14: return <AskSlide t={t.ask} />
-      case 15: return <CloseSlide t={t.close} />
+      case 10: return <LandscapeSlide t={t.landscape} />
+      case 11: return <GTMSlide t={t.gtm} />
+      case 12: return <ModelSlide t={t.model} />
+      case 13: return <TeamSlide t={t.team} />
+      case 14: return <VisionSlide t={t.vision} />
+      case 15: return <AskSlide t={t.ask} />
+      case 16: return <CloseSlide t={t.close} />
       default: return null
     }
   }
@@ -1661,6 +1687,100 @@ function SecuritySlide({ t }: { t: typeof translations.en.security }) {
 }
 
 // =============================================================================
+// SLIDE: LANDSCAPE — competitors mapped to the stage they own; the
+// between-sessions slot is empty today, and that's ours.
+// =============================================================================
+
+// Competitors plotted on the positioning map. Position is layout (kept here,
+// not in translations); the valuable top-right quadrant (practitioner +
+// therapeutic continuity) is empty except for Bloomsline.
+const LANDSCAPE_PLAYERS: { name: string; style: { top?: string; bottom?: string; left?: string; right?: string } }[] = [
+  { name: 'Daylio',          style: { top: '20%', left: '14%' } },   // patient + some continuity, but solo
+  { name: 'Doctolib',        style: { bottom: '20%', left: '12%' } }, // patient + admin (booking)
+  { name: 'psychologue.net', style: { bottom: '36%', left: '24%' } }, // patient + admin (directory)
+  { name: 'Simple Practice', style: { bottom: '20%', right: '12%' } },// practitioner + admin
+  { name: 'medcopilot',      style: { bottom: '38%', right: '22%' } },// practitioner + admin (AI scribe)
+  { name: 'Liberlo',         style: { bottom: '13%', right: '30%' } },// practitioner + admin (invoicing)
+]
+
+function LandscapeSlide({ t }: { t: typeof translations.en.landscape }) {
+  const AXIS = 'text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono'
+  const PILL = 'absolute -translate-x-1/2 translate-y-1/2 whitespace-nowrap rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-light text-neutral-600 shadow-sm'
+  return (
+    <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
+      <div className="max-w-6xl w-full py-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-5"
+        >
+          {t.label}
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-neutral-900 leading-[1.1] tracking-tight mb-1"
+        >
+          {t.headline1}
+        </motion.h2>
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.1] tracking-tight mb-8"
+        >
+          {t.headline2}
+        </motion.h2>
+
+        {/* 2x2 positioning map */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="relative mx-auto w-full max-w-2xl"
+          style={{ height: 360 }}
+        >
+          {/* axis lines */}
+          <div className="absolute left-1/2 top-7 bottom-7 w-px bg-neutral-200" />
+          <div className="absolute top-1/2 left-2 right-2 h-px bg-neutral-200" />
+          {/* axis labels */}
+          <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${AXIS}`}>{t.axisTop}</div>
+          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 ${AXIS}`}>{t.axisBottom}</div>
+          <div className={`absolute left-0 top-1/2 -translate-y-1/2 bg-[#FAF8F5] pr-2 ${AXIS}`}>{t.axisLeft}</div>
+          <div className={`absolute right-0 top-1/2 -translate-y-1/2 bg-[#FAF8F5] pl-2 ${AXIS}`}>{t.axisRight}</div>
+
+          {/* competitors */}
+          {LANDSCAPE_PLAYERS.map((p) => (
+            <span key={p.name} className={PILL} style={p.style}>{p.name}</span>
+          ))}
+
+          {/* Bloomsline — alone in the valuable top-right quadrant */}
+          <div
+            className="absolute -translate-x-1/2 translate-y-1/2 inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 shadow-md"
+            style={{ top: '20%', right: '4%' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-teal-200" />
+            <span className="text-sm tracking-wide whitespace-nowrap text-white"><span className="font-medium">blooms</span><span className="font-light">line</span></span>
+          </div>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1 }}
+          className="text-base text-neutral-500 italic font-light pt-5 mt-4 border-t border-neutral-200 max-w-3xl"
+        >
+          {t.quote} <span className="not-italic text-neutral-400 text-sm">— {t.quoteAttr}</span>
+        </motion.p>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
 // SLIDE: GO-TO-MARKET — four horizons + what-we-don't-do strip
 // =============================================================================
 
@@ -1870,6 +1990,16 @@ function MarketSlide({ t }: { t: typeof translations.en.market }) {
             </div>
           </div>
         </motion.div>
+
+        {/* Punchline — the path investors actually back */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.5 }}
+          className="text-lg sm:text-xl font-light text-teal-700 leading-snug tracking-tight"
+        >
+          {t.punch}
+        </motion.p>
       </div>
     </div>
   )
