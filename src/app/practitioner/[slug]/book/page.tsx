@@ -41,6 +41,11 @@ type Step = 'schedule' | 'details'
 
 const STEP_ORDER: Step[] = ['schedule', 'details']
 
+// Local calendar-date key (YYYY-MM-DD) and month key, used to match a Date
+// against the set of days that actually have availability.
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const mkey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`
+
 const STEP_LABELS: Record<string, Record<Step, string>> = {
   en: { schedule: 'Schedule', details: 'Your details' },
   fr: { schedule: 'Planifier', details: 'Vos coordonnées' },
@@ -138,6 +143,9 @@ export default function BookingPage() {
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  // Days (YYYY-MM-DD) in the displayed month that actually have >=1 free slot,
+  // so the calendar can grey out empty days. null = not loaded yet for the month.
+  const [availableDays, setAvailableDays] = useState<{ monthKey: string; set: Set<string> } | null>(null)
 
   // Locale: prefer the dedicated booking-page setting; fall back to the
   // practitioner's dashboard language so existing pages keep working.
@@ -291,23 +299,6 @@ export default function BookingPage() {
         setSelectedSlot(null)
       }
     }
-    // Advance the calendar if the displayed month has no enabled days for this format
-    const hasAnyInMonth = (() => {
-      const days = getDaysInMonth(currentMonth)
-      return days.some((d) => d && !isDateDisabled(d))
-    })()
-    if (!hasAnyInMonth) {
-      // Find the next month with at least one enabled day (scan up to 12 months)
-      for (let i = 1; i <= 12; i++) {
-        const candidate = new Date(currentMonth)
-        candidate.setMonth(candidate.getMonth() + i)
-        const days = getDaysInMonth(candidate)
-        if (days.some((d) => d && !isDateDisabled(d))) {
-          setCurrentMonth(candidate)
-          break
-        }
-      }
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFormat, practitioner])
 
@@ -327,26 +318,53 @@ export default function BookingPage() {
       .finally(() => setQuickLoading(false))
   }, [dateViewMode, practitioner, selectedService, selectedFormat])
 
-  // Pre-select the first bookable date so the calendar never opens blank.
-  // Runs whenever practitioner/service/format is ready and no date is picked
-  // yet — scanning client-side through calendar rules (active days, max advance,
-  // format fit) so it works even if the next-available endpoint is slow.
+  // Load which days in the displayed month actually have a free slot, so empty
+  // days can be greyed out. The weekly schedule alone isn't enough — a working
+  // day can still be fully booked or entirely in the past.
   useEffect(() => {
-    if (selectedDate || !practitioner) return
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const maxAdvance = practitioner.settings?.max_advance_days || 60
-    for (let i = 0; i < maxAdvance; i++) {
-      const candidate = new Date(today)
-      candidate.setDate(today.getDate() + i)
-      if (!isDateDisabled(candidate)) {
-        setSelectedDate(candidate)
-        setCurrentMonth(new Date(candidate.getFullYear(), candidate.getMonth(), 1))
-        return
-      }
+    if (!practitioner || !selectedService || !selectedFormat) { setAvailableDays(null); return }
+    const y = currentMonth.getFullYear(), m = currentMonth.getMonth()
+    const monthKey = `${y}-${m}`
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const monthStart = new Date(y, m, 1)
+    let end = new Date(y, m + 1, 0)
+    const start = monthStart < today ? today : monthStart
+    const maxAdv = practitioner.settings?.max_advance_days
+    if (maxAdv) {
+      const maxDate = new Date(); maxDate.setHours(0, 0, 0, 0); maxDate.setDate(maxDate.getDate() + maxAdv)
+      if (end > maxDate) end = maxDate
     }
+    if (end < start) { setAvailableDays({ monthKey, set: new Set() }); return }
+    const pid = practitioner.profile.user_id
+    let cancelled = false
+    setAvailableDays(null)
+    fetch(`/api/bookings/available-days?practitionerId=${pid}&from=${ymd(start)}&to=${ymd(end)}&duration=${selectedService.duration}&format=${selectedFormat}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setAvailableDays({ monthKey, set: new Set<string>(d.days || []) }) })
+      .catch(() => { if (!cancelled) setAvailableDays({ monthKey, set: new Set() }) })
+    return () => { cancelled = true }
+  }, [practitioner, selectedService, selectedFormat, currentMonth])
+
+  // Once the displayed month's real availability is known, keep the selection
+  // valid: pick the earliest day that has slots, or jump to the next month that
+  // has any (bounded by max advance) so the calendar never opens on an empty day.
+  useEffect(() => {
+    if (!practitioner || !selectedService || !selectedFormat || !availableDays) return
+    if (availableDays.monthKey !== mkey(currentMonth)) return
+    if (selectedDate && availableDays.set.has(ymd(selectedDate))) return
+    if (availableDays.set.size > 0) {
+      const [yy, mm, dd] = Array.from(availableDays.set).sort()[0].split('-').map(Number)
+      setSelectedDate(new Date(yy, mm - 1, dd))
+      return
+    }
+    // No availability this month → advance, within the max-advance window.
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const maxAdv = practitioner.settings?.max_advance_days || 60
+    const maxDate = new Date(today); maxDate.setDate(today.getDate() + maxAdv)
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+    if (nextMonth <= maxDate) { setSelectedDate(null); setCurrentMonth(nextMonth) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [practitioner, selectedService, selectedFormat, selectedDate])
+  }, [availableDays, practitioner, selectedService, selectedFormat, currentMonth, selectedDate])
 
   // Calendar helpers
   const getDaysInMonth = (date: Date) => {
@@ -389,6 +407,12 @@ export default function BookingPage() {
     if (selectedFormat && practitioner?.dayFormats) {
       const dayFmts = practitioner.dayFormats[String(date.getDay())]
       if (!dayFmts || !dayFmts.includes(selectedFormat)) return true
+    }
+
+    // Disable days with no real available slot (once the displayed month's
+    // availability has loaded). Only enforced for the month we've loaded.
+    if (availableDays && availableDays.monthKey === mkey(date) && !availableDays.set.has(ymd(date))) {
+      return true
     }
 
     return false
