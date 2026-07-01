@@ -7,7 +7,7 @@ import {
   Mail,
   MapPin,
 } from 'lucide-react'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, dictionaries, type Locale } from '@/lib/i18n/context'
 import { Logo } from '@/components/ui/logo'
 
 const socialLinks = [
@@ -15,8 +15,9 @@ const socialLinks = [
   { icon: Instagram, href: 'https://www.instagram.com/bloomsline_/', key: 'instagram' },
 ]
 
-export function Footer() {
-  const { t } = useLanguage()
+export function Footer({ locale: propLocale }: { locale?: Locale }) {
+  const { t: ctxT } = useLanguage()
+  const t = propLocale ? dictionaries[propLocale] : ctxT
   return (
     <footer className="bg-neutral-900 text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">

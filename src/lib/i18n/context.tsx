@@ -92,9 +92,9 @@ const esDict = {
   personas: esPersonas,
 }
 
-type Dictionary = typeof enDict
+export type Dictionary = typeof enDict
 
-const dictionaries = {
+export const dictionaries = {
   en: enDict,
   fr: frDict,
   es: esDict,
@@ -113,13 +113,30 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en')
   const [isHydrated, setIsHydrated] = useState(false)
 
-  // Load locale from localStorage on mount
+  // Resolve the initial locale on mount.
+  // Precedence: ?lang in the URL (shareable links) > the visitor's saved
+  // choice > their browser language (if we support it) > English.
   useEffect(() => {
     setIsHydrated(true)
-    const savedLocale = localStorage.getItem('locale') as Locale | null
-    if (savedLocale && (savedLocale === 'en' || savedLocale === 'fr' || savedLocale === 'es')) {
-      setLocaleState(savedLocale)
+    const supported: Locale[] = ['en', 'fr', 'es']
+    const isSupported = (v: string | null): v is Locale => !!v && (supported as string[]).includes(v)
+
+    // 1) Explicit ?lang wins, and we persist it so it sticks across pages.
+    let urlLang: string | null = null
+    try { urlLang = new URLSearchParams(window.location.search).get('lang') } catch { /* no-op */ }
+    if (isSupported(urlLang)) {
+      setLocaleState(urlLang)
+      localStorage.setItem('locale', urlLang)
+      return
     }
+
+    // 2) A returning visitor's saved choice.
+    const saved = localStorage.getItem('locale')
+    if (isSupported(saved)) { setLocaleState(saved); return }
+
+    // 3) First visit: match the browser language if we support it, else English.
+    const nav = (typeof navigator !== 'undefined' ? navigator.language : 'en').toLowerCase()
+    setLocaleState(nav.startsWith('fr') ? 'fr' : nav.startsWith('es') ? 'es' : 'en')
   }, [])
 
   const setLocale = async (newLocale: Locale, syncToDatabase: boolean = true) => {

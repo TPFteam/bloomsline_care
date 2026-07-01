@@ -25,6 +25,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.bloomsline.com"),
   title: "Bloomsline — The platform for care between sessions.",
   description: "Sessions, resources, and what actually happens between them. Built for mental health practitioners and their patients.",
   manifest: "/manifest.json",

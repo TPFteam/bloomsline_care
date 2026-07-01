@@ -6,7 +6,7 @@ import { Menu, X, Calendar, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
-import { useLanguage } from '@/lib/i18n/context'
+import { useLanguage, dictionaries, type Locale } from '@/lib/i18n/context'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { useEarlyAccessModal } from '@/lib/landing/early-access-modal-context'
 
@@ -14,11 +14,16 @@ interface NavbarProps {
   isMemberPage?: boolean
   minimal?: boolean
   onCtaClick?: () => void
+  // When set (server-rendered pages like the blog), the language comes from the
+  // route rather than client context — prevents a first-render language flash.
+  locale?: Locale
 }
 
-export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: NavbarProps) {
+export function Navbar({ isMemberPage = false, minimal = false, onCtaClick, locale: propLocale }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { t, locale } = useLanguage()
+  const { t: ctxT, locale: ctxLocale } = useLanguage()
+  const locale = propLocale ?? ctxLocale
+  const t = propLocale ? dictionaries[propLocale] : ctxT
   const { openModal } = useEarlyAccessModal()
 
   const DEMO_BOOKING_URL = 'https://calendar.app.google/DwruLrgYZ6TEegL58'
@@ -34,7 +39,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick }: Na
   const navItems = [
     { label: t.nav.home, href: '/', active: !isMemberPage },
     { label: t.nav.forMembers, href: '/for-everyone', active: isMemberPage },
-    { label: 'Blog', href: '/blog', active: false },
+    { label: 'Blog', href: locale === 'fr' ? '/fr/blog' : '/blog', active: false },
   ]
 
   return (
