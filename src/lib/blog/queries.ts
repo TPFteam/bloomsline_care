@@ -52,17 +52,37 @@ export async function createPost(input: BlogInput): Promise<{ id: string } | { e
   return { error: 'could_not_create' }
 }
 
+// A draft created before its title was typed lands on the slugify fallback
+// ('post'). Backfill a real slug from the title, but only while it's still the
+// fallback, so a post's public URL stays stable once it's meaningful.
+async function ensureSlug(sb: ReturnType<typeof createClient>, id: string, title: string): Promise<void> {
+  if (!title?.trim()) return
+  const { data: cur } = await sb.from('blog_posts').select('slug').eq('id', id).maybeSingle()
+  const slug = (cur?.slug as string | null | undefined) || ''
+  if (slug && slug !== 'post') return // already has a real, stable slug
+  const base = slugify(title)
+  if (base === 'post') return // title still yields nothing usable
+  for (const candidate of [base, `${base}-${Math.random().toString(36).slice(2, 6)}`]) {
+    const { data: clash } = await sb.from('blog_posts').select('id').eq('slug', candidate).neq('id', id).maybeSingle()
+    if (!clash) { await sb.from('blog_posts').update({ slug: candidate }).eq('id', id); return }
+  }
+}
+
 // Save edits to the working copy. Never touches the live snapshot.
 export async function updatePost(id: string, input: BlogInput): Promise<{ error?: string }> {
   const sb = createClient()
   const { error } = await sb.from('blog_posts').update(input).eq('id', id)
-  return error ? { error: error.message } : {}
+  if (error) return { error: error.message }
+  await ensureSlug(sb, id, input.title)
+  return {}
 }
 
 // Submit for admin review. Works for first publish and for edits to a live post
 // (the live version stays up until re-approved).
 export async function submitPost(id: string): Promise<{ error?: string }> {
   const sb = createClient()
+  const { data: row } = await sb.from('blog_posts').select('title').eq('id', id).maybeSingle()
+  await ensureSlug(sb, id, (row?.title as string) || '')
   const { error } = await sb
     .from('blog_posts')
     .update({ status: 'pending', submitted_at: new Date().toISOString() })
