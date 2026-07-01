@@ -579,7 +579,9 @@ export default function BookingPage() {
         return !!selectedService && !!selectedFormat && !!selectedDate && !!selectedSlot
       case 'details': {
         const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail.trim())
-        const baseValid = clientName.trim() !== '' && emailValid
+        // Phone is required: needs a real number, not just the dial code.
+        const phoneValid = clientPhone.replace(/\D/g, '').length >= 8
+        const baseValid = clientName.trim() !== '' && emailValid && phoneValid
         if (selectedService?.notesRequired && !notes.trim()) return false
         if (!consentGiven) return false
         if (bookingPolicies() && !policiesAgreed) return false
@@ -1262,6 +1264,9 @@ export default function BookingPage() {
                   const today = new Date()
                   today.setHours(0, 0, 0, 0)
                   const isViewingCurrentMonth = currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()
+                  // True until this month's real availability has loaded — show a
+                  // spinner instead of flashing every schedule day as bookable.
+                  const daysLoading = !availableDays || availableDays.monthKey !== mkey(currentMonth)
                   const daysShort = locale === 'fr' ? ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
                   return (
                     <div className="px-1">
@@ -1298,6 +1303,11 @@ export default function BookingPage() {
                       </div>
 
                       {/* Days — circular markers, tight rows */}
+                      {daysLoading ? (
+                        <div className="grid place-items-center min-h-[240px]">
+                          <div className="w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
                       <div className="grid grid-cols-7 gap-y-1.5">
                         {getDaysInMonth(currentMonth).map((date, index) => {
                           if (!date) return <div key={index} className="h-9" />
@@ -1323,6 +1333,7 @@ export default function BookingPage() {
                           )
                         })}
                       </div>
+                      )}
 
                       {/* Time zone footer (desktop) */}
                       {practitionerTimezone && (
@@ -1488,7 +1499,7 @@ export default function BookingPage() {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <Phone className="w-4 h-4 text-gray-400" />
-                    {locale === 'fr' ? 'Téléphone' : 'Phone Number'} <span className="text-gray-400 font-normal">{locale === 'fr' ? '(facultatif)' : '(optional)'}</span>
+                    {locale === 'fr' ? 'Téléphone' : 'Phone Number'} <span className="text-red-500 font-normal">*</span>
                   </label>
                   <PhoneInput
                     value={clientPhone}
