@@ -894,7 +894,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                                     status={event.paymentStatus || 'unpaid'}
                                     table="bookings"
                                     recordId={event.bookingId}
-                                    iconOnly
+                                    compact
                                     readOnly
                                   />
                                 )}

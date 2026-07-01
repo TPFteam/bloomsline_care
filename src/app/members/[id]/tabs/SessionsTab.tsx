@@ -2146,7 +2146,7 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                               status={session.payment_status || 'unpaid'}
                               table={recordTable}
                               recordId={recordId}
-                              iconOnly={compact}
+                              compact={compact}
                               readOnly
                             />
                           )}
