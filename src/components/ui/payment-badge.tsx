@@ -5,7 +5,7 @@ import { Check, Wallet, CircleSlash } from 'lucide-react'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
 import type { PaymentStatus } from '@/types/member'
-import { paymentLabel, paymentShortLabel, nextPaymentStatus } from '@/lib/payments'
+import { paymentLabel, nextPaymentStatus } from '@/lib/payments'
 
 interface PaymentBadgeProps {
   status: PaymentStatus
@@ -23,8 +23,8 @@ interface PaymentBadgeProps {
 // Per-state visuals: paid = green, to-be-paid = amber, free (not billed) = gray.
 const STYLE: Record<PaymentStatus, { tint: string; hover: string; Icon: typeof Check }> = {
   paid:   { tint: 'text-emerald-600 bg-emerald-50', hover: 'hover:bg-emerald-100', Icon: Check },
-  unpaid: { tint: 'text-amber-600 bg-amber-50',     hover: 'hover:bg-amber-100',   Icon: Wallet },
-  free:   { tint: 'text-gray-400 bg-gray-100',      hover: 'hover:bg-gray-200',    Icon: CircleSlash },
+  unpaid: { tint: 'text-amber-800 bg-amber-100',    hover: 'hover:bg-amber-200',   Icon: Wallet },
+  free:   { tint: 'text-gray-500 bg-gray-100',      hover: 'hover:bg-gray-200',    Icon: CircleSlash },
 }
 
 export function PaymentBadge({ status, table, recordId, onUpdate, compact = false, readOnly = false }: PaymentBadgeProps) {
@@ -44,15 +44,15 @@ export function PaymentBadge({ status, table, recordId, onUpdate, compact = fals
   const label = paymentLabel(current, locale)
   const { tint, hover, Icon } = STYLE[current] ?? STYLE.unpaid
 
-  // Compact chip — icon + short word, so it reads clearly next to the session's
-  // completed/closed status instead of being an ambiguous lone icon.
+  // Compact chip — icon + label, using the same wording as the session-close
+  // flow (Paid / Awaiting payment / Not billed) so it reads clearly next to the
+  // completed status instead of being an ambiguous lone icon.
   if (compact) {
-    const short = paymentShortLabel(current, locale)
     const base = `inline-flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${tint}`
     if (readOnly) {
       return (
         <span title={label} aria-label={label} className={base}>
-          <Icon className="w-3 h-3 shrink-0" /> {short}
+          <Icon className="w-3 h-3 shrink-0" /> {label}
         </span>
       )
     }
@@ -63,7 +63,7 @@ export function PaymentBadge({ status, table, recordId, onUpdate, compact = fals
         aria-label={label}
         className={`${base} ${hover} transition-all cursor-pointer`}
       >
-        <Icon className="w-3 h-3 shrink-0" /> {short}
+        <Icon className="w-3 h-3 shrink-0" /> {label}
       </button>
     )
   }

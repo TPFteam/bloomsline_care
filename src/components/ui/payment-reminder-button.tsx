@@ -85,7 +85,7 @@ export function PaymentReminderButton({ table, recordId, patientName, dateLabel,
         className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
           sent
             ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default'
-            : 'border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+            : 'border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200'
         }`}
       >
         {sent ? <Check className="w-3.5 h-3.5" /> : <Wallet className="w-3.5 h-3.5" />}
