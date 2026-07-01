@@ -9,7 +9,7 @@ import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-conte
 import { BlogContent } from '@/components/blog/BlogContent'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
-import type { BlogSnapshot } from '@/types/blog'
+import { pickLocalized, snapshotLanguages, type BlogSnapshot } from '@/types/blog'
 
 export default function PublicBlogPost({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
@@ -17,6 +17,7 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
   const t = (en: string, fr: string) => (locale === 'fr' ? fr : en)
   const supabase = createClient()
   const [snap, setSnap] = useState<BlogSnapshot | null>(null)
+  const [viewLang, setViewLang] = useState<string>(locale)
   const [publishedAt, setPublishedAt] = useState<string | null>(null)
   const [authorTitle, setAuthorTitle] = useState<string | null>(null)
   const [authorSlug, setAuthorSlug] = useState<string | null>(null)
@@ -33,6 +34,9 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
       if (!data?.published_snapshot) { setState('notfound'); return }
       const s = data.published_snapshot as BlogSnapshot
       setSnap(s)
+      // Show the site's language if the post has it, else the original.
+      const langs = snapshotLanguages(s)
+      setViewLang(langs.includes(locale) ? locale : s.language)
       setPublishedAt(data.published_at)
       setState('ready')
       // Pull the practitioner's live title + profile slug (always current, so
@@ -55,6 +59,10 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
 
   const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
 
+  const picked = snap ? pickLocalized(snap, viewLang) : { title: '', excerpt: '', content: '' }
+  const availableLangs = snap ? snapshotLanguages(snap) : []
+  const langShort = (l: string) => (l === 'fr' ? 'FR' : l === 'es' ? 'ES' : 'EN')
+
   return (
     <EarlyAccessModalProvider>
     <div className="min-h-screen bg-[#FAF8F5]">
@@ -71,12 +79,27 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
           </div>
         ) : (
           <article>
-            <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-700 transition-colors mb-8">
-              <ArrowLeft className="w-4 h-4" /> {t('All articles', 'Tous les articles')}
-            </Link>
+            <div className="flex items-center justify-between gap-4 mb-8">
+              <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-neutral-700 transition-colors">
+                <ArrowLeft className="w-4 h-4" /> {t('All articles', 'Tous les articles')}
+              </Link>
+              {availableLangs.length > 1 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {availableLangs.map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => setViewLang(l)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${viewLang === l ? 'bg-teal-700 text-white' : 'bg-white border border-neutral-200 text-neutral-500 hover:border-teal-300'}`}
+                    >
+                      {langShort(l)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <h1 className="text-3xl sm:text-4xl font-semibold text-neutral-900 leading-tight tracking-tight">
-              {snap.title}
+              {picked.title}
             </h1>
 
             <div className="flex items-center gap-3 mt-5 mb-9">
@@ -101,7 +124,7 @@ export default function PublicBlogPost({ params }: { params: Promise<{ slug: str
               <img src={snap.cover_image_url} alt="" className="w-full h-72 object-cover rounded-3xl mb-10" />
             )}
 
-            <BlogContent markdown={snap.content} images={snap.images} />
+            <BlogContent markdown={picked.content} images={snap.images} />
           </article>
         )}
       </main>

@@ -63,10 +63,18 @@ const translations = {
       label: 'THE LANDSCAPE',
       headline1: 'Everyone owns a slice.',
       headline2: 'No one owns the 167 hours between.',
-      axisTop: 'Therapeutic continuity',
-      axisBottom: 'Admin only',
-      axisLeft: 'Patient',
-      axisRight: 'Practitioner',
+      clinicLabel: 'The one hour, in the clinic',
+      betweenLabel: 'The 167 hours between',
+      stage1: 'Find', owner1: 'psychologue.net',
+      stage2: 'Book', owner2: 'Doctolib',
+      stage3: 'The session', owner3: 'Medcopilot',
+      stage4: 'Bill & admin', owner4: 'SimplePractice, Liberlo',
+      betweenTag: 'The continuity layer',
+      betweenBody: 'Mood, exercises, check-ins, and progress, captured as they happen and synced back to the practitioner.',
+      soloTool: 'Daylio',
+      soloNote: 'the patient tracking alone. No therapist in the loop.',
+      whyA: 'Everyone else built for the hour in the room.',
+      whyB: 'We built for the 167 hours outside it, and loop them back to the practitioner.',
       quote: '"Nothing is intuitive, and it\'s expensive."',
       quoteAttr: 'a therapist on today\'s tools',
     },
@@ -99,22 +107,28 @@ const translations = {
       quoteAttribution: 'Practitioner, Paris',
       stats: [
         {
-          value: '~35%',
-          label: 'of patients drop out of therapy',
-          source: 'PMC meta-analysis, 146 studies, 2022',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+          value: '~1 in 6',
+          label: 'drop out of therapy',
+          source: 'CBT trials meta-analysis, 2025',
+          url: 'https://www.tandfonline.com/doi/full/10.1080/16506073.2025.2542364',
         },
         {
-          value: '~50%',
-          label: 'relapse — most within 6 months',
-          source: 'Depression relapse meta-analyses',
-          url: 'https://bjgp.org/content/70/691/54',
+          value: '~36%',
+          label: 'relapse after recovery',
+          source: 'Abu-Ashour et al., 2025',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11915238/',
         },
         {
           value: '9%',
-          label: 'receive adequate care for depression',
-          source: 'WHO 2025',
-          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+          label: 'get minimally adequate treatment for depression',
+          source: 'Lancet Psychiatry, 204 countries, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11579305/',
+        },
+        {
+          value: '€27.8bn',
+          label: 'France\'s largest health-insurance expense, ahead of cancer',
+          source: 'Assurance Maladie, 2023',
+          url: 'https://www.santementale.fr/2025/07/depenses-de-sante/',
         },
       ],
     },
@@ -133,14 +147,14 @@ const translations = {
       closing: '',
       stats: [
         {
-          value: '35%',
-          label: 'of clinician time goes to documentation',
-          source: 'AHRQ Technical Brief, 2024',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
+          value: '57%',
+          label: 'of clinical time goes to the EHR, not the patient',
+          source: 'AMA study, 200,000+ physicians, 2024',
+          url: 'https://www.ama-assn.org/practice-management/physician-health/doctors-work-fewer-hours-ehr-still-follows-them-home',
         },
         {
           value: '42%',
-          label: 'of Gen Z in therapy — up 22% since 2022',
+          label: 'of Gen Z are in therapy, up 22% since 2022',
           source: 'Grow Therapy, 2025',
           url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
@@ -344,19 +358,19 @@ const translations = {
       funnel: [
         { value: '69M', label: 'people live in France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
         { value: '~8M', label: 'adults have depression each year (about 1 in 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
-        { value: '77K', label: 'licensed psychologists — all officially registered', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '28K', label: 'work for themselves — these are who we sell to', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '1,000', label: 'our Year-3 goal in France, about €350K a year', source: 'our target · 3.5% of French psychologists', url: '' },
+        { value: '77K', label: 'licensed psychologists, all officially registered', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'work for themselves, these are who we sell to', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1,000', label: 'our 2-year goal in France, about €350K a year', source: 'our target · 3.5% of French psychologists', url: '' },
       ],
       europeLabel: 'Europe',
       europeValue: '17× bigger',
       europeBody: '450M people. The rules we already follow in France work across Europe too.',
       worldLabel: 'World',
       worldValue: '1B+',
-      worldBody: 'people live with mental health problems. Someday — not today.',
+      worldBody: 'people live with mental health problems. Someday, not today.',
       worldSource: 'WHO 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      punch: '1,000 French psychologists is the proof. Europe is the path to €100M.',
+      punch: 'France is the beachhead. Europe is the path to €100M.',
     },
     team: {
       label: 'THE TEAM',
@@ -460,10 +474,18 @@ const translations = {
       label: 'LE PAYSAGE',
       headline1: 'Chacun possède une part.',
       headline2: 'Personne ne possède les 167 heures entre les séances.',
-      axisTop: 'Continuité thérapeutique',
-      axisBottom: 'Administratif seulement',
-      axisLeft: 'Patient',
-      axisRight: 'Praticien',
+      clinicLabel: 'L\'heure de séance, au cabinet',
+      betweenLabel: 'Les 167 heures entre les séances',
+      stage1: 'Trouver', owner1: 'psychologue.net',
+      stage2: 'Réserver', owner2: 'Doctolib',
+      stage3: 'La séance', owner3: 'Medcopilot',
+      stage4: 'Facturation', owner4: 'SimplePractice, Liberlo',
+      betweenTag: 'La couche de continuité',
+      betweenBody: 'Humeur, exercices, points de suivi et progrès, captés en temps réel et synchronisés avec le praticien.',
+      soloTool: 'Daylio',
+      soloNote: 'le patient qui note seul. Aucun thérapeute dans la boucle.',
+      whyA: 'Les autres ont conçu pour l\'heure en cabinet.',
+      whyB: 'Nous avons conçu pour les 167 heures en dehors, et les relions au praticien.',
       quote: '« Rien d\'intuitif, et c\'est cher. »',
       quoteAttr: 'un thérapeute sur les outils actuels',
     },
@@ -496,22 +518,28 @@ const translations = {
       quoteAttribution: 'Praticienne, Paris',
       stats: [
         {
-          value: '~35%',
-          label: 'des patients abandonnent la thérapie',
-          source: 'PMC méta-analyse, 146 études, 2022',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9667417/',
+          value: '~1 sur 6',
+          label: 'abandonnent la thérapie',
+          source: 'méta-analyse essais TCC, 2025',
+          url: 'https://www.tandfonline.com/doi/full/10.1080/16506073.2025.2542364',
         },
         {
-          value: '~50%',
-          label: 'rechutent — la plupart sous 6 mois',
-          source: 'Méta-analyses, rechute dépressive',
-          url: 'https://bjgp.org/content/70/691/54',
+          value: '~36%',
+          label: 'rechutent après rétablissement',
+          source: 'Abu-Ashour et al., 2025',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11915238/',
         },
         {
           value: '9%',
-          label: 'reçoivent des soins adéquats pour la dépression',
-          source: 'OMS 2025',
-          url: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
+          label: 'reçoivent un traitement minimalement adéquat pour la dépression',
+          source: 'Lancet Psychiatry, 204 pays, 2024',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11579305/',
+        },
+        {
+          value: '27,8 Md€',
+          label: '1er poste de dépenses de l\'Assurance Maladie, devant le cancer',
+          source: 'Assurance Maladie, 2023',
+          url: 'https://www.santementale.fr/2025/07/depenses-de-sante/',
         },
       ],
     },
@@ -530,14 +558,14 @@ const translations = {
       closing: '',
       stats: [
         {
-          value: '35%',
-          label: 'du temps clinicien consacré à la documentation',
-          source: 'AHRQ Technical Brief, 2024',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11534919/',
+          value: '57%',
+          label: 'du temps clinique passé dans le dossier médical, pas avec le patient',
+          source: 'étude AMA, 200 000+ médecins, 2024',
+          url: 'https://www.ama-assn.org/practice-management/physician-health/doctors-work-fewer-hours-ehr-still-follows-them-home',
         },
         {
           value: '42%',
-          label: 'de la Gen Z en thérapie — +22% depuis 2022',
+          label: 'de la Gen Z en thérapie, +22% depuis 2022',
           source: 'Grow Therapy, 2025',
           url: 'https://growtherapy.com/blog/mental-health-statistics/',
         },
@@ -741,19 +769,19 @@ const translations = {
       funnel: [
         { value: '69M', label: 'personnes vivent en France', source: 'INSEE 2026', url: 'https://www.insee.fr/fr/statistiques/8719824' },
         { value: '~8M', label: 'adultes ont une dépression chaque année (environ 1 sur 6)', source: 'Santé publique France 2024', url: 'https://www.santepubliquefrance.fr/sante-mentale/depression-et-anxiete/rapportsynthese/episodes-depressifs-prevalence-et-recours-aux-soins-barometre-de-sante-publique-france-resultats-de' },
-        { value: '77K', label: 'psychologues — chacun doit s\'enregistrer par la loi', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '28K', label: 'travaillent à leur compte — c\'est à eux qu\'on vend', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
-        { value: '1 000', label: 'notre objectif en année 3 en France, environ 350K€ par an', source: 'notre cible · 3,5% des psychologues français', url: '' },
+        { value: '77K', label: 'psychologues, chacun doit s\'enregistrer par la loi', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '28K', label: 'travaillent à leur compte, c\'est à eux qu\'on vend', source: 'DREES 2024', url: 'https://drees.solidarites-sante.gouv.fr/communique-de-presse-jeux-de-donnees/241202_Data_professionnels-de-sante-1er-janvier-2024' },
+        { value: '1 000', label: 'notre objectif à 2 ans en France, environ 350K€ par an', source: 'notre cible · 3,5% des psychologues français', url: '' },
       ],
       europeLabel: 'Europe',
       europeValue: '17× plus grand',
       europeBody: '450M de personnes. Les règles qu\'on suit déjà en France marchent aussi en Europe.',
       worldLabel: 'Monde',
       worldValue: '1Md+',
-      worldBody: 'de personnes vivent avec un trouble mental. Un jour — pas aujourd\'hui.',
+      worldBody: 'de personnes vivent avec un trouble mental. Un jour, pas aujourd\'hui.',
       worldSource: 'OMS 2025',
       worldUrl: 'https://www.who.int/news/item/02-09-2025-over-a-billion-people-living-with-mental-health-conditions-services-require-urgent-scale-up',
-      punch: '1 000 psychologues français, c\'est la preuve. L\'Europe, c\'est le chemin vers 100M€.',
+      punch: 'La France, c\'est la tête de pont. L\'Europe, c\'est le chemin vers 100M€.',
     },
     team: {
       label: 'L\'ÉQUIPE',
@@ -1040,8 +1068,10 @@ export default function PitchNewPage() {
     <div className="pdf-print">
       {slides.map((_, i) => (
         <div key={i} className="pdf-page" style={{ backgroundColor: i === 6 ? '#0a0a0a' : '#FAF8F5' }}>
-          {/* Bloomsline branding, top-left on every PDF page (mirrors the on-screen logo) */}
-          <div style={{ position: 'absolute', top: 24, left: 24, zIndex: 50 }}>
+          {/* Bloomsline branding, top-right on every PDF page. Slide kickers and
+              headlines are all top-left, so anchoring right keeps the logo clear
+              of the content. */}
+          <div style={{ position: 'absolute', top: 24, right: 24, zIndex: 50 }}>
             <Logo size="lg" showText variant={i === 6 ? 'dark' : 'light'} />
           </div>
           {renderSlide(i)}
@@ -1211,25 +1241,30 @@ function SilenceSlide({ t }: { t: typeof translations.en.silence }) {
           </div>
         </motion.div>
 
-        {/* Stats footer */}
+        {/* Stats footer — two rows, each pairing a short stat with a long one so
+            the wide cost/treatment lines get full width and never orphan-wrap. */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.9 }}
-          className="flex flex-wrap gap-8 pt-8 border-t border-neutral-200"
+          className="pt-8 border-t border-neutral-200 space-y-3"
         >
-          {t.stats.map((stat, i) => (
-            <div key={i} className="flex items-baseline gap-2">
-              <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
-              <span className="text-xs text-neutral-900">{stat.label}</span>
-              <a
-                href={stat.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
-              >
-                {stat.source} ↗
-              </a>
+          {[[t.stats[0], t.stats[3]], [t.stats[1], t.stats[2]]].map((row, r) => (
+            <div key={r} className="flex flex-wrap gap-x-10 gap-y-2">
+              {row.map((stat, i) => stat && (
+                <div key={i} className="flex items-baseline gap-2">
+                  <span className="text-2xl font-light text-neutral-900">{stat.value}</span>
+                  <span className="text-xs text-neutral-900">{stat.label}</span>
+                  <a
+                    href={stat.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-neutral-400 hover:text-teal-700 underline decoration-dotted underline-offset-2 transition-colors"
+                  >
+                    {stat.source} ↗
+                  </a>
+                </div>
+              ))}
             </div>
           ))}
         </motion.div>
@@ -1691,21 +1726,16 @@ function SecuritySlide({ t }: { t: typeof translations.en.security }) {
 // between-sessions slot is empty today, and that's ours.
 // =============================================================================
 
-// Competitors plotted on the positioning map. Position is layout (kept here,
-// not in translations); the valuable top-right quadrant (practitioner +
-// therapeutic continuity) is empty except for Bloomsline.
-const LANDSCAPE_PLAYERS: { name: string; style: { top?: string; bottom?: string; left?: string; right?: string } }[] = [
-  { name: 'Daylio',          style: { top: '20%', left: '14%' } },   // patient + some continuity, but solo
-  { name: 'Doctolib',        style: { bottom: '20%', left: '12%' } }, // patient + admin (booking)
-  { name: 'psychologue.net', style: { bottom: '36%', left: '24%' } }, // patient + admin (directory)
-  { name: 'Simple Practice', style: { bottom: '20%', right: '12%' } },// practitioner + admin
-  { name: 'medcopilot',      style: { bottom: '38%', right: '22%' } },// practitioner + admin (AI scribe)
-  { name: 'Liberlo',         style: { bottom: '13%', right: '30%' } },// practitioner + admin (invoicing)
-]
-
 function LandscapeSlide({ t }: { t: typeof translations.en.landscape }) {
-  const AXIS = 'text-[10px] tracking-[0.2em] uppercase text-neutral-400 font-mono'
-  const PILL = 'absolute -translate-x-1/2 translate-y-1/2 whitespace-nowrap rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-light text-neutral-600 shadow-sm'
+  const CAP = 'text-[10px] tracking-[0.2em] uppercase font-mono'
+  // Each competitor owns one narrow moment inside the clinic hour. The 167
+  // hours between is the wide, unclaimed slice, and that's ours.
+  const clinic = [
+    { stage: t.stage1, owner: t.owner1 },
+    { stage: t.stage2, owner: t.owner2 },
+    { stage: t.stage3, owner: t.owner3 },
+    { stage: t.stage4, owner: t.owner4 },
+  ]
   return (
     <div className="h-full w-full flex items-center justify-center px-8 overflow-y-auto">
       <div className="max-w-6xl w-full py-12">
@@ -1730,50 +1760,72 @@ function LandscapeSlide({ t }: { t: typeof translations.en.landscape }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.35 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.1] tracking-tight mb-8"
+          className="text-3xl sm:text-4xl lg:text-5xl font-light text-teal-700 leading-[1.1] tracking-tight mb-9"
         >
           {t.headline2}
         </motion.h2>
 
-        {/* 2x2 positioning map */}
+        {/* Care-journey band: the clinic hour (crowded) vs the 167 hours between (ours) */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="relative mx-auto w-full max-w-2xl"
-          style={{ height: 360 }}
         >
-          {/* axis lines */}
-          <div className="absolute left-1/2 top-7 bottom-7 w-px bg-neutral-200" />
-          <div className="absolute top-1/2 left-2 right-2 h-px bg-neutral-200" />
-          {/* axis labels */}
-          <div className={`absolute top-0 left-1/2 -translate-x-1/2 ${AXIS}`}>{t.axisTop}</div>
-          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 ${AXIS}`}>{t.axisBottom}</div>
-          <div className={`absolute left-0 top-1/2 -translate-y-1/2 bg-[#FAF8F5] pr-2 ${AXIS}`}>{t.axisLeft}</div>
-          <div className={`absolute right-0 top-1/2 -translate-y-1/2 bg-[#FAF8F5] pl-2 ${AXIS}`}>{t.axisRight}</div>
+          {/* captions */}
+          <div className="flex gap-4 mb-2.5">
+            <p className={`basis-[38%] shrink-0 ${CAP} text-neutral-400`}>{t.clinicLabel}</p>
+            <p className={`flex-1 ${CAP} text-teal-700`}>{t.betweenLabel}</p>
+          </div>
 
-          {/* competitors */}
-          {LANDSCAPE_PLAYERS.map((p) => (
-            <span key={p.name} className={PILL} style={p.style}>{p.name}</span>
-          ))}
+          {/* bars */}
+          <div className="flex gap-4 items-stretch">
+            {/* clinic hour — four narrow slices, one owner each */}
+            <div className="basis-[38%] shrink-0 rounded-2xl border border-neutral-200 bg-white/50 p-3">
+              <div className="grid grid-cols-2 gap-2">
+                {clinic.map((c) => (
+                  <div key={c.stage} className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
+                    <p className="text-[9px] tracking-[0.15em] uppercase text-neutral-400 font-mono mb-1">{c.stage}</p>
+                    <p className="text-xs font-light text-neutral-700 leading-snug">{c.owner}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Bloomsline — alone in the valuable top-right quadrant */}
-          <div
-            className="absolute -translate-x-1/2 translate-y-1/2 inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 shadow-md"
-            style={{ top: '20%', right: '4%' }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-200" />
-            <span className="text-sm tracking-wide whitespace-nowrap text-white"><span className="font-medium">blooms</span><span className="font-light">line</span></span>
+            {/* the 167 hours between — one wide slice, ours */}
+            <div className="flex-1 rounded-2xl bg-teal-700 p-6 relative flex flex-col justify-center min-h-[168px]">
+              <div className="inline-flex items-center gap-2 mb-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-200" />
+                <span className="text-xl tracking-wide text-white"><span className="font-medium">blooms</span><span className="font-light">line</span></span>
+                <span className="ml-1.5 text-[10px] tracking-[0.2em] uppercase font-mono text-teal-200/80">{t.betweenTag}</span>
+              </div>
+              <p className="text-sm text-teal-50/90 font-light max-w-md leading-relaxed">{t.betweenBody}</p>
+
+              {/* the one between-hours tool, and why it doesn't count */}
+              <div className="mt-4 inline-flex items-center gap-2 self-start rounded-full border border-dashed border-teal-300/50 px-3 py-1">
+                <span className="text-xs font-light text-teal-100">{t.soloTool}</span>
+                <span className="text-[11px] text-teal-200/70">· {t.soloNote}</span>
+              </div>
+            </div>
           </div>
         </motion.div>
 
+        {/* the why, two-tone */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          className="text-base text-neutral-500 italic font-light pt-5 mt-4 border-t border-neutral-200 max-w-3xl"
+          transition={{ duration: 0.6, delay: 0.9 }}
+          className="text-lg sm:text-xl font-light leading-snug pt-6 mt-7 border-t border-neutral-200 max-w-4xl"
         >
-          {t.quote} <span className="not-italic text-neutral-400 text-sm">— {t.quoteAttr}</span>
+          <span className="text-neutral-900">{t.whyA}</span>{' '}
+          <span className="text-teal-700">{t.whyB}</span>
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 1.05 }}
+          className="text-sm text-neutral-500 italic font-light mt-3"
+        >
+          {t.quote} <span className="not-italic text-neutral-400">· {t.quoteAttr}</span>
         </motion.p>
       </div>
     </div>

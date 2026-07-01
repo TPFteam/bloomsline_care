@@ -6,6 +6,13 @@ export interface BlogImage {
   url: string
 }
 
+/** Title/excerpt/body for one language. */
+export interface LocalizedFields {
+  title: string
+  excerpt: string
+  content: string
+}
+
 /** The fields captured when a post is approved — what the public site renders. */
 export interface BlogSnapshot {
   title: string
@@ -14,11 +21,32 @@ export interface BlogSnapshot {
   cover_image_url: string | null
   language: string
   images?: BlogImage[]
+  // Per-language variants (including the original), keyed by locale. Absent on
+  // older snapshots — fall back to the top-level fields via pickLocalized().
+  localized?: Record<string, LocalizedFields>
   // Denormalized at approval time so the public site needs no users-table join.
   author_name?: string
   author_avatar?: string | null
   author_title?: string | null   // practitioner headline
   author_slug?: string | null    // public profile at /practitioner/[slug]
+}
+
+/** The languages a snapshot is available in (original only if no variants). */
+export function snapshotLanguages(s: BlogSnapshot): string[] {
+  const keys = Object.keys(s.localized || {})
+  return keys.length ? keys : [s.language]
+}
+
+/** Pick a snapshot's content for a locale, falling back to the original
+ *  language, then the top-level fields (older snapshots). */
+export function pickLocalized(s: BlogSnapshot, locale: string): LocalizedFields {
+  const loc = s.localized || {}
+  const chosen = loc[locale] || loc[s.language]
+  return {
+    title: chosen?.title || s.title,
+    excerpt: chosen?.excerpt || s.excerpt,
+    content: chosen?.content || s.content,
+  }
 }
 
 export interface BlogPost {
@@ -30,6 +58,8 @@ export interface BlogPost {
   content: string
   cover_image_url: string | null
   language: string
+  // Non-original language variants, keyed by locale.
+  translations?: Record<string, LocalizedFields>
   images: BlogImage[]
   status: BlogStatus
   published_snapshot: BlogSnapshot | null

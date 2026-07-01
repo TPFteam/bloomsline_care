@@ -8,7 +8,7 @@ import { Footer } from '@/components/landing/footer'
 import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-context'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
-import type { BlogSnapshot } from '@/types/blog'
+import { pickLocalized, type BlogSnapshot } from '@/types/blog'
 
 interface LivePost {
   id: string
@@ -76,6 +76,7 @@ export default function PublicBlogList() {
             {posts.map((p) => {
               const s = p.published_snapshot
               const title = titles[p.practitioner_id] || s.author_title || null
+              const loc = pickLocalized(s, locale)
               return (
                 <Link
                   key={p.id}
@@ -91,10 +92,10 @@ export default function PublicBlogList() {
 
                   <div className="flex flex-col flex-1 p-5">
                     <h2 className="text-lg font-semibold text-neutral-900 leading-snug tracking-tight group-hover:text-teal-800 transition-colors line-clamp-2">
-                      {s.title}
+                      {loc.title}
                     </h2>
-                    {s.excerpt && (
-                      <p className="text-sm text-neutral-500 mt-2 font-light leading-relaxed line-clamp-2 flex-1">{s.excerpt}</p>
+                    {loc.excerpt && (
+                      <p className="text-sm text-neutral-500 mt-2 font-light leading-relaxed line-clamp-2 flex-1">{loc.excerpt}</p>
                     )}
 
                     {/* Practitioner: photo + name + title */}
