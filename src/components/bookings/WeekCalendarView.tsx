@@ -3,7 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw, MessageCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -37,7 +37,6 @@ function calStatusHeader(isGoogle: boolean, status: string | undefined, isPast: 
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/browser-client'
 import { getCancelReasonGroups } from '@/lib/sessions/close-reasons'
-import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
 import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { PaymentBadge } from '@/components/ui/payment-badge'
 import { useLanguage } from '@/lib/i18n/context'
@@ -130,11 +129,6 @@ interface WeekCalendarViewProps {
   // the parent — typically the rail's UnclaimedGoogleEventsCard). Called with
   // the Google event id.
   onAddToBloomsline?: (ev: { googleEventId: string; title: string; startTime: string; endTime: string; email?: string }) => void
-  // Master switch for the WhatsApp click-to-send action in the event popup.
-  // When off, the "Notify on WhatsApp" item is hidden entirely.
-  whatsappEnabled?: boolean
-  // Practitioner's name — used to personalize the pre-filled WhatsApp message.
-  practitionerName?: string
 }
 
 const HOUR_HEIGHT = 56
@@ -142,7 +136,7 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline, whatsappEnabled = false, practitionerName }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
   // Session-prep drawer (opens from the event popover for upcoming sessions).
   const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
@@ -1108,20 +1102,6 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                                               className="absolute right-0 bottom-full mb-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
                                               onClick={(e) => e.stopPropagation()}
                                             >
-                                              {whatsappEnabled && event.phone && (
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    const url = buildBookingWaUrl({ phone: event.phone, locale, clientName: event.title, practitionerName, startIso: event.start, timezone: event.timezone, kind: 'confirmed' })
-                                                    if (url) openWhatsApp(url)
-                                                    setEventMenuOpen(false); setSelectedEvent(null)
-                                                  }}
-                                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50 transition-colors"
-                                                >
-                                                  <MessageCircle className="w-3.5 h-3.5" />
-                                                  {locale === 'fr' ? 'Notifier sur WhatsApp' : 'Notify on WhatsApp'}
-                                                </button>
-                                              )}
                                               {onReschedule && (
                                                 <button
                                                   onClick={(e) => { e.stopPropagation(); onReschedule(event.bookingId!); setEventMenuOpen(false); setSelectedEvent(null) }}

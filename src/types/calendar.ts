@@ -109,11 +109,6 @@ export interface BookingSettings {
   // Calendar fires from its side. When false we skip attaching the
   // email reminder to events; the 30-min popup stays. Defaults true.
   calendar_email_reminder_enabled?: boolean;
-  // Master switch for the free WhatsApp click-to-send flow. When ON, after a
-  // booking we pop up "Notify the patient on WhatsApp?" (and surface a manual
-  // "Notify on WhatsApp" action on each booking) — but only when a mobile is on
-  // file. When OFF, WhatsApp is hidden everywhere. Defaults false.
-  whatsapp_on_booking?: boolean;
   // Per-practitioner configuration for the "Add a new person" popup.
   // Keys → 'optional' | 'required'. Missing key = field hidden. See
   // migration 20260522_member_form_fields_config.sql.

@@ -35,7 +35,6 @@ import {
   ArrowUpRight,
   CheckCircle,
   Pencil,
-  MessageCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -54,7 +53,6 @@ import { AppHeader, AppSidebar } from '@/components/layout'
 import { createClient } from '@/lib/supabase/browser-client'
 import { emitBookingsChanged, useBookingsChanged } from '@/lib/bookings-events'
 import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/lib/sessions/close-reasons'
-import { buildBookingWaUrl, openWhatsApp } from '@/lib/whatsapp'
 import { format, parseISO, isToday, isTomorrow, isPast, startOfWeek } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
@@ -1424,7 +1422,6 @@ export default function BookingsPage() {
       booking_page_language: bookingSettings?.booking_page_language ?? null,
       calendar_event_title_template: (bookingSettings as any)?.calendar_event_title_template?.trim() || null,
       calendar_email_reminder_enabled: (bookingSettings as any)?.calendar_email_reminder_enabled ?? false,
-      whatsapp_on_booking: (bookingSettings as any)?.whatsapp_on_booking ?? false,
       intake_forms: (bookingSettings as any)?.intake_forms ?? null,
       // Booking confirmation details (consent / payment / cancellation) shown on
       // the confirmation screen + inside the Google invite description.
@@ -1837,8 +1834,6 @@ export default function BookingsPage() {
                         if (b) { setDeleteSeriesScope('this'); setDeleteConfirmBooking(b) }
                       }}
                       onAddToBloomsline={(ev) => setClaimGoogleEvent(ev)}
-                      whatsappEnabled={(bookingSettings as any)?.whatsapp_on_booking ?? false}
-                      practitionerName={user?.full_name || undefined}
                     />
                   ) : (
                   <>
@@ -2220,12 +2215,6 @@ export default function BookingsPage() {
                               const isCancelledB = booking.status === 'cancelled'
                               return (
                                 <RowMenu items={[
-                                  ...(!isClosedB && booking.client_phone && (bookingSettings as any)?.whatsapp_on_booking ? [
-                                    { label: locale === 'fr' ? 'Notifier sur WhatsApp' : 'Notify on WhatsApp', icon: MessageCircle, onClick: () => {
-                                      const url = buildBookingWaUrl({ phone: booking.client_phone, locale, clientName: booking.client_name, practitionerName: user?.full_name, startIso: booking.start_time, timezone: booking.timezone, kind: 'confirmed' })
-                                      if (url) openWhatsApp(url)
-                                    }, tone: 'success' as const },
-                                  ] : []),
                                   ...(isClosedB ? [
                                     { label: locale === 'fr' ? 'Modifier la clôture' : 'Edit close', icon: PenLine, onClick: () => openClosePopupBooking(booking) },
                                   ] : [
@@ -3262,39 +3251,11 @@ export default function BookingsPage() {
                   </CardTitle>
                   <CardDescription>
                     {locale === 'fr'
-                      ? 'Recevez un e-mail de rappel avant chaque rendez-vous, et notifiez vos patients sur WhatsApp.'
-                      : 'Get an email reminder before each appointment, and notify your patients on WhatsApp.'}
+                      ? 'Recevez un e-mail de rappel avant chaque rendez-vous.'
+                      : 'Get an email reminder before each appointment.'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* WhatsApp notification toggle — master switch for the free
-                      click-to-send flow. When on, after each booking we pop up
-                      "Notify on WhatsApp?" (only if a mobile is on file). */}
-                  {(() => {
-                    const enabled = (bookingSettings as any)?.whatsapp_on_booking ?? false
-                    return (
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 pr-4">
-                          <p className="font-medium">
-                            {locale === 'fr' ? 'Notifier le patient sur WhatsApp' : 'Notify the patient on WhatsApp'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {locale === 'fr'
-                              ? 'Après chaque réservation, on vous propose d’ouvrir WhatsApp avec un message de confirmation déjà prêt — vous n’avez plus qu’à envoyer. Gratuit, envoyé depuis votre propre WhatsApp (si un mobile est renseigné).'
-                              : 'After each booking, we offer to open WhatsApp with a ready-to-send confirmation — you just hit Send. Free, sent from your own WhatsApp (when a mobile is on file).'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setBookingSettings((prev) => ({ ...(prev as any), whatsapp_on_booking: !enabled } as any))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-teal-600' : 'bg-gray-200'}`}
-                          aria-pressed={enabled}
-                        >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                      </div>
-                    )
-                  })()}
                   {/* Email reminder toggle */}
                   {(() => {
                     const enabled = (bookingSettings as any)?.calendar_email_reminder_enabled ?? false
