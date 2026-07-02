@@ -5,6 +5,27 @@ import { getGoogleCalendarBusyTimes } from '@/lib/services/google-calendar';
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/security/rate-limit';
 import type { TimeSlot } from '@/types/calendar';
 
+// UTC offset (ms) for a timezone on a given calendar date — positive when the
+// zone is ahead of UTC. Used to place a practitioner's local time-off window
+// on the absolute timeline. (The skipNotice branch has its own inline copy for
+// its schedule maths; this module-level one serves the shared time-off filter.)
+function tzOffsetMsFor(timezone: string, dateStr: string): number {
+  const utcMs = Date.UTC(
+    parseInt(dateStr.slice(0, 4)),
+    parseInt(dateStr.slice(5, 7)) - 1,
+    parseInt(dateStr.slice(8, 10)),
+    12, 0, 0
+  );
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(new Date(utcMs));
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value || '0');
+  const localMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'));
+  return localMs - utcMs;
+}
+
 /**
  * GET /api/bookings/available-slots
  *
@@ -315,6 +336,33 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
     timezone = tzRow?.timezone || 'UTC';
+  }
+
+  // Time off / holidays. Full-day time-off (start_time IS NULL) is already
+  // dropped by the RPC and the skipNotice branch; half-day time-off (a
+  // start_time/end_time window) is enforced here so it blocks on every surface
+  // — public booking page, mobile patient app and the practitioner calendar.
+  {
+    const { data: timeOff } = await supabase
+      .from('availability_overrides')
+      .select('start_time, end_time')
+      .eq('user_id', practitionerId)
+      .eq('override_date', date)
+      .eq('is_available', false)
+      .not('start_time', 'is', null);
+
+    if (timeOff && timeOff.length > 0) {
+      const offMs = tzOffsetMsFor(timezone, date);
+      const windows = timeOff.map((o) => ({
+        start: new Date(`${date}T${o.start_time}Z`).getTime() - offMs,
+        end: new Date(`${date}T${o.end_time || '23:59:59'}Z`).getTime() - offMs,
+      }));
+      slots = slots.filter((s) => {
+        const ss = new Date(s.slot_start).getTime();
+        const se = new Date(s.slot_end).getTime();
+        return !windows.some((w) => ss < w.end && se > w.start);
+      });
+    }
   }
 
   // If no base slots, return early

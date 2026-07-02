@@ -3,7 +3,8 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw, Palmtree } from 'lucide-react'
+import { TimeOffModal } from '@/components/bookings/TimeOffModal'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -138,6 +139,21 @@ const TOTAL_HOURS = END_HOUR - START_HOUR
 
 export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
+  const [timeOffOpen, setTimeOffOpen] = useState(false)
+  // Days marked as time off (holidays), so the grid can flag them. Keyed by
+  // yyyy-MM-dd → which part of the day is blocked.
+  const [timeOffByDate, setTimeOffByDate] = useState<Record<string, 'full' | 'morning' | 'afternoon'>>({})
+  const loadTimeOff = useCallback(async () => {
+    try {
+      const res = await fetch('/api/availability/time-off')
+      if (!res.ok) return
+      const d = await res.json()
+      const map: Record<string, 'full' | 'morning' | 'afternoon'> = {}
+      for (const it of (d.items || [])) map[it.date] = it.portion
+      setTimeOffByDate(map)
+    } catch { /* silent */ }
+  }, [])
+  useEffect(() => { loadTimeOff() }, [loadTimeOff])
   // Session-prep drawer (opens from the event popover for upcoming sessions).
   const [prepEvent, setPrepEvent] = useState<CalendarEvent | null>(null)
   const supabase = createClient()
@@ -482,6 +498,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
         // Collapsed legend — palette icon opens a small popover with
         // the color key. Keeps the toolbar uncluttered while still
         // exposing what each color means on demand.
+        <div className="flex items-center gap-1">
         <div className="relative">
           <button
             type="button"
@@ -561,6 +578,17 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
             </>
           )}
         </div>
+        {/* Holidays / time off — opens the hotel-style range picker. */}
+        <button
+          type="button"
+          onClick={() => setTimeOffOpen(true)}
+          title={locale === 'fr' ? 'Congés et absences' : 'Holidays & time off'}
+          aria-label={locale === 'fr' ? 'Congés et absences' : 'Holidays & time off'}
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+        >
+          <Palmtree className="w-4 h-4" />
+        </button>
+        </div>
         )}
         {/* Week navigation */}
         <div className="flex items-center gap-2">
@@ -597,7 +625,23 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
             <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${todayCheck(day) ? 'bg-teal-600 text-white' : 'text-gray-800'}`}>
               <span className="text-sm font-semibold">{format(day, 'd')}</span>
             </div>
-            {dayFormats[day.getDay()] && (
+            {timeOffByDate[format(day, 'yyyy-MM-dd')] && (() => {
+              const off = timeOffByDate[format(day, 'yyyy-MM-dd')]
+              const short = off === 'full' ? (locale === 'fr' ? 'Congé' : 'Off') : off === 'morning' ? 'AM' : 'PM'
+              const title = off === 'full'
+                ? (locale === 'fr' ? 'Congé' : 'Time off')
+                : off === 'morning'
+                  ? (locale === 'fr' ? 'Congé (première moitié)' : 'Time off (first half)')
+                  : (locale === 'fr' ? 'Congé (seconde moitié)' : 'Time off (second half)')
+              return (
+                <div className="flex items-center justify-center mt-1.5" title={title}>
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-semibold">
+                    <Palmtree className="w-2.5 h-2.5" />{short}
+                  </span>
+                </div>
+              )
+            })()}
+            {dayFormats[day.getDay()] && timeOffByDate[format(day, 'yyyy-MM-dd')] !== 'full' && (
               <div className="flex items-center justify-center gap-1 mt-1.5">
                 {dayFormats[day.getDay()].includes('video') && (
                   <div className="w-4 h-4 rounded bg-blue-50 flex items-center justify-center" title={locale === 'fr' ? 'Vidéo' : 'Video'}>
@@ -697,6 +741,33 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                     style={{ top: (seg.s - dayStart) * HOUR_HEIGHT, height: (seg.e - seg.s) * HOUR_HEIGHT }}
                   />
                 ))
+              })()}
+
+              {/* Holiday / time-off shading — amber overlay over the blocked
+                  part of the day (full day, or the first/second half). Shown
+                  independently of the availability toggle so time off always
+                  reads as "off". Visual only; clicks pass through. */}
+              {(() => {
+                const off = timeOffByDate[format(day, 'yyyy-MM-dd')]
+                if (!off) return null
+                const dayStart = START_HOUR
+                const dayEnd = START_HOUR + TOTAL_HOURS
+                let s = dayStart
+                let e = dayEnd
+                if (off === 'morning') { e = Math.min(12, dayEnd) }
+                else if (off === 'afternoon') { s = Math.max(12, dayStart) }
+                if (e <= s) return null
+                return (
+                  <div
+                    className="absolute inset-x-0 z-10 pointer-events-none bg-amber-500/[0.08] border-y border-amber-200/60"
+                    style={{ top: (s - dayStart) * HOUR_HEIGHT, height: (e - s) * HOUR_HEIGHT }}
+                  >
+                    <div className="sticky top-0 flex items-center justify-center gap-1 pt-2 text-[10px] font-semibold text-amber-600/90">
+                      <Palmtree className="w-3 h-3" />
+                      {locale === 'fr' ? 'Congé' : 'Time off'}
+                    </div>
+                  </div>
+                )
               })()}
 
               {/* Current-time line (today only) — the Google-style red marker. */}
@@ -1166,6 +1237,8 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
         onClose={() => setPrepEvent(null)}
         locale={locale as 'en' | 'fr' | 'es'}
       />
+
+      <TimeOffModal open={timeOffOpen} onClose={() => setTimeOffOpen(false)} locale={locale} onChanged={loadTimeOff} />
 
     </div>
   )

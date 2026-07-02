@@ -35,6 +35,7 @@ import {
   ArrowUpRight,
   CheckCircle,
   Pencil,
+  Palmtree,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -62,6 +63,7 @@ import type { IntakeForm } from '@/types/calendar'
 import { UnclaimedGoogleEventsCard } from '@/components/bookings/UnclaimedGoogleEventsCard'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { MiniMonthCalendar } from '@/components/bookings/MiniMonthCalendar'
+import { TimeOffModal } from '@/components/bookings/TimeOffModal'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { FIXED_NOTE_TYPES, DEFAULT_NOTE_TYPES } from '@/types/member'
 import type { PaymentStatus } from '@/types/member'
@@ -338,6 +340,7 @@ export default function BookingsPage() {
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [showSettingsSavedModal, setShowSettingsSavedModal] = useState(false)
   const [settingsTab, setSettingsTab] = useState<'availability' | 'sessions' | 'customization' | 'preferences' | 'embed'>('availability')
+  const [showTimeOff, setShowTimeOff] = useState(false)
 
   // User state
   const [user, setUser] = useState<UserType | null>(null)
@@ -2991,6 +2994,30 @@ export default function BookingsPage() {
               </Card>
               )}
 
+              {/* Holidays / time off — opens the calendar range picker.
+                  Once set, these are hidden from booking on every surface. */}
+              {!bookingSettings?.external_booking_url && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Palmtree className="w-5 h-5" />
+                      {locale === 'fr' ? 'Congés et absences' : 'Holidays & time off'}
+                    </CardTitle>
+                    <CardDescription>
+                      {locale === 'fr'
+                        ? 'Bloquez des jours ou demi-journées. Ces périodes sont automatiquement masquées de votre page de réservation et de l’app patient.'
+                        : 'Block full or half days. These are automatically hidden from your booking page and the patient app.'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" onClick={() => setShowTimeOff(true)}>
+                      <Palmtree className="w-4 h-4 mr-2" />
+                      {locale === 'fr' ? 'Gérer les congés' : 'Manage time off'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               </>)}
 
               {/* ─── Customization tab — patient-facing booking page content ─── */}
@@ -4339,6 +4366,10 @@ export default function BookingsPage() {
           fetchBookings()
         }}
       />
+
+      {/* Holidays / time off — calendar range picker (also reachable from
+          the holiday icon in the week-calendar header). */}
+      <TimeOffModal open={showTimeOff} onClose={() => setShowTimeOff(false)} locale={locale} />
 
       {/* Availability Saved Confirmation Modal */}
       {showSavedModal && (
