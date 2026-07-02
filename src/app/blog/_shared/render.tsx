@@ -13,7 +13,7 @@ import { EarlyAccessModalProvider } from '@/lib/landing/early-access-modal-conte
 import { BlogLangSwitcher } from '@/components/blog/BlogLangSwitcher'
 import { createAdminClient } from '@/lib/supabase/server-client'
 import { pickLocalized, snapshotLanguages, type BlogSnapshot } from '@/types/blog'
-import { renderMarkdown, composeMarkdown } from '@/lib/blog/markdown'
+import { BlogBody } from '@/components/blog/BlogBody'
 import type { Locale } from '@/lib/i18n/context'
 
 export const ORIGIN = 'https://www.bloomsline.com'
@@ -212,7 +212,6 @@ export async function renderBlogPost({ slug, locale }: { slug: string; locale: B
   const author = await getAuthorHeadlines(post.practitioner_id ? [post.practitioner_id] : [])
   const authorTitle = author[post.practitioner_id]?.headline || s.author_title || null
   const authorSlug = author[post.practitioner_id]?.slug || s.author_slug || null
-  const html = renderMarkdown(composeMarkdown(picked.content, s.images))
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -279,7 +278,7 @@ export async function renderBlogPost({ slug, locale }: { slug: string; locale: B
               <img src={s.cover_image_url} alt="" className="w-full h-72 object-cover rounded-3xl mb-10" />
             )}
 
-            <div className="blog-content" dangerouslySetInnerHTML={{ __html: html }} />
+            <BlogBody markdown={picked.content} images={s.images} />
           </article>
         </main>
         <Footer locale={locale as Locale} />
