@@ -103,23 +103,31 @@ const translations = {
 async function getPractitioner(slug: string): Promise<PublicPractitioner | null> {
   const supabase = createAdminClient()
 
-  // Try practitioner_profiles first (self-signup practitioners — most up to date)
+  // Try practitioner_profiles first (self-signup practitioners — most up to date).
+  // Fetch the user name/avatar separately: there's no PostgREST FK relationship
+  // between practitioner_profiles and users, so a `users(...)` embed
+  // intermittently errors ("could not find relationship in the schema cache")
+  // and then this page 404s (falls through to a slug that only exists in
+  // public_practitioners).
   const { data: profile, error: profileError } = await supabase
     .from('practitioner_profiles')
-    .select('*, users(id, full_name, avatar_url)')
+    .select('*')
     .eq('slug', slug)
     .eq('is_public', true)
     .single()
 
-  console.log('[p/slug] practitioner_profiles query:', { slug, profileError: profileError?.message, hasProfile: !!profile })
-
   if (!profileError && profile) {
-    const user = profile.users as any
-    console.log('[p/slug] MATCH from practitioner_profiles, city:', profile.city, 'country:', profile.country)
+    let full_name = ''
+    let avatar_url: string | null = null
+    if (profile.user_id) {
+      const { data: u } = await supabase.from('users').select('full_name, avatar_url').eq('id', profile.user_id).maybeSingle()
+      full_name = (u?.full_name as string) || ''
+      avatar_url = (u?.avatar_url as string) || null
+    }
     return {
       ...profile,
-      full_name: user?.full_name || '',
-      avatar_url: user?.avatar_url || null,
+      full_name,
+      avatar_url,
       is_published: true,
     } as PublicPractitioner
   }
