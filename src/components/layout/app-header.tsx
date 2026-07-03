@@ -28,9 +28,12 @@ interface AppHeaderProps {
   // need to pass this explicitly, and most didn't — so the "Manage
   // Practitioners" menu only appeared while already on the admin page.
   isAdmin?: boolean
+  // On phones, hide the "Ask Bloom" trigger and notification bell for a clean
+  // minimal header (used by the mobile dashboard shell).
+  minimalMobile?: boolean
 }
 
-export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
+export function AppHeader({ user, leftContent, isAdmin, minimalMobile }: AppHeaderProps) {
   const resolvedIsAdmin = isAdmin ?? (user?.id ? checkIsAdminId(user.id) : false)
   const { locale, setLocale } = useLanguage()
   const router = useRouter()
@@ -57,7 +60,7 @@ export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
           <button
             type="button"
             onClick={() => setShowPractitionerChat(true)}
-            className="group flex items-center gap-2.5 pl-2.5 pr-4 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all duration-200 min-w-[180px]"
+            className={`group ${minimalMobile ? 'hidden sm:flex' : 'flex'} items-center gap-2.5 pl-2.5 pr-4 py-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all duration-200 min-w-[180px]`}
           >
             <span className="relative flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 shadow-sm shadow-emerald-200/60 dark:shadow-emerald-900/40">
               <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-50 animate-ping [animation-duration:3.5s]" />
@@ -89,7 +92,9 @@ export function AppHeader({ user, leftContent, isAdmin }: AppHeaderProps) {
             <HelpCircle className="w-5 h-5" />
           </button>
 
-          <NotificationBell />
+          <div className={minimalMobile ? 'hidden sm:block' : 'contents'}>
+            <NotificationBell />
+          </div>
 
           {/* Profile Dropdown */}
           <div className="relative">

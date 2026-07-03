@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { format, addDays, startOfWeek, isSameDay } from 'date-fns'
+import { format, addDays, startOfWeek, startOfDay, isSameDay } from 'date-fns'
+import { fr as frLocale } from 'date-fns/locale'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { ChevronLeft, ChevronRight, Loader2, Video, Building2 } from 'lucide-react'
 
 interface SlotCalendarViewProps {
@@ -42,7 +44,17 @@ export function SlotCalendarView({
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null)
 
   const tz = practitionerTz || Intl.DateTimeFormat().resolvedOptions().timeZone
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  // Phones show a single day (the 7-column week is unusable at that width);
+  // tablets/desktop keep the full week.
+  const isMobile = useIsMobile()
+  const dayCount = isMobile ? 1 : 7
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i))
+
+  // On phones, anchor the cursor to today (day-by-day nav) rather than the
+  // week's Monday.
+  useEffect(() => {
+    if (isMobile) setWeekStart(startOfDay(new Date()))
+  }, [isMobile])
 
   const getHoursInTz = (isoStr: string): number => {
     const d = new Date(isoStr)
@@ -144,8 +156,12 @@ export function SlotCalendarView({
     onSelectSlot(day, timeStr)
   }
 
-  // Can't go before current week
-  const canGoPrev = weekStart > startOfWeek(new Date(), { weekStartsOn: 1 })
+  // Can't go before the current week (desktop) / today (mobile)
+  const canGoPrev = isMobile
+    ? startOfDay(weekStart) > startOfDay(new Date())
+    : weekStart > startOfWeek(new Date(), { weekStartsOn: 1 })
+  const stepDays = isMobile ? 1 : 7
+  const goToday = () => setWeekStart(isMobile ? startOfDay(new Date()) : startOfWeek(new Date(), { weekStartsOn: 1 }))
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -153,19 +169,21 @@ export function SlotCalendarView({
       <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => canGoPrev && setWeekStart(prev => addDays(prev, -7))}
+            onClick={() => canGoPrev && setWeekStart(prev => addDays(prev, -stepDays))}
             disabled={!canGoPrev}
             className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4 text-gray-400" />
           </button>
           <h3 className="text-sm font-semibold text-gray-800">
-            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}
+            {isMobile
+              ? format(weekStart, locale === 'fr' ? 'EEEE d MMM' : 'EEEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+              : <>{format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d')} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy')}</>}
           </h3>
-          <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
+          <button onClick={() => setWeekStart(prev => addDays(prev, stepDays))} className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors">
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded-lg hover:bg-teal-50 transition-colors">
+          <button onClick={goToday} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded-lg hover:bg-teal-50 transition-colors">
             {locale === 'fr' ? "Aujourd'hui" : 'Today'}
           </button>
           {practitionerTz && (
@@ -186,7 +204,7 @@ export function SlotCalendarView({
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-gray-100">
+      <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)` }}>
         <div />
         {days.map(day => {
           const disabled = disabledDaysOfWeek.includes(day.getDay())
@@ -209,7 +227,7 @@ export function SlotCalendarView({
       </div>
 
       {/* Time grid */}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto" style={{ maxHeight: '65vh' }}>
+      <div className="grid overflow-y-auto" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: '65vh' }}>
         {/* Time labels */}
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (

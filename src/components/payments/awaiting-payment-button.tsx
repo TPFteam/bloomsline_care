@@ -31,13 +31,17 @@ type Patient = {
  * email per patient), and quickly mark a session Paid / Not billed (which
  * removes it from the awaiting list).
  */
-export function AwaitingPaymentButton() {
+export function AwaitingPaymentButton({ open: openProp, onOpenChange, hideTrigger }: { open?: boolean; onOpenChange?: (v: boolean) => void; hideTrigger?: boolean } = {}) {
   const supabase = createClient()
   const { locale } = useLanguage()
   const fr = locale === 'fr', es = locale === 'es'
   const lid = fr ? 'fr-FR' : es ? 'es-ES' : 'en-US'
 
-  const [open, setOpen] = useState(false)
+  // Controlled (parent passes `open`) or self-managed. Lets the mobile
+  // "Payments" tile open this same popup without the wallet trigger.
+  const [openState, setOpenState] = useState(false)
+  const open = openProp !== undefined ? openProp : openState
+  const setOpen = (v: boolean) => { if (openProp === undefined) setOpenState(v); onOpenChange?.(v) }
   const [loading, setLoading] = useState(false)
   const [patients, setPatients] = useState<Patient[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -132,7 +136,10 @@ export function AwaitingPaymentButton() {
   // Keep the badge in sync while the popup is open (marking paid drops rows).
   useEffect(() => { if (open) setCount(patients.length) }, [patients, open])
 
-  const openPopup = () => { setOpen(true); setSelected(new Set()); setExpanded(null); load() }
+  const openPopup = () => setOpen(true)
+  // Load (and reset selection) whenever the popup opens — covers both the
+  // wallet trigger and the controlled (mobile tile) path.
+  useEffect(() => { if (open) { setSelected(new Set()); setExpanded(null); load() } }, [open, load])
 
   const selectable = patients.filter(p => !inCooldown(p))
   const allSelected = selectable.length > 0 && selectable.every(p => selected.has(p.memberId))
@@ -199,18 +206,20 @@ export function AwaitingPaymentButton() {
   return (
     <>
       {/* Wallet quick-icon with count badge */}
-      <button
-        type="button"
-        onClick={openPopup}
-        title={fr ? 'Paiements en attente' : es ? 'Pagos pendientes' : 'Awaiting payment'}
-        aria-label={fr ? 'Paiements en attente' : es ? 'Pagos pendientes' : 'Awaiting payment'}
-        className="relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-gray-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-      >
-        <Wallet className="w-6 h-6" />
-        {!!count && count > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center">{count}</span>
-        )}
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          onClick={openPopup}
+          title={fr ? 'Paiements en attente' : es ? 'Pagos pendientes' : 'Awaiting payment'}
+          aria-label={fr ? 'Paiements en attente' : es ? 'Pagos pendientes' : 'Awaiting payment'}
+          className="relative w-12 h-12 rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-gray-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+        >
+          <Wallet className="w-6 h-6" />
+          {!!count && count > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center">{count}</span>
+          )}
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }} onClick={() => setOpen(false)}>

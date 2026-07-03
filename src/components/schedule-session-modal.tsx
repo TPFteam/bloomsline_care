@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2, AlertCircle } from 'lucide-react'
 import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { TimePicker } from '@/components/ui/time-picker'
 import { createClient } from '@/lib/supabase/browser-client'
 import { toast } from 'sonner'
@@ -129,6 +130,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   }, [])
   const [baseDisabledDays, setBaseDisabledDays] = useState<number[]>([])
   const [scheduleDayFormats, setScheduleDayFormats] = useState<Record<string, string[]>>({})
+  const isMobile = useIsMobile()
   const [dateViewMode, setDateViewMode] = useState<'calendar' | 'quick'>('calendar')
 
   // Booking launched from a calendar slot click — the practitioner already
@@ -293,7 +295,9 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       setQuickDays([])
       setQuickExpandedDate(null)
       setQuickLoading(false)
-      setDateViewMode('calendar')
+      // On phones, open straight to "Next available" — the calendar grid is
+      // cramped on small screens and the quick list is faster on the go.
+      setDateViewMode(isMobile ? 'quick' : 'calendar')
       setShowSlotCalendar(false)
       fetchInitialData()
     }

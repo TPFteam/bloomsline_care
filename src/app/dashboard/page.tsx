@@ -20,8 +20,9 @@ import {
   Calendar, ChevronRight, ChevronLeft, UserPlus, Share2, Video, X,
   AlertCircle, ArrowUpRight, Sparkles, Loader2,
   Search, FileText, Send, Mail, Phone, Save, Settings,
-  GripVertical, RotateCcw,
+  GripVertical, RotateCcw, CreditCard, Clock, CalendarPlus, PenLine,
 } from 'lucide-react'
+import { MobileTabBar } from '@/components/mobile/MobileTabBar'
 import {
   DndContext,
   type DragEndEvent,
@@ -186,6 +187,19 @@ function DashboardInner() {
   const [hasConsented, setHasConsented] = useState(true)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [showPayments, setShowPayments] = useState(false)
+  // Count of patients with pending payments — for the Payments tile badge.
+  const [paymentsAwaiting, setPaymentsAwaiting] = useState(0)
+  useEffect(() => {
+    (async () => {
+      const { data: { user: u } } = await supabase.auth.getUser()
+      if (!u) return
+      const { data } = await supabase.from('sessions').select('member_id')
+        .eq('practitioner_id', u.id).eq('payment_status', 'unpaid').lte('scheduled_at', new Date().toISOString())
+      setPaymentsAwaiting(new Set((data || []).map((d) => d.member_id)).size)
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // Slot-click prefill — mirrors the bookings page so a click on an
   // empty time slot in the full-calendar modal opens the schedule
   // modal with that date/time already set.
@@ -955,15 +969,88 @@ function DashboardInner() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <AppSidebar activeItem="home" />
-      <main className="flex-1 ml-14">
-        <AppHeader user={user} leftContent={
-          <div className="flex items-baseline gap-2">
+      <div className="hidden sm:block"><AppSidebar activeItem="home" /></div>
+      <main className="flex-1 sm:ml-14">
+        <AppHeader user={user} minimalMobile leftContent={
+          <div className="hidden sm:flex items-baseline gap-2">
             <h1 className="text-lg font-semibold text-gray-900">{t('Home', 'Accueil', 'Inicio')}</h1>
           </div>
         } />
 
-        <div className="px-8 py-6 max-w-7xl mx-auto w-full">
+        {/* ── Mobile quick-action home (phones only). Tablet/desktop use the
+            full dashboard below. Reuses the same modals/handlers. ── */}
+        <div className="sm:hidden px-4 py-5 pb-28 space-y-6">
+          <div className="min-w-0">
+            <h2 className="text-[26px] font-bold text-gray-900 leading-tight truncate">
+              {firstName ? <>{t('Hello', 'Bonjour', 'Hola')}, <span className="text-teal-600">{firstName}</span></> : t('Hello', 'Bonjour', 'Hola')}
+            </h2>
+            <p className="text-sm text-gray-400 capitalize">{dateLabel}</p>
+          </div>
+
+          {/* Soft bento — attention counts + quick actions, all bricks. Bricks
+              with something pending show a count circle in the corner. */}
+          <div className="grid grid-cols-2 gap-3.5">
+            <button onClick={() => setShowSchedule(true)} className="row-span-2 flex flex-col justify-between rounded-[28px] bg-gradient-to-br from-teal-400 to-teal-600 text-white p-5 text-left shadow-[0_10px_28px_-10px_rgba(20,184,166,0.55)] active:scale-[0.98] transition-transform min-h-[184px]">
+              <span className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center"><CalendarPlus className="w-6 h-6" /></span>
+              <span>
+                <span className="block text-lg font-bold leading-tight">{t('Book a session', 'Réserver une séance', 'Reservar')}</span>
+                <span className="block text-[13px] text-white/85 mt-0.5">{t('Schedule with a patient', 'Planifier avec un patient', 'Planificar')}</span>
+              </span>
+            </button>
+
+            {[
+              { key: 'awaiting', show: awaitingCount > 0, icon: Clock, title: t('To close', 'À clôturer', 'Por cerrar'), sub: t('Sessions', 'Séances', 'Sesiones'), bg: 'bg-amber-50', ic: 'text-amber-500', badge: awaitingCount, badgeBg: 'bg-amber-500', onClick: () => setShowAwaitingClosure(true) },
+              { key: 'requests', show: pendingCount > 0, icon: AlertCircle, title: t('Requests', 'Demandes', 'Solicitudes'), sub: t('To review', 'À traiter', 'Por revisar'), bg: 'bg-sky-50', ic: 'text-sky-500', badge: pendingCount, badgeBg: 'bg-sky-500', onClick: () => router.push('/bookings') },
+              { key: 'add', show: true, icon: UserPlus, title: t('Add a patient', 'Ajouter un patient', 'Añadir paciente'), sub: t('New', 'Nouveau', 'Nuevo'), bg: 'bg-emerald-50', ic: 'text-emerald-600', badge: 0, badgeBg: '', onClick: () => setShowAddMemberModal(true) },
+              { key: 'note', show: true, icon: PenLine, title: t('Take a note', 'Prendre une note', 'Tomar nota'), sub: t('Session', 'Séance', 'Sesión'), bg: 'bg-rose-50', ic: 'text-rose-500', badge: 0, badgeBg: '', onClick: () => setShowNoteComposer(true) },
+              { key: 'share', show: true, icon: Share2, title: t('Share', 'Partager', 'Compartir'), sub: t('Resource', 'Ressource', 'Recurso'), bg: 'bg-indigo-50', ic: 'text-indigo-500', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('share'); setShowMemberPicker(true) } },
+              { key: 'payments', show: true, icon: CreditCard, title: t('Payments', 'Paiements', 'Pagos'), sub: t('Pending', 'En attente', 'Pendiente'), bg: 'bg-violet-50', ic: 'text-violet-500', badge: paymentsAwaiting, badgeBg: 'bg-violet-500', onClick: () => setShowPayments(true) },
+            ].filter((b) => b.show).map((b) => {
+              const Icon = b.icon
+              return (
+                <button key={b.key} onClick={b.onClick} className={`relative flex flex-col justify-between rounded-[24px] ${b.bg} p-4 text-left active:scale-[0.98] transition-transform min-h-[86px]`}>
+                  <span className={`w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center ${b.ic}`}><Icon className="w-5 h-5" /></span>
+                  {b.badge > 0 && (
+                    <span className={`absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full ${b.badgeBg} text-white text-[11px] font-bold flex items-center justify-center`}>{b.badge}</span>
+                  )}
+                  <span className="mt-3">
+                    <span className="block text-[15px] font-semibold text-gray-900 leading-tight">{b.title}</span>
+                    <span className="block text-[11px] text-gray-400">{b.sub}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Up next */}
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-2 px-1">{t('Up next', 'À venir', 'Próximo')}</p>
+            {upNext.length === 0 ? (
+              <p className="text-sm text-gray-400 px-1">{t('Nothing scheduled.', 'Rien de prévu.', 'Nada programado.')}</p>
+            ) : (
+              <div className="space-y-2.5">
+                {upNext.map((b) => (
+                  <div key={b.id} className="flex items-center gap-3 rounded-[20px] bg-white p-3.5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.06)]">
+                    <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0 text-sm font-semibold">
+                      {(b.client_name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{b.client_name || t('Session', 'Séance', 'Sesión')}</p>
+                      <p className="text-xs text-gray-400">{format(parseISO(b.start_time), locale === 'fr' ? "EEE d MMM · HH:mm" : "EEE d MMM · h:mm a", { locale: locale === 'fr' ? frLocale : undefined })}</p>
+                    </div>
+                    {b.member_id && (
+                      <button onClick={() => handleTakeNotes(b)} title={t('Take notes', 'Prendre des notes', 'Tomar notas')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
+                        <PenLine className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="hidden sm:block px-8 py-6 max-w-7xl mx-auto w-full">
           {/* ── Zone 1: Greeting + urgency row + quick-action icons ── */}
           <section className="mb-8 flex items-start justify-between gap-6">
             <div className="min-w-0 flex-1">
@@ -1632,6 +1719,13 @@ function DashboardInner() {
 
         </div>
       </main>
+
+      {/* Bottom tab bar — phones only (replaces the sidebar). */}
+      <MobileTabBar />
+
+      {/* Payments popup — opened by the mobile "Payments" tile (same list as
+          the wallet button, controlled + triggerless). */}
+      <AwaitingPaymentButton open={showPayments} onOpenChange={setShowPayments} hideTrigger />
 
       {/* ── Modals ── */}
       <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
