@@ -22,7 +22,6 @@ import {
   Search, FileText, Send, Mail, Phone, Save, Settings,
   GripVertical, RotateCcw, CreditCard, Clock, CalendarPlus, PenLine,
 } from 'lucide-react'
-import { MobileTabBar } from '@/components/mobile/MobileTabBar'
 import {
   DndContext,
   type DragEndEvent,
@@ -969,6 +968,8 @@ function DashboardInner() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* No navigation chrome on phones — the mobile home is a plain full-width
+          page. Sidebar (and its left margin) return at sm+. */}
       <div className="hidden sm:block"><AppSidebar activeItem="home" /></div>
       <main className="flex-1 sm:ml-14">
         <AppHeader user={user} minimalMobile leftContent={
@@ -979,7 +980,7 @@ function DashboardInner() {
 
         {/* ── Mobile quick-action home (phones only). Tablet/desktop use the
             full dashboard below. Reuses the same modals/handlers. ── */}
-        <div className="sm:hidden px-4 py-5 pb-28 space-y-6">
+        <div className="sm:hidden px-4 py-5 pb-10 space-y-6">
           <div className="min-w-0">
             <h2 className="text-[26px] font-bold text-gray-900 leading-tight truncate">
               {firstName ? <>{t('Hello', 'Bonjour', 'Hola')}, <span className="text-teal-600">{firstName}</span></> : t('Hello', 'Bonjour', 'Hola')}
@@ -1725,9 +1726,6 @@ function DashboardInner() {
 
         </div>
       </main>
-
-      {/* Bottom tab bar — phones only (replaces the sidebar). */}
-      <MobileTabBar />
 
       {/* Payments popup — opened by the mobile "Payments" tile (same list as
           the wallet button, controlled + triggerless). */}
