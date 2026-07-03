@@ -30,6 +30,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server-client'
 import { getValidGoogleToken } from '@/lib/services/google-auth'
+import { retimeBookingAndSession } from '@/lib/services/google-calendar-sync'
 
 interface GoogleEventInstance {
   id: string
@@ -227,6 +228,28 @@ async function reconcileEvent(
         sessionUpdate = sessionUpdate.eq('scheduled_at', target.start_time)
       }
       await sessionUpdate
+    }
+  }
+
+  // Time change for a single (non-recurring) event — the practitioner moved a
+  // one-off appointment in Google Calendar. Update the booking + session to the
+  // new time. (Recurring instances are handled above; additions stay manual.)
+  if (!evt.recurringEventId && evt.status !== 'cancelled' && evt.start?.dateTime && evt.end?.dateTime) {
+    const newStart = new Date(evt.start.dateTime).toISOString()
+    const newEnd = new Date(evt.end.dateTime).toISOString()
+    for (const target of candidates) {
+      if (target.status === 'cancelled') continue
+      if (new Date(target.start_time).toISOString() === newStart) continue // unchanged
+      await retimeBookingAndSession(supabase, {
+        bookingId: target.id,
+        memberId: target.member_id,
+        oldStart: target.start_time,
+        newStart,
+        newEnd,
+        practitionerId: userId,
+        seriesId: target.series_id,
+        seriesPosition: target.series_position,
+      })
     }
   }
 

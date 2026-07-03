@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server-client'
 import { getValidGoogleToken } from '@/lib/services/google-auth'
+import { retimeBookingAndSession } from '@/lib/services/google-calendar-sync'
 
 /**
  * GET /api/calendar/check-mismatches
@@ -23,7 +24,7 @@ export async function GET() {
     // Get future bookings with a Google event ID that are still active
     const { data: bookings } = await adminSupabase
       .from('bookings')
-      .select('id, google_event_id, start_time, end_time, client_name, session_type, member_id')
+      .select('id, google_event_id, start_time, end_time, client_name, session_type, member_id, series_id, series_position')
       .eq('practitioner_id', user.id)
       .not('google_event_id', 'is', null)
       .in('status', ['confirmed', 'pending'])
@@ -51,10 +52,18 @@ export async function GET() {
       endTime: string
     }> = []
 
+    // Retimes are applied here (fallback for a missed webhook); cancellations
+    // are only surfaced so the practitioner confirms before we cancel.
+    type CheckResult =
+      | { kind: 'cancelled'; booking: typeof bookings[number] }
+      | { kind: 'retimed' }
+      | null
+    let retimed = 0
+
     for (let i = 0; i < bookings.length; i += BATCH_SIZE) {
       const batch = bookings.slice(i, i + BATCH_SIZE)
-      const results = await Promise.all(
-        batch.map(async (booking) => {
+      const results: CheckResult[] = await Promise.all(
+        batch.map(async (booking): Promise<CheckResult> => {
           if (!booking.google_event_id) return null
           try {
             const res = await fetch(
@@ -63,37 +72,59 @@ export async function GET() {
             )
 
             if (res.status === 404 || res.status === 410) {
-              return booking // Event deleted
+              return { kind: 'cancelled', booking } // Event deleted
             }
 
             if (res.ok) {
               const event = await res.json()
               if (event.status === 'cancelled') {
-                return booking // Event cancelled
+                return { kind: 'cancelled', booking } // Event cancelled
+              }
+              // Time moved in Google → apply the retime on our side.
+              const gStart = event.start?.dateTime
+              const gEnd = event.end?.dateTime
+              if (gStart && gEnd) {
+                const newStart = new Date(gStart).toISOString()
+                const newEnd = new Date(gEnd).toISOString()
+                if (new Date(booking.start_time).toISOString() !== newStart) {
+                  await retimeBookingAndSession(adminSupabase, {
+                    bookingId: booking.id,
+                    memberId: booking.member_id,
+                    oldStart: booking.start_time,
+                    newStart,
+                    newEnd,
+                    practitionerId: user.id,
+                    seriesId: booking.series_id,
+                    seriesPosition: booking.series_position,
+                  })
+                  return { kind: 'retimed' }
+                }
               }
             }
 
-            return null // Event still exists
+            return null // Event still exists, unchanged
           } catch {
             return null // Can't check — skip
           }
         })
       )
 
-      for (const booking of results) {
-        if (booking) {
+      for (const r of results) {
+        if (r?.kind === 'cancelled') {
           mismatches.push({
-            bookingId: booking.id,
-            clientName: booking.client_name,
-            sessionType: booking.session_type,
-            startTime: booking.start_time,
-            endTime: booking.end_time,
+            bookingId: r.booking.id,
+            clientName: r.booking.client_name,
+            sessionType: r.booking.session_type,
+            startTime: r.booking.start_time,
+            endTime: r.booking.end_time,
           })
+        } else if (r?.kind === 'retimed') {
+          retimed++
         }
       }
     }
 
-    return NextResponse.json({ mismatches })
+    return NextResponse.json({ mismatches, retimed })
   } catch (err) {
     console.error('[check-mismatches] Error:', err)
     return NextResponse.json({ mismatches: [] })

@@ -95,3 +95,43 @@ async function cancelBookingAndSession(
   }
   await sessionQuery
 }
+
+/**
+ * Move a booking + its linked session to a new time — used when a practitioner
+ * reschedules an appointment directly in Google Calendar (real-time via the
+ * webhook, and as a fallback via check-mismatches). Only retimes sessions that
+ * are still scheduled/confirmed, never completed / no-show.
+ */
+export async function retimeBookingAndSession(
+  supabase: SupabaseClient,
+  args: {
+    bookingId: string
+    memberId: string | null
+    oldStart: string
+    newStart: string
+    newEnd: string
+    practitionerId: string
+    seriesId?: string | null
+    seriesPosition?: number | null
+  },
+): Promise<void> {
+  await supabase
+    .from('bookings')
+    .update({ start_time: args.newStart, end_time: args.newEnd, updated_at: new Date().toISOString() })
+    .eq('id', args.bookingId)
+
+  let sessionQuery = supabase
+    .from('sessions')
+    .update({ scheduled_at: args.newStart, updated_at: new Date().toISOString() })
+    .eq('practitioner_id', args.practitionerId)
+    .in('status', ['scheduled', 'confirmed'])
+  if (args.memberId) sessionQuery = sessionQuery.eq('member_id', args.memberId)
+  // Prefer matching the session by series identity (survives an independent
+  // "Edit session" that changed scheduled_at); else by the old timestamp.
+  if (args.seriesId && typeof args.seriesPosition === 'number') {
+    sessionQuery = sessionQuery.eq('series_id', args.seriesId).eq('series_position', args.seriesPosition)
+  } else {
+    sessionQuery = sessionQuery.eq('scheduled_at', args.oldStart)
+  }
+  await sessionQuery
+}

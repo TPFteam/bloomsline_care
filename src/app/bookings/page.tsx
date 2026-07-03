@@ -489,12 +489,23 @@ export default function BookingsPage() {
   }>>([])
   const [mismatchProcessing, setMismatchProcessing] = useState<string | null>(null)
 
-  // Check for Google Calendar mismatches on page load
+  // Check for Google Calendar mismatches on page load. Cancellations are
+  // surfaced (banner); retimes are auto-applied server-side, so if any were
+  // fixed we refresh the list and let the practitioner know.
   useEffect(() => {
     fetch('/api/calendar/check-mismatches')
       .then(r => r.json())
-      .then(data => { if (data.mismatches?.length > 0) setCalendarMismatches(data.mismatches) })
+      .then(data => {
+        if (data.mismatches?.length > 0) setCalendarMismatches(data.mismatches)
+        if (data.retimed > 0) {
+          toast.success(locale === 'fr'
+            ? `${data.retimed} rendez-vous mis à jour depuis Google Agenda`
+            : `${data.retimed} appointment${data.retimed > 1 ? 's' : ''} updated from Google Calendar`)
+          fetchBookings()
+        }
+      })
       .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Show toast for calendar OAuth callback results
