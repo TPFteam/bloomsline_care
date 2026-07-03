@@ -228,7 +228,7 @@ function DashboardInner() {
 
   // Member picker (step 1 of the share-resource flow)
   const [showMemberPicker, setShowMemberPicker] = useState(false)
-  const [memberPickerAction, setMemberPickerAction] = useState<'share' | null>(null)
+  const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'pulse' | null>(null)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
   // Resource picker (step 2 of the share-resource flow)
@@ -1004,6 +1004,7 @@ function DashboardInner() {
               { key: 'add', show: true, icon: UserPlus, title: t('Add a patient', 'Ajouter un patient', 'Añadir paciente'), sub: t('New', 'Nouveau', 'Nuevo'), bg: 'bg-emerald-50', ic: 'text-emerald-600', badge: 0, badgeBg: '', onClick: () => setShowAddMemberModal(true) },
               { key: 'note', show: true, icon: PenLine, title: t('Take a note', 'Prendre une note', 'Tomar nota'), sub: t('Session', 'Séance', 'Sesión'), bg: 'bg-rose-50', ic: 'text-rose-500', badge: 0, badgeBg: '', onClick: () => setShowNoteComposer(true) },
               { key: 'share', show: true, icon: Share2, title: t('Share', 'Partager', 'Compartir'), sub: t('Resource', 'Ressource', 'Recurso'), bg: 'bg-indigo-50', ic: 'text-indigo-500', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('share'); setShowMemberPicker(true) } },
+              { key: 'pulse', show: true, icon: Sparkles, title: t('Bloom Pulse', 'Bloom Pulse', 'Bloom Pulse'), sub: t('Patient summary', 'Résumé patient', 'Resumen'), bg: 'bg-teal-50', ic: 'text-teal-600', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('pulse'); setShowMemberPicker(true) } },
               { key: 'payments', show: true, icon: CreditCard, title: t('Payments', 'Paiements', 'Pagos'), sub: t('Pending', 'En attente', 'Pendiente'), bg: 'bg-violet-50', ic: 'text-violet-500', badge: paymentsAwaiting, badgeBg: 'bg-violet-500', onClick: () => setShowPayments(true) },
             ].filter((b) => b.show).map((b) => {
               const Icon = b.icon
@@ -1029,7 +1030,7 @@ function DashboardInner() {
               <p className="text-sm text-gray-400 px-1">{t('Nothing scheduled.', 'Rien de prévu.', 'Nada programado.')}</p>
             ) : (
               <div className="space-y-2.5">
-                {upNext.map((b) => (
+                {upNext.slice(0, 3).map((b) => (
                   <div key={b.id} className="flex items-center gap-3 rounded-[20px] bg-white p-3.5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.06)]">
                     <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0 text-sm font-semibold">
                       {(b.client_name || '?').charAt(0).toUpperCase()}
@@ -1039,9 +1040,14 @@ function DashboardInner() {
                       <p className="text-xs text-gray-400">{format(parseISO(b.start_time), locale === 'fr' ? "EEE d MMM · HH:mm" : "EEE d MMM · h:mm a", { locale: locale === 'fr' ? frLocale : undefined })}</p>
                     </div>
                     {b.member_id && (
-                      <button onClick={() => handleTakeNotes(b)} title={t('Take notes', 'Prendre des notes', 'Tomar notas')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
-                        <PenLine className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button onClick={() => setPrepBooking(b)} title={t('Session brief', 'Brief de séance', 'Resumen')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleTakeNotes(b)} title={t('Take notes', 'Prendre des notes', 'Tomar notas')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
+                          <PenLine className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -2204,6 +2210,7 @@ function DashboardInner() {
                   </h3>
                   <p className="text-sm text-gray-500">
                     {memberPickerAction === 'share' && (locale === 'fr' ? 'Envoyer un support' : 'Share a resource')}
+                    {memberPickerAction === 'pulse' && (locale === 'fr' ? 'Voir le Bloom Pulse du patient' : 'View the patient’s Bloom Pulse')}
                   </p>
                 </div>
                 <button
@@ -2254,6 +2261,11 @@ function DashboardInner() {
                         transition={{ delay: index * 0.03 }}
                         onClick={async () => {
                           setShowMemberPicker(false)
+                          if (memberPickerAction === 'pulse') {
+                            // Open the patient's Bloom Pulse (their Overview tab).
+                            router.push(`/members/${member.id}`)
+                            return
+                          }
                           if (memberPickerAction === 'share') {
                             // Step 2 — load practitioner's resource library
                             setShareTargetMember({ id: member.id, first_name: member.first_name, last_name: member.last_name })
