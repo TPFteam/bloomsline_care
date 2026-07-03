@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Building2, Video, Globe, X } from 'lucide-react'
+import { Calendar, Clock, User, Mail, Phone, FileText, ChevronLeft, ChevronRight, ChevronDown, Check, Loader2, Info, Building2, Video, Globe, X, HeartHandshake, CreditCard, CalendarX2, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import { PhoneInput } from '@/components/ui/phone-input'
@@ -37,9 +37,9 @@ interface PractitionerInfo {
   dayFormats?: Record<string, string[]>
 }
 
-type Step = 'schedule' | 'details'
+type Step = 'schedule' | 'details' | 'consent'
 
-const STEP_ORDER: Step[] = ['schedule', 'details']
+const STEP_ORDER: Step[] = ['schedule', 'details', 'consent']
 
 // Local calendar-date key (YYYY-MM-DD) and month key, used to match a Date
 // against the set of days that actually have availability.
@@ -47,8 +47,8 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const mkey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`
 
 const STEP_LABELS: Record<string, Record<Step, string>> = {
-  en: { schedule: 'Schedule', details: 'Your details' },
-  fr: { schedule: 'Planifier', details: 'Vos coordonnées' },
+  en: { schedule: 'Schedule', details: 'Your details', consent: 'Consent' },
+  fr: { schedule: 'Planifier', details: 'Vos coordonnées', consent: 'Consentement' },
 }
 
 const t = (locale: string, translations: Record<string, string>) =>
@@ -125,6 +125,8 @@ export default function BookingPage() {
   const [policiesAgreed, setPoliciesAgreed] = useState(false)
   // Opens an in-page privacy/data-protection summary (no redirect off the page).
   const [consentInfoOpen, setConsentInfoOpen] = useState(false)
+  // Which policy row is expanded on the consent step (accordion).
+  const [openPolicy, setOpenPolicy] = useState<string | null>(null)
   // Expand/collapse the practitioner's welcome message when it's long.
   const [welcomeExpanded, setWelcomeExpanded] = useState(false)
 
@@ -477,16 +479,18 @@ export default function BookingPage() {
   }
 
   const goNext = () => {
-    const currentIndex = STEP_ORDER.indexOf(currentStep)
-    if (currentIndex < STEP_ORDER.length - 1) {
-      setCurrentStep(STEP_ORDER[currentIndex + 1])
+    const order = activeSteps()
+    const currentIndex = order.indexOf(currentStep)
+    if (currentIndex < order.length - 1) {
+      setCurrentStep(order[currentIndex + 1])
     }
   }
 
   const goBack = () => {
-    const currentIndex = STEP_ORDER.indexOf(currentStep)
+    const order = activeSteps()
+    const currentIndex = order.indexOf(currentStep)
     if (currentIndex > 0) {
-      setCurrentStep(STEP_ORDER[currentIndex - 1])
+      setCurrentStep(order[currentIndex - 1])
     }
   }
 
@@ -570,6 +574,11 @@ export default function BookingPage() {
     return { consent, paymentText, paymentUrl, cancellation, practiceText, practiceUrl }
   }
 
+  // The consent step only exists when the practitioner has configured policies/
+  // payment. Otherwise there's just the one mandatory consent checkbox, which
+  // we show on the details step — no need for a separate third step.
+  const activeSteps = (): Step[] => (bookingPolicies() ? STEP_ORDER : STEP_ORDER.filter((s) => s !== 'consent'))
+
   // Validation
   const canProceed = () => {
     switch (currentStep) {
@@ -583,8 +592,9 @@ export default function BookingPage() {
         const phoneValid = clientPhone.replace(/\D/g, '').length >= 8
         const baseValid = clientName.trim() !== '' && emailValid && phoneValid
         if (selectedService?.notesRequired && !notes.trim()) return false
-        if (!consentGiven) return false
-        if (bookingPolicies() && !policiesAgreed) return false
+        // No consent step (practitioner has no custom content) → the mandatory
+        // consent checkbox lives here, so require it before continuing.
+        if (!bookingPolicies() && !consentGiven) return false
         // Required intake questions must be answered.
         const questions = activeIntakeQuestions()
         for (const q of questions) {
@@ -595,6 +605,12 @@ export default function BookingPage() {
         }
         return baseValid
       }
+      case 'consent':
+        // Platform privacy/teleconsent is always required; the practitioner's
+        // own policies only when they've configured any.
+        if (!consentGiven) return false
+        if (bookingPolicies() && !policiesAgreed) return false
+        return true
       default:
         return false
     }
@@ -765,7 +781,9 @@ export default function BookingPage() {
   }
 
   const sessionTypes = practitioner.settings.session_types as SessionType[]
-  const currentStepIndex = STEP_ORDER.indexOf(currentStep)
+  const currentSteps = activeSteps()
+  const currentStepIndex = currentSteps.indexOf(currentStep)
+  const isLastStep = currentStepIndex === currentSteps.length - 1
 
   // Validate the primary color override (only accept #RGB or #RRGGBB to avoid CSS injection)
   const validPrimary = primaryColorOverride && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(primaryColorOverride)
@@ -996,7 +1014,7 @@ export default function BookingPage() {
               className="flex items-center justify-center mb-6"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
-              {STEP_ORDER.map((step, index) => (
+              {currentSteps.map((step, index) => (
                 <div key={step} className="flex items-center">
                   <button
                     onClick={() => {
@@ -1025,7 +1043,7 @@ export default function BookingPage() {
                       {(STEP_LABELS[locale] || STEP_LABELS['en'])[step]}
                     </span>
                   </button>
-                  {index < STEP_ORDER.length - 1 && (
+                  {index < currentSteps.length - 1 && (
                     <div
                       className={`w-6 sm:w-14 h-0.5 mx-1 sm:mx-3 rounded-full transition-colors ${
                         currentStepIndex > index
@@ -1053,10 +1071,12 @@ export default function BookingPage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {currentStep === 'schedule' && t(locale, { en: 'Schedule your session', fr: 'Planifiez votre séance' })}
                 {currentStep === 'details' && t(locale, { en: 'Your Details', fr: 'Vos coordonnées' })}
+                {currentStep === 'consent' && t(locale, { en: 'Before you confirm', fr: 'Avant de confirmer' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {currentStep === 'schedule' && t(locale, { en: 'Pick an available time that works for you', fr: 'Choisissez un créneau qui vous convient' })}
                 {currentStep === 'details' && t(locale, { en: 'We\'ll use this to confirm your appointment', fr: 'Ces informations serviront à confirmer votre rendez-vous' })}
+                {currentStep === 'consent' && t(locale, { en: 'Please review and accept the following', fr: 'Merci de consulter et d\'accepter ce qui suit' })}
               </p>
             </div>
 
@@ -1583,7 +1603,7 @@ export default function BookingPage() {
             )}
 
             {/* Booking error + cancellation policy — shown on the details step */}
-            {currentStep === 'details' && bookingError && (
+            {isLastStep && bookingError && (
               <div className="mt-4 bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm">
                 {bookingError}
               </div>
@@ -1595,73 +1615,17 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* Practitioner policies (consent / cancellation / practice) + a
-                second, separate agreement checkbox. Payment is not shown here. */}
-            {currentStep === 'details' && (() => {
-              const p = bookingPolicies()
-              if (!p) return null
-              return (
-                <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50/70 p-4 space-y-4">
-                  {p.consent && (
-                    <div>
-                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Consentement' : 'Consent'}</p>
-                      <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{p.consent}</p>
-                    </div>
-                  )}
-                  {(p.paymentText || p.paymentUrl) && (
-                    <div>
-                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Paiement' : 'Payment'}</p>
-                      {p.paymentText && <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed mb-1">{p.paymentText}</p>}
-                      {p.paymentUrl && (
-                        <a href={p.paymentUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-teal-600 hover:text-teal-700 underline break-all">
-                          {locale === 'fr' ? 'Lien de paiement' : 'Payment link'}
-                        </a>
-                      )}
-                    </div>
-                  )}
-                  {p.cancellation && (
-                    <div>
-                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? "Politique d'annulation" : 'Cancellation policy'}</p>
-                      <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{p.cancellation}</p>
-                    </div>
-                  )}
-                  {(p.practiceText || p.practiceUrl) && (
-                    <div>
-                      <p className="text-[11px] font-semibold tracking-wide text-gray-400 uppercase mb-1">{locale === 'fr' ? 'Politique du cabinet' : 'Practice policy'}</p>
-                      {p.practiceText && <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed mb-1">{p.practiceText}</p>}
-                      {p.practiceUrl && (
-                        <a href={p.practiceUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-teal-600 hover:text-teal-700 underline">
-                          {locale === 'fr' ? 'En savoir plus' : 'Learn more'}
-                        </a>
-                      )}
-                    </div>
-                  )}
-                  <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
-                    <input
-                      type="checkbox"
-                      checked={policiesAgreed}
-                      onChange={(e) => setPoliciesAgreed(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0"
-                    />
-                    <span className="text-xs text-gray-600 leading-relaxed">
-                      {locale === 'fr' ? "J'ai lu et j'accepte les conditions ci-dessus." : 'I have read and agree to the above.'}
-                      {' '}<span className="text-red-500">*</span>
-                    </span>
-                  </label>
-                </div>
-              )
-            })()}
-
-            {/* Consent — required before confirming a booking */}
-            {currentStep === 'details' && (
-              <label className="mt-5 flex items-start gap-3 cursor-pointer select-none">
+            {/* No consent step → the single mandatory consent lives on the
+                details step (practitioner configured no extra content). */}
+            {currentStep === 'details' && !bookingPolicies() && (
+              <label className="mt-6 flex items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={consentGiven}
                   onChange={(e) => setConsentGiven(e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0"
                 />
-                <span className="text-xs text-gray-500 leading-relaxed">
+                <span className="text-sm text-gray-600 leading-relaxed">
                   {locale === 'fr' ? (
                     <>Je consens à ce que mes données personnelles soient collectées et conservées de manière sécurisée pour gérer ce rendez-vous — voir notre <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConsentInfoOpen(true) }} className="text-teal-600 underline hover:text-teal-700">politique de confidentialité et protection des données</button> — et je consens à une téléconsultation réalisée en ligne.</>
                   ) : (
@@ -1671,6 +1635,91 @@ export default function BookingPage() {
                 </span>
               </label>
             )}
+
+            {/* Consent step — practitioner policies + platform consent, shown as
+                an accordion of icon rows (mirrors the mobile welcome-consent). */}
+            {currentStep === 'consent' && (() => {
+              const fr = locale === 'fr'
+              const p = bookingPolicies()
+              // Payment is pulled out into its own prominent section at the top
+              // (below); the accordion holds the policy/consent rows.
+              const hasPayment = !!(p && (p.paymentText || p.paymentUrl))
+              const rows: Array<{ key: string; Icon: typeof HeartHandshake; title: string; body?: string; linkLabel?: string; linkUrl?: string; onLink?: () => void }> = []
+              if (p?.consent) rows.push({ key: 'consent', Icon: HeartHandshake, title: fr ? 'Consentement' : 'Consent', body: p.consent })
+              if (p?.cancellation) rows.push({ key: 'cancellation', Icon: CalendarX2, title: fr ? "Politique d'annulation" : 'Cancellation policy', body: p.cancellation })
+              if (p && (p.practiceText || p.practiceUrl)) rows.push({ key: 'practice', Icon: Building2, title: fr ? 'Politique du cabinet' : 'Practice policy', body: p.practiceText || undefined, linkLabel: fr ? 'En savoir plus' : 'Learn more', linkUrl: p.practiceUrl || undefined })
+              rows.push({
+                key: 'privacy', Icon: ShieldCheck,
+                title: fr ? 'Confidentialité & téléconsultation' : 'Privacy & teleconsultation',
+                body: fr
+                  ? 'Vos données personnelles sont collectées et conservées de manière sécurisée pour gérer ce rendez-vous, et la séance se déroule en téléconsultation en ligne.'
+                  : 'Your personal data is collected and securely stored to manage this appointment, and the session is held online by teleconsultation.',
+                linkLabel: fr ? 'Politique de confidentialité' : 'Privacy Policy',
+                onLink: () => setConsentInfoOpen(true),
+              })
+              return (
+                <div className="space-y-3">
+                  {/* Payment — its own prominent section at the top when available. */}
+                  {hasPayment && (
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-teal-600 shrink-0"><CreditCard className="w-4 h-4" /></span>
+                        <span className="text-sm font-semibold text-gray-900">{fr ? 'Paiement' : 'Payment'}</span>
+                      </div>
+                      {p?.paymentText && <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed mb-3 pl-12">{p.paymentText}</p>}
+                      {p?.paymentUrl && (
+                        <div className="pl-12">
+                          <a href={p.paymentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors">
+                            <CreditCard className="w-4 h-4" />{fr ? 'Lien de paiement' : 'Payment link'}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                    {rows.map((r) => {
+                      const open = openPolicy === r.key
+                      return (
+                        <div key={r.key}>
+                          <button type="button" onClick={() => setOpenPolicy(open ? null : r.key)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-gray-50 transition-colors">
+                            <span className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0"><r.Icon className="w-4 h-4" /></span>
+                            <span className="flex-1 text-sm font-medium text-gray-900">{r.title}</span>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                          </button>
+                          {open && (
+                            <div className="px-4 pb-4 pl-16 space-y-2">
+                              {r.body && <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{r.body}</p>}
+                              {r.linkUrl && <a href={r.linkUrl} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-medium text-teal-600 hover:text-teal-700 underline break-all">{r.linkLabel}</a>}
+                              {r.onLink && <button type="button" onClick={r.onLink} className="inline-block text-sm font-medium text-teal-600 hover:text-teal-700 underline">{r.linkLabel}</button>}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {p && (
+                    <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+                      <input type="checkbox" checked={policiesAgreed} onChange={(e) => setPoliciesAgreed(e.target.checked)} className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
+                      <span className="text-sm text-gray-600 leading-relaxed">
+                        {fr ? "J'ai lu et j'accepte les conditions ci-dessus." : 'I have read and agree to the above.'} <span className="text-red-500">*</span>
+                      </span>
+                    </label>
+                  )}
+
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input type="checkbox" checked={consentGiven} onChange={(e) => setConsentGiven(e.target.checked)} className="mt-0.5 w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 shrink-0" />
+                    <span className="text-sm text-gray-600 leading-relaxed">
+                      {fr
+                        ? 'Je consens à ce que mes données personnelles soient collectées et conservées de manière sécurisée pour gérer ce rendez-vous, et à une téléconsultation réalisée en ligne.'
+                        : 'I consent to my personal data being collected and securely stored to manage this appointment, and to a teleconsultation conducted online.'}
+                      {' '}<span className="text-red-500">*</span>
+                    </span>
+                  </label>
+                </div>
+              )
+            })()}
 
             {/* Navigation buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
@@ -1683,7 +1732,7 @@ export default function BookingPage() {
                 <div />
               )}
 
-              {currentStep === 'details' ? (
+              {isLastStep ? (
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !canProceed()}
