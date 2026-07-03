@@ -156,6 +156,18 @@ export function SlotCalendarView({
     onSelectSlot(day, timeStr)
   }
 
+  // Tap anywhere on a day column to pick that time (snapped to 30 min) and
+  // advance — the practitioner can book any moment, not just the shown slots.
+  const handleGridClick = (e: React.MouseEvent, day: Date) => {
+    if ((e.target as HTMLElement).closest('[data-slot]')) return // slot pill handles its own tap
+    const rect = e.currentTarget.getBoundingClientRect()
+    const minutes = ((e.clientY - rect.top) / HOUR_HEIGHT) * 60
+    const snapped = Math.min((END_HOUR - START_HOUR) * 60 - 30, Math.max(0, Math.round(minutes / 30) * 30))
+    const hh = START_HOUR + Math.floor(snapped / 60)
+    const mm = snapped % 60
+    onSelectSlot(day, `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`)
+  }
+
   // Can't go before the current week (desktop) / today (mobile)
   const canGoPrev = isMobile
     ? startOfDay(weekStart) > startOfDay(new Date())
@@ -186,55 +198,26 @@ export function SlotCalendarView({
           <button onClick={goToday} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1 rounded-lg hover:bg-teal-50 transition-colors">
             {locale === 'fr' ? "Aujourd'hui" : 'Today'}
           </button>
-          {practitionerTz && (
+          {!isMobile && practitionerTz && (
             <span className="text-[11px] text-gray-400 ml-1">({tz.replace(/_/g, ' ').split('/').pop()})</span>
           )}
         </div>
         {loading && <Loader2 className="w-4 h-4 animate-spin text-teal-500" />}
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-teal-200 border border-teal-300" />
-            {locale === 'fr' ? 'Disponible' : 'Available'}
-          </span>
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-            <span className="w-2 h-2 rounded-full bg-gray-200 border border-gray-300" />
-            {locale === 'fr' ? 'Occupé' : 'Occupied'}
-          </span>
-        </div>
+        {!isMobile && (
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-teal-200 border border-teal-300" />
+              {locale === 'fr' ? 'Disponible' : 'Available'}
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-gray-200 border border-gray-300" />
+              {locale === 'fr' ? 'Occupé' : 'Occupied'}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Mobile: a simple tappable list of the day's available times (the
-          hover-to-expand hour grid isn't usable on touch). */}
-      {isMobile && (() => {
-        const day = days[0]
-        const dstr = format(day, 'yyyy-MM-dd')
-        const slots = weekSlots[dstr] || []
-        return (
-          <div className="p-4 max-h-[60vh] overflow-y-auto">
-            {loading ? (
-              <div className="py-10 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-teal-500" /></div>
-            ) : slots.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">
-                {locale === 'fr' ? 'Aucun créneau ce jour — essayez un autre jour.' : 'No times this day — try another day.'}
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {slots.map(slot => (
-                  <button
-                    key={slot.slot_start}
-                    onClick={() => handleSlotClick(slot, day)}
-                    className="px-3 py-3 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 text-sm font-semibold hover:bg-teal-100 active:scale-[0.98] transition-all"
-                  >
-                    {formatTimeInTz(slot.slot_start)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })()}
-
-      {/* Day headers (desktop grid) */}
+      {/* Day headers — redundant on mobile (the nav already shows the day). */}
       <div className={`grid border-b border-gray-100 ${isMobile ? 'hidden' : ''}`} style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)` }}>
         <div />
         {days.map(day => {
@@ -258,7 +241,7 @@ export function SlotCalendarView({
       </div>
 
       {/* Time grid */}
-      <div className={`grid overflow-y-auto ${isMobile ? 'hidden' : ''}`} style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: '65vh' }}>
+      <div className="grid overflow-y-auto" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: '65vh' }}>
         {/* Time labels */}
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -279,7 +262,7 @@ export function SlotCalendarView({
           const today = todayCheck(day)
 
           return (
-            <div key={day.toISOString()} className={`relative border-l border-gray-50 ${disabled ? 'bg-gray-50/50' : ''} ${today ? 'bg-teal-50/10' : ''}`}>
+            <div key={day.toISOString()} onClick={(e) => handleGridClick(e, day)} className={`relative border-l border-gray-50 cursor-pointer ${disabled ? 'bg-gray-50/50' : ''} ${today ? 'bg-teal-50/10' : ''}`}>
               {/* Hour grid lines */}
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
                 <div key={i} className="border-b border-gray-50" style={{ height: HOUR_HEIGHT }} />
@@ -324,7 +307,8 @@ export function SlotCalendarView({
                 return (
                   <div
                     key={slot.slot_start}
-                    onClick={() => handleSlotClick(slot, day)}
+                    data-slot
+                    onClick={(e) => { e.stopPropagation(); handleSlotClick(slot, day) }}
                     onMouseEnter={() => setHoveredSlot(slot.slot_start)}
                     onMouseLeave={() => setHoveredSlot(null)}
                     className={`absolute left-1 right-1 rounded-lg border cursor-pointer z-20 px-2 overflow-hidden ${

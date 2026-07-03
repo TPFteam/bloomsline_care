@@ -8,7 +8,6 @@ import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
-import { useIsMobile } from '@/lib/use-is-mobile'
 import { toast } from 'sonner'
 
 const MIN_WIDTH = 360
@@ -20,7 +19,6 @@ export function FloatingNotesPanel() {
   const { floatingNote, isMinimized, closeFloat, updateContent, setMinimized } = useFloatingNotes()
   const { locale } = useLanguage()
   const fr = locale === 'fr'
-  const isMobile = useIsMobile()
   const supabase = createClient()
 
   // Position & size
@@ -69,27 +67,23 @@ export function FloatingNotesPanel() {
   // button remains for anyone who prefers the smaller footprint.
   useEffect(() => {
     if (floatingNote) {
-      if (isMobile && typeof window !== 'undefined') {
-        // Phones: fit the viewport with an 8px gutter — never overflow the edge.
-        setPos({ x: 8, y: 8 })
-        setSize({ w: window.innerWidth - 16, h: window.innerHeight - 16 })
-      } else {
-        const targetW = typeof window !== 'undefined'
-          ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96))
-          : DEFAULT_WIDTH
-        const targetH = typeof window !== 'undefined'
-          ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96))
-          : DEFAULT_HEIGHT
-        setPos({
-          x: Math.max(16, (window.innerWidth - targetW) / 2),
-          y: Math.max(16, (window.innerHeight - targetH) / 2),
-        })
-        setSize({ w: targetW, h: targetH })
-      }
+      // Clamp to the viewport so the panel never overflows the edges — on a
+      // narrow phone this fits snugly; on desktop it's capped at 1100.
+      const targetW = typeof window !== 'undefined'
+        ? Math.min(1100, window.innerWidth - 24)
+        : DEFAULT_WIDTH
+      const targetH = typeof window !== 'undefined'
+        ? Math.min(760, window.innerHeight - 24)
+        : DEFAULT_HEIGHT
+      setPos({
+        x: Math.max(8, (window.innerWidth - targetW) / 2),
+        y: Math.max(8, (window.innerHeight - targetH) / 2),
+      })
+      setSize({ w: targetW, h: targetH })
       setShowConfirm(false)
       setIsExpanded(true)
     }
-  }, [floatingNote?.memberId, floatingNote?.mode, isMobile])
+  }, [floatingNote?.memberId, floatingNote?.mode])
 
   // Toggle between the large modal-style layout (distraction-free
   // writing) and the compact bottom-right docked panel (lets the
@@ -99,32 +93,25 @@ export function FloatingNotesPanel() {
   // The practitioner can still drag it anywhere afterwards.
   const toggleExpand = useCallback(() => {
     if (typeof window === 'undefined') return
-    if (isMobile) {
-      // On phones the panel always fills the viewport — keep it that way.
-      setSize({ w: window.innerWidth - 16, h: window.innerHeight - 16 })
-      setPos({ x: 8, y: 8 })
-      setIsExpanded(true)
-      return
-    }
     setIsExpanded(prev => {
       const next = !prev
-      const targetW = next ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96)) : DEFAULT_WIDTH
-      const targetH = next ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96)) : DEFAULT_HEIGHT
+      const targetW = next ? Math.min(1100, window.innerWidth - 24) : Math.min(DEFAULT_WIDTH, window.innerWidth - 24)
+      const targetH = next ? Math.min(760, window.innerHeight - 24) : Math.min(DEFAULT_HEIGHT, window.innerHeight - 24)
       setSize({ w: targetW, h: targetH })
       setPos(
         next
           ? {
-              x: Math.max(16, (window.innerWidth - targetW) / 2),
-              y: Math.max(16, (window.innerHeight - targetH) / 2),
+              x: Math.max(8, (window.innerWidth - targetW) / 2),
+              y: Math.max(8, (window.innerHeight - targetH) / 2),
             }
           : {
-              x: Math.max(16, window.innerWidth - targetW - 16),
-              y: Math.max(16, window.innerHeight - targetH - 16),
+              x: Math.max(8, window.innerWidth - targetW - 16),
+              y: Math.max(8, window.innerHeight - targetH - 16),
             }
       )
       return next
     })
-  }, [isMobile])
+  }, [])
 
   // Escape key minimizes
   useEffect(() => {
@@ -265,7 +252,7 @@ export function FloatingNotesPanel() {
   if (isMinimized) {
     return createPortal(
       <div
-        className={`fixed bottom-4 right-4 z-[90] flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-lg cursor-pointer hover:shadow-xl transition-shadow${
+        className={`fixed bottom-4 right-4 z-[120] flex items-center gap-2 bg-white border border-gray-200 rounded-full px-3 py-2 shadow-lg cursor-pointer hover:shadow-xl transition-shadow${
           pillAttention ? ' animate-bloom-attention' : ''
         }`}
         onClick={() => setMinimized(false)}
@@ -288,13 +275,8 @@ export function FloatingNotesPanel() {
     <>
       {/* Floating window */}
       <div
-        className="fixed z-[90] bg-white rounded-xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden"
-        style={{
-          left: pos.x,
-          top: pos.y,
-          width: size.w,
-          height: size.h,
-        }}
+        className="fixed z-[120] bg-white rounded-xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden"
+        style={{ left: pos.x, top: pos.y, width: size.w, height: size.h }}
       >
         {/* Title bar */}
         <div
@@ -417,7 +399,7 @@ export function FloatingNotesPanel() {
 
       {/* Confirmation dialog */}
       {showConfirm && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/20">
+        <div className="fixed inset-0 z-[125] flex items-center justify-center bg-black/20">
           <div className="bg-white rounded-xl shadow-2xl p-5 max-w-sm mx-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">
               {fr ? 'Abandonner la note ?' : 'Discard note?'}
