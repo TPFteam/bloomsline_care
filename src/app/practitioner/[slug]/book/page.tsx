@@ -510,6 +510,26 @@ export default function BookingPage() {
     setBookingError(null)
 
     try {
+      // Frozen consent record — the exact terms shown + which boxes were ticked.
+      const p = bookingPolicies()
+      const consentSnapshot = {
+        accepted_at: new Date().toISOString(),
+        locale,
+        platform_consent: consentGiven,
+        policies_agreed: p ? policiesAgreed : null,
+        privacy_notice: locale === 'fr'
+          ? 'Collecte et conservation sécurisées de mes données pour gérer ce rendez-vous, et téléconsultation réalisée en ligne.'
+          : 'Secure collection and storage of my data to manage this appointment, and an online teleconsultation.',
+        terms: p ? {
+          consent: p.consent || null,
+          payment_text: p.paymentText || null,
+          payment_url: p.paymentUrl || null,
+          cancellation: p.cancellation || null,
+          practice_text: p.practiceText || null,
+          practice_url: p.practiceUrl || null,
+        } : null,
+      }
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
@@ -527,6 +547,8 @@ export default function BookingPage() {
           notes: notes || undefined,
           session_format: selectedFormat === 'in_person' ? 'in_person' : 'video',
           consent: consentGiven,
+          policiesAccepted: p ? policiesAgreed : false,
+          consentSnapshot,
           intake_responses: activeIntakeQuestions()
             .map((q) => ({ id: q.id, label: q.label, type: q.type, value: intakeAnswers[q.id] ?? (q.type === 'multi' ? [] : '') }))
             .filter((r) => Array.isArray(r.value) ? r.value.length > 0 : String(r.value).trim() !== ''),

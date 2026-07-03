@@ -141,15 +141,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Record the patient's consent timestamp (best-effort). The booking is
-    // already gated on consent client-side; this writes the audit trail and
-    // is a no-op until the consent_accepted_at column exists.
+    // Record the patient's consent timestamp (platform data/teleconsultation
+    // consent). The booking is already gated on consent client-side.
+    const nowIso = new Date().toISOString();
     if ((body as { consent?: boolean }).consent) {
       const { error: consentErr } = await supabase
         .from('bookings')
-        .update({ consent_accepted_at: new Date().toISOString() })
+        .update({ consent_accepted_at: nowIso })
         .eq('id', booking.id);
-      if (consentErr) console.warn('Consent not recorded (column missing?):', consentErr.message);
+      if (consentErr) console.warn('Consent timestamp not recorded (column missing?):', consentErr.message);
+    }
+
+    // Fuller consent audit — the practitioner-policies acceptance time and a
+    // frozen snapshot of the exact terms shown. Kept in a SEPARATE update so a
+    // missing column (before the migration runs) degrades gracefully without
+    // affecting the consent timestamp above.
+    const auditBody = body as { policiesAccepted?: boolean; consentSnapshot?: unknown };
+    const audit: Record<string, unknown> = {};
+    if (auditBody.policiesAccepted) audit.policies_accepted_at = nowIso;
+    if (auditBody.consentSnapshot && typeof auditBody.consentSnapshot === 'object') audit.consent_snapshot = auditBody.consentSnapshot;
+    if (Object.keys(audit).length > 0) {
+      const { error: auditErr } = await supabase.from('bookings').update(audit).eq('id', booking.id);
+      if (auditErr) console.warn('Consent audit not recorded (columns missing?):', auditErr.message);
     }
 
     // Store the patient's intake answers (best-effort — no-op until the
