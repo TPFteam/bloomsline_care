@@ -38,6 +38,7 @@ import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { ScheduleSessionModal } from '@/components/schedule-session-modal'
 import { ConsentModal } from '@/components/consent-modal'
 import { SessionPrepDrawer } from '@/components/SessionPrepDrawer'
+import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
@@ -187,6 +188,7 @@ function DashboardInner() {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [showPayments, setShowPayments] = useState(false)
+  const [pulseMember, setPulseMember] = useState<{ id: string; name: string } | null>(null)
   // Count of patients with pending payments — for the Payments tile badge.
   const [paymentsAwaiting, setPaymentsAwaiting] = useState(0)
   useEffect(() => {
@@ -1000,12 +1002,12 @@ function DashboardInner() {
             </button>
 
             {[
+              { key: 'pulse', show: true, icon: Sparkles, title: t('Bloom Pulse', 'Bloom Pulse', 'Bloom Pulse'), sub: t('Patient summary', 'Résumé patient', 'Resumen'), bg: 'bg-teal-50', ic: 'text-teal-600', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('pulse'); setShowMemberPicker(true) } },
               { key: 'awaiting', show: awaitingCount > 0, icon: Clock, title: t('To close', 'À clôturer', 'Por cerrar'), sub: t('Sessions', 'Séances', 'Sesiones'), bg: 'bg-amber-50', ic: 'text-amber-500', badge: awaitingCount, badgeBg: 'bg-amber-500', onClick: () => setShowAwaitingClosure(true) },
               { key: 'requests', show: pendingCount > 0, icon: AlertCircle, title: t('Requests', 'Demandes', 'Solicitudes'), sub: t('To review', 'À traiter', 'Por revisar'), bg: 'bg-sky-50', ic: 'text-sky-500', badge: pendingCount, badgeBg: 'bg-sky-500', onClick: () => router.push('/bookings') },
               { key: 'add', show: true, icon: UserPlus, title: t('Add a patient', 'Ajouter un patient', 'Añadir paciente'), sub: t('New', 'Nouveau', 'Nuevo'), bg: 'bg-emerald-50', ic: 'text-emerald-600', badge: 0, badgeBg: '', onClick: () => setShowAddMemberModal(true) },
               { key: 'note', show: true, icon: PenLine, title: t('Take a note', 'Prendre une note', 'Tomar nota'), sub: t('Session', 'Séance', 'Sesión'), bg: 'bg-rose-50', ic: 'text-rose-500', badge: 0, badgeBg: '', onClick: () => setShowNoteComposer(true) },
               { key: 'share', show: true, icon: Share2, title: t('Share', 'Partager', 'Compartir'), sub: t('Resource', 'Ressource', 'Recurso'), bg: 'bg-indigo-50', ic: 'text-indigo-500', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('share'); setShowMemberPicker(true) } },
-              { key: 'pulse', show: true, icon: Sparkles, title: t('Bloom Pulse', 'Bloom Pulse', 'Bloom Pulse'), sub: t('Patient summary', 'Résumé patient', 'Resumen'), bg: 'bg-teal-50', ic: 'text-teal-600', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('pulse'); setShowMemberPicker(true) } },
               { key: 'payments', show: true, icon: CreditCard, title: t('Payments', 'Paiements', 'Pagos'), sub: t('Pending', 'En attente', 'Pendiente'), bg: 'bg-violet-50', ic: 'text-violet-500', badge: paymentsAwaiting, badgeBg: 'bg-violet-500', onClick: () => setShowPayments(true) },
             ].filter((b) => b.show).map((b) => {
               const Icon = b.icon
@@ -1731,6 +1733,16 @@ function DashboardInner() {
           the wallet button, controlled + triggerless). */}
       <AwaitingPaymentButton open={showPayments} onOpenChange={setShowPayments} hideTrigger />
 
+      {/* Bloom Pulse popup — opened from the mobile Bloom Pulse brick. */}
+      {pulseMember && (
+        <MemberSummaryModal
+          isOpen
+          onClose={() => setPulseMember(null)}
+          memberId={pulseMember.id}
+          memberName={pulseMember.name}
+        />
+      )}
+
       {/* ── Modals ── */}
       <ConsentModal isOpen={!hasConsented} onAccept={handleConsent} locale={locale} />
 
@@ -2260,8 +2272,8 @@ function DashboardInner() {
                         onClick={async () => {
                           setShowMemberPicker(false)
                           if (memberPickerAction === 'pulse') {
-                            // Open the patient's Bloom Pulse (their Overview tab).
-                            router.push(`/members/${member.id}`)
+                            // Show the patient's Bloom Pulse in a popup (no navigation).
+                            setPulseMember({ id: member.id, name: `${member.first_name} ${member.last_name}`.trim() })
                             return
                           }
                           if (memberPickerAction === 'share') {
