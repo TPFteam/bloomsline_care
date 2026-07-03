@@ -143,21 +143,10 @@ export async function GET(request: NextRequest) {
     }
     knownTz = tz;
 
-    // Check for date override blocking the whole day. When the practitioner
-    // has explicitly marked a day as unavailable, even the after-hours slots
-    // shouldn't appear — they're saying "do not book me at all today".
-    const { data: override } = await supabase
-      .from('availability_overrides')
-      .select('is_available')
-      .eq('user_id', practitionerId)
-      .eq('override_date', date)
-      .eq('is_available', false)
-      .is('start_time', null)
-      .maybeSingle();
-
-    if (override) {
-      return NextResponse.json({ slots: [], practitionerTimezone: tz });
-    }
+    // NOTE: time-off / holidays are NOT applied here. skipNotice=true means the
+    // practitioner is scheduling internally, and they can book any time on any
+    // date (including their days off / holidays). Time-off only blocks the
+    // patient-facing paths (the RPC + the filter below, guarded by !skipNotice).
 
     // Calculate the UTC offset for the practitioner's timezone on this date.
     // Uses Intl.DateTimeFormat to reliably get the offset — works on any server locale.
@@ -338,11 +327,10 @@ export async function GET(request: NextRequest) {
     timezone = tzRow?.timezone || 'UTC';
   }
 
-  // Time off / holidays. Full-day time-off (start_time IS NULL) is already
-  // dropped by the RPC and the skipNotice branch; half-day time-off (a
-  // start_time/end_time window) is enforced here so it blocks on every surface
-  // — public booking page, mobile patient app and the practitioner calendar.
-  {
+  // Time off / holidays — patient-facing only. Full-day time-off is dropped by
+  // the RPC (public path); half-day windows are filtered here. Skipped entirely
+  // for skipNotice (the practitioner scheduling internally can book any time).
+  if (!skipNotice) {
     const { data: timeOff } = await supabase
       .from('availability_overrides')
       .select('start_time, end_time')

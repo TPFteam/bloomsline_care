@@ -86,8 +86,8 @@ export function SlotCalendarView({
     const candidates: { dateStr: string; day: Date }[] = []
     for (let i = 0; i < 7; i++) {
       const day = addDays(weekStart, i)
-      if (disabledDaysOfWeek.includes(day.getDay())) continue
-      // Skip past days
+      // Internal scheduling — the practitioner can book any day, including
+      // days without a configured schedule. Only skip the past.
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (day < today) continue
@@ -203,8 +203,39 @@ export function SlotCalendarView({
         </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid border-b border-gray-100" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)` }}>
+      {/* Mobile: a simple tappable list of the day's available times (the
+          hover-to-expand hour grid isn't usable on touch). */}
+      {isMobile && (() => {
+        const day = days[0]
+        const dstr = format(day, 'yyyy-MM-dd')
+        const slots = weekSlots[dstr] || []
+        return (
+          <div className="p-4 max-h-[60vh] overflow-y-auto">
+            {loading ? (
+              <div className="py-10 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-teal-500" /></div>
+            ) : slots.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-10">
+                {locale === 'fr' ? 'Aucun créneau ce jour — essayez un autre jour.' : 'No times this day — try another day.'}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {slots.map(slot => (
+                  <button
+                    key={slot.slot_start}
+                    onClick={() => handleSlotClick(slot, day)}
+                    className="px-3 py-3 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 text-sm font-semibold hover:bg-teal-100 active:scale-[0.98] transition-all"
+                  >
+                    {formatTimeInTz(slot.slot_start)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* Day headers (desktop grid) */}
+      <div className={`grid border-b border-gray-100 ${isMobile ? 'hidden' : ''}`} style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)` }}>
         <div />
         {days.map(day => {
           const disabled = disabledDaysOfWeek.includes(day.getDay())
@@ -227,7 +258,7 @@ export function SlotCalendarView({
       </div>
 
       {/* Time grid */}
-      <div className="grid overflow-y-auto" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: '65vh' }}>
+      <div className={`grid overflow-y-auto ${isMobile ? 'hidden' : ''}`} style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: '65vh' }}>
         {/* Time labels */}
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
@@ -284,7 +315,7 @@ export function SlotCalendarView({
               })}
 
               {/* Available slots — expand to full duration on hover */}
-              {!disabled && slots.map(slot => {
+              {slots.map(slot => {
                 const startHour = getHoursInTz(slot.slot_start)
                 const endHour = getHoursInTz(slot.slot_end)
                 const top = (startHour - START_HOUR) * HOUR_HEIGHT

@@ -8,6 +8,7 @@ import { useFloatingNotes } from '@/lib/floating-notes/context'
 import { RichTextEditor } from '@/components/notes/RichTextEditor'
 import { createClient } from '@/lib/supabase/browser-client'
 import { useLanguage } from '@/lib/i18n/context'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { toast } from 'sonner'
 
 const MIN_WIDTH = 360
@@ -19,6 +20,7 @@ export function FloatingNotesPanel() {
   const { floatingNote, isMinimized, closeFloat, updateContent, setMinimized } = useFloatingNotes()
   const { locale } = useLanguage()
   const fr = locale === 'fr'
+  const isMobile = useIsMobile()
   const supabase = createClient()
 
   // Position & size
@@ -67,21 +69,27 @@ export function FloatingNotesPanel() {
   // button remains for anyone who prefers the smaller footprint.
   useEffect(() => {
     if (floatingNote) {
-      const targetW = typeof window !== 'undefined'
-        ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96))
-        : DEFAULT_WIDTH
-      const targetH = typeof window !== 'undefined'
-        ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96))
-        : DEFAULT_HEIGHT
-      setPos({
-        x: Math.max(16, (window.innerWidth - targetW) / 2),
-        y: Math.max(16, (window.innerHeight - targetH) / 2),
-      })
-      setSize({ w: targetW, h: targetH })
+      if (isMobile && typeof window !== 'undefined') {
+        // Phones: fit the viewport with an 8px gutter — never overflow the edge.
+        setPos({ x: 8, y: 8 })
+        setSize({ w: window.innerWidth - 16, h: window.innerHeight - 16 })
+      } else {
+        const targetW = typeof window !== 'undefined'
+          ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96))
+          : DEFAULT_WIDTH
+        const targetH = typeof window !== 'undefined'
+          ? Math.min(760, Math.max(MIN_HEIGHT, window.innerHeight - 96))
+          : DEFAULT_HEIGHT
+        setPos({
+          x: Math.max(16, (window.innerWidth - targetW) / 2),
+          y: Math.max(16, (window.innerHeight - targetH) / 2),
+        })
+        setSize({ w: targetW, h: targetH })
+      }
       setShowConfirm(false)
       setIsExpanded(true)
     }
-  }, [floatingNote?.memberId, floatingNote?.mode])
+  }, [floatingNote?.memberId, floatingNote?.mode, isMobile])
 
   // Toggle between the large modal-style layout (distraction-free
   // writing) and the compact bottom-right docked panel (lets the
@@ -91,6 +99,13 @@ export function FloatingNotesPanel() {
   // The practitioner can still drag it anywhere afterwards.
   const toggleExpand = useCallback(() => {
     if (typeof window === 'undefined') return
+    if (isMobile) {
+      // On phones the panel always fills the viewport — keep it that way.
+      setSize({ w: window.innerWidth - 16, h: window.innerHeight - 16 })
+      setPos({ x: 8, y: 8 })
+      setIsExpanded(true)
+      return
+    }
     setIsExpanded(prev => {
       const next = !prev
       const targetW = next ? Math.min(1100, Math.max(MIN_WIDTH, window.innerWidth - 96)) : DEFAULT_WIDTH
@@ -109,7 +124,7 @@ export function FloatingNotesPanel() {
       )
       return next
     })
-  }, [])
+  }, [isMobile])
 
   // Escape key minimizes
   useEffect(() => {
