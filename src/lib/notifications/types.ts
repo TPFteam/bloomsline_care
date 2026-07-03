@@ -36,6 +36,8 @@ export type NotificationType =
   | 'member_invitation_rejected'
   | 'member_inactive'
   | 'member_welcome'
+  | 'document_signed'          // practitioner: a patient signed a document / folder
+  | 'documents_signed_receipt' // member: your signed documents are ready
 
 export type UserType = 'practitioner' | 'member'
 
@@ -43,7 +45,7 @@ export type DeliveryChannel = 'email' | 'push' | 'sms'
 
 export type DeliveryStatus = 'pending' | 'sent' | 'delivered' | 'failed' | 'bounced'
 
-export type EntityType = 'resource' | 'session' | 'booking' | 'member' | 'resource_response' | 'assignment'
+export type EntityType = 'resource' | 'session' | 'booking' | 'member' | 'resource_response' | 'assignment' | 'document'
 
 export interface Notification {
   id: string

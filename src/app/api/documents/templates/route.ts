@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     allow_guardian: body.allow_guardian !== false,
     auto_send: body.auto_send === true,
     is_active: body.is_active !== false,
+    folder_id: typeof body.folder_id === 'string' ? body.folder_id : null,
   }
 
   const { data, error } = await supabase

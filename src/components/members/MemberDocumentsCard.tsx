@@ -6,14 +6,24 @@
 // member's Files tab.
 
 import { useEffect, useState } from 'react'
-import { FileSignature, Send, Loader2, Copy, Check, Clock, Eye, CheckCircle2, X, Download, Bell, Trash2 } from 'lucide-react'
+import { FileSignature, Send, Loader2, Copy, Check, Clock, Eye, CheckCircle2, X, Download, Bell, Trash2, Folder, ChevronDown, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
-import type { DocumentTemplate, MemberDocument, DocumentBlock, DocumentTemplateSnapshot } from '@/types/documents'
+import type { DocumentTemplate, DocumentFolder, MemberDocument, DocumentBlock, DocumentTemplateSnapshot, DocumentSource } from '@/types/documents'
+
+interface FolderPreviewDoc {
+  id: string
+  title: string
+  source: DocumentSource
+  blocks: DocumentBlock[]
+  url: string | null
+}
 
 type MemberDocumentWithUrl = MemberDocument & {
   signedPdfUrl?: string | null
   signedPdfDownloadUrl?: string | null
   signatureUrl?: string | null
+  bundleTitle?: string | null
+  bundleToken?: string | null
 }
 
 type TemplateWithPreview = DocumentTemplate & { previewUrl?: string | null }
@@ -35,6 +45,7 @@ function fillBlocks(blocks: DocumentBlock[] | null, name: string, email: string)
 type Viewer =
   | { kind: 'pdf'; title: string; url: string }
   | { kind: 'authored'; title: string; blocks: DocumentBlock[]; signerName: string | null; signedAt: string | null; signatureUrl: string | null }
+  | { kind: 'folder'; title: string; docs: FolderPreviewDoc[] }
 
 function tr(locale: string, en: string, fr: string) { return locale === 'fr' ? fr : en }
 
@@ -58,6 +69,7 @@ function AuthoredBlocks({ blocks, locale }: { blocks: DocumentBlock[]; locale: s
 export function MemberDocumentsCard({ memberId, locale, memberName = '', memberEmail = null }: { memberId: string; locale: string; memberName?: string; memberEmail?: string | null }) {
   const [docs, setDocs] = useState<MemberDocumentWithUrl[]>([])
   const [templates, setTemplates] = useState<TemplateWithPreview[]>([])
+  const [folders, setFolders] = useState<DocumentFolder[]>([])
   const [loading, setLoading] = useState(true)
   const [sendOpen, setSendOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState('')
@@ -67,6 +79,8 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
   // Pre-send confirmation: preview the document (with this patient's data
   // filled in) before it actually goes out.
   const [confirmSend, setConfirmSend] = useState<Viewer | null>(null)
+  // Which folder-preview documents are expanded in the confirm modal.
+  const [expandedPreview, setExpandedPreview] = useState<Set<string>>(new Set())
 
   const openView = (d: MemberDocumentWithUrl) => {
     const snap = (d.template_snapshot || {}) as DocumentTemplateSnapshot
@@ -81,19 +95,25 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
   const load = async () => {
     setLoading(true)
     try {
-      const [dRes, tRes] = await Promise.all([
+      const [dRes, tRes, fRes] = await Promise.all([
         fetch(`/api/members/${memberId}/documents`),
         fetch('/api/documents/templates'),
+        fetch('/api/documents/folders'),
       ])
       const dData = await dRes.json()
       const tData = await tRes.json()
+      const fData = await fRes.json().catch(() => ({}))
       if (dRes.ok) setDocs(dData.documents || [])
       if (tRes.ok) setTemplates((tData.templates || []).filter((t: DocumentTemplate) => t.is_active))
+      if (fRes.ok) setFolders(fData.folders || [])
     } finally {
       setLoading(false)
     }
   }
   useEffect(() => { load() }, [memberId])
+
+  const isFolderSel = selectedTemplate.startsWith('folder:')
+  const selectedFolderId = isFolderSel ? selectedTemplate.slice(7) : null
 
   const handleSend = async () => {
     if (!selectedTemplate) return
@@ -102,7 +122,7 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
       const res = await fetch(`/api/members/${memberId}/documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId: selectedTemplate }),
+        body: JSON.stringify(isFolderSel ? { folderId: selectedFolderId } : { templateId: selectedTemplate }),
       })
       const data = await res.json()
       if (res.status === 409 && data.error === 'already_sent') {
@@ -110,7 +130,13 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
         return
       }
       if (!res.ok) throw new Error(data.error || 'Failed')
-      toast.success(tr(locale, 'Document sent', 'Document envoyé'))
+      if (isFolderSel && data.allSigned) {
+        toast.info(tr(locale, 'This patient already signed every document in the folder.', 'Ce patient a déjà signé tous les documents du dossier.'))
+      } else if (isFolderSel) {
+        toast.success(tr(locale, `Sent ${data.count} documents`, `${data.count} documents envoyés`))
+      } else {
+        toast.success(tr(locale, 'Document sent', 'Document envoyé'))
+      }
       setSendOpen(false)
       setSelectedTemplate('')
       setConfirmSend(null)
@@ -125,6 +151,21 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
   // Build the "what the patient will get" preview (variables filled in) and
   // open the confirmation modal instead of sending immediately.
   const handlePreviewSend = () => {
+    if (isFolderSel) {
+      const f = folders.find(x => x.id === selectedFolderId)
+      const docs: FolderPreviewDoc[] = templates
+        .filter(t => t.folder_id === selectedFolderId)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          source: t.source,
+          blocks: t.source === 'authored' ? fillBlocks(t.content, memberName, memberEmail || '') : [],
+          url: t.source === 'upload' ? (t.previewUrl || null) : null,
+        }))
+      setExpandedPreview(new Set())
+      setConfirmSend({ kind: 'folder', title: f?.name || tr(locale, 'Folder', 'Dossier'), docs })
+      return
+    }
     const t = templates.find(x => x.id === selectedTemplate)
     if (!t) return
     if (t.source === 'authored') {
@@ -184,6 +225,80 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
     docs.filter(d => d.status === 'sent' || d.status === 'viewed').map(d => d.template_id).filter(Boolean),
   )
   const availableTemplates = templates.filter(t => !pendingTemplateIds.has(t.id))
+  // Folders that hold at least one active document can be sent as a bundle.
+  const folderCount = (fid: string) => templates.filter(t => t.folder_id === fid).length
+  const availableFolders = folders.filter(f => folderCount(f.id) > 0)
+
+  const copyBundleLink = (token: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/documents/sign/bundle/${token}`)
+    setCopied(token)
+    setTimeout(() => setCopied(null), 1500)
+  }
+
+  // Group folder-sent documents under their bundle; the rest render on their own.
+  const bundleOrder: string[] = []
+  const groups = new Map<string, MemberDocumentWithUrl[]>()
+  const singles: MemberDocumentWithUrl[] = []
+  for (const d of docs) {
+    if (d.bundle_id) {
+      if (!groups.has(d.bundle_id)) { groups.set(d.bundle_id, []); bundleOrder.push(d.bundle_id) }
+      groups.get(d.bundle_id)!.push(d)
+    } else singles.push(d)
+  }
+
+  const renderDocRow = (d: MemberDocumentWithUrl) => {
+    const title = (d.template_snapshot as { title?: string })?.title || tr(locale, 'Document', 'Document')
+    return (
+      <div key={d.id} className="flex items-center gap-3 rounded-xl border border-gray-100 p-2.5">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-gray-900 truncate">{title}</p>
+          <p className="text-[11px] text-gray-400">
+            {d.status === 'signed' && d.signed_at
+              ? `${tr(locale, 'Signed', 'Signé')} ${new Date(d.signed_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}`
+              : `${tr(locale, 'Sent', 'Envoyé')} ${new Date(d.sent_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}`}
+          </p>
+        </div>
+        {statusChip(d.status)}
+        {d.status === 'signed' ? (
+          <div className="flex items-center gap-1">
+            {d.signedPdfUrl && (
+              <button onClick={() => openView(d)}
+                className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+                <Eye className="w-3.5 h-3.5" />
+                {tr(locale, 'View', 'Voir')}
+              </button>
+            )}
+            {d.signedPdfDownloadUrl && (
+              <a href={d.signedPdfDownloadUrl}
+                className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+                <Download className="w-3.5 h-3.5" />
+                {tr(locale, 'Download', 'Télécharger')}
+              </a>
+            )}
+          </div>
+        ) : d.bundle_id ? (
+          // Bundle docs share one link — no per-doc remind/copy/unsend here.
+          <span className="text-[11px] text-gray-300 px-2">—</span>
+        ) : (
+          <div className="flex items-center gap-1">
+            <button onClick={() => handleRemind(d)} title={tr(locale, 'Remind', 'Relancer')}
+              className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+              <Bell className="w-3.5 h-3.5" />
+              {tr(locale, 'Remind', 'Relancer')}
+            </button>
+            <button onClick={() => copyLink(d.share_token)} title={tr(locale, 'Copy link', 'Copier le lien')}
+              className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+              {copied === d.share_token ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+            <button onClick={() => handleUnsend(d)} title={tr(locale, 'Unsend', 'Annuler l’envoi')}
+              className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 px-2 py-1 rounded-md hover:bg-red-50">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -210,8 +325,17 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
             onChange={(e) => setSelectedTemplate(e.target.value)}
             className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
           >
-            <option value="">{tr(locale, 'Choose a document…', 'Choisir un document…')}</option>
-            {availableTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+            <option value="">{tr(locale, 'Choose a document or folder…', 'Choisir un document ou dossier…')}</option>
+            {availableFolders.length > 0 && (
+              <optgroup label={tr(locale, 'Folders', 'Dossiers')}>
+                {availableFolders.map(f => (
+                  <option key={f.id} value={`folder:${f.id}`}>{f.name} ({folderCount(f.id)})</option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label={tr(locale, 'Documents', 'Documents')}>
+              {availableTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+            </optgroup>
           </select>
           <button onClick={handlePreviewSend} disabled={!selectedTemplate}
             className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium rounded-lg disabled:opacity-50">
@@ -240,56 +364,35 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
         <p className="text-xs text-gray-400 py-1">{tr(locale, 'No documents sent yet.', 'Aucun document envoyé.')}</p>
       ) : (
         <div className="space-y-2">
-          {docs.map(d => {
-            const title = (d.template_snapshot as { title?: string })?.title || tr(locale, 'Document', 'Document')
+          {bundleOrder.map(bid => {
+            const group = groups.get(bid)!.slice().sort((a, b) => (a.bundle_seq ?? 0) - (b.bundle_seq ?? 0))
+            const signedN = group.filter(d => d.status === 'signed').length
+            const bundleTitle = group[0].bundleTitle || tr(locale, 'Folder', 'Dossier')
+            const bundleToken = group[0].bundleToken
+            const allSigned = signedN === group.length
             return (
-              <div key={d.id} className="flex items-center gap-3 rounded-xl border border-gray-100 p-2.5">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{title}</p>
-                  <p className="text-[11px] text-gray-400">
-                    {d.status === 'signed' && d.signed_at
-                      ? `${tr(locale, 'Signed', 'Signé')} ${new Date(d.signed_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}`
-                      : `${tr(locale, 'Sent', 'Envoyé')} ${new Date(d.sent_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })}`}
-                  </p>
+              <div key={bid} className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50/70 border-b border-gray-100">
+                  <Folder className="w-4 h-4 text-teal-600 shrink-0" />
+                  <span className="text-sm font-medium text-gray-900 truncate">{bundleTitle}</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${allSigned ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-600'}`}>
+                    {signedN}/{group.length} {tr(locale, 'signed', 'signés')}
+                  </span>
+                  {!allSigned && bundleToken && (
+                    <button onClick={() => copyBundleLink(bundleToken)} title={tr(locale, 'Copy bundle link', 'Copier le lien du dossier')}
+                      className="ml-auto flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
+                      {copied === bundleToken ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      {tr(locale, 'Copy link', 'Copier le lien')}
+                    </button>
+                  )}
                 </div>
-                {statusChip(d.status)}
-                {d.status === 'signed' ? (
-                  <div className="flex items-center gap-1">
-                    {d.signedPdfUrl && (
-                      <button onClick={() => openView(d)}
-                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
-                        <Eye className="w-3.5 h-3.5" />
-                        {tr(locale, 'View', 'Voir')}
-                      </button>
-                    )}
-                    {d.signedPdfDownloadUrl && (
-                      <a href={d.signedPdfDownloadUrl}
-                        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
-                        <Download className="w-3.5 h-3.5" />
-                        {tr(locale, 'Download', 'Télécharger')}
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handleRemind(d)} title={tr(locale, 'Remind', 'Relancer')}
-                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
-                      <Bell className="w-3.5 h-3.5" />
-                      {tr(locale, 'Remind', 'Relancer')}
-                    </button>
-                    <button onClick={() => copyLink(d.share_token)} title={tr(locale, 'Copy link', 'Copier le lien')}
-                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100">
-                      {copied === d.share_token ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                    <button onClick={() => handleUnsend(d)} title={tr(locale, 'Unsend', 'Annuler l’envoi')}
-                      className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 px-2 py-1 rounded-md hover:bg-red-50">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
+                <div className="p-2 space-y-2">
+                  {group.map(renderDocRow)}
+                </div>
               </div>
             )
           })}
+          {singles.map(renderDocRow)}
         </div>
       )}
     </div>
@@ -306,7 +409,7 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
           </div>
           {viewing.kind === 'pdf' ? (
             <iframe src={viewing.url} className="flex-1 w-full rounded-b-2xl" title={viewing.title} />
-          ) : (
+          ) : viewing.kind === 'authored' ? (
             <div className="flex-1 overflow-y-auto p-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-4">{viewing.title}</h1>
               <AuthoredBlocks blocks={viewing.blocks} locale={locale} />
@@ -322,7 +425,7 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
                 </p>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     )}
@@ -347,6 +450,49 @@ export function MemberDocumentsCard({ memberId, locale, memberName = '', memberE
             confirmSend.url
               ? <iframe src={confirmSend.url} className="flex-1 w-full" title={confirmSend.title} />
               : <div className="flex-1 flex items-center justify-center text-sm text-gray-400">{tr(locale, 'No preview available.', 'Aperçu indisponible.')}</div>
+          ) : confirmSend.kind === 'folder' ? (
+            <div className="flex-1 overflow-y-auto p-6">
+              <h1 className="text-xl font-semibold text-gray-900 mb-1">{confirmSend.title}</h1>
+              <p className="text-sm text-gray-500 mb-4">
+                {tr(locale,
+                  `The patient signs these ${confirmSend.docs.length} documents one after another, from a single link and email. Expand any to preview it.`,
+                  `Le patient signe ces ${confirmSend.docs.length} documents l’un après l’autre, via un seul lien et un seul e-mail. Dépliez-en un pour le prévisualiser.`)}
+              </p>
+              <div className="space-y-2">
+                {confirmSend.docs.map((d, i) => {
+                  const open = expandedPreview.has(d.id)
+                  return (
+                    <div key={d.id} className="rounded-xl border border-gray-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedPreview(prev => { const n = new Set(prev); if (n.has(d.id)) n.delete(d.id); else n.add(d.id); return n })}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="w-5 h-5 shrink-0 rounded-full bg-teal-50 text-teal-700 text-[11px] font-medium flex items-center justify-center">{i + 1}</span>
+                        <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{d.title}</span>
+                        <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                          {open ? tr(locale, 'Hide', 'Masquer') : tr(locale, 'Preview', 'Aperçu')}
+                          {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </span>
+                      </button>
+                      {open && (
+                        <div className="border-t border-gray-100 bg-gray-50/50">
+                          {d.source === 'upload' ? (
+                            d.url
+                              ? <iframe src={d.url} className="w-full h-[55vh] bg-white" title={d.title} />
+                              : <p className="p-4 text-sm text-gray-400">{tr(locale, 'No preview available.', 'Aperçu indisponible.')}</p>
+                          ) : (
+                            <div className="p-5 max-h-[55vh] overflow-y-auto">
+                              <AuthoredBlocks blocks={d.blocks} locale={locale} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-4">{confirmSend.title}</h1>

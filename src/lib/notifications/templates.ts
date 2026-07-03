@@ -616,6 +616,36 @@ const templates: Record<NotificationType, NotificationTemplate> = {
           ? `${m.practitionerName} te invita a Bloomsline`
           : `${m.practitionerName} invites you to Bloomsline`,
   },
+
+  // Practitioner: a patient signed a document (or every doc in a folder).
+  document_signed: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Document signé' : locale === 'es' ? 'Documento firmado' : 'Document signed',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `${m.patientName} a signé ${m.documentLabel}.`
+        : locale === 'es'
+          ? `${m.patientName} firmó ${m.documentLabel}.`
+          : `${m.patientName} signed ${m.documentLabel}.`,
+    actionUrl: (m) => `/members/${m.memberId}?tab=files`,
+    emailSubject: (m, locale) =>
+      locale === 'fr' ? `Document signé par ${m.patientName}` : `Document signed by ${m.patientName}`,
+  },
+
+  // Member: your signed documents are ready (opens their documents in My Care).
+  documents_signed_receipt: {
+    title: (m, locale) =>
+      locale === 'fr' ? 'Vos documents signés' : locale === 'es' ? 'Tus documentos firmados' : 'Your signed documents',
+    body: (m, locale) =>
+      locale === 'fr'
+        ? `Merci — ${m.documentLabel} bien signé(s). Une copie vous a été envoyée par e-mail.`
+        : locale === 'es'
+          ? `Gracias — ${m.documentLabel} firmado(s). Se envió una copia a tu correo.`
+          : `Thank you — ${m.documentLabel} signed. A copy was emailed to you.`,
+    actionUrl: () => '/practitioner',
+    emailSubject: (m, locale) =>
+      locale === 'fr' ? 'Vos documents signés' : 'Your signed documents',
+  },
 }
 
 /**

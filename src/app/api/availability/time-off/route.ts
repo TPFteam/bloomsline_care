@@ -95,7 +95,42 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({})) as {
     startDate?: string; endDate?: string; portion?: string; reason?: string
+    entries?: Array<{ date?: string; reason?: string }>
   }
+
+  // Batch mode — import a set of individual full-day dates (e.g. a country's
+  // public holidays), each with its own name/reason. Idempotent per date.
+  if (Array.isArray(body.entries)) {
+    const clean = body.entries
+      .filter((e) => e && isoDate(e.date))
+      .slice(0, 200)
+      .map((e) => ({ date: e.date as string, reason: (typeof e.reason === 'string' ? e.reason.trim().slice(0, 200) : '') || null }))
+    if (clean.length === 0) {
+      return NextResponse.json({ error: 'No valid entries' }, { status: 400 })
+    }
+    const dates = clean.map((e) => e.date)
+    const { error: delError } = await supabase
+      .from('availability_overrides')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('is_available', false)
+      .in('override_date', dates)
+    if (delError) {
+      console.error('[time-off] batch clear error:', delError)
+      return NextResponse.json({ error: 'Failed to import holidays' }, { status: 500 })
+    }
+    const rows = clean.map((e) => ({
+      user_id: user.id, override_date: e.date, is_available: false,
+      start_time: null, end_time: null, reason: e.reason,
+    }))
+    const { error: insError } = await supabase.from('availability_overrides').insert(rows)
+    if (insError) {
+      console.error('[time-off] batch insert error:', insError)
+      return NextResponse.json({ error: 'Failed to import holidays' }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true, count: rows.length })
+  }
+
   const startDate = body.startDate
   const endDate = body.endDate || body.startDate
   const portion = (body.portion || 'full') as Portion

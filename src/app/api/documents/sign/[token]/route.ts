@@ -10,13 +10,115 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/server-client'
 import { buildSignedPdf } from '@/lib/pdf/signed-document'
 import { storeSignedArtifacts, decodeSignaturePng, substituteDocVariables } from '@/lib/services/documents'
+import { createNotificationService } from '@/lib/notifications/service'
 import type { DocumentTemplateSnapshot, MemberDocument } from '@/types/documents'
 
 function isExpired(doc: { token_expires_at: string }): boolean {
   return new Date(doc.token_expires_at).getTime() < Date.now()
+}
+
+/**
+ * After a document is signed, notify + email both parties. For a bundle we wait
+ * until every document in it is signed, then send ONE notification + email
+ * listing all of them (with the signed PDFs attached). Best-effort — never lets
+ * a notification failure break the signing itself.
+ */
+async function notifySigned(admin: SupabaseClient, signedDoc: MemberDocument) {
+  try {
+    console.log('[notifySigned] start', { docId: signedDoc.id, bundleId: signedDoc.bundle_id })
+    // Which documents this notification covers.
+    let docs: MemberDocument[] = [signedDoc]
+    let label = (signedDoc.template_snapshot as DocumentTemplateSnapshot)?.title || 'a document'
+    if (signedDoc.bundle_id) {
+      const { data: bundleDocs } = await admin.from('member_documents').select('*').eq('bundle_id', signedDoc.bundle_id)
+      const all = (bundleDocs || []) as MemberDocument[]
+      const statuses = all.map((d) => d.status)
+      console.log('[notifySigned] bundle statuses', statuses)
+      if (all.length === 0 || !all.every((d) => d.status === 'signed')) {
+        console.log('[notifySigned] bundle not complete yet — waiting')
+        return // wait for the rest
+      }
+      docs = all.sort((a, b) => (a.bundle_seq ?? 0) - (b.bundle_seq ?? 0))
+      const { data: bundle } = await admin.from('document_bundles').select('title').eq('id', signedDoc.bundle_id).maybeSingle()
+      label = (bundle?.title as string) || `${all.length} documents`
+    }
+
+    // People.
+    const { data: member } = await admin
+      .from('members').select('user_id, first_name, last_name, email')
+      .eq('id', signedDoc.member_id).maybeSingle()
+    const patientName = member ? `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim() : 'Your patient'
+    const { data: prof } = await admin
+      .from('users').select('full_name, preferred_language')
+      .eq('id', signedDoc.practitioner_id).maybeSingle()
+    const locale: 'en' | 'fr' = prof?.preferred_language === 'fr' ? 'fr' : 'en'
+    const practitionerName = (prof?.full_name as string) || ''
+    let practitionerEmail: string | null = null
+    try {
+      const { data: authUser } = await admin.auth.admin.getUserById(signedDoc.practitioner_id)
+      practitionerEmail = authUser?.user?.email ?? null
+    } catch { /* no-op */ }
+
+    // Signed PDFs → base64 attachments.
+    const documents: Array<{ title: string; contentBase64: string }> = []
+    for (const d of docs) {
+      if (!d.signed_pdf_path) continue
+      const { data: blob } = await admin.storage.from('member-files').download(d.signed_pdf_path)
+      if (!blob) continue
+      const b64 = Buffer.from(new Uint8Array(await blob.arrayBuffer())).toString('base64')
+      documents.push({ title: (d.template_snapshot as DocumentTemplateSnapshot)?.title || 'document', contentBase64: b64 })
+    }
+
+    // In-app notifications (channels: [] → in-app only; the attachment email is
+    // sent separately below).
+    const svc = createNotificationService(admin)
+    await svc.send({
+      userId: signedDoc.practitioner_id, userType: 'practitioner', type: 'document_signed',
+      metadata: { patientName, documentLabel: label, memberId: signedDoc.member_id },
+      entityType: 'document', entityId: signedDoc.id, channels: [], locale,
+    })
+    if (member?.user_id) {
+      await svc.send({
+        userId: member.user_id as string, userType: 'member', type: 'documents_signed_receipt',
+        metadata: { documentLabel: label }, entityType: 'document', entityId: signedDoc.id, channels: [], locale,
+      })
+    }
+
+    // Where each party can find the documents in-product.
+    const careOrigin = process.env.NEXT_PUBLIC_APP_URL || 'https://www.bloomsline.com'
+    const appOrigin = process.env.NEXT_PUBLIC_MOBILE_APP_URL || 'https://app.bloomsline.com'
+    const practitionerCta = `${careOrigin}/members/${signedDoc.member_id}?tab=files`
+    const patientCta = `${appOrigin}/practitioner` // My Care (documents live there)
+
+    // Emails with the signed PDFs attached, to both parties (best-effort).
+    console.log('[notifySigned] emailing', { practitionerEmail, memberEmail: member?.email ?? null, attachments: documents.length, label })
+    const sendMail = async (toEmail: string | null, toName: string, role: 'practitioner' | 'patient', counterpartName: string, ctaUrl: string) => {
+      if (!toEmail) { console.warn('[notifySigned] skip email — no address for', role); return }
+      if (documents.length === 0) { console.warn('[notifySigned] skip email — no signed PDFs to attach'); return }
+      const { data, error } = await admin.functions
+        .invoke('send-documents-signed', { body: { toEmail, toName, role, counterpartName, folderLabel: label, documents, locale, ctaUrl } })
+      if (error) {
+        let detail: string = (error as { message?: string })?.message || String(error)
+        try {
+          const ctx = (error as { context?: { text?: () => Promise<string> } })?.context
+          if (ctx?.text) detail = await ctx.text()
+        } catch { /* no-op */ }
+        console.error(`[notifySigned] email invoke FAILED for ${role}:`, detail)
+      } else {
+        console.log(`[notifySigned] email sent for ${role}`, data)
+      }
+    }
+    await Promise.all([
+      sendMail(practitionerEmail, practitionerName, 'practitioner', patientName, practitionerCta),
+      sendMail(member?.email ?? null, patientName, 'patient', practitionerName, patientCta),
+    ])
+  } catch (e) {
+    console.error('[sign] notifySigned error:', e)
+  }
 }
 
 export async function GET(
@@ -181,6 +283,9 @@ export async function POST(
     })
     .eq('id', doc.id)
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
+
+  // Notify + email both parties (waits for the whole bundle when applicable).
+  await notifySigned(admin, { ...doc, status: 'signed', signed_pdf_path: signedPdfPath })
 
   return NextResponse.json({ ok: true })
 }

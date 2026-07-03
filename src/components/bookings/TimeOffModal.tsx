@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Palmtree, Plus, Trash2, Loader2, Sun, Sunset, CalendarOff, ChevronLeft, ChevronRight, X, Pencil, Check } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Palmtree, Plus, Trash2, Loader2, Sun, Sunset, CalendarOff, ChevronLeft, ChevronRight, X, Pencil, Check, Globe, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   format, parseISO, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -68,6 +69,16 @@ export function TimeOffModal({
   const [editingBlock, setEditingBlock] = useState<Block | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Public-holiday import.
+  const currentYear = new Date().getFullYear()
+  const [countries, setCountries] = useState<Record<string, string>>({})
+  const [country, setCountry] = useState('') // '' → import panel hidden
+  const [year, setYear] = useState(currentYear)
+  const [holidayList, setHolidayList] = useState<Array<{ date: string; name: string }>>([])
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
+  const [loadingHolidays, setLoadingHolidays] = useState(false)
+  const [importing, setImporting] = useState(false)
+
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/availability/time-off')
@@ -89,6 +100,37 @@ export function TimeOffModal({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  // Country list for the import picker (once per open).
+  useEffect(() => {
+    if (!open) return
+    fetch(`/api/availability/holidays?lang=${locale}`)
+      .then((r) => r.json())
+      .then((d) => { if (d?.countries) setCountries(d.countries) })
+      .catch(() => { /* silent */ })
+  }, [open, locale])
+
+  // Holidays for the chosen country/year (only once a country is picked).
+  useEffect(() => {
+    if (!open) return
+    if (!country) { setHolidayList([]); return }
+    let cancelled = false
+    setLoadingHolidays(true)
+    fetch(`/api/availability/holidays?country=${country}&year=${year}&lang=${locale}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setHolidayList(Array.isArray(d?.holidays) ? d.holidays : []) })
+      .catch(() => { if (!cancelled) setHolidayList([]) })
+      .finally(() => { if (!cancelled) setLoadingHolidays(false) })
+    return () => { cancelled = true }
+  }, [open, country, year, locale])
+
+  // Default-select upcoming holidays that aren't already marked as time off.
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const already = new Set(items.map((i) => i.date))
+    const future = holidayList.filter((h) => h.date >= today)
+    setSelectedDates(new Set(future.filter((h) => !already.has(h.date)).map((h) => h.date)))
+  }, [holidayList, items])
 
   if (!open) return null
 
@@ -186,30 +228,160 @@ export function TimeOffModal({
     onChanged?.()
   }
 
+  // Only upcoming holidays are worth importing (you can't book the past).
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const displayHolidays = holidayList.filter((h) => h.date >= todayStr)
+  const allSelected = displayHolidays.length > 0 && displayHolidays.every((h) => selectedDates.has(h.date))
+  const selectedCount = displayHolidays.filter((h) => selectedDates.has(h.date)).length
+
+  const toggleSel = (date: string) => setSelectedDates((prev) => {
+    const next = new Set(prev)
+    if (next.has(date)) next.delete(date); else next.add(date)
+    return next
+  })
+  const toggleSelectAll = () => setSelectedDates(allSelected ? new Set() : new Set(displayHolidays.map((h) => h.date)))
+
+  const importHolidays = async () => {
+    const entries = displayHolidays.filter((h) => selectedDates.has(h.date)).map((h) => ({ date: h.date, reason: h.name }))
+    if (entries.length === 0) { toast.error(fr ? 'Sélectionnez des jours fériés' : 'Select some holidays'); return }
+    setImporting(true)
+    const res = await fetch('/api/availability/time-off', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries }),
+    })
+    setImporting(false)
+    if (!res.ok) { toast.error(fr ? "Échec de l'import" : 'Import failed'); return }
+    toast.success(fr ? `${entries.length} jours fériés importés` : `Imported ${entries.length} holidays`)
+    setCountry('') // collapse the import panel once done
+    await load()
+    onChanged?.()
+  }
+
+  // Country dropdown: pin common markets, then the rest alphabetically.
+  const COMMON = ['FR', 'MA', 'BE', 'CH', 'LU', 'ES', 'DE', 'IT', 'PT', 'NL', 'GB', 'IE', 'US', 'CA', 'DZ', 'TN']
+  const commonOpts = COMMON.filter((c) => countries[c])
+  const restOpts = Object.keys(countries).filter((c) => !COMMON.includes(c)).sort((a, b) => countries[a].localeCompare(countries[b]))
+  const fmtShort = (d: string) => format(parseISO(d), fr ? 'd MMM' : 'MMM d', dfns)
+
   const blocks = groupBlocks(items)
   const rangeLabelText = (b: Block) => (b.start === b.end ? fmt(b.start) : `${fmt(b.start)} → ${fmt(b.end)}`)
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div ref={scrollRef} className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+  const modalContent = (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        {/* Inner scroller — rounded outer clips it so the scrollbar never
+            spills past the corners. */}
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.200)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+        <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
               <Palmtree className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">{fr ? 'Congés et absences' : 'Holidays & time off'}</h2>
-              <p className="text-xs text-gray-500">{fr ? 'Masqués automatiquement de vos réservations' : 'Automatically hidden from your bookings'}</p>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-gray-900 truncate">{fr ? 'Congés et absences' : 'Holidays & time off'}</h2>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Always-visible country picker — selecting one reveals the import panel. */}
+            <div className="flex items-center gap-1.5 h-9 rounded-lg border border-gray-200 bg-white pl-2 pr-1">
+              <Globe className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                title={fr ? 'Importer les jours fériés' : 'Import public holidays'}
+                className="max-w-[130px] text-xs text-gray-700 bg-transparent focus:outline-none py-1 pr-3 cursor-pointer"
+              >
+                <option value="">{fr ? 'Importer les fériés' : 'Import holidays'}</option>
+                {commonOpts.length > 0 && (
+                  <optgroup label={fr ? 'Fréquents' : 'Common'}>
+                    {commonOpts.map((c) => <option key={c} value={c}>{countries[c]}</option>)}
+                  </optgroup>
+                )}
+                <optgroup label={fr ? 'Tous les pays' : 'All countries'}>
+                  {restOpts.map((c) => <option key={c} value={c}>{countries[c]}</option>)}
+                </optgroup>
+              </select>
+            </div>
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="px-6 py-5 space-y-5">
+          {/* Holiday import panel — shown only after a country is picked from
+              the header dropdown; collapses again once imported. */}
+          {country && (
+          <div className="rounded-xl border border-teal-200 bg-teal-50/40 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-800 min-w-0">
+                <Globe className="w-4 h-4 text-teal-600 shrink-0" />
+                <span className="truncate">{countries[country] || country}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                  className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-teal-400 focus:border-transparent"
+                >
+                  {[currentYear, currentYear + 1].map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <button
+                  onClick={() => setCountry('')}
+                  className="p-1 text-gray-400 hover:text-gray-700 rounded-md hover:bg-white transition-colors"
+                  aria-label={fr ? 'Fermer' : 'Close'}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {loadingHolidays ? (
+              <div className="py-4 flex justify-center"><Loader2 className="w-4 h-4 animate-spin text-gray-300" /></div>
+            ) : displayHolidays.length === 0 ? (
+              <p className="text-xs text-gray-400">{fr ? 'Aucun jour férié à venir pour cette année.' : 'No upcoming public holidays for this year.'}</p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <button type="button" onClick={toggleSelectAll} className="text-teal-600 hover:text-teal-700 font-medium">
+                    {allSelected ? (fr ? 'Tout décocher' : 'Deselect all') : (fr ? 'Tout cocher' : 'Select all')}
+                  </button>
+                  <span className="text-gray-500">{selectedCount} {fr ? 'sélectionné(s)' : 'selected'}</span>
+                </div>
+                <div className="max-h-40 overflow-y-auto space-y-0.5 pr-1 [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.200)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  {displayHolidays.map((h) => {
+                    const added = blockedByDate.has(h.date)
+                    return (
+                      <label key={h.date} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded-lg hover:bg-white cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedDates.has(h.date)}
+                          onChange={() => toggleSel(h.date)}
+                          className="accent-teal-600 w-4 h-4"
+                        />
+                        <span className="flex-1 min-w-0 truncate text-gray-800">{h.name}</span>
+                        {added && <span className="text-[10px] text-teal-600 shrink-0">{fr ? 'ajouté' : 'added'}</span>}
+                        <span className="text-xs text-gray-400 shrink-0 tabular-nums">{fmtShort(h.date)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={importHolidays}
+                  disabled={importing || selectedCount === 0}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-teal-600 text-teal-700 hover:bg-teal-50 disabled:opacity-40 transition-colors"
+                >
+                  {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {fr ? `Ajouter ${selectedCount} jour(s) férié(s)` : `Add ${selectedCount} holiday${selectedCount === 1 ? '' : 's'}`}
+                </button>
+              </>
+            )}
+          </div>
+          )}
+
           {/* Month calendar — range select */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -385,7 +557,12 @@ export function TimeOffModal({
             )}
           </div>
         </div>
+        </div>
       </div>
     </div>
   )
+
+  // Portal to <body> so the fixed overlay covers the whole viewport (header +
+  // sidebar included) instead of being trapped inside a transformed ancestor.
+  return typeof document === 'undefined' ? null : createPortal(modalContent, document.body)
 }

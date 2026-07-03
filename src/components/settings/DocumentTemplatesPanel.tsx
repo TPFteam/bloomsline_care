@@ -6,11 +6,11 @@
 // preview (during creation/editing), toggle active, and delete.
 
 import { useEffect, useRef, useState } from 'react'
-import { FileText, Plus, Trash2, Loader2, Upload, PenLine, X, GripVertical, Eye, Pencil } from 'lucide-react'
+import { FileText, Plus, Trash2, Loader2, Upload, PenLine, X, GripVertical, Eye, Pencil, Folder, FolderPlus, ChevronRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import type { DocumentTemplate, DocumentBlock, DocumentType, DocumentSource } from '@/types/documents'
+import type { DocumentTemplate, DocumentFolder, DocumentBlock, DocumentType, DocumentSource } from '@/types/documents'
 
 function tr(locale: string, en: string, fr: string) { return locale === 'fr' ? fr : en }
 
@@ -28,9 +28,10 @@ interface Draft {
   allow_guardian: boolean
   auto_send: boolean
   locale: string
+  folder_id: string | null
 }
 
-const emptyDraft = (locale: string): Draft => ({
+const emptyDraft = (locale: string, folder_id: string | null = null): Draft => ({
   title: '',
   type: 'consent',
   source: 'upload',
@@ -41,6 +42,7 @@ const emptyDraft = (locale: string): Draft => ({
   allow_guardian: true,
   auto_send: false,
   locale,
+  folder_id,
 })
 
 const draftFromTemplate = (t: TemplateWithPreview): Draft => ({
@@ -54,6 +56,7 @@ const draftFromTemplate = (t: TemplateWithPreview): Draft => ({
   allow_guardian: t.allow_guardian,
   auto_send: t.auto_send,
   locale: t.locale,
+  folder_id: t.folder_id ?? null,
 })
 
 function blockHasContent(b: DocumentBlock): boolean {
@@ -64,19 +67,30 @@ function blockHasContent(b: DocumentBlock): boolean {
 
 export function DocumentTemplatesPanel({ locale }: { locale: string }) {
   const [templates, setTemplates] = useState<TemplateWithPreview[]>([])
+  const [folders, setFolders] = useState<DocumentFolder[]>([])
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<TemplateWithPreview | null>(null)
   const [draft, setDraft] = useState<Draft>(emptyDraft(locale))
   const [saving, setSaving] = useState(false)
   const [viewing, setViewing] = useState<Viewer | null>(null)
+  const [creatingFolder, setCreatingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/documents/templates')
-      const data = await res.json()
-      if (res.ok) setTemplates(data.templates || [])
+      const [tRes, fRes] = await Promise.all([
+        fetch('/api/documents/templates'),
+        fetch('/api/documents/folders'),
+      ])
+      const tData = await tRes.json().catch(() => ({}))
+      const fData = await fRes.json().catch(() => ({}))
+      if (tRes.ok) setTemplates(tData.templates || [])
+      if (fRes.ok) setFolders(fData.folders || [])
     } finally {
       setLoading(false)
     }
@@ -88,9 +102,55 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
       : t === 'intake' ? tr(locale, 'Intake', 'Admission')
       : tr(locale, 'Other', 'Autre')
 
-  const openCreate = () => { setEditing(null); setDraft(emptyDraft(locale)); setCreating(true) }
+  const openCreate = (folderId: string | null = null) => { setEditing(null); setDraft(emptyDraft(locale, folderId)); setCreating(true) }
   const openEdit = (t: TemplateWithPreview) => { setEditing(t); setDraft(draftFromTemplate(t)); setCreating(true) }
   const closeEditor = () => { setCreating(false); setEditing(null); setDraft(emptyDraft(locale)) }
+
+  const toggleCollapse = (id: string) => setCollapsed(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
+
+  const createFolder = async () => {
+    const name = newFolderName.trim()
+    if (!name) { setCreatingFolder(false); return }
+    const res = await fetch('/api/documents/folders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) { setFolders(prev => [...prev, data.folder]); setNewFolderName(''); setCreatingFolder(false) }
+    else toast.error(tr(locale, 'Could not create folder', 'Création du dossier impossible'))
+  }
+
+  const renameFolder = async (id: string) => {
+    const name = renameValue.trim()
+    if (!name) { setRenamingFolder(null); return }
+    const res = await fetch(`/api/documents/folders/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    })
+    if (res.ok) setFolders(prev => prev.map(f => f.id === id ? { ...f, name } : f))
+    else toast.error(tr(locale, 'Could not rename', 'Renommage impossible'))
+    setRenamingFolder(null)
+  }
+
+  const deleteFolder = async (id: string) => {
+    const res = await fetch(`/api/documents/folders/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setFolders(prev => prev.filter(f => f.id !== id))
+      // Documents stay — the FK just clears their folder_id (they become ungrouped).
+      setTemplates(prev => prev.map(t => t.folder_id === id ? { ...t, folder_id: null } : t))
+      toast.success(tr(locale, 'Folder deleted', 'Dossier supprimé'))
+    } else toast.error(tr(locale, 'Could not delete folder', 'Suppression du dossier impossible'))
+  }
+
+  const moveToFolder = async (t: TemplateWithPreview, folderId: string | null) => {
+    setTemplates(prev => prev.map(x => x.id === t.id ? { ...x, folder_id: folderId } : x)) // optimistic
+    const res = await fetch(`/api/documents/templates/${t.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder_id: folderId }),
+    })
+    if (!res.ok) { toast.error(tr(locale, 'Could not move', 'Déplacement impossible')); load() }
+  }
 
   const viewTemplate = (t: TemplateWithPreview) => {
     if (t.source === 'upload') setViewing({ title: t.title, source: 'upload', url: t.previewUrl })
@@ -139,6 +199,7 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
         allow_guardian: draft.allow_guardian,
         auto_send: draft.auto_send,
         locale: draft.locale,
+        folder_id: draft.folder_id,
       }
       // Only set file_path when a new file was uploaded (keeps the existing one on edit).
       if (file_path !== undefined) payload.file_path = file_path
@@ -176,6 +237,51 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
     if (res.ok) setTemplates(prev => prev.map(x => x.id === t.id ? { ...x, is_active: !t.is_active } : x))
   }
 
+  const inFolder = (id: string | null) => templates.filter(t => (t.folder_id ?? null) === id)
+  const ungrouped = inFolder(null)
+
+  // A single document row — used both inside folders and in the ungrouped list.
+  const renderDoc = (t: TemplateWithPreview) => (
+    <div key={t.id} className="flex items-center gap-2 rounded-xl border border-gray-200 p-3">
+      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+        {t.source === 'upload' ? <Upload className="w-4 h-4 text-gray-500" /> : <PenLine className="w-4 h-4 text-gray-500" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">{t.title}</p>
+        <p className="text-xs text-gray-500">
+          {typeLabel(t.type)}
+          {t.auto_send && <> · {tr(locale, 'auto-send', 'envoi auto')}</>}
+          {t.require_signature && <> · {tr(locale, 'signature required', 'signature requise')}</>}
+        </p>
+      </div>
+      {/* Move to a folder */}
+      <select
+        value={t.folder_id ?? ''}
+        onChange={(e) => moveToFolder(t, e.target.value || null)}
+        title={tr(locale, 'Move to folder', 'Déplacer vers un dossier')}
+        className="max-w-[8rem] text-xs text-gray-500 border border-gray-200 rounded-lg px-1.5 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+      >
+        <option value="">{tr(locale, 'No folder', 'Sans dossier')}</option>
+        {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+      </select>
+      <button onClick={() => viewTemplate(t)} title={tr(locale, 'View', 'Voir')} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <Eye className="w-4 h-4" />
+      </button>
+      <button onClick={() => openEdit(t)} title={tr(locale, 'Edit', 'Modifier')} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <Pencil className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => toggleActive(t)}
+        className={`text-xs px-2 py-1 rounded-md font-medium ${t.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}
+      >
+        {t.is_active ? tr(locale, 'Active', 'Actif') : tr(locale, 'Inactive', 'Inactif')}
+      </button>
+      <button onClick={() => handleDelete(t.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  )
+
   return (
     <>
     <Card>
@@ -195,49 +301,78 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : (
           <>
-            {templates.length === 0 && !creating && (
+            {templates.length === 0 && folders.length === 0 && !creating && !creatingFolder && (
               <p className="text-sm text-gray-400 py-2">
                 {tr(locale, 'No documents yet.', 'Aucun document pour le moment.')}
               </p>
             )}
 
-            <div className="space-y-2">
-              {templates.map(t => (
-                <div key={t.id} className="flex items-center gap-3 rounded-xl border border-gray-200 p-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                    {t.source === 'upload' ? <Upload className="w-4 h-4 text-gray-500" /> : <PenLine className="w-4 h-4 text-gray-500" />}
+            {/* Folders — each a collapsible group; deleting one keeps its docs. */}
+            {folders.map(f => {
+              const docs = inFolder(f.id)
+              const isCollapsed = collapsed.has(f.id)
+              return (
+                <div key={f.id} className="rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50/70 border-b border-gray-100">
+                    <button onClick={() => toggleCollapse(f.id)} className="p-0.5 text-gray-400 hover:text-gray-700" aria-label={tr(locale, 'Toggle', 'Basculer')}>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                    </button>
+                    <Folder className="w-4 h-4 text-teal-600 shrink-0" />
+                    {renamingFolder === f.id ? (
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onBlur={() => renameFolder(f.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') renameFolder(f.id); if (e.key === 'Escape') setRenamingFolder(null) }}
+                        className="text-sm font-medium px-2 py-1 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-gray-900 truncate">{f.name}</span>
+                    )}
+                    <span className="text-xs text-gray-400">{docs.length}</span>
+                    <div className="ml-auto flex items-center gap-1">
+                      <button onClick={() => { setRenamingFolder(f.id); setRenameValue(f.name) }} title={tr(locale, 'Rename', 'Renommer')} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => deleteFolder(f.id)} title={tr(locale, 'Delete folder', 'Supprimer le dossier')} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{t.title}</p>
-                    <p className="text-xs text-gray-500">
-                      {typeLabel(t.type)}
-                      {t.auto_send && <> · {tr(locale, 'auto-send', 'envoi auto')}</>}
-                      {t.require_signature && <> · {tr(locale, 'signature required', 'signature requise')}</>}
-                    </p>
-                  </div>
-                  <button onClick={() => viewTemplate(t)} title={tr(locale, 'View', 'Voir')} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => openEdit(t)} title={tr(locale, 'Edit', 'Modifier')} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => toggleActive(t)}
-                    className={`text-xs px-2 py-1 rounded-md font-medium ${t.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}
-                  >
-                    {t.is_active ? tr(locale, 'Active', 'Actif') : tr(locale, 'Inactive', 'Inactif')}
-                  </button>
-                  <button onClick={() => handleDelete(t.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {!isCollapsed && (
+                    <div className="p-2 space-y-2">
+                      {docs.length === 0
+                        ? <p className="text-xs text-gray-400 px-2 py-1">{tr(locale, 'Empty folder.', 'Dossier vide.')}</p>
+                        : docs.map(renderDoc)}
+                      <button
+                        onClick={() => openCreate(f.id)}
+                        className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 font-medium px-2 py-1.5 rounded-lg hover:bg-teal-50 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {tr(locale, 'New document in folder', 'Nouveau document dans le dossier')}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })}
+
+            {/* Ungrouped documents */}
+            {ungrouped.length > 0 && (
+              <div className="space-y-2">
+                {folders.length > 0 && (
+                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider px-1">{tr(locale, 'Ungrouped', 'Sans dossier')}</p>
+                )}
+                {ungrouped.map(renderDoc)}
+              </div>
+            )}
 
             {creating ? (
               <DraftEditor
                 draft={draft}
                 setDraft={setDraft}
+                folders={folders}
                 locale={locale}
                 saving={saving}
                 isEditing={!!editing}
@@ -247,13 +382,37 @@ export function DocumentTemplatesPanel({ locale }: { locale: string }) {
                 onPreview={previewDraft}
               />
             ) : (
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {tr(locale, 'New document', 'Nouveau document')}
-              </button>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  onClick={() => openCreate()}
+                  className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-2 rounded-lg hover:bg-teal-50 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  {tr(locale, 'New document', 'Nouveau document')}
+                </button>
+                {creatingFolder ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      autoFocus
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') createFolder(); if (e.key === 'Escape') { setCreatingFolder(false); setNewFolderName('') } }}
+                      placeholder={tr(locale, 'Folder name e.g. Welcome kit', 'Nom du dossier ex. Kit de bienvenue')}
+                      className="text-sm px-3 py-2 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 w-56"
+                    />
+                    <button onClick={createFolder} className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg" title={tr(locale, 'Create', 'Créer')}><Check className="w-4 h-4" /></button>
+                    <button onClick={() => { setCreatingFolder(false); setNewFolderName('') }} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg" title={tr(locale, 'Cancel', 'Annuler')}><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setCreatingFolder(true)}
+                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 font-medium px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <FolderPlus className="w-4 h-4" />
+                    {tr(locale, 'New folder', 'Nouveau dossier')}
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
@@ -330,10 +489,11 @@ function DocumentViewer({ viewer, locale, onClose }: { viewer: Viewer; locale: s
 }
 
 function DraftEditor({
-  draft, setDraft, locale, saving, isEditing, hasExistingFile, onCancel, onSave, onPreview,
+  draft, setDraft, folders, locale, saving, isEditing, hasExistingFile, onCancel, onSave, onPreview,
 }: {
   draft: Draft
   setDraft: (d: Draft) => void
+  folders: DocumentFolder[]
   locale: string
   saving: boolean
   isEditing: boolean
@@ -372,6 +532,17 @@ function DraftEditor({
             <option value="consent">{tr(locale, 'Consent', 'Consentement')}</option>
             <option value="intake">{tr(locale, 'Intake', 'Admission')}</option>
             <option value="other">{tr(locale, 'Other', 'Autre')}</option>
+          </select>
+        </div>
+        <div className="col-span-2">
+          <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{tr(locale, 'Folder', 'Dossier')}</label>
+          <select
+            value={draft.folder_id ?? ''}
+            onChange={(e) => set({ folder_id: e.target.value || null })}
+            className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+          >
+            <option value="">{tr(locale, 'No folder', 'Sans dossier')}</option>
+            {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select>
         </div>
         <div>

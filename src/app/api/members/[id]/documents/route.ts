@@ -42,6 +42,14 @@ export async function GET(
     .maybeSingle()
   const gMemberName = gMember ? `${gMember.first_name ?? ''} ${gMember.last_name ?? ''}`.trim() : ''
 
+  // Bundle titles/tokens so the card can group folder-sent documents together.
+  const bundleIds = Array.from(new Set(((data || []) as MemberDocument[]).map(d => d.bundle_id).filter(Boolean))) as string[]
+  const bundleMap = new Map<string, { title: string; share_token: string }>()
+  if (bundleIds.length > 0) {
+    const { data: bs } = await supabase.from('document_bundles').select('id, title, share_token').in('id', bundleIds)
+    for (const b of bs || []) bundleMap.set(b.id as string, { title: b.title as string, share_token: b.share_token as string })
+  }
+
   // Attach a short-lived URL to each signed PDF so the practitioner can view /
   // download it straight from the Documents card.
   const admin = createAdminClient()
@@ -68,7 +76,8 @@ export async function GET(
     const template_snapshot = snap.source === 'authored'
       ? { ...snap, content: substituteDocVariables(snap.content, { name: gMemberName, email: gMember?.email }) }
       : doc.template_snapshot
-    return { ...doc, template_snapshot, signedPdfUrl, signedPdfDownloadUrl, signatureUrl }
+    const bundle = doc.bundle_id ? bundleMap.get(doc.bundle_id) : null
+    return { ...doc, template_snapshot, signedPdfUrl, signedPdfDownloadUrl, signatureUrl, bundleTitle: bundle?.title ?? null, bundleToken: bundle?.share_token ?? null }
   }))
 
   return NextResponse.json({ documents })
@@ -84,6 +93,13 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => null)
+
+  // Folder bundle — send every (not-yet-signed) document in a folder as one
+  // link the patient signs sequentially.
+  if (body?.folderId) {
+    return sendFolderBundle(supabase, user.id, memberId, String(body.folderId), request)
+  }
+
   if (!body?.templateId) {
     return NextResponse.json({ error: 'templateId is required' }, { status: 400 })
   }
@@ -155,4 +171,101 @@ export async function POST(
   })
 
   return NextResponse.json({ document: doc, signUrl, emailed })
+}
+
+// Send a folder's active documents to a member as one bundle: a shared link
+// and one email. Each doc becomes its own member_documents row (own token) so
+// the existing signing pipeline is reused; the bundle ties them together and
+// carries the sequential-signing link. Documents the member already signed
+// (standalone) are skipped.
+async function sendFolderBundle(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  memberId: string,
+  folderId: string,
+  request: NextRequest,
+) {
+  const { data: member, error: memberErr } = await supabase
+    .from('members')
+    .select('id, first_name, last_name, email')
+    .eq('id', memberId)
+    .eq('practitioner_id', userId)
+    .maybeSingle()
+  if (memberErr) return NextResponse.json({ error: memberErr.message }, { status: 500 })
+  if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+
+  const { data: folder } = await supabase
+    .from('document_folders')
+    .select('id, name')
+    .eq('id', folderId)
+    .eq('practitioner_id', userId)
+    .maybeSingle()
+  if (!folder) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+
+  const { data: templates } = await supabase
+    .from('document_templates')
+    .select('*')
+    .eq('practitioner_id', userId)
+    .eq('folder_id', folderId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+  if (!templates || templates.length === 0) {
+    return NextResponse.json({ error: 'empty_folder' }, { status: 400 })
+  }
+
+  // Skip documents this member has already signed (standalone or a prior bundle).
+  const { data: signed } = await supabase
+    .from('member_documents')
+    .select('template_id')
+    .eq('member_id', memberId)
+    .eq('practitioner_id', userId)
+    .eq('status', 'signed')
+    .in('template_id', templates.map((t) => t.id))
+  const signedIds = new Set((signed || []).map((r) => r.template_id))
+  const toSend = templates.filter((t) => !signedIds.has(t.id))
+  if (toSend.length === 0) {
+    return NextResponse.json({ allSigned: true, count: 0 })
+  }
+
+  const bundleToken = newShareToken()
+  const { data: bundle, error: bErr } = await supabase
+    .from('document_bundles')
+    .insert({
+      member_id: memberId,
+      practitioner_id: userId,
+      folder_id: folderId,
+      title: folder.name,
+      share_token: bundleToken,
+      token_expires_at: tokenExpiryISO(),
+    })
+    .select('*')
+    .single()
+  if (bErr) return NextResponse.json({ error: bErr.message }, { status: 500 })
+
+  const rows = toSend.map((t, i) => ({
+    member_id: memberId,
+    practitioner_id: userId,
+    template_id: t.id,
+    template_snapshot: snapshotFromTemplate(t as DocumentTemplate),
+    status: 'sent' as const,
+    share_token: newShareToken(),
+    token_expires_at: tokenExpiryISO(),
+    bundle_id: bundle.id,
+    bundle_seq: i,
+  }))
+  const { error: insErr } = await supabase.from('member_documents').insert(rows)
+  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+
+  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+  const signUrl = `${origin}/documents/sign/bundle/${bundleToken}`
+
+  const emailed = await emailSigningLink(supabase, {
+    practitionerId: userId,
+    memberEmail: member.email,
+    memberFirstName: member.first_name,
+    templateTitle: folder.name,
+    signUrl,
+  })
+
+  return NextResponse.json({ bundle, signUrl, emailed, count: rows.length })
 }

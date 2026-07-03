@@ -25,8 +25,18 @@ export interface DocumentTemplate {
   /** Pre-checked in the add-patient modal so it sends on patient creation. */
   auto_send: boolean
   is_active: boolean
+  /** Folder this template is filed under, or null when ungrouped. */
+  folder_id: string | null
   created_at: string
   updated_at: string
+}
+
+/** A practitioner-defined folder that groups document templates. */
+export interface DocumentFolder {
+  id: string
+  practitioner_id: string
+  name: string
+  created_at: string
 }
 
 /** Frozen copy of the template captured at send time (immutability). */
@@ -41,6 +51,18 @@ export interface DocumentTemplateSnapshot {
   allow_guardian: boolean
 }
 
+/** A folder sent to a patient as one bundle, signed sequentially via one link. */
+export interface DocumentBundle {
+  id: string
+  member_id: string
+  practitioner_id: string
+  folder_id: string | null
+  title: string
+  share_token: string
+  token_expires_at: string
+  created_at: string
+}
+
 /** A per-patient instance of a document sent for signature. */
 export interface MemberDocument {
   id: string
@@ -50,6 +72,9 @@ export interface MemberDocument {
   template_snapshot: DocumentTemplateSnapshot
   status: MemberDocumentStatus
   share_token: string
+  /** Set when this document was sent as part of a folder bundle. */
+  bundle_id: string | null
+  bundle_seq: number | null
   token_expires_at: string
   sent_at: string
   viewed_at: string | null
