@@ -112,6 +112,11 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     meet_link?: string | null; payment_status?: string | null; member_id?: string | null
   }>>([])
   const keepTimeRef = useRef(false)
+  // Sticky lock for a time picked directly on the calendar grid. Unlike
+  // keepTimeRef (single-consume), this survives repeated slot refetches so the
+  // picked time can't be wiped between the click and the confirm step. Cleared
+  // only when the practitioner deliberately re-opens time selection.
+  const slotLockedRef = useRef(false)
   // One-time prefill of the rescheduled booking's current time, so it shows
   // highlighted on the date/time step ("this is currently at 10:00 AM").
   const reschedulePrefilledRef = useRef(false)
@@ -162,7 +167,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   useEffect(() => {
     // Keep the exact day the practitioner clicked on the calendar grid, even
     // if that weekday isn't in their normal availability.
-    if (fromCalendarSlot) return
+    if (fromCalendarSlot || slotLockedRef.current) return
     if (disabledDaysOfWeek.length === 0 || disabledDaysOfWeek.length >= 7) return
     if (!disabledDaysOfWeek.includes(selectedDate.getDay())) return
     // Scan forward up to 14 days for the first enabled day
@@ -260,6 +265,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   useEffect(() => {
     if (isOpen) {
       // Reset selections to a clean slate
+      slotLockedRef.current = false
       if (rescheduleData) {
         // Reschedule mode: skip straight to the date/time step (type + format
         // are already known from the existing booking and are pre-filled). The
@@ -285,7 +291,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
         setSelectedSessionFormat(null)
         setSelectedDate(preselectedDate ? startOfDay(preselectedDate) : startOfDay(new Date()))
         setSelectedTime(preselectedTime || null)
-        if (preselectedTime) keepTimeRef.current = true
+        if (preselectedTime) { keepTimeRef.current = true; slotLockedRef.current = true }
         setNotes('')
         // Stay in calendar mode regardless of after-hours. Manual mode
         // skips the Google Calendar sync step, which the practitioner
@@ -440,7 +446,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
     setAvailableSlots([])
     setDayBookings([])
     // Preserve selectedTime if it was set from slot calendar or preselected
-    const shouldKeepTime = keepTimeRef.current
+    const shouldKeepTime = keepTimeRef.current || slotLockedRef.current
     keepTimeRef.current = false
     if (!shouldKeepTime) {
       setSelectedTime(null)
@@ -1459,7 +1465,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   <div>
                     <button
                       type="button"
-                      onClick={() => setShowSlotCalendar(false)}
+                      onClick={() => { slotLockedRef.current = false; setShowSlotCalendar(false) }}
                       className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-3 transition-colors"
                     >
                       <ArrowLeft className="w-4 h-4" />
@@ -1472,6 +1478,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       hideLegend
                       onSlotClick={(date, time) => {
                         keepTimeRef.current = true
+                        slotLockedRef.current = true
                         setSelectedDate(startOfDay(date))
                         setSelectedTime(time)
                         setShowSlotCalendar(false)
@@ -1567,6 +1574,8 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                                         type="button"
                                         key={slot.slot_start}
                                         onClick={() => {
+                                          keepTimeRef.current = true
+                                          slotLockedRef.current = true
                                           setSelectedTime(timeStr)
                                           setSelectedDate(startOfDay(new Date(day.date + 'T12:00:00')))
                                         }}
@@ -1602,6 +1611,7 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                   <CalendarPicker
                     selectedDate={selectedDate}
                     onDateSelect={(date) => {
+                      slotLockedRef.current = false
                       setSelectedDate(startOfDay(date))
                       setSelectedTime(null)
                     }}
