@@ -9,6 +9,7 @@ import { FeedbackWrapper } from "@/components/feedback-wrapper";
 import { CookieConsent } from "@/components/cookie-consent";
 import { PostHogProvider } from "@/lib/analytics/posthog-provider";
 import { PostHogIdentify } from "@/lib/analytics/posthog-identify";
+import { PostHogSurface } from "@/lib/analytics/posthog-surface";
 import { FloatingNotesProvider } from "@/lib/floating-notes/context";
 import { FloatingNotesPanel } from "@/components/notes/FloatingNotesPanel";
 import { SessionGuard } from "@/components/auth/session-guard";
@@ -76,6 +77,7 @@ export default function RootLayout({
         <ChunkLoadGuard />
         <PostHogProvider>
           <PostHogIdentify />
+          <PostHogSurface />
           <ThemeProvider>
             <LanguageProvider>
               <QueryProvider>

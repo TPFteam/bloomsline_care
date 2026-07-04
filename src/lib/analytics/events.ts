@@ -49,4 +49,9 @@ export const analytics = {
 
   resourceReopened: (props?: { resource_id?: string }) =>
     track('resource_reopened', props),
+
+  // Mobile dashboard bento — one event, differentiated by `action`, so the
+  // whole quick-action set is a single clean breakdown/funnel in PostHog.
+  quickAction: (props: { action: string; badge_count?: number }) =>
+    track('quick_action_clicked', props),
 }

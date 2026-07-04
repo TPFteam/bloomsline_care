@@ -3,12 +3,15 @@
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useEffect, useState, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { sanitizePostHogProperties } from './scrub'
+import { isMarketingPath } from './surface'
 
 const COOKIE_CONSENT_KEY = 'bloomsline-cookie-consent'
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false)
+  const pathname = usePathname()
 
   const initPostHog = useCallback(() => {
     if (isInitialized) return
@@ -35,9 +38,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   }, [isInitialized])
 
   useEffect(() => {
-    // Check if user has already accepted cookies
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY)
-    if (consent === 'accepted') {
+    // Marketing/public pages track by default (opt-out): initialise unless the
+    // visitor has explicitly declined. The authenticated app stays opt-in
+    // (requires an explicit Accept). Once initialised it persists for the session.
+    const shouldInit =
+      consent !== 'declined' &&
+      (consent === 'accepted' || isMarketingPath(pathname || '/'))
+    if (shouldInit) {
       initPostHog()
     }
 
@@ -68,7 +76,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('cookie-consent-change', handleConsentChange as EventListener)
       window.removeEventListener('storage', handleStorageChange)
     }
-  }, [isInitialized, initPostHog])
+  }, [isInitialized, initPostHog, pathname])
 
   if (isInitialized) {
     return <PHProvider client={posthog}>{children}</PHProvider>

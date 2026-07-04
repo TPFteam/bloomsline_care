@@ -24,9 +24,21 @@ export function PostHogIdentify() {
         // Fetch practitioner profile for extra properties
         const { data: profile } = await supabase
           .from('users')
-          .select('full_name, user_type, email, preferred_language')
+          .select('full_name, user_type, email, preferred_language, is_demo')
           .eq('id', user.id)
           .single()
+
+        // Demo/test accounts are never tracked — opt them out of capturing and
+        // don't identify, so analytics reflect only real practitioners. (Real
+        // users are re-opted-in below in case this browser previously ran a
+        // demo account and left it opted out.)
+        if (profile?.is_demo === true) {
+          try { if (posthog.__loaded) posthog.opt_out_capturing() } catch { /* noop */ }
+          return
+        }
+        try {
+          if (posthog.__loaded && posthog.has_opted_out_capturing()) posthog.opt_in_capturing()
+        } catch { /* noop */ }
 
         // Count members for this practitioner
         const { count: memberCount } = await supabase

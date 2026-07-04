@@ -42,6 +42,7 @@ import { MemberSummaryModal } from '@/components/members/MemberSummaryModal'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { useFloatingNotes } from '@/lib/floating-notes/context'
+import { analytics } from '@/lib/analytics/events'
 import { useBookingsChanged, emitBookingsChanged } from '@/lib/bookings-events'
 import { CloseSessionPopup, type CloseSessionBooking } from '@/components/bookings/CloseSessionPopup'
 import { AwaitingPaymentButton } from '@/components/payments/awaiting-payment-button'
@@ -553,7 +554,19 @@ function DashboardInner() {
 
   // Open the global floating note panel scoped to this session. Mirrors
   // the bookings page so notes captured here land in the same surface.
+  // Open a session's prep/brief. Shared by every surface (mobile bento, desktop
+  // up-next, strip widget, session picker) so tracking is device-agnostic and
+  // counted once per open.
+  const openSessionPrep = (booking: DashBooking) => {
+    analytics.quickAction({ action: 'session_brief' })
+    analytics.bloomBriefViewed({ member_id: booking.member_id || undefined })
+    setPrepBooking(booking)
+  }
+
   const handleTakeNotes = async (booking: DashBooking) => {
+    // Tracked here (not at the button) so mobile, desktop, and the calendar's
+    // "take notes" all count through one path.
+    analytics.quickAction({ action: 'take_note' })
     if (!booking.member_id) {
       toast.error(t('No patient linked to this session', 'Aucun patient lié à cette séance', 'Sin paciente vinculado'))
       return
@@ -641,6 +654,7 @@ function DashboardInner() {
   // Open Add Member modal + lazily load groups for the chip selector
   // and the practitioner's optional-field configuration.
   const openAddMember = () => {
+    analytics.quickAction({ action: 'add' })
     setShowAddMemberModal(true)
     supabase.from('member_groups').select('id, name, color').order('name').then(({ data }) => {
       if (data) setMemberGroups(data)
@@ -996,7 +1010,7 @@ function DashboardInner() {
           {/* Soft bento — attention counts + quick actions, all bricks. Bricks
               with something pending show a count circle in the corner. */}
           <div className="grid grid-cols-2 gap-3.5">
-            <button onClick={() => setShowSchedule(true)} className="row-span-2 flex flex-col justify-between rounded-[28px] bg-gradient-to-br from-teal-400 to-teal-600 text-white p-5 text-left shadow-[0_10px_28px_-10px_rgba(20,184,166,0.55)] active:scale-[0.98] transition-transform min-h-[184px]">
+            <button onClick={() => { analytics.quickAction({ action: 'book' }); setShowSchedule(true) }} className="row-span-2 flex flex-col justify-between rounded-[28px] bg-gradient-to-br from-teal-400 to-teal-600 text-white p-5 text-left shadow-[0_10px_28px_-10px_rgba(20,184,166,0.55)] active:scale-[0.98] transition-transform min-h-[184px]">
               <span className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center"><CalendarPlus className="w-6 h-6" /></span>
               <span>
                 <span className="block text-lg font-bold leading-tight">{t('Book a session', 'Réserver une séance', 'Reservar')}</span>
@@ -1017,7 +1031,7 @@ function DashboardInner() {
             ].filter((b) => b.show).map((b) => {
               const Icon = b.icon
               return (
-                <button key={b.key} onClick={b.onClick} className={`relative flex flex-col justify-between rounded-[24px] ${b.bg} p-4 text-left active:scale-[0.98] transition-transform min-h-[86px]`}>
+                <button key={b.key} onClick={() => { analytics.quickAction({ action: b.key, badge_count: b.badge || undefined }); b.onClick() }} className={`relative flex flex-col justify-between rounded-[24px] ${b.bg} p-4 text-left active:scale-[0.98] transition-transform min-h-[86px]`}>
                   <span className={`w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center ${b.ic}`}><Icon className="w-5 h-5" /></span>
                   {b.badge > 0 && (
                     <span className={`absolute top-3 right-3 min-w-[22px] h-[22px] px-1.5 rounded-full ${b.badgeBg} text-white text-[11px] font-bold flex items-center justify-center`}>{b.badge}</span>
@@ -1049,7 +1063,7 @@ function DashboardInner() {
                     </div>
                     {b.member_id && (
                       <div className="flex items-center gap-0.5 shrink-0">
-                        <button onClick={() => setPrepBooking(b)} title={t('Session brief', 'Brief de séance', 'Resumen')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
+                        <button onClick={() => openSessionPrep(b)} title={t('Session brief', 'Brief de séance', 'Resumen')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
                           <Sparkles className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleTakeNotes(b)} title={t('Take notes', 'Prendre des notes', 'Tomar notas')} className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors">
@@ -1073,7 +1087,7 @@ function DashboardInner() {
               {todaysFlowLine && (
                 <p className="text-base text-gray-600 mt-1 mb-4">{todaysFlowLine}</p>
               )}
-              <UrgencyRow pending={pendingCount} awaiting={awaitingCount} t={t} loading={loading} onAwaitingClick={() => setShowAwaitingClosure(true)} />
+              <UrgencyRow pending={pendingCount} awaiting={awaitingCount} t={t} loading={loading} onAwaitingClick={() => { analytics.quickAction({ action: 'awaiting', badge_count: awaitingCount }); setShowAwaitingClosure(true) }} />
             </div>
             {/* Quick actions — icon buttons aligned with the headline
                 level, slightly larger so they feel like a primary
@@ -1090,12 +1104,13 @@ function DashboardInner() {
                 color="indigo"
                 label={t('Share resource', 'Partager', 'Compartir')}
                 onClick={() => {
+                  analytics.quickAction({ action: 'share' })
                   setMemberSearchQuery('')
                   setMemberPickerAction('share')
                   setShowMemberPicker(true)
                 }}
               />
-              <AwaitingPaymentButton />
+              <AwaitingPaymentButton onOpenChange={(o) => { if (o) analytics.quickAction({ action: 'payments', badge_count: paymentsAwaiting }) }} />
             </div>
           </section>
 
@@ -1241,7 +1256,7 @@ function DashboardInner() {
                               {canTakeNotes && (
                                 <button
                                   type="button"
-                                  onClick={() => setPrepBooking(b)}
+                                  onClick={() => openSessionPrep(b)}
                                   title={t('Session prep', 'Préparation', 'Preparación')}
                                   aria-label={t('Session prep', 'Préparation', 'Preparación')}
                                   className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-600 transition-colors"
@@ -1285,7 +1300,7 @@ function DashboardInner() {
                     <EmptyUpNext t={t} />
                   ) : (
                     <ul className="space-y-2">
-                      {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} onSessionPrep={setPrepBooking} isFirst={i === 0} />)}
+                      {upNext.map((b, i) => <UpNextRow key={b.id} booking={b} locale={locale} t={t} sessionTypeMap={sessionTypeMap} onTakeNotes={handleTakeNotes} onSessionPrep={openSessionPrep} isFirst={i === 0} />)}
                     </ul>
                   )}
                 </div>
@@ -1481,7 +1496,7 @@ function DashboardInner() {
                     iconColor="text-violet-600"
                     label={t('This week', 'Cette semaine', 'Esta semana')}
                     value={valueText}
-                    onClick={() => setShowCalendar(true)}
+                    onClick={() => { analytics.quickAction({ action: 'calendar' }); setShowCalendar(true) }}
                   />
                 )
               }
@@ -1551,7 +1566,7 @@ function DashboardInner() {
               return (
                 <button
                   type="button"
-                  onClick={() => setShowCalendar(true)}
+                  onClick={() => { analytics.quickAction({ action: 'calendar' }); setShowCalendar(true) }}
                   className="bg-white rounded-2xl border border-gray-200 p-6 text-left hover:border-gray-300 hover:shadow-sm transition group h-full w-full"
                 >
                   <header className="flex items-center justify-between mb-4 pr-8">
@@ -1791,7 +1806,7 @@ function DashboardInner() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    onClick={() => { setShowSessionPicker(false); setPrepBooking(b) }}
+                    onClick={() => { setShowSessionPicker(false); openSessionPrep(b) }}
                     className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition-colors"
                   >
                     <div className="w-10 h-10 rounded-full bg-fuchsia-50 flex items-center justify-center text-fuchsia-600 shrink-0 text-sm font-semibold">
@@ -2340,6 +2355,7 @@ function DashboardInner() {
                           setShowMemberPicker(false)
                           if (memberPickerAction === 'pulse') {
                             // Show the patient's Bloom Pulse in a popup (no navigation).
+                            analytics.bloomBriefViewed({ member_id: member.id })
                             setPulseMember({ id: member.id, name: `${member.first_name} ${member.last_name}`.trim() })
                             return
                           }
