@@ -213,6 +213,12 @@ export async function renderBlogPost({ slug, locale }: { slug: string; locale: B
   const authorTitle = author[post.practitioner_id]?.headline || s.author_title || null
   const authorSlug = author[post.practitioner_id]?.slug || s.author_slug || null
 
+  // "Continue reading" — the two most recent other posts that exist in this
+  // language (so the link never lands on a 404 variant).
+  const more = (await getPublishedPosts())
+    .filter((p) => p.slug && p.slug !== slug && snapshotLanguages(p.published_snapshot).includes(locale))
+    .slice(0, 2)
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -280,6 +286,42 @@ export async function renderBlogPost({ slug, locale }: { slug: string; locale: B
 
             <BlogBody markdown={picked.content} images={s.images} />
           </article>
+
+          {more.length > 0 && (
+            <section className="mt-16 pt-10 border-t border-neutral-200/70">
+              <h2 className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6">{tr(locale, 'Continue reading', 'À lire ensuite')}</h2>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {more.map((p) => {
+                  const ms = p.published_snapshot
+                  const mloc = pickLocalized(ms, locale)
+                  return (
+                    <Link
+                      key={p.id}
+                      href={postPath(locale, p.slug || '')}
+                      className="group flex flex-col rounded-3xl border border-neutral-200/70 bg-white overflow-hidden hover:shadow-lg hover:shadow-neutral-200/60 hover:-translate-y-0.5 transition-all duration-200"
+                    >
+                      {ms.cover_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ms.cover_image_url} alt="" className="w-full aspect-[16/10] object-cover" />
+                      ) : (
+                        <div className="w-full aspect-[16/10] bg-gradient-to-br from-teal-50 via-[#FAF8F5] to-neutral-100" />
+                      )}
+                      <div className="flex flex-col flex-1 p-5">
+                        <h3 className="text-base font-semibold text-neutral-900 leading-snug tracking-tight group-hover:text-teal-800 transition-colors line-clamp-2">
+                          {mloc.title}
+                        </h3>
+                        {mloc.excerpt && <p className="text-sm text-neutral-500 mt-2 font-light leading-relaxed line-clamp-2 flex-1">{mloc.excerpt}</p>}
+                        <span className="inline-flex items-center gap-1 text-sm font-medium text-teal-700 mt-4">
+                          {tr(locale, 'Read more', 'Lire la suite')}
+                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+          )}
         </main>
         <Footer locale={locale as Locale} />
       </div>
