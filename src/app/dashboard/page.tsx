@@ -230,6 +230,9 @@ function DashboardInner() {
   // Member picker (step 1 of the share-resource flow)
   const [showMemberPicker, setShowMemberPicker] = useState(false)
   const [memberPickerAction, setMemberPickerAction] = useState<'share' | 'pulse' | null>(null)
+  // Session-brief picker — the mobile "Session brief" brick lists upcoming
+  // sessions so the practitioner can pick one and open its prep drawer.
+  const [showSessionPicker, setShowSessionPicker] = useState(false)
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
   // Resource picker (step 2 of the share-resource flow)
@@ -1003,6 +1006,8 @@ function DashboardInner() {
 
             {[
               { key: 'pulse', show: true, icon: Sparkles, title: t('Bloom Pulse', 'Bloom Pulse', 'Bloom Pulse'), sub: t('Patient summary', 'Résumé patient', 'Resumen'), bg: 'bg-teal-50', ic: 'text-teal-600', badge: 0, badgeBg: '', onClick: () => { setMemberPickerAction('pulse'); setShowMemberPicker(true) } },
+              { key: 'calendar', show: true, icon: Calendar, title: t('View calendar', 'Voir le calendrier', 'Ver calendario'), sub: t('Your day', 'Votre journée', 'Tu día'), bg: 'bg-blue-50', ic: 'text-blue-600', badge: 0, badgeBg: '', onClick: () => setShowCalendar(true) },
+              { key: 'brief', show: true, icon: FileText, title: t('Session brief', 'Brief de séance', 'Resumen de sesión'), sub: t('Prepare', 'Préparer', 'Preparar'), bg: 'bg-fuchsia-50', ic: 'text-fuchsia-600', badge: 0, badgeBg: '', onClick: () => setShowSessionPicker(true) },
               { key: 'awaiting', show: awaitingCount > 0, icon: Clock, title: t('To close', 'À clôturer', 'Por cerrar'), sub: t('Sessions', 'Séances', 'Sesiones'), bg: 'bg-amber-50', ic: 'text-amber-500', badge: awaitingCount, badgeBg: 'bg-amber-500', onClick: () => setShowAwaitingClosure(true) },
               { key: 'requests', show: pendingCount > 0, icon: AlertCircle, title: t('Requests', 'Demandes', 'Solicitudes'), sub: t('To review', 'À traiter', 'Por revisar'), bg: 'bg-sky-50', ic: 'text-sky-500', badge: pendingCount, badgeBg: 'bg-sky-500', onClick: () => router.push('/bookings') },
               { key: 'add', show: true, icon: UserPlus, title: t('Add a patient', 'Ajouter un patient', 'Añadir paciente'), sub: t('New', 'Nouveau', 'Nuevo'), bg: 'bg-emerald-50', ic: 'text-emerald-600', badge: 0, badgeBg: '', onClick: () => setShowAddMemberModal(true) },
@@ -1741,6 +1746,68 @@ function DashboardInner() {
           memberId={pulseMember.id}
           memberName={pulseMember.name}
         />
+      )}
+
+      {/* Session-brief picker — opened from the mobile "Session brief" brick.
+          Lists upcoming sessions; picking one opens its prep drawer. */}
+      {showSessionPicker && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+          onClick={() => setShowSessionPicker(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          >
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t('Session brief', 'Brief de séance', 'Resumen de sesión')}</h3>
+                <p className="text-sm text-gray-500">{t('Pick an upcoming session', 'Choisir une séance à venir', 'Elige una sesión próxima')}</p>
+              </div>
+              <button onClick={() => setShowSessionPicker(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4 max-h-80 overflow-y-auto space-y-1">
+              {(() => {
+                const sessions = upNext.filter((b) => b.member_id)
+                if (sessions.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-gray-500">{t('No upcoming sessions', 'Aucune séance à venir', 'Sin sesiones próximas')}</p>
+                    </div>
+                  )
+                }
+                return sessions.map((b, index) => (
+                  <motion.button
+                    key={b.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    onClick={() => { setShowSessionPicker(false); setPrepBooking(b) }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-fuchsia-50 flex items-center justify-center text-fuchsia-600 shrink-0 text-sm font-semibold">
+                      {(b.client_name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{b.client_name || t('Session', 'Séance', 'Sesión')}</p>
+                      <p className="text-xs text-gray-400">{format(parseISO(b.start_time), locale === 'fr' ? "EEE d MMM · HH:mm" : "EEE d MMM · h:mm a", { locale: locale === 'fr' ? frLocale : undefined })}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  </motion.button>
+                ))
+              })()}
+            </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* ── Modals ── */}
@@ -2625,6 +2692,7 @@ function DashboardInner() {
             <div className="bg-white rounded-2xl p-4 max-w-6xl mx-auto">
               <WeekCalendarView
                 bookings={bookings as any}
+                singleDayOnMobile
                 onApprove={async () => {}}
                 onReject={handleCancelBooking}
                       onDelete={handleDeleteBookingDash}
