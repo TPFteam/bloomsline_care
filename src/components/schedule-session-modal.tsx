@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { analytics } from '@/lib/analytics/events'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Clock, Users, Check, ChevronRight, ArrowLeft, Calendar, Building2, Video, Settings, Loader2, Info, Maximize2, AlertCircle } from 'lucide-react'
-import { SlotCalendarView } from '@/components/bookings/SlotCalendarView'
+import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
 import { CalendarPicker } from '@/components/ui/calendar-picker'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { TimePicker } from '@/components/ui/time-picker'
@@ -104,6 +104,13 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
   const [searchQuery, setSearchQuery] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [showSlotCalendar, setShowSlotCalendar] = useState(false)
+  // The practitioner's bookings for the embedded WeekCalendarView (context).
+  const [calendarBookings, setCalendarBookings] = useState<Array<{
+    id: string; client_name: string; client_email: string; client_phone?: string | null
+    start_time: string; end_time: string; timezone?: string; status: string
+    session_type: string; notes: string | null; google_event_id?: string | null
+    meet_link?: string | null; payment_status?: string | null; member_id?: string | null
+  }>>([])
   const keepTimeRef = useRef(false)
   // One-time prefill of the rescheduled booking's current time, so it shows
   // highlighted on the date/time step ("this is currently at 10:00 AM").
@@ -302,6 +309,26 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
       fetchInitialData()
     }
   }, [isOpen, preselectedMember, preselectedMemberId, rescheduleData])
+
+  // Load the practitioner's bookings (a broad window) so the embedded calendar
+  // shows existing events as context.
+  useEffect(() => {
+    if (!showSlotCalendar || !userId) return
+    let cancelled = false
+    ;(async () => {
+      const from = new Date(Date.now() - 7 * 86400000).toISOString()
+      const to = new Date(Date.now() + 90 * 86400000).toISOString()
+      const { data } = await supabase
+        .from('bookings')
+        .select('id, client_name, client_email, client_phone, start_time, end_time, timezone, status, session_type, notes, google_event_id, meet_link, payment_status, member_id')
+        .eq('practitioner_id', userId)
+        .gte('start_time', from)
+        .lte('start_time', to)
+        .neq('status', 'cancelled')
+      if (!cancelled) setCalendarBookings((data || []) as typeof calendarBookings)
+    })()
+    return () => { cancelled = true }
+  }, [showSlotCalendar, userId, supabase])
 
   // Resolve a preselectedMemberId to the full member once the member list has
   // loaded (used by "Schedule next session" — only the id is passed in).
@@ -1438,19 +1465,18 @@ export function ScheduleSessionModal({ isOpen, onClose, onSuccess, preselectedMe
                       <ArrowLeft className="w-4 h-4" />
                       {locale === 'fr' ? 'Retour au sélecteur' : 'Back to picker'}
                     </button>
-                    <SlotCalendarView
-                      userId={userId}
-                      sessionDuration={selectedSessionType?.duration || 60}
-                      selectedFormat={selectedSessionFormat}
-                      disabledDaysOfWeek={disabledDaysOfWeek}
-                      practitionerTz={practitionerTz}
-                      dayFormats={scheduleDayFormats}
-                      locale={locale}
-                      onSelectSlot={(date, time) => {
+                    <WeekCalendarView
+                      bookings={calendarBookings}
+                      defaultShowAvailability
+                      singleDayOnMobile
+                      hideLegend
+                      onSlotClick={(date, time) => {
                         keepTimeRef.current = true
                         setSelectedDate(startOfDay(date))
                         setSelectedTime(time)
                         setShowSlotCalendar(false)
+                        // Time is now chosen — jump straight to the next step.
+                        setStep('confirm')
                       }}
                     />
                   </div>

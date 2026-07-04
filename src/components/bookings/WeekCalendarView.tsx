@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
-import { format, addDays, startOfWeek, parseISO, isSameDay } from 'date-fns'
+import { format, addDays, startOfWeek, startOfDay, parseISO, isSameDay } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
+import { useIsMobile } from '@/lib/use-is-mobile'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw, Palmtree } from 'lucide-react'
 import { TimeOffModal } from '@/components/bookings/TimeOffModal'
 
@@ -130,6 +131,9 @@ interface WeekCalendarViewProps {
   // the parent — typically the rail's UnclaimedGoogleEventsCard). Called with
   // the Google event id.
   onAddToBloomsline?: (ev: { googleEventId: string; title: string; startTime: string; endTime: string; email?: string }) => void
+  // Show a single day (with day-by-day nav) on phones instead of the 7-day
+  // week. Opt-in — used by the schedule modal; the Bookings page stays weekly.
+  singleDayOnMobile?: boolean
 }
 
 const HOUR_HEIGHT = 56
@@ -137,8 +141,12 @@ const START_HOUR = 7
 const END_HOUR = 24 // through midnight so evening sessions + the now-line show
 const TOTAL_HOURS = END_HOUR - START_HOUR
 
-export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline }: WeekCalendarViewProps) {
+export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, processingId, onSlotClick, hideToolbar, hideLegend, defaultShowAvailability = false, gridMaxHeight, hasNotesForBooking, onTakeNotes, onCloseSession, onReschedule, onDeleteRequest, weekStart: controlledWeekStart, onWeekStartChange, fillViewport, onAddToBloomsline, singleDayOnMobile }: WeekCalendarViewProps) {
   const { locale } = useLanguage()
+  const isMobile = useIsMobile()
+  const singleDay = !!singleDayOnMobile && isMobile
+  const dayCount = singleDay ? 1 : 7
+  const stepDays = singleDay ? 1 : 7
   const [timeOffOpen, setTimeOffOpen] = useState(false)
   // Days marked as time off (holidays), so the grid can flag them. Keyed by
   // yyyy-MM-dd → which part of the day is blocked.
@@ -165,6 +173,11 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
     if (onWeekStartChange) onWeekStartChange(next)
     else setInternalWeekStart(next)
   }
+  // Single-day (mobile) uses today as the cursor rather than the week's Monday.
+  useEffect(() => {
+    if (singleDay && !controlledWeekStart) setInternalWeekStart(startOfDay(new Date()))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [singleDay])
   const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [googleConnected, setGoogleConnected] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
@@ -306,7 +319,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
     return eventDate === dayDate
   }
 
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(weekStart, i))
 
   const fetchGoogleEvents = useCallback(async () => {
     try {
@@ -592,16 +605,18 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
         )}
         {/* Week navigation */}
         <div className="flex items-center gap-2">
-          <button onClick={() => setWeekStart(prev => addDays(prev, -7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+          <button onClick={() => setWeekStart(prev => addDays(prev, -stepDays))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
             <ChevronLeft className="w-4 h-4 text-gray-400" />
           </button>
           <h3 className="text-sm font-semibold text-gray-800">
-            {format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: locale === 'fr' ? frLocale : undefined })}
+            {singleDay
+              ? format(weekStart, locale === 'fr' ? 'EEEE d MMM' : 'EEEE, MMM d', { locale: locale === 'fr' ? frLocale : undefined })
+              : <>{format(weekStart, locale === 'fr' ? 'd MMM' : 'MMM d', { locale: locale === 'fr' ? frLocale : undefined })} — {format(addDays(weekStart, 6), locale === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: locale === 'fr' ? frLocale : undefined })}</>}
           </h3>
-          <button onClick={() => setWeekStart(prev => addDays(prev, 7))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
+          <button onClick={() => setWeekStart(prev => addDays(prev, stepDays))} className="w-9 h-9 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors">
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </button>
-          <button onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
+          <button onClick={() => setWeekStart(singleDay ? startOfDay(new Date()) : startOfWeek(new Date(), { weekStartsOn: 1 }))} className="text-xs text-teal-600 hover:text-teal-700 font-medium px-2.5 py-1 rounded-lg hover:bg-teal-50 transition-colors">
             {locale === 'fr' ? "Aujourd'hui" : 'Today'}
           </button>
           {practitionerTz && (
@@ -617,7 +632,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
       )}
 
       {/* Day headers */}
-      <div className="grid grid-cols-[56px_repeat(7,1fr)] border-t border-gray-100">
+      <div className="grid border-t border-gray-100" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)` }}>
         <div />
         {days.map(day => (
           <div key={day.toISOString()} className="py-3 text-center">
@@ -671,7 +686,7 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
           </div>
         </div>
       )}
-      <div ref={gridScrollRef} className="grid grid-cols-[56px_repeat(7,1fr)] overflow-y-auto border-t border-gray-100" style={{ maxHeight: fillViewport ? 'calc(100vh - 240px)' : `${gridMaxHeight ?? 560}px` }}>
+      <div ref={gridScrollRef} className="grid overflow-y-auto border-t border-gray-100" style={{ gridTemplateColumns: `56px repeat(${dayCount}, 1fr)`, maxHeight: fillViewport ? 'calc(100vh - 240px)' : `${gridMaxHeight ?? 560}px` }}>
         <div>
           {Array.from({ length: TOTAL_HOURS }, (_, i) => (
             <div key={i} className="flex items-start justify-end pr-3 pt-0.5" style={{ height: HOUR_HEIGHT }}>
