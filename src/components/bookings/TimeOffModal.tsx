@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Palmtree, Plus, Trash2, Loader2, Sun, Sunset, CalendarOff, ChevronLeft, ChevronRight, X, Pencil, Check, Globe, Download } from 'lucide-react'
+import { Palmtree, Plus, Trash2, Loader2, Sun, Sunset, CalendarOff, ChevronLeft, ChevronRight, X, Pencil, Check, Globe, Download, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   format, parseISO, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -12,11 +12,14 @@ import { fr as frLocale } from 'date-fns/locale'
 
 type Portion = 'full' | 'morning' | 'afternoon'
 
+type Source = 'manual' | 'holiday'
+
 interface TimeOffItem {
   id: string
   date: string // YYYY-MM-DD
   portion: Portion
   reason: string | null
+  source: Source // 'holiday' = imported public holiday (read-only)
 }
 
 interface Block {
@@ -25,6 +28,7 @@ interface Block {
   end: string
   portion: Portion
   reason: string | null
+  source: Source
 }
 
 const ymd = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -38,11 +42,11 @@ function groupBlocks(items: TimeOffItem[]): Block[] {
       const d = parseISO(prev.end); d.setDate(d.getDate() + 1)
       return ymd(d) === it.date
     })()
-    if (prev && isNextDay && prev.portion === it.portion && (prev.reason || '') === (it.reason || '')) {
+    if (prev && isNextDay && prev.portion === it.portion && (prev.reason || '') === (it.reason || '') && prev.source === it.source) {
       prev.end = it.date
       prev.ids.push(it.id)
     } else {
-      blocks.push({ ids: [it.id], start: it.date, end: it.date, portion: it.portion, reason: it.reason })
+      blocks.push({ ids: [it.id], start: it.date, end: it.date, portion: it.portion, reason: it.reason, source: it.source })
     }
   }
   return blocks
@@ -134,10 +138,10 @@ export function TimeOffModal({
 
   if (!open) return null
 
-  const portionMeta: Record<Portion, { label: string; icon: typeof Sun }> = {
-    full: { label: fr ? 'Journée complète' : 'Full day', icon: CalendarOff },
-    morning: { label: fr ? 'Première moitié' : 'First half', icon: Sun },
-    afternoon: { label: fr ? 'Seconde moitié' : 'Second half', icon: Sunset },
+  const portionMeta: Record<Portion, { label: string; hint: string; icon: typeof Sun }> = {
+    full: { label: fr ? 'Journée complète' : 'Full day', hint: fr ? 'toute la journée' : 'all day', icon: CalendarOff },
+    morning: { label: fr ? 'Première moitié' : 'First half', hint: fr ? 'avant 12h' : 'before 12pm', icon: Sun },
+    afternoon: { label: fr ? 'Seconde moitié' : 'Second half', hint: fr ? 'après 12h' : 'after 12pm', icon: Sunset },
   }
 
   // Blocked dates (already time off) → highlighted on the picker with a hover
@@ -472,7 +476,9 @@ export function TimeOffModal({
                     onClick={() => setPortion(p)}
                     className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-xs font-medium transition-colors ${active ? 'border-teal-500 bg-teal-50 text-teal-800' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
                   >
-                    <M.icon className="w-4 h-4" /> {M.label}
+                    <M.icon className="w-4 h-4" />
+                    <span>{M.label}</span>
+                    <span className="text-[10px] font-normal opacity-70">{M.hint}</span>
                   </button>
                 )
               })}
@@ -536,13 +542,22 @@ export function TimeOffModal({
                         <p className="text-sm font-medium text-gray-900 truncate">{rangeLabelText(b)}</p>
                         <p className="text-xs text-gray-500 truncate">{M.label}{b.reason ? ` · ${b.reason}` : ''}</p>
                       </div>
-                      <button
-                        onClick={() => startEdit(b)} disabled={busy || saving}
-                        className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors disabled:opacity-50"
-                        aria-label={fr ? 'Modifier' : 'Edit'}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
+                      {b.source === 'holiday' ? (
+                        <span
+                          className="p-2 text-gray-300"
+                          title={fr ? 'Jour férié importé, non modifiable' : 'Imported holiday, not editable'}
+                        >
+                          <Lock className="w-4 h-4" />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => startEdit(b)} disabled={busy || saving}
+                          className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors disabled:opacity-50"
+                          aria-label={fr ? 'Modifier' : 'Edit'}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => remove(b)} disabled={busy}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"

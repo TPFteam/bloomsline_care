@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('availability_overrides')
-    .select('id, override_date, start_time, end_time, reason')
+    .select('id, override_date, start_time, end_time, reason, source')
     .eq('user_id', user.id)
     .eq('is_available', false)
     .gte('override_date', today)
@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     endTime: (r.end_time as string | null) ?? null,
     portion: portionFor((r.start_time as string | null) ?? null),
     reason: (r.reason as string | null) ?? null,
+    source: ((r.source as string | null) ?? 'manual') as 'manual' | 'holiday',
   }))
   return NextResponse.json({ items })
 }
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
     const rows = clean.map((e) => ({
       user_id: user.id, override_date: e.date, is_available: false,
-      start_time: null, end_time: null, reason: e.reason,
+      start_time: null, end_time: null, reason: e.reason, source: 'holiday',
     }))
     const { error: insError } = await supabase.from('availability_overrides').insert(rows)
     if (insError) {
@@ -159,6 +160,7 @@ export async function POST(request: NextRequest) {
     start_time: win?.start ?? null,
     end_time: win?.end ?? null,
     reason,
+    source: 'manual',
   }))
 
   // A date holds a single time-off entry — clear any existing block for these
