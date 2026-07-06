@@ -1657,8 +1657,8 @@ function HeroSplitSlide({ onNext, t }: { onNext: () => void; t: typeof translati
         style={{ background: 'radial-gradient(ellipse 70% 70% at 34% 46%, rgba(8,8,8,0.82) 0%, rgba(8,8,8,0.35) 55%, rgba(8,8,8,0) 100%)' }}
       />
 
-      {/* The hook — left-weighted */}
-      <div className="absolute inset-0 z-10 flex flex-col justify-center px-10 sm:px-16 lg:px-20 pointer-events-none">
+      {/* The hook — left-weighted, anchored near the top so it clears the figures */}
+      <div className="absolute inset-0 z-10 flex flex-col justify-start pt-28 sm:pt-32 lg:pt-40 px-10 sm:px-16 lg:px-20 pointer-events-none">
         <div className="max-w-3xl">
           <motion.p
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4 }}
