@@ -289,7 +289,7 @@ export async function renderBlogPost({ slug, locale }: { slug: string; locale: B
 
           {more.length > 0 && (
             <section className="mt-16 pt-10 border-t border-neutral-200/70">
-              <h2 className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6">{tr(locale, 'Continue reading', 'À lire ensuite')}</h2>
+              <h2 className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-6">{tr(locale, 'More to explore', 'À découvrir aussi')}</h2>
               <div className="grid sm:grid-cols-2 gap-6">
                 {more.map((p) => {
                   const ms = p.published_snapshot

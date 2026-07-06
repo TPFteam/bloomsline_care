@@ -14,12 +14,15 @@ interface NavbarProps {
   isMemberPage?: boolean
   minimal?: boolean
   onCtaClick?: () => void
+  // Hide the "Book a Demo" CTA without stripping the rest of the nav (used on
+  // pages like the practitioner directory where a demo CTA doesn't belong).
+  hideBookDemo?: boolean
   // When set (server-rendered pages like the blog), the language comes from the
   // route rather than client context — prevents a first-render language flash.
   locale?: Locale
 }
 
-export function Navbar({ isMemberPage = false, minimal = false, onCtaClick, locale: propLocale }: NavbarProps) {
+export function Navbar({ isMemberPage = false, minimal = false, onCtaClick, hideBookDemo = false, locale: propLocale }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { t: ctxT, locale: ctxLocale } = useLanguage()
   const locale = propLocale ?? ctxLocale
@@ -98,7 +101,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick, loca
             className="hidden md:flex items-center gap-3"
           >
             <LanguageSwitcher />
-            {!isMemberPage && !minimal && (
+            {!isMemberPage && !minimal && !hideBookDemo && (
               <a
                 href={DEMO_BOOKING_URL}
                 target="_blank"
@@ -202,7 +205,7 @@ export function Navbar({ isMemberPage = false, minimal = false, onCtaClick, loca
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-white/60">
                 <LanguageSwitcher />
-                {!isMemberPage && !minimal && (
+                {!isMemberPage && !minimal && !hideBookDemo && (
                   <a
                     href={DEMO_BOOKING_URL}
                     target="_blank"

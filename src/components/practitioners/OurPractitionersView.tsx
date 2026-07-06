@@ -28,11 +28,14 @@ export function OurPractitionersView({ forceLocale }: { forceLocale?: Locale }) 
   const [items, setItems] = useState<Practitioner[]>([])
   const [loading, setLoading] = useState(true)
 
-  // On the locale-pinned URL, sync the site language so the rest of the site
-  // matches once the visitor navigates away.
+  // On the locale-pinned URL, sync the site language ONCE on mount so the rest
+  // of the site matches after navigating away. Intentionally mount-only: if the
+  // visitor switches language here, the switcher navigates to the other URL, so
+  // we must not keep re-forcing this route's locale back.
   useEffect(() => {
-    if (forceLocale && ctxLocale !== forceLocale) setLocale(forceLocale, false)
-  }, [forceLocale, ctxLocale, setLocale])
+    if (forceLocale) setLocale(forceLocale, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     // Deduped, name-resolved list comes from the service-role API (avoids the
@@ -47,7 +50,7 @@ export function OurPractitionersView({ forceLocale }: { forceLocale?: Locale }) 
   return (
     <EarlyAccessModalProvider>
       <div className="min-h-screen bg-[#FAF8F5]">
-        <Navbar locale={locale} />
+        <Navbar locale={locale} hideBookDemo />
         <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 max-w-6xl">
           <header className="mb-14 text-center">
             <p className="text-xs tracking-[0.3em] text-teal-700 uppercase mb-3">{t('Our Practitioners', 'Nos praticiens')}</p>
