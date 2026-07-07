@@ -89,7 +89,7 @@ export async function POST(
       return NextResponse.json({ ok: false, reason: 'google_not_connected', message: 'Connect your Google Calendar to send invitations.' });
     }
 
-    // ── Case B: event already exists → add the attendee and re-notify ──────────
+    // ── Case B: event already exists → (re)add the attendee and force a notify ──
     if (booking.google_event_id) {
       const calendarUrl = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleAuth.calendarId)}/events/${booking.google_event_id}`;
       const authHeaders = { Authorization: `Bearer ${googleAuth.accessToken}`, 'Content-Type': 'application/json' };
@@ -99,18 +99,35 @@ export async function POST(
         const event = await getRes.json();
         const existing: Array<{ email?: string; displayName?: string; responseStatus?: string }> =
           Array.isArray(event.attendees) ? event.attendees : [];
-        const already = existing.some((a) => (a.email || '').trim().toLowerCase() === email.toLowerCase());
-        const attendees = already
-          ? existing
-          : [...existing, { email, displayName: clientName || undefined, responseStatus: 'needsAction' }];
+        const others = existing.filter((a) => (a.email || '').trim().toLowerCase() !== email.toLowerCase());
+        const alreadyPresent = others.length !== existing.length;
+        const withClient = [...others, { email, displayName: clientName || undefined, responseStatus: 'needsAction' }];
 
-        const patchRes = await fetch(`${calendarUrl}?sendUpdates=all`, {
+        // Google only emails attendees when the event actually CHANGES. If the
+        // client is already an attendee, a PATCH with the same list is a no-op
+        // and Google sends nothing (even with sendUpdates=all). So when they're
+        // already present, first remove them silently (sendUpdates=none), then
+        // re-add them (sendUpdates=all) — the re-add is a real change that makes
+        // Google send a fresh invitation.
+        if (alreadyPresent) {
+          const rmRes = await fetch(`${calendarUrl}?sendUpdates=none`, {
+            method: 'PATCH',
+            headers: authHeaders,
+            body: JSON.stringify({ attendees: others }),
+          });
+          if (!rmRes.ok) {
+            const detail = await rmRes.text().catch(() => '');
+            return NextResponse.json({ ok: false, reason: 'google_error', message: 'Google rejected the update. Please try again.', detail });
+          }
+        }
+
+        const addRes = await fetch(`${calendarUrl}?sendUpdates=all`, {
           method: 'PATCH',
           headers: authHeaders,
-          body: JSON.stringify({ attendees }),
+          body: JSON.stringify({ attendees: withClient }),
         });
-        if (!patchRes.ok) {
-          const detail = await patchRes.text().catch(() => '');
+        if (!addRes.ok) {
+          const detail = await addRes.text().catch(() => '');
           return NextResponse.json({ ok: false, reason: 'google_error', message: 'Google rejected the update. Please try again.', detail });
         }
         return NextResponse.json({ ok: true, email, message: `Invitation sent to ${email}.` });
