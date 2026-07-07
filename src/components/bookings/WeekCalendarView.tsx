@@ -6,6 +6,7 @@ import { fr as frLocale } from 'date-fns/locale'
 import { useIsMobile } from '@/lib/use-is-mobile'
 import { ChevronLeft, ChevronRight, Check, X, Clock, Mail, Loader2, Video, Building2, ArrowRight, Palette, FileText, CheckCircle2, Hourglass, CalendarClock, AlertCircle, XCircle, Ban, Plus, Sparkles, Trash2, MoreHorizontal, RefreshCw, Palmtree } from 'lucide-react'
 import { TimeOffModal } from '@/components/bookings/TimeOffModal'
+import { ResendInvitationButton } from '@/components/bookings/ResendInvitationButton'
 
 // Calendar event palette — mirrors SessionDotLegend's STATUS_VISUAL hues so the
 // SAME colours mean the same thing everywhere (dots + calendar):
@@ -992,6 +993,19 @@ export function WeekCalendarView({ bookings, onApprove, onReject, onDelete, proc
                                 <Mail className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{event.email}</span>
                               </p>
+                            )}
+
+                            {/* Resend invitation — re-sends the Google Calendar invite
+                                (e.g. when the client email was added after the appointment
+                                was created). Shown for upcoming, non-cancelled bookings. */}
+                            {event.source === 'booking' && event.bookingId && event.status !== 'cancelled' && new Date(event.start).getTime() > Date.now() && (
+                              <ResendInvitationButton
+                                bookingId={event.bookingId}
+                                clientEmail={event.email}
+                                clientName={event.title}
+                                locale={locale}
+                                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg transition-colors text-xs font-medium"
+                              />
                             )}
 
                             {/* Quick actions — one row of icon buttons

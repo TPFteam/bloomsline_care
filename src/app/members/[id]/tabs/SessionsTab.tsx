@@ -57,6 +57,7 @@ import { SessionDotLegend, StatusDot, type StatusKey } from '@/components/Sessio
 import { SessionFilters, inDateRange, type DateRangePreset } from '@/components/SessionFilters'
 import type { Session, SessionType, SessionFormat, SessionStatus, PaymentStatus, Member } from '@/types/member'
 import { DEFAULT_NOTE_TYPES, FIXED_NOTE_TYPES } from '@/types/member'
+import { ResendInvitationButton } from '@/components/bookings/ResendInvitationButton'
 
 interface SessionsTabProps {
   memberId: string
@@ -2047,6 +2048,22 @@ export default function SessionsTab({ memberId, member, sessions, onSessionsUpda
                           <PenLine className="w-3.5 h-3.5 text-gray-500" />
                           {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                         </button>
+                        {/* Resend invitation — re-sends the Google Calendar invite for
+                            this upcoming session (e.g. when the client email was added
+                            after the appointment was created). */}
+                        {(() => {
+                          const b = getBookingForSession(session.scheduled_at)
+                          if (!b || b.status === 'cancelled' || new Date(b.start_time).getTime() <= Date.now()) return null
+                          return (
+                            <ResendInvitationButton
+                              bookingId={b.id}
+                              clientEmail={b.client_email}
+                              clientName={b.client_name}
+                              locale={locale}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                            />
+                          )
+                        })()}
                       </div>
                     )}
 

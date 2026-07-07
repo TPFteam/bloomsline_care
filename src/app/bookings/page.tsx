@@ -57,6 +57,7 @@ import { reasonToStatus, reasonToPaymentDefault, getCloseReasonGroups } from '@/
 import { format, parseISO, isToday, isTomorrow, isPast, startOfWeek } from 'date-fns'
 import { fr as frLocale } from 'date-fns/locale'
 import { WeekCalendarView } from '@/components/bookings/WeekCalendarView'
+import { ResendInvitationButton } from '@/components/bookings/ResendInvitationButton'
 import { EmbedSnippetCard } from '@/components/bookings/EmbedSnippetCard'
 import { IntakeFormsManager } from '@/components/bookings/IntakeFormsManager'
 import type { IntakeForm } from '@/types/calendar'
@@ -2144,6 +2145,18 @@ export default function BookingsPage() {
                                       {locale === 'fr' ? 'Prendre des notes' : 'Take notes'}
                                     </button>
                                   )}
+                                {/* Resend invitation — re-sends the Google Calendar invite
+                                    (e.g. when the email was added after the appointment was
+                                    created). Upcoming, non-cancelled bookings only. */}
+                                {booking.status !== 'cancelled' && new Date(booking.start_time).getTime() > Date.now() && (
+                                  <ResendInvitationButton
+                                    bookingId={booking.id}
+                                    clientEmail={booking.client_email}
+                                    clientName={booking.client_name}
+                                    locale={locale}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-md transition-colors"
+                                  />
+                                )}
                               </div>
                             )}
 
