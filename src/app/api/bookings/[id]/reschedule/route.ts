@@ -3,6 +3,70 @@ import { createClient, createAdminClient } from '@/lib/supabase/server-client';
 import { getValidGoogleToken } from '@/lib/services/google-auth';
 import { buildCalendarEvent, getPractitionerName, getPractitionerAddress, getBookingConfirmationDetails } from '@/lib/services/calendar-event';
 
+// Map booking-side session_type/format onto the app-side `sessions` enums,
+// mirroring the sync_session_from_booking trigger, so an explicit insert can
+// never violate the enum.
+function mapSessionType(t: string | null | undefined): string {
+  const v = String(t ?? '');
+  if (['initial_consultation', 'follow_up', 'check_in', 'crisis', 'group', 'other'].includes(v)) return v;
+  if (v === 'initial') return 'initial_consultation';
+  return 'follow_up';
+}
+function mapSessionFormat(f: string | null | undefined): string {
+  const v = String(f ?? '');
+  if (v === 'video') return 'virtual';
+  if (['in_person', 'virtual', 'phone'].includes(v)) return v;
+  return 'virtual';
+}
+
+/**
+ * Move the patient-file `sessions` row to the reschedule's NEW time — the fix for
+ * the bug where a rescheduled appointment shows on Google but vanishes from the
+ * patient's "À venir". The bookings→sessions trigger is meant to do this but can
+ * miss in prod, so we do it explicitly and IDEMPOTENTLY (check the new time first
+ * → move the old-time row → else insert), keeping the app in lockstep with Google
+ * within the same request. Guest bookings (no member) are skipped by callers.
+ */
+async function ensureScheduledSessionAtNewTime(
+  admin: ReturnType<typeof createAdminClient>,
+  opts: {
+    practitionerId: string; memberId: string;
+    oldStart: string; newStart: string; newEnd: string;
+    sessionType: string | null | undefined; sessionFormat: string | null | undefined;
+    detachedFromSeries?: boolean; updatedAt: string;
+  },
+): Promise<void> {
+  const newDuration = Math.max(1, Math.round((new Date(opts.newEnd).getTime() - new Date(opts.newStart).getTime()) / 60000));
+  const sType = mapSessionType(opts.sessionType);
+  const sFormat = mapSessionFormat(opts.sessionFormat);
+  const detach = opts.detachedFromSeries ? { detached_from_series: true } : {};
+
+  // Already at the new time (trigger / inline update already handled it)? → no-op,
+  // so this can never create a duplicate.
+  const { data: atNew } = await admin
+    .from('sessions').select('id')
+    .eq('practitioner_id', opts.practitionerId).eq('member_id', opts.memberId)
+    .eq('status', 'scheduled').eq('scheduled_at', opts.newStart)
+    .maybeSingle();
+  if (atNew) return;
+
+  // Move the paired scheduled session from the OLD time to the new time.
+  const { data: moved } = await admin
+    .from('sessions')
+    .update({ scheduled_at: opts.newStart, duration_minutes: newDuration, status: 'scheduled', session_type: sType, session_format: sFormat, updated_at: opts.updatedAt, ...detach })
+    .eq('practitioner_id', opts.practitionerId).eq('member_id', opts.memberId)
+    .eq('scheduled_at', opts.oldStart).eq('status', 'scheduled')
+    .select('id');
+  if (moved && moved.length > 0) return;
+
+  // Nothing at the old time either → create the session at the new time.
+  await admin.from('sessions').insert({
+    practitioner_id: opts.practitionerId, member_id: opts.memberId,
+    session_type: sType, session_format: sFormat,
+    scheduled_at: opts.newStart, duration_minutes: newDuration, status: 'scheduled', ...detach,
+  });
+}
+
 /**
  * POST /api/bookings/[id]/reschedule
  *
@@ -106,6 +170,26 @@ export async function POST(
         .eq('scheduled_at', booking.start_time)
         .in('status', ['scheduled', 'confirmed']);
 
+      // Safety net: the exact-timestamp update above can match 0 rows and leave
+      // the session stranded. Guarantee it lands at the new time (idempotent).
+      if (booking.member_id) {
+        try {
+          await ensureScheduledSessionAtNewTime(adminSupabase, {
+            practitionerId: user.id,
+            memberId: booking.member_id,
+            oldStart: booking.start_time,
+            newStart: newSlotStart,
+            newEnd: newSlotEnd,
+            sessionType: sessionTypeId ?? booking.session_type,
+            sessionFormat: sessionFormat ?? booking.session_format,
+            detachedFromSeries: true,
+            updatedAt: updateNow,
+          });
+        } catch (e) {
+          console.error('Reschedule session sync failed (series):', e);
+        }
+      }
+
       // Move the specific Google instance — PATCH on the instance ID, not the
       // parent. Google emits one "your appointment was moved" notification.
       if (booking.google_event_id && isFutureBooking) {
@@ -200,6 +284,27 @@ export async function POST(
     if (updateError) {
       console.error('Failed to update booking for reschedule:', updateError);
       return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 });
+    }
+
+    // Keep the patient-file session in lockstep with the booking + Google (bug
+    // fix). Without this the appointment shows on Google but disappears from the
+    // patient's "À venir" until a later webhook heals it. Explicit + idempotent —
+    // it never waits on (or duplicates) the bookings→sessions trigger.
+    if (booking.member_id) {
+      try {
+        await ensureScheduledSessionAtNewTime(adminSupabase, {
+          practitionerId: user.id,
+          memberId: booking.member_id,
+          oldStart: booking.start_time,
+          newStart: newSlotStart,
+          newEnd: newSlotEnd,
+          sessionType: effectiveSessionType,
+          sessionFormat: effectiveSessionFormat,
+          updatedAt: updateNow,
+        });
+      } catch (e) {
+        console.error('Reschedule session sync failed (in-place):', e);
+      }
     }
 
     // PATCH the Google event so the patient sees the new time. One
